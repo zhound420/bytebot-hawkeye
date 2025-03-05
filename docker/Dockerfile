@@ -20,11 +20,20 @@ RUN apk update && apk add --no-cache \
     supervisor \
     bash \
     git \
-    python3 && \
+    python3 \
+    py3-pip \
+    py3-numpy \
+    py3-setuptools \
+    netcat-openbsd && \
     rm -rf /var/cache/apk/*
 
 # Clone the noVNC repository 
 RUN git clone https://github.com/novnc/noVNC.git /opt/noVNC
+
+# Clone and install websockify
+RUN git clone https://github.com/novnc/websockify.git /opt/websockify && \
+    cd /opt/websockify && \
+    pip3 install --break-system-packages .
 
 USER root
 # ---------------------------
@@ -58,4 +67,3 @@ EXPOSE 3000 5900 6080 6081
 
 # Set the default command to run Supervisor in non‑daemon mode.
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf", "-n"]
-
