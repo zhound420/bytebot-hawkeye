@@ -114,51 +114,6 @@ export class QemuService {
   constructor(private readonly qmpClient: QmpClientService) {}
 
   /**
-   * Captures a screenshot from QEMU by instructing it to save a PNG file to a temporary location.
-   * The PNG file is then read and the temporary file is deleted.
-   *
-   * @returns A Promise that resolves with a Buffer containing the PNG image.
-   */
-  async screendump(): Promise<Buffer> {
-    // Generate a unique temporary filename for the PNG file.
-    const tmpFile = path.join(
-      os.tmpdir(),
-      `screendump-${Date.now()}-${Math.floor(Math.random() * 10000)}.png`,
-    );
-    this.logger.log(
-      `Taking screendump and saving to temporary file: ${tmpFile}`,
-    );
-
-    // Issue the QMP command to generate the screenshot (in PNG format).
-    await this.qmpClient.sendCommand({
-      execute: 'screendump',
-      arguments: { filename: tmpFile },
-    });
-
-    let screenshotBuffer: Buffer;
-    try {
-      // Read the PNG file into memory.
-      screenshotBuffer = await fs.readFile(tmpFile);
-    } catch (error) {
-      this.logger.error(
-        `Error reading temporary screenshot file: ${error.message}`,
-      );
-      throw error;
-    } finally {
-      // Clean up the temporary file regardless of success.
-      try {
-        await fs.unlink(tmpFile);
-      } catch (unlinkError) {
-        this.logger.warn(
-          `Failed to remove temporary screenshot file ${tmpFile}: ${unlinkError.message}`,
-        );
-      }
-    }
-
-    return screenshotBuffer;
-  }
-
-  /**
    * Sends key events (e.g., "ctrl-alt-delete") to the VM.
    *
    * @param key A string representing the key events.
@@ -526,5 +481,73 @@ export class QemuService {
       `Scaling y-coordinate: ${value} -> ${Math.round((value / screenHeight) * maxValue)}`,
     );
     return Math.round((value / screenHeight) * maxValue);
+  }
+
+  /**
+   * Implementation of screendump that uses a direct file path.
+   * Some QEMU versions may have issues with certain paths.
+   *
+   * @returns A Promise that resolves with a Buffer containing the image.
+   */
+  async screendump(): Promise<Buffer> {
+    // Use a simple, direct path in /tmp
+    const tmpFile = `/tmp/qemu-screen-${Date.now()}.png`;
+    this.logger.log(`Taking screendump with direct path: ${tmpFile}`);
+
+    try {
+      const response = await this.qmpClient.sendCommand({
+        execute: 'screendump',
+        arguments: { filename: tmpFile, format: 'png' },
+      });
+
+      // Add a longer delay to ensure QEMU has time to write the file
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      this.logger.log(`QMP screendump response: ${JSON.stringify(response)}`);
+
+      // Check if file exists
+      try {
+        await fs.access(tmpFile);
+        this.logger.log(`Screenshot file exists at ${tmpFile}`);
+      } catch (accessErr) {
+        this.logger.error(
+          `Screenshot file does not exist: ${accessErr.message}`,
+        );
+        throw new Error(`Screenshot file not found at ${tmpFile}`);
+      }
+
+      // Read the file
+      const imageBuffer = await fs.readFile(tmpFile);
+      this.logger.log(
+        `Successfully read screenshot file (${imageBuffer.length} bytes)`,
+      );
+
+      // Log the first few bytes for debugging
+      if (imageBuffer.length > 0) {
+        const hexDump = imageBuffer
+          .slice(0, Math.min(16, imageBuffer.length))
+          .toString('hex')
+          .match(/.{1,2}/g)
+          ?.join(' ');
+        this.logger.log(`First bytes: ${hexDump}`);
+      }
+
+      return imageBuffer;
+    } catch (error) {
+      this.logger.error(`Error in screendumpDirect: ${error.message}`);
+      throw error;
+    } finally {
+      // Clean up the temporary file
+      try {
+        await fs.unlink(tmpFile);
+      } catch (unlinkError) {
+        // Ignore if file doesn't exist
+        if (!unlinkError.message.includes('ENOENT')) {
+          this.logger.warn(
+            `Failed to remove temporary screenshot file ${tmpFile}: ${unlinkError.message}`,
+          );
+        }
+      }
+    }
   }
 }
