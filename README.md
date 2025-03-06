@@ -18,6 +18,12 @@ Bytebot provides a complete, self-contained environment for developing and deplo
 - **Pre-installed Tools**: Comes with Chrome and other essential tools pre-installed
 - **Cross-Platform**: Works on any system that supports Docker
 
+## Computer Use Models and Agent Development
+
+Bytebot provides the infrastructure for computer use agents, but the intelligence driving these agents can come from various sources. Developers have complete flexibility in how they build and deploy their agents.
+
+![Bytebot Architecture Diagram](bytebot-diagram.png)
+
 ## Desktop Environment
 
 ### Default Desktop Image
@@ -137,10 +143,10 @@ The Bytebot API provides a comprehensive set of endpoints for controlling the vi
 
 ### System Information
 
-| Endpoint           | Method | Parameters | Description                                        |
-| ------------------ | ------ | ---------- | -------------------------------------------------- |
-| `/screenshot`      | GET    | None       | Captures a screenshot of the current desktop state |
-| `/cursor-position` | GET    | None       | Returns the current cursor position as `{ x, y }`  |
+| Endpoint           | Method | Parameters | Description                                                                                                                  |
+| ------------------ | ------ | ---------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `/screenshot`      | GET    | None       | Captures a screenshot of the current desktop state, returns a base64 encoded string as `{ "image": "base64-encoded-image" }` |
+| `/cursor-position` | GET    | None       | Returns the current cursor position as `{ x, y }`                                                                            |
 
 ### Example Usage
 
@@ -248,12 +254,6 @@ bytebot/
 ### Extending the Hypervisor
 
 The hypervisor is built with NestJS, making it easy to extend with additional functionality. See the hypervisor directory for more details.
-
-## Computer Use Models and Agent Development
-
-Bytebot provides the infrastructure for computer use agents, but the intelligence driving these agents can come from various sources. Developers have complete flexibility in how they build and deploy their agents.
-
-![Bytebot Architecture Diagram](bytebot-diagram.png)
 
 ### Local Development
 
