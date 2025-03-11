@@ -165,6 +165,94 @@ curl -X POST http://localhost:3000/computer-use/type \
 curl -X GET http://localhost:3000/computer-use/screenshot > screenshot.png
 ```
 
+## MCP Protocol (WebSocket)
+
+In addition to the REST API, Bytebot provides an MCP (Machine Context Protocol) server through WebSockets. This allows for real-time control and feedback for agents interacting with the virtual environment.
+
+### Connection
+
+Connect to the MCP server using a standard MCP client at:
+
+```
+mcp://localhost:3000/mcp
+```
+
+### Using with Claude Desktop
+
+To connect Claude desktop client to your Bytebot MCP server, add the following configuration to your Claude desktop settings.json file:
+
+```json
+{
+  "tools": [
+    {
+      "name": "Bytebot",
+      "url": "mcp://localhost:3000/mcp",
+      "description": "Control the virtual computer through keyboard, mouse, and screen interactions",
+      "icon": "🖥️"
+    }
+  ]
+}
+```
+
+### Standard MCP Implementation
+
+Our MCP server follows the official [Model Context Protocol](https://modelcontextprotocol.io/) specification, providing a standardized way for LLMs and agents to interact with the computer-use API. The implementation uses the official TypeScript MCP SDK to ensure best practices and compatibility with MCP clients.
+
+The server exposes:
+
+- **Tools**: Action-oriented functions for controlling mouse and keyboard
+- **Resources**: Data that can be accessed, such as screenshots and cursor position
+
+### Supported Tools
+
+The MCP server exposes all the functionality of the computer-use API as tools:
+
+| Tool Name         | Description                        | Inputs                                                                                                   |
+| ----------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `key`             | Sends a single key event           | `key`: String representing the key (e.g., "enter", "a")                                                  |
+| `type`            | Types text with optional delay     | `text`: String to type<br>`delayMs`: Optional delay between keys                                         |
+| `mouse_move`      | Moves mouse cursor to coordinates  | `x`: X coordinate<br>`y`: Y coordinate                                                                   |
+| `left_click`      | Performs a left mouse click        | None                                                                                                     |
+| `right_click`     | Performs a right mouse click       | None                                                                                                     |
+| `middle_click`    | Performs a middle mouse click      | None                                                                                                     |
+| `double_click`    | Performs a double-click            | `delayMs`: Optional delay between clicks                                                                 |
+| `left_click_drag` | Performs a drag operation          | `startX`, `startY`: Start coordinates<br>`endX`, `endY`: End coordinates<br>`holdMs`: Optional hold time |
+| `scroll`          | Scrolls vertically or horizontally | `amount`: Scroll amount<br>`axis`: "v" (vertical) or "h" (horizontal)                                    |
+
+### Available Resources
+
+| Resource URI           | Description                      | Type              |
+| ---------------------- | -------------------------------- | ----------------- |
+| `screenshot://current` | Gets the current screenshot      | Base64 image data |
+| `cursor://position`    | Gets the current cursor position | `{x, y}` object   |
+
+### Using with MCP Clients
+
+To interact with the MCP server, you can use any standard MCP client library. For example, with the official TypeScript SDK:
+
+```javascript
+import { MCPClient } from "@modelcontextprotocol/sdk";
+
+// Connect to the MCP server
+const client = new MCPClient("mcp://localhost:3000/mcp");
+
+// Use a tool
+const result = await client.useTool("mouse_move", {
+  x: 100,
+  y: 200,
+});
+
+// Access a resource
+const screenshot = await client.getResource("screenshot://current");
+```
+
+### Benefits of Using the MCP Protocol
+
+- **Standardized Interface**: MCP provides a consistent interface for AI agents to interact with applications
+- **Secure**: Built with security in mind, following best practices for LLM interactions
+- **Discoverable**: MCP clients can automatically discover available tools and resources
+- **Extensible**: Easily extend with new tools and resources as needed
+
 ## Supported Keys
 
 Bytebot supports a wide range of keyboard inputs through the QEMU key codes. Here are the supported key categories:
