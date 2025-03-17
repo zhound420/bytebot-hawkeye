@@ -5,9 +5,8 @@ FROM alpine:3.19
 # Copy the QEMU VM Disk Image
 # ---------------------------
 # Download the QEMU image and set proper permissions
-RUN wget https://bytebot-desktop-images.s3.us-east-2.amazonaws.com/bytebot-lubuntu-22.04.5.qcow2 -P /opt/ && \
-    chmod 777 /opt/bytebot-lubuntu-22.04.5.qcow2 
-
+RUN wget https://bytebot-desktop-images.s3.us-east-2.amazonaws.com/bytebot-lubuntu-22.04.5-compressed.qcow2 -O /opt/bytebot-os-image.qcow2 && \
+    chmod 777 /opt/bytebot-os-image.qcow2
 # Install required packages:
 # - nodejs and npm for the hypervisor app
 # - qemu-system-x86_64 for running the Ubuntu VM with VNC
