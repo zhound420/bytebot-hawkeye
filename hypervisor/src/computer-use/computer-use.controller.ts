@@ -14,7 +14,7 @@ export class ComputerUseController {
 
   constructor(private readonly computerUseService: ComputerUseService) {}
 
-  @Post('action')
+  @Post()
   async action(@Body() params: ComputerAction) {
     try {
       this.logger.log(`Computer action request: ${JSON.stringify(params)}`);
