@@ -1,7 +1,98 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { QemuService } from '../qemu/qemu.service';
 
+export type Coordinates = { x: number; y: number };
 export type Button = 'left' | 'right' | 'middle';
+export type Press = 'up' | 'down';
+export type Axis = 'vertical' | 'horizontal';
+
+// Define individual computer action types
+export type MoveMouseAction = {
+  action: 'move_mouse';
+  coordinates: Coordinates;
+};
+
+export type TraceMouseAction = {
+  action: 'trace_mouse';
+  path: Coordinates[];
+  holdKeys?: string[];
+};
+
+export type ClickMouseAction = {
+  action: 'click_mouse';
+  coordinates?: Coordinates;
+  button: Button;
+  holdKeys?: string[];
+  numClicks?: number;
+};
+
+export type PressMouseAction = {
+  action: 'press_mouse';
+  coordinates?: Coordinates;
+  button: Button;
+  press: Press;
+};
+
+export type DragMouseAction = {
+  action: 'drag_mouse';
+  path: Coordinates[];
+  button: Button;
+  holdKeys?: string[];
+};
+
+export type ScrollAction = {
+  action: 'scroll';
+  coordinates?: Coordinates;
+  axis: Axis;
+  distance: number;
+  holdKeys?: string[];
+};
+
+export type TypeKeysAction = {
+  action: 'type_keys';
+  keys: string[];
+  delay?: number;
+};
+
+export type PressKeysAction = {
+  action: 'press_keys';
+  keys: string[];
+  press: Press;
+};
+
+export type TypeTextAction = {
+  action: 'type_text';
+  text: string;
+  delay?: number;
+};
+
+export type WaitAction = {
+  action: 'wait';
+  duration: number;
+};
+
+export type ScreenshotAction = {
+  action: 'screenshot';
+};
+
+export type GetCursorPositionAction = {
+  action: 'get_cursor_position';
+};
+
+// Define the union type using the individual action types
+export type ComputerAction =
+  | MoveMouseAction
+  | TraceMouseAction
+  | ClickMouseAction
+  | PressMouseAction
+  | DragMouseAction
+  | ScrollAction
+  | TypeKeysAction
+  | PressKeysAction
+  | TypeTextAction
+  | WaitAction
+  | ScreenshotAction
+  | GetCursorPositionAction;
 
 @Injectable()
 export class ComputerUseService {
@@ -11,144 +102,212 @@ export class ComputerUseService {
 
   constructor(private readonly qemuService: QemuService) {}
 
-  /**
-   * "key": Sends a single key event.
-   * @param key A string representing the key (e.g. "enter", "a", etc.).
-   */
-  async key(key: string): Promise<any> {
-    this.logger.log(`Sending key: ${key}`);
-    return this.qemuService.sendKey(key);
+  async action(params: ComputerAction): Promise<any> {
+    this.logger.log(`Executing computer action: ${params.action}`);
+
+    switch (params.action) {
+      case 'move_mouse': {
+        await this.moveMouse(params as MoveMouseAction);
+        break;
+      }
+      case 'trace_mouse': {
+        await this.traceMouse(params as TraceMouseAction);
+        break;
+      }
+      case 'click_mouse': {
+        await this.clickMouse(params as ClickMouseAction);
+        break;
+      }
+      case 'press_mouse': {
+        await this.pressMouse(params as PressMouseAction);
+        break;
+      }
+      case 'drag_mouse': {
+        await this.dragMouse(params as DragMouseAction);
+        break;
+      }
+
+      case 'scroll': {
+        await this.scroll(params as ScrollAction);
+        break;
+      }
+      case 'type_keys': {
+        await this.typeKeys(params as TypeKeysAction);
+        break;
+      }
+      case 'press_keys': {
+        await this.pressKeys(params as PressKeysAction);
+        break;
+      }
+      case 'type_text': {
+        await this.typeText(params as TypeTextAction);
+        break;
+      }
+      case 'wait': {
+        const waitParams = params as WaitAction;
+        await this.delay(waitParams.duration);
+        break;
+      }
+      case 'screenshot':
+        return this.screenshot();
+
+      case 'get_cursor_position':
+        return this.cursor_position();
+
+      default:
+        throw new Error(
+          `Unsupported computer action: ${(params as any).action}`,
+        );
+    }
   }
 
-  /**
-   * "type": Simulates typing text by sending each character with a small delay.
-   * @param text The text to type.
-   * @param delayMs Optional delay in milliseconds between keystrokes (default 100ms).
-   */
-  async type(text: string, delayMs: number = 100): Promise<void> {
-    this.logger.log(`Typing text: ${text}`);
-    await this.qemuService.typeText(text, delayMs);
+  private async moveMouse(action: MoveMouseAction): Promise<void> {
+    await this.qemuService.mouseMoveEvent(action.coordinates);
   }
 
-  /**
-   * "mouse_move": Moves the mouse pointer to the specified coordinates.
-   * @param x The absolute x-coordinate.
-   * @param y The absolute y-coordinate.
-   */
-  async mouse_move(x: number, y: number): Promise<any> {
-    this.logger.log(`Moving mouse to: (${x}, ${y})`);
-    this.cursorPosition = { x, y };
-    return this.qemuService.mouseMove(x, y);
+  private async traceMouse(action: TraceMouseAction): Promise<void> {
+    const { path, holdKeys } = action;
+
+    // Move to the first coordinate
+    await this.qemuService.mouseMoveEvent(path[0]);
+
+    // Hold keys if provided
+    if (holdKeys) {
+      await this.qemuService.holdKeys(holdKeys, true);
+    }
+
+    // Move to each coordinate in the path
+    for (const coordinates of path) {
+      await this.qemuService.mouseMoveEvent(coordinates);
+    }
+
+    // Release hold keys
+    if (holdKeys) {
+      await this.qemuService.holdKeys(holdKeys, false);
+    }
   }
 
-  /**
-   * "left_click": Performs a left mouse click at the current cursor position.
-   */
-  async left_click(): Promise<void> {
-    this.logger.log(
-      `Performing left click at (${this.cursorPosition.x}, ${this.cursorPosition.y})`,
-    );
-    await this.qemuService.mouseClick('left');
+  private async clickMouse(action: ClickMouseAction): Promise<void> {
+    const { coordinates, button, holdKeys, numClicks } = action;
+
+    // Move to coordinates if provided
+    if (coordinates) {
+      await this.qemuService.mouseMoveEvent(coordinates);
+    }
+
+    // Hold keys if provided
+    if (holdKeys) {
+      await this.qemuService.holdKeys(holdKeys, true);
+    }
+
+    // Perform clicks
+    if (numClicks && numClicks > 1) {
+      // Perform multiple clicks
+      for (let i = 0; i < numClicks; i++) {
+        await this.qemuService.mouseButtonEvent(button, true);
+        await this.qemuService.mouseButtonEvent(button, false);
+      }
+    } else {
+      // Perform a single click
+      await this.qemuService.mouseButtonEvent(button, true);
+      await this.qemuService.mouseButtonEvent(button, false);
+    }
+
+    // Release hold keys
+    if (holdKeys) {
+      await this.qemuService.holdKeys(holdKeys, false);
+    }
   }
 
-  /**
-   * "left_click_drag": Clicks, holds, moves, and then releases the left mouse button.
-   * @param startX Starting x-coordinate.
-   * @param startY Starting y-coordinate.
-   * @param endX Ending x-coordinate.
-   * @param endY Ending y-coordinate.
-   * @param holdMs Optional delay (in ms) to hold the click before dragging (default 100ms).
-   */
-  async left_click_drag(
-    startX: number,
-    startY: number,
-    endX: number,
-    endY: number,
-    holdMs: number = 100,
-  ): Promise<void> {
-    this.logger.log(
-      `Performing left click drag from (${startX}, ${startY}) to (${endX}, ${endY})`,
-    );
-    // Move to the starting position.
-    await this.mouse_move(startX, startY);
-    // Press the left button down.
-    await this.qemuService.mouseButtonEvent('left', true);
-    // Hold for a moment.
-    await this.delay(holdMs);
-    // Drag to the ending position.
-    await this.mouse_move(endX, endY);
-    // Release the left button.
-    await this.qemuService.mouseButtonEvent('left', false);
-    // Update the tracked cursor position.
-    this.cursorPosition = { x: endX, y: endY };
+  private async pressMouse(action: PressMouseAction): Promise<void> {
+    const { coordinates, button, press } = action;
+
+    // Move to coordinates if provided
+    if (coordinates) {
+      await this.qemuService.mouseMoveEvent(coordinates);
+    }
+
+    // Perform press
+    if (press === 'down') {
+      await this.qemuService.mouseButtonEvent(button, true);
+    } else {
+      await this.qemuService.mouseButtonEvent(button, false);
+    }
   }
 
-  /**
-   * "right_click": Performs a right mouse click at the current cursor position.
-   */
-  async right_click(): Promise<void> {
-    this.logger.log(
-      `Performing right click at (${this.cursorPosition.x}, ${this.cursorPosition.y})`,
-    );
-    await this.qemuService.mouseClick('right');
+  private async dragMouse(action: DragMouseAction): Promise<void> {
+    const { path, button, holdKeys } = action;
+
+    // Move to the first coordinate
+    await this.qemuService.mouseMoveEvent(path[0]);
+
+    // Hold keys if provided
+    if (holdKeys) {
+      await this.qemuService.holdKeys(holdKeys, true);
+    }
+
+    // Perform drag
+    await this.qemuService.mouseButtonEvent(button, true);
+    for (const coordinates of path) {
+      await this.qemuService.mouseMoveEvent(coordinates);
+    }
+    await this.qemuService.mouseButtonEvent(button, false);
+
+    // Release hold keys
+    if (holdKeys) {
+      await this.qemuService.holdKeys(holdKeys, false);
+    }
   }
 
-  /**
-   * "middle_click": Performs a middle mouse click at the current cursor position.
-   */
-  async middle_click(): Promise<void> {
-    this.logger.log(
-      `Performing middle click at (${this.cursorPosition.x}, ${this.cursorPosition.y})`,
-    );
-    await this.qemuService.mouseClick('middle');
+  private async scroll(action: ScrollAction): Promise<void> {
+    const { coordinates, axis, distance, holdKeys } = action;
+
+    // Move to coordinates if provided
+    if (coordinates) {
+      await this.qemuService.mouseMoveEvent(coordinates);
+    }
+
+    // Hold keys if provided
+    if (holdKeys) {
+      await this.qemuService.holdKeys(holdKeys, true);
+    }
+
+    // Perform scroll
+    await this.qemuService.mouseWheelEvent(axis, distance);
+
+    // Release hold keys
+    if (holdKeys) {
+      await this.qemuService.holdKeys(holdKeys, false);
+    }
   }
 
-  /**
-   * "double_click": Performs two consecutive left clicks with a short delay.
-   * @param delayMs Optional delay between clicks (default 100ms).
-   */
-  async double_click(delayMs: number = 100): Promise<void> {
-    this.logger.log(
-      `Performing double click at (${this.cursorPosition.x}, ${this.cursorPosition.y})`,
-    );
-    await this.left_click();
-    await this.delay(delayMs);
-    await this.left_click();
+  private async typeKeys(action: TypeKeysAction): Promise<void> {
+    const { keys, delay } = action;
+    await this.qemuService.sendKeys(keys, delay);
   }
 
-  /**
-   * "screenshot": Captures a screenshot and returns it as a Base64 encoded string.
-   */
-  async screenshot(): Promise<{ image: string }> {
+  private async pressKeys(action: PressKeysAction): Promise<void> {
+    const { keys, press } = action;
+    await this.qemuService.holdKeys(keys, press === 'down');
+  }
+
+  private async typeText(action: TypeTextAction): Promise<void> {
+    const { text, delay } = action;
+    await this.qemuService.typeText(text, delay);
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  private async screenshot(): Promise<{ image: string }> {
     this.logger.log(`Taking screenshot`);
     const buffer = await this.qemuService.screendump();
     return { image: `data:image/png;base64,${buffer.toString('base64')}` };
   }
 
-  /**
-   * "cursor_position": Returns the last known cursor position.
-   */
-  async cursor_position(): Promise<{ x: number; y: number }> {
-    this.logger.log(
-      `Returning cursor position: (${this.cursorPosition.x}, ${this.cursorPosition.y})`,
-    );
-    return this.cursorPosition;
-  }
-
-  /**
-   * "scroll": Performs a mouse wheel scroll action.
-   * @param amount The amount to scroll. Positive values scroll up, negative values scroll down.
-   * @param axis Optional axis to scroll on. 'v' for vertical (default), 'h' for horizontal.
-   */
-  async scroll(amount: number, axis: 'v' | 'h' = 'v'): Promise<any> {
-    this.logger.log(
-      `Scrolling ${axis === 'v' ? 'vertically' : 'horizontally'} by ${amount}`,
-    );
-    return this.qemuService.mouseWheel(axis, amount);
-  }
-
-  // Helper: a simple delay.
-  private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+  private async cursor_position(): Promise<{ x: number; y: number }> {
+    this.logger.log(`Getting cursor position`);
+    return { x: this.cursorPosition.x, y: this.cursorPosition.y };
   }
 }

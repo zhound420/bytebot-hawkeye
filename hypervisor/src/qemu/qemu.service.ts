@@ -2,8 +2,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { QmpClientService } from './qmp-client.service';
 import { promises as fs } from 'fs';
-import * as os from 'os';
-import * as path from 'path';
 
 /**
  * Enum representing QEMU key codes as defined in the QMP reference.
@@ -118,37 +116,57 @@ export class QemuService {
    *
    * @param key A string representing the key events.
    */
-  async sendKey(key: string): Promise<any> {
-    this.logger.log(`Sending key: ${key}`);
-    const command = {
-      execute: 'send-key',
-      arguments: {
-        keys: [{ type: 'qcode', data: key }],
-      },
-    };
+  async sendKeys(keys: string[], delay: number = 100): Promise<any> {
+    this.logger.log(`Sending keys: ${keys}`);
+
     try {
+      const command = {
+        execute: 'send-key',
+        arguments: {
+          keys: keys.map((key) => ({
+            type: 'qcode',
+            data: this.validateKey(key),
+          })),
+          'hold-time': delay,
+        },
+      };
       return await this.qmpClient.sendCommand(command);
     } catch (error) {
-      throw new Error(`Failed to send key '${key}': ${error.message}`);
+      throw new Error(`Failed to send keys: ${error.message}`);
     }
   }
 
-  /**
-   * Sends a sequence of key presses to the VM.
-   *
-   * @param keys An array of QKeyCode values to send in sequence.
-   * @param delayMs Optional delay between key presses in milliseconds.
-   */
-  async sendKeys(keys: QKeyCode[], delayMs: number = 0): Promise<void> {
-    this.logger.log(`Sending key sequence: ${keys.join(', ')}`);
+  async holdKeys(keys: string[], down: boolean): Promise<any> {
+    try {
+      const command = {
+        execute: 'input-send-event',
+        arguments: {
+          events: [
+            keys.map((key) => ({
+              type: 'key',
+              data: {
+                down,
+                key: { type: 'qcode', data: this.validateKey(key) },
+              },
+            })),
+          ],
+        },
+      };
 
-    for (const key of keys) {
-      await this.sendKey(key);
-
-      if (delayMs > 0 && keys.indexOf(key) < keys.length - 1) {
-        await new Promise((resolve) => setTimeout(resolve, delayMs));
-      }
+      return await this.qmpClient.sendCommand(command);
+    } catch (error) {
+      throw new Error(`Failed to hold keys: ${error.message}`);
     }
+  }
+
+  private validateKey(key: string): QKeyCode {
+    const qkeyCodes: string[] = Object.values(QKeyCode);
+
+    if (!qkeyCodes.includes(key)) {
+      throw new Error(`Invalid key: ${key}`);
+    }
+
+    return key as QKeyCode;
   }
 
   /**
@@ -166,14 +184,12 @@ export class QemuService {
 
       if (keyInfo) {
         if (keyInfo.withShift) {
-          // Press shift key
-          await this.sendKey(QKeyCode.LEFT_SHIFT);
-          // Press the character key
-          await this.sendKey(keyInfo.keyCode);
-          // Release shift key
-          await this.sendKey(QKeyCode.LEFT_SHIFT);
+          // Hold shift key, press the character key, and release shift key
+          await this.holdKeys([QKeyCode.LEFT_SHIFT], true);
+          await this.sendKeys([keyInfo.keyCode]);
+          await this.holdKeys([QKeyCode.LEFT_SHIFT], false);
         } else {
-          await this.sendKey(keyInfo.keyCode);
+          await this.sendKeys([keyInfo.keyCode]);
         }
 
         if (delayMs > 0 && i < text.length - 1) {
@@ -255,121 +271,28 @@ export class QemuService {
   }
 
   /**
-   * Sends a key combination (e.g., "ctrl+alt+delete") to the VM.
-   *
-   * @param combination A string representing the key combination (e.g., "ctrl+alt+delete").
-   */
-  async sendKeyCombination(combination: string): Promise<void> {
-    const keys = combination.toLowerCase().split('+');
-    const keySequence: string[] = [];
-
-    // Map key names to QKeyCodes
-    for (const key of keys) {
-      switch (key.trim()) {
-        case 'ctrl':
-          keySequence.push(QKeyCode.LEFT_CTRL);
-          break;
-        case 'alt':
-          keySequence.push(QKeyCode.LEFT_ALT);
-          break;
-        case 'shift':
-          keySequence.push(QKeyCode.LEFT_SHIFT);
-          break;
-        case 'meta':
-        case 'cmd':
-        case 'win':
-          keySequence.push(QKeyCode.LEFT_META);
-          break;
-        case 'esc':
-          keySequence.push(QKeyCode.ESC);
-          break;
-        case 'delete':
-        case 'del':
-          keySequence.push(QKeyCode.DELETE);
-          break;
-        case 'backspace':
-          keySequence.push(QKeyCode.BACKSPACE);
-          break;
-        case 'enter':
-        case 'return':
-          keySequence.push(QKeyCode.ENTER);
-          break;
-        case 'tab':
-          keySequence.push(QKeyCode.TAB);
-          break;
-        case 'space':
-          keySequence.push(QKeyCode.SPACE);
-          break;
-        case 'up':
-          keySequence.push(QKeyCode.UP);
-          break;
-        case 'down':
-          keySequence.push(QKeyCode.DOWN);
-          break;
-        case 'left':
-          keySequence.push(QKeyCode.LEFT);
-          break;
-        case 'right':
-          keySequence.push(QKeyCode.RIGHT);
-          break;
-        default:
-          // Handle function keys (f1-f12)
-          if (/^f([1-9]|1[0-2])$/.test(key)) {
-            const fKey = `F${key.substring(1)}` as keyof typeof QKeyCode;
-            keySequence.push(QKeyCode[fKey]);
-          }
-          // Handle single character keys
-          else if (key.length === 1) {
-            const keyInfo = this.charToKeyInfo(key);
-            if (keyInfo) {
-              keySequence.push(keyInfo.keyCode);
-            } else {
-              this.logger.warn(`Unknown key in combination: ${key}`);
-            }
-          } else {
-            this.logger.warn(`Unknown key in combination: ${key}`);
-          }
-      }
-    }
-
-    this.logger.log(
-      `Sending key combination: ${combination} (${keySequence.join(', ')})`,
-    );
-
-    // Press all keys in sequence
-    for (const key of keySequence) {
-      await this.sendKey(key);
-    }
-
-    // Release all keys in reverse order
-    for (let i = keySequence.length - 1; i >= 0; i--) {
-      await this.sendKey(keySequence[i]);
-    }
-  }
-
-  /**
    * Moves the mouse pointer to the specified absolute coordinates.
    * @param x The absolute x-coordinate.
    * @param y The absolute y-coordinate.
    */
-  async mouseMove(x: number, y: number): Promise<any> {
+  async mouseMoveEvent({ x, y }: { x: number; y: number }): Promise<any> {
     this.logger.log(`Moving mouse to coordinates: (${x}, ${y})`);
-    const command = {
-      execute: 'input-send-event',
-      arguments: {
-        events: [
-          {
-            type: 'abs',
-            data: { axis: 'x', value: this.scaleXCoordinate(x) },
-          },
-          {
-            type: 'abs',
-            data: { axis: 'y', value: this.scaleYCoordinate(y) },
-          },
-        ],
-      },
-    };
     try {
+      const command = {
+        execute: 'input-send-event',
+        arguments: {
+          events: [
+            {
+              type: 'abs',
+              data: { axis: 'x', value: this.scaleXCoordinate(x) },
+            },
+            {
+              type: 'abs',
+              data: { axis: 'y', value: this.scaleYCoordinate(y) },
+            },
+          ],
+        },
+      };
       return await this.qmpClient.sendCommand(command);
     } catch (error) {
       throw new Error(
@@ -415,33 +338,15 @@ export class QemuService {
   }
 
   /**
-   * Performs a complete mouse click (press and release) with an optional delay between events.
-   *
-   * @param button One of 'left', 'right', or 'middle'.
-   * @param delayMs Delay in milliseconds between press and release (default is 100ms).
-   */
-  async mouseClick(
-    button: 'left' | 'right' | 'middle',
-    delayMs: number = 100,
-  ): Promise<any> {
-    try {
-      await this.mouseButtonEvent(button, true);
-      await new Promise((resolve) => setTimeout(resolve, delayMs));
-      return await this.mouseButtonEvent(button, false);
-    } catch (error) {
-      throw new Error(
-        `Failed to perform ${button} mouse click: ${error.message}`,
-      );
-    }
-  }
-
-  /**
    * Sends a mouse wheel event to the VM.
    *
-   * @param axis Either 'v' for vertical or 'h' for horizontal scrolling
+   * @param axis Either 'vertical' for vertical or 'horizontal' for horizontal scrolling
    * @param value Positive values scroll up/right, negative values scroll down/left
    */
-  async mouseWheel(axis: 'v' | 'h', value: number): Promise<any> {
+  async mouseWheelEvent(
+    axis: 'vertical' | 'horizontal',
+    value: number,
+  ): Promise<any> {
     const command = {
       execute: 'input-send-event',
       arguments: {
@@ -449,9 +354,9 @@ export class QemuService {
           {
             type: 'rel',
             data: {
-              axis: axis === 'v' ? 'wheel' : 'hwheel',
+              axis: axis === 'vertical' ? 'wheel' : 'hwheel',
               value:
-                axis === 'v'
+                axis === 'vertical'
                   ? this.scaleYCoordinate(value)
                   : this.scaleXCoordinate(value),
             },
