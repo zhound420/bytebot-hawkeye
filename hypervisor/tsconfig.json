@@ -16,9 +16,6 @@
     "forceConsistentCasingInFileNames": true,
     "noImplicitAny": false,
     "strictBindCallApply": false,
-    "noFallthroughCasesInSwitch": false,
-    "paths": {
-      "@modelcontextprotocol/sdk": ["./src/mcp/types/modelcontextprotocol__sdk.d.ts"]
-    }
+    "noFallthroughCasesInSwitch": false
   }
 }
