@@ -118,51 +118,85 @@ docker run -d --privileged \
 
 The hypervisor exposes a REST API on port 3000 that allows you to programmatically control the desktop environment.
 
-## Computer Use REST API
+## Computer Use API
 
-The Bytebot API provides a comprehensive set of endpoints for controlling the virtual desktop environment. All endpoints are available at `http://localhost:3000/computer-use`.
+Bytebot provides a unified computer action API that allows granular control over all aspects of the virtual desktop environment through a single endpoint, `http://localhost:3000/computer-use/action`.
 
-### Keyboard Control
+### Unified Endpoint
 
-| Endpoint | Method | Parameters                                | Description                                                        |
-| -------- | ------ | ----------------------------------------- | ------------------------------------------------------------------ |
-| `/key`   | POST   | `{ "key": "string" }`                     | Sends a single key event (e.g., "a", "enter", "ctrl")              |
-| `/type`  | POST   | `{ "text": "string", "delayMs": number }` | Types the specified text with an optional delay between keystrokes |
+| Endpoint  | Method | Description                                    |
+| --------- | ------ | ---------------------------------------------- |
+| `/action` | POST   | Unified endpoint for all computer interactions |
 
-### Mouse Control
+### Available Actions
 
-| Endpoint           | Method | Parameters                                                                                 | Description                                                        |
-| ------------------ | ------ | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------ |
-| `/mouse-move`      | POST   | `{ "x": number, "y": number }`                                                             | Moves the mouse cursor to the specified coordinates                |
-| `/left-click`      | POST   | None                                                                                       | Performs a left mouse click at the current cursor position         |
-| `/right-click`     | POST   | None                                                                                       | Performs a right mouse click at the current cursor position        |
-| `/middle-click`    | POST   | None                                                                                       | Performs a middle mouse click at the current cursor position       |
-| `/double-click`    | POST   | `{ "delayMs": number }`                                                                    | Performs a double-click with optional delay between clicks         |
-| `/left-click-drag` | POST   | `{ "startX": number, "startY": number, "endX": number, "endY": number, "holdMs": number }` | Performs a drag operation from start to end coordinates            |
-| `/scroll`          | POST   | `{ "amount": number, "axis": "v" or "h" }`                                                 | Scrolls vertically (v) or horizontally (h) by the specified amount |
+The unified API supports the following actions:
 
-### System Information
-
-| Endpoint           | Method | Parameters | Description                                                                                                                  |
-| ------------------ | ------ | ---------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `/screenshot`      | GET    | None       | Captures a screenshot of the current desktop state, returns a base64 encoded string as `{ "image": "base64-encoded-image" }` |
-| `/cursor-position` | GET    | None       | Returns the current cursor position as `{ x, y }`                                                                            |
+| Action                | Description                                        | Parameters                                                |
+| --------------------- | -------------------------------------------------- | --------------------------------------------------------- | --------------------------------- | ------------------------------- |
+| `move_mouse`          | Move the mouse cursor to a specific position       | `coordinates: { x: number, y: number }`                   |
+| `click_mouse`         | Perform a mouse click                              | `coordinates?: { x: number, y: number }`, `button: 'left' | 'right'                           | 'middle'`, `numClicks?: number` |
+| `drag_mouse`          | Click and drag the mouse from one point to another | `path: { x: number, y: number }[]`, `button: 'left'       | 'right'                           | 'middle'`                       |
+| `scroll`              | Scroll vertically or horizontally                  | `coordinates?: { x, y }`, `axis: 'vertical'               | 'horizontal'`, `distance: number` |
+| `type_keys`           | Type one or more keyboard keys                     | `keys: string[]`, `delay?: number`                        |
+| `press_keys`          | Press one or more keyboard keys                    | `keys: string[]`, `press: 'down'                          | 'up'                              | 'press'`                        |
+| `type_text`           | Type a text string                                 | `text: string`, `delay?: number`                          |
+| `wait`                | Wait for a specified duration                      | `duration: number` (milliseconds)                         |
+| `screenshot`          | Capture a screenshot of the desktop                | None                                                      |
+| `get_cursor_position` | Get the current cursor position                    | None                                                      |
 
 ### Example Usage
 
 ```bash
 # Move the mouse to coordinates (100, 200)
-curl -X POST http://localhost:3000/computer-use/mouse-move \
+curl -X POST http://localhost:3000/computer-use/action \
   -H "Content-Type: application/json" \
-  -d '{"x": 100, "y": 200}'
+  -d '{"action": "move_mouse", "coordinates": {"x": 100, "y": 200}}'
 
-# Type text
-curl -X POST http://localhost:3000/computer-use/type \
+# Click the mouse with the left button
+curl -X POST http://localhost:3000/computer-use/action \
   -H "Content-Type: application/json" \
-  -d '{"text": "Hello, Bytebot!", "delayMs": 50}'
+  -d '{"action": "click_mouse", "button": "left"}'
+
+# Type text with a 50ms delay between keystrokes
+curl -X POST http://localhost:3000/computer-use/action \
+  -H "Content-Type: application/json" \
+  -d '{"action": "type_text", "text": "Hello, Bytebot!", "delay": 50}'
 
 # Take a screenshot
-curl -X GET http://localhost:3000/computer-use/screenshot > screenshot.png
+curl -X POST http://localhost:3000/computer-use/action \
+  -H "Content-Type: application/json" \
+  -d '{"action": "screenshot"}'
+
+# Double-click at specific coordinates
+curl -X POST http://localhost:3000/computer-use/action \
+  -H "Content-Type: application/json" \
+  -d '{"action": "click_mouse", "coordinates": {"x": 150, "y": 250}, "button": "left", "numClicks": 2}'
+
+# Press and hold multiple keys simultaneously (e.g., Alt+Tab)
+curl -X POST http://localhost:3000/computer-use/action \
+  -H "Content-Type: application/json" \
+  -d '{"action": "press_keys", "keys": ["alt", "tab"], "press": "down"}'
+
+# Release the held keys
+curl -X POST http://localhost:3000/computer-use/action \
+  -H "Content-Type: application/json" \
+  -d '{"action": "press_keys", "keys": ["alt", "tab"], "press": "up"}'
+
+# Drag from one position to another
+curl -X POST http://localhost:3000/computer-use/action \
+  -H "Content-Type: application/json" \
+  -d '{"action": "drag_mouse", "path": [{"x": 100, "y": 100}, {"x": 200, "y": 200}], "button": "left"}'
+
+# Get the current cursor position
+curl -X POST http://localhost:3000/computer-use/action \
+  -H "Content-Type: application/json" \
+  -d '{"action": "get_cursor_position"}'
+
+# Wait for 2 seconds
+curl -X POST http://localhost:3000/computer-use/action \
+  -H "Content-Type: application/json" \
+  -d '{"action": "wait", "duration": 2000}'
 ```
 
 ## Supported Keys
@@ -211,18 +245,18 @@ Bytebot supports a wide range of keyboard inputs through the QEMU key codes. Her
 
 ### Key Combinations
 
-You can send key combinations by using the `/key` endpoint with special syntax:
+You can send key combinations by using the `/action` endpoint with special syntax:
 
 ```bash
 # Send Ctrl+C
-curl -X POST http://localhost:3000/computer-use/key \
+curl -X POST http://localhost:3000/computer-use/action \
   -H "Content-Type: application/json" \
-  -d '{"key": "ctrl-c"}'
+  -d '{"action": "type_keys", "keys": ["ctrl", "c"]}'
 
 # Send Alt+Tab
-curl -X POST http://localhost:3000/computer-use/key \
+curl -X POST http://localhost:3000/computer-use/action \
   -H "Content-Type: application/json" \
-  -d '{"key": "alt-tab"}'
+  -d '{"action": "type_keys", "keys": ["alt", "tab"]}'
 ```
 
 ## Architecture
@@ -389,11 +423,11 @@ from PIL import Image
 import io
 import anthropic
 
-# Bytebot API base URL
-BYTEBOT_API = "http://localhost:3000/computer-use"
+# Bytebot API URL
+BYTEBOT_API = "http://localhost:3000/computer-use/action"
 
 # Get screenshot
-response = requests.get(f"{BYTEBOT_API}/screenshot")
+response = requests.get(f"{BYTEBOT_API}", params={"action": "screenshot"})
 screenshot = Image.open(io.BytesIO(response.content))
 
 # Convert to base64 for Claude
@@ -423,8 +457,7 @@ if "click" in action.lower():
     # Extract coordinates from Claude's response
     # This is a simplified example
     x, y = 100, 200  # Replace with actual parsing
-    requests.post(f"{BYTEBOT_API}/mouse-move", json={"x": x, "y": y})
-    requests.post(f"{BYTEBOT_API}/left-click")
+    requests.post(f"{BYTEBOT_API}/action", json={"action": "click_mouse", "coordinates": {"x": x, "y": y}})
 ```
 
 #### JavaScript/TypeScript Example
@@ -433,12 +466,13 @@ if "click" in action.lower():
 import axios from "axios";
 import { OpenAI } from "openai";
 
-const BYTEBOT_API = "http://localhost:3000/computer-use";
+const BYTEBOT_API = "http://localhost:3000/computer-use/action";
 const openai = new OpenAI();
 
 async function runAgent() {
   // Get screenshot
-  const screenshotResponse = await axios.get(`${BYTEBOT_API}/screenshot`, {
+  const screenshotResponse = await axios.get(`${BYTEBOT_API}`, {
+    params: { action: "screenshot" },
     responseType: "arraybuffer",
   });
   const base64Image = Buffer.from(screenshotResponse.data).toString("base64");
@@ -466,9 +500,10 @@ async function runAgent() {
   console.log(`GPT suggests: ${action}`);
 
   // Example action: Type text
-  await axios.post(`${BYTEBOT_API}/type`, {
+  await axios.post(`${BYTEBOT_API}`, {
+    action: "type_text",
     text: "Hello from my JavaScript agent!",
-    delayMs: 50,
+    delay: 50,
   });
 }
 
