@@ -120,81 +120,98 @@ The hypervisor exposes a REST API on port 3000 that allows you to programmatical
 
 ## Computer Use API
 
-Bytebot provides a unified computer action API that allows granular control over all aspects of the virtual desktop environment through a single endpoint, `http://localhost:3000/computer-use/action`.
+Bytebot provides a unified computer action API that allows granular control over all aspects of the virtual desktop environment through a single endpoint, `http://localhost:3000/computer-use`.
 
 ### Unified Endpoint
 
-| Endpoint  | Method | Description                                    |
-| --------- | ------ | ---------------------------------------------- |
-| `/action` | POST   | Unified endpoint for all computer interactions |
+| Endpoint        | Method | Description                                    |
+| --------------- | ------ | ---------------------------------------------- |
+| `/computer-use` | POST   | Unified endpoint for all computer interactions |
 
 ### Available Actions
 
 The unified API supports the following actions:
 
-| Action                | Description                                        | Parameters                                                |
-| --------------------- | -------------------------------------------------- | --------------------------------------------------------- | --------------------------------- | ------------------------------- |
-| `move_mouse`          | Move the mouse cursor to a specific position       | `coordinates: { x: number, y: number }`                   |
-| `click_mouse`         | Perform a mouse click                              | `coordinates?: { x: number, y: number }`, `button: 'left' | 'right'                           | 'middle'`, `numClicks?: number` |
-| `drag_mouse`          | Click and drag the mouse from one point to another | `path: { x: number, y: number }[]`, `button: 'left'       | 'right'                           | 'middle'`                       |
-| `scroll`              | Scroll vertically or horizontally                  | `coordinates?: { x, y }`, `axis: 'vertical'               | 'horizontal'`, `distance: number` |
-| `type_keys`           | Type one or more keyboard keys                     | `keys: string[]`, `delay?: number`                        |
-| `press_keys`          | Press one or more keyboard keys                    | `keys: string[]`, `press: 'down'                          | 'up'                              | 'press'`                        |
-| `type_text`           | Type a text string                                 | `text: string`, `delay?: number`                          |
-| `wait`                | Wait for a specified duration                      | `duration: number` (milliseconds)                         |
-| `screenshot`          | Capture a screenshot of the desktop                | None                                                      |
-| `get_cursor_position` | Get the current cursor position                    | None                                                      |
+| Action                | Description                                        | Parameters                                                                                                                     |
+| --------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `move_mouse`          | Move the mouse cursor to a specific position       | `coordinates: { x: number, y: number }`                                                                                        |
+| `trace_mouse`         | Moves the mouse along a specified path             | `path: { x: number, y: number }[]`, `holdKeys?: string[]`                                                                      |
+| `click_mouse`         | Perform a mouse click                              | `coordinates?: { x: number, y: number }`, `button: 'left' \| 'right' \| 'middle'`, `numClicks?: number`, `holdKeys?: string[]` |
+| `press_mouse`         | Press or release a mouse button                    | `coordinates?: { x: number, y: number }`, `button: 'left' \| 'right' \| 'middle'`, `press: 'down' \| 'up'`                     |
+| `drag_mouse`          | Click and drag the mouse from one point to another | `path: { x: number, y: number }[]`, `button: 'left' \| 'right' \| 'middle'`, `holdKeys?: string[]`                             |
+| `scroll`              | Scroll vertically or horizontally                  | `coordinates?: { x: number, y: number }`, `axis: 'vertical' \| 'horizontal'`, `distance: number`, `holdKeys?: string[]`        |
+| `type_keys`           | Type one or more keyboard keys                     | `keys: string[]`, `delay?: number`                                                                                             |
+| `press_keys`          | Press or release keyboard keys                     | `keys: string[]`, `press: 'down' \| 'up'`                                                                                      |
+| `type_text`           | Type a text string                                 | `text: string`, `delay?: number`                                                                                               |
+| `wait`                | Wait for a specified duration                      | `duration: number` (milliseconds)                                                                                              |
+| `screenshot`          | Capture a screenshot of the desktop                | None                                                                                                                           |
+| `get_cursor_position` | Get the current cursor position                    | None                                                                                                                           |
 
 ### Example Usage
 
 ```bash
 # Move the mouse to coordinates (100, 200)
-curl -X POST http://localhost:3000/computer-use/action \
+curl -X POST http://localhost:3000/computer-use \
   -H "Content-Type: application/json" \
   -d '{"action": "move_mouse", "coordinates": {"x": 100, "y": 200}}'
 
+# Trace mouse movement along a path
+curl -X POST http://localhost:3000/computer-use \
+  -H "Content-Type: application/json" \
+  -d '{"action": "trace_mouse", "path": [{"x": 100, "y": 100}, {"x": 200, "y": 100}, {"x": 200, "y": 200}]}'
+
 # Click the mouse with the left button
-curl -X POST http://localhost:3000/computer-use/action \
+curl -X POST http://localhost:3000/computer-use \
   -H "Content-Type: application/json" \
   -d '{"action": "click_mouse", "button": "left"}'
 
+# Press the mouse button down at specific coordinates
+curl -X POST http://localhost:3000/computer-use \
+  -H "Content-Type: application/json" \
+  -d '{"action": "press_mouse", "coordinates": {"x": 100, "y": 100}, "button": "left", "press": "down"}'
+
+# Release the mouse button
+curl -X POST http://localhost:3000/computer-use \
+  -H "Content-Type: application/json" \
+  -d '{"action": "press_mouse", "button": "left", "press": "up"}'
+
 # Type text with a 50ms delay between keystrokes
-curl -X POST http://localhost:3000/computer-use/action \
+curl -X POST http://localhost:3000/computer-use \
   -H "Content-Type: application/json" \
   -d '{"action": "type_text", "text": "Hello, Bytebot!", "delay": 50}'
 
 # Take a screenshot
-curl -X POST http://localhost:3000/computer-use/action \
+curl -X POST http://localhost:3000/computer-use \
   -H "Content-Type: application/json" \
   -d '{"action": "screenshot"}'
 
 # Double-click at specific coordinates
-curl -X POST http://localhost:3000/computer-use/action \
+curl -X POST http://localhost:3000/computer-use \
   -H "Content-Type: application/json" \
   -d '{"action": "click_mouse", "coordinates": {"x": 150, "y": 250}, "button": "left", "numClicks": 2}'
 
 # Press and hold multiple keys simultaneously (e.g., Alt+Tab)
-curl -X POST http://localhost:3000/computer-use/action \
+curl -X POST http://localhost:3000/computer-use \
   -H "Content-Type: application/json" \
   -d '{"action": "press_keys", "keys": ["alt", "tab"], "press": "down"}'
 
 # Release the held keys
-curl -X POST http://localhost:3000/computer-use/action \
+curl -X POST http://localhost:3000/computer-use \
   -H "Content-Type: application/json" \
   -d '{"action": "press_keys", "keys": ["alt", "tab"], "press": "up"}'
 
 # Drag from one position to another
-curl -X POST http://localhost:3000/computer-use/action \
+curl -X POST http://localhost:3000/computer-use \
   -H "Content-Type: application/json" \
   -d '{"action": "drag_mouse", "path": [{"x": 100, "y": 100}, {"x": 200, "y": 200}], "button": "left"}'
 
 # Get the current cursor position
-curl -X POST http://localhost:3000/computer-use/action \
+curl -X POST http://localhost:3000/computer-use \
   -H "Content-Type: application/json" \
   -d '{"action": "get_cursor_position"}'
 
 # Wait for 2 seconds
-curl -X POST http://localhost:3000/computer-use/action \
+curl -X POST http://localhost:3000/computer-use \
   -H "Content-Type: application/json" \
   -d '{"action": "wait", "duration": 2000}'
 ```
@@ -245,16 +262,16 @@ Bytebot supports a wide range of keyboard inputs through the QEMU key codes. Her
 
 ### Key Combinations
 
-You can send key combinations by using the `/action` endpoint with special syntax:
+You can send key combinations by using the `/computer-use` endpoint with special syntax:
 
 ```bash
 # Send Ctrl+C
-curl -X POST http://localhost:3000/computer-use/action \
+curl -X POST http://localhost:3000/computer-use \
   -H "Content-Type: application/json" \
   -d '{"action": "type_keys", "keys": ["ctrl", "c"]}'
 
 # Send Alt+Tab
-curl -X POST http://localhost:3000/computer-use/action \
+curl -X POST http://localhost:3000/computer-use \
   -H "Content-Type: application/json" \
   -d '{"action": "type_keys", "keys": ["alt", "tab"]}'
 ```
@@ -424,7 +441,7 @@ import io
 import anthropic
 
 # Bytebot API URL
-BYTEBOT_API = "http://localhost:3000/computer-use/action"
+BYTEBOT_API = "http://localhost:3000/computer-use"
 
 # Get screenshot
 response = requests.get(f"{BYTEBOT_API}", params={"action": "screenshot"})
@@ -457,7 +474,7 @@ if "click" in action.lower():
     # Extract coordinates from Claude's response
     # This is a simplified example
     x, y = 100, 200  # Replace with actual parsing
-    requests.post(f"{BYTEBOT_API}/action", json={"action": "click_mouse", "coordinates": {"x": x, "y": y}})
+    requests.post(f"{BYTEBOT_API}", json={"action": "click_mouse", "coordinates": {"x": x, "y": y}})
 ```
 
 #### JavaScript/TypeScript Example
@@ -466,7 +483,7 @@ if "click" in action.lower():
 import axios from "axios";
 import { OpenAI } from "openai";
 
-const BYTEBOT_API = "http://localhost:3000/computer-use/action";
+const BYTEBOT_API = "http://localhost:3000/computer-use";
 const openai = new OpenAI();
 
 async function runAgent() {
