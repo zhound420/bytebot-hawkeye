@@ -141,15 +141,13 @@ export class QemuService {
       const command = {
         execute: 'input-send-event',
         arguments: {
-          events: [
-            keys.map((key) => ({
-              type: 'key',
-              data: {
-                down,
-                key: { type: 'qcode', data: this.validateKey(key) },
-              },
-            })),
-          ],
+          events: keys.map((key) => ({
+            type: 'key',
+            data: {
+              down,
+              key: { type: 'qcode', data: this.validateKey(key) },
+            },
+          })),
         },
       };
 
