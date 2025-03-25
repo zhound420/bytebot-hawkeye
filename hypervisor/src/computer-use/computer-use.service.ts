@@ -303,7 +303,7 @@ export class ComputerUseService {
   private async screenshot(): Promise<{ image: string }> {
     this.logger.log(`Taking screenshot`);
     const buffer = await this.qemuService.screendump();
-    return { image: `data:image/png;base64,${buffer.toString('base64')}` };
+    return { image: `${buffer.toString('base64')}` };
   }
 
   private async cursor_position(): Promise<{ x: number; y: number }> {
