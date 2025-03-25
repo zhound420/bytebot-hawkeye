@@ -52,6 +52,9 @@ model Summary {
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
   messages       Message[]  // One-to-many relationship: one Summary has many Messages
+
+  task      Task        @relation(fields: [taskId], references: [id])
+  taskId    String
   
   // Self-referential relationship
   parentSummary  Summary?   @relation("SummaryHierarchy", fields: [parentId], references: [id])
