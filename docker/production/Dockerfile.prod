@@ -9,6 +9,7 @@ RUN wget https://bytebot-desktop-images.s3.us-east-2.amazonaws.com/bytebot-lubun
     chmod 777 /opt/bytebot-os-image.qcow2
 # Install required packages:
 # - nodejs and npm for the hypervisor app
+# - qemu-img for converting qcow2 to raw
 # - qemu-system-x86_64 for running the Ubuntu VM with VNC
 # - supervisor to run multiple processes
 # - bash for convenience
@@ -52,12 +53,12 @@ RUN npm run build
 # ---------------------------
 # Copy our Supervisor configuration file that starts the Node.js hypervisor
 # and QEMU for the Ubuntu VM.
-COPY ./docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY ./docker/production/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # ---------------------------
 # Expose Ports
 # ---------------------------
-# - Port 3000: Node.js hypervisor (your TypeScript app)
+# - Port 3000: Node.js hypervisor
 # - Port 5900: VNC display for the Ubuntu VM
 # - Port 6080: noVNC client
 # - Port 6081: noVNC HTTP proxy
