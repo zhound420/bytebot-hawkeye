@@ -5,6 +5,7 @@ import {
   OnModuleDestroy,
   Logger,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { createConnection, Socket } from 'net';
 import { EventEmitter } from 'events';
 
@@ -15,11 +16,18 @@ export class QmpClientService
 {
   private socket: Socket | null = null;
   private buffer = '';
-  private readonly socketPath = '/tmp/qmp-sock';
+  // TCP connection parameters instead of Unix socket
+  private host: string;
+  private readonly port = 4444; // Default QMP port, adjust as needed
   private readonly logger = new Logger(QmpClientService.name);
   private isConnecting = false;
   private maxRetries = 30; // 30 retries = 30 seconds total with exponential backoff
   private retryCount = 0;
+
+  constructor(private readonly configService: ConfigService) {
+    super(); // Call to initialize EventEmitter parent class
+    this.host = this.configService.get('QEMU_HOST') || 'localhost';
+  }
 
   async onModuleInit() {
     await this.connectWithRetry();
@@ -28,7 +36,7 @@ export class QmpClientService
   onModuleDestroy() {
     if (this.socket) {
       this.socket.end();
-      this.logger.log('Disconnected from QEMU QMP socket.');
+      this.logger.log('Disconnected from QEMU QMP TCP connection.');
     }
   }
 
@@ -43,7 +51,9 @@ export class QmpClientService
         }
 
         await this.connect();
-        this.logger.log('Connected to QEMU QMP socket.');
+        this.logger.log(
+          `Connected to QEMU QMP TCP at ${this.host}:${this.port}.`,
+        );
         // QEMU sends an initial greeting; now enable QMP capabilities.
         await this.sendCommand({ execute: 'qmp_capabilities' });
         this.logger.log('QMP capabilities enabled.');
@@ -53,7 +63,7 @@ export class QmpClientService
         this.retryCount++;
         if (this.retryCount >= this.maxRetries) {
           this.logger.error(
-            'Failed to connect to QMP socket after maximum retries.',
+            'Failed to connect to QMP TCP after maximum retries.',
           );
           throw error;
         }
@@ -78,11 +88,14 @@ export class QmpClientService
     this.isConnecting = true;
     return new Promise((resolve, reject) => {
       try {
-        // Create new socket instance
-        this.socket = createConnection({ path: this.socketPath }, () => {
-          this.isConnecting = false;
-          resolve();
-        });
+        // Create new socket instance with TCP connection
+        this.socket = createConnection(
+          { host: this.host, port: this.port },
+          () => {
+            this.isConnecting = false;
+            resolve();
+          },
+        );
 
         this.socket.setEncoding('utf8');
         this.socket.on('data', (data: string) => this.handleData(data));
@@ -90,23 +103,26 @@ export class QmpClientService
           this.isConnecting = false;
           this.socket?.removeAllListeners();
           this.socket?.destroy();
-          // Don't log EAGAIN errors during initial connection attempts
+          // Don't log connection refused errors during initial connection attempts
           if (
-            err.message.includes('EAGAIN') &&
+            (err.message.includes('ECONNREFUSED') ||
+              err.message.includes('EAGAIN')) &&
             this.retryCount < this.maxRetries
           ) {
             reject(err);
             return;
           }
-          this.logger.error('QMP socket error:', err);
+          this.logger.error('QMP TCP connection error:', err);
           reject(err);
         });
         this.socket.on('close', () => {
           this.isConnecting = false;
           if (this.retryCount < this.maxRetries) {
-            this.logger.debug('QMP socket closed, will retry connection.');
+            this.logger.debug(
+              'QMP TCP connection closed, will retry connection.',
+            );
           } else {
-            this.logger.warn('QMP socket closed.');
+            this.logger.warn('QMP TCP connection closed.');
           }
         });
       } catch (err) {

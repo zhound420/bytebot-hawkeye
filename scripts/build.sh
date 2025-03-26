@@ -108,8 +108,6 @@ $BUILD_CMD -t "$IMAGE_NAME" -f "$DOCKERFILE" "$PROJECT_ROOT"
 # Check if build was successful
 if [ $? -eq 0 ]; then
     echo "Build completed successfully!"
-    echo "You can run the container using:"
-    echo "docker run -d --privileged -p 3000:3000 -p 5900:5900 -p 6080:6080 -p 6081:6081 $IMAGE_NAME"
 else
     echo "Build failed!"
     exit 1

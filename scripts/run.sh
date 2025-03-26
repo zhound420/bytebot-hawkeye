@@ -6,7 +6,6 @@ PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 # Default values
 PRODUCTION=false
 TAG=""
-QMP_SOCK="/tmp/qmp-sock"
 QCOW_IMAGE="${PROJECT_ROOT}/docker/development/bytebot-os-image.qcow2"
 
 # Help message
@@ -83,13 +82,10 @@ else
         exit 1
     fi
 
-    # Clean up any existing QMP socket
-    echo "Cleaning stale socket at $QMP_SOCK"
-    rm -f "$QMP_SOCK"
-
     # Determine appropriate acceleration
-    if [ "$(uname)" = "Darwin" ]; then
-        # macOS uses hvf for hardware acceleration
+    # Check if hvf is available in QEMU's supported accelerators
+    if qemu-system-x86_64 -accel help 2>&1 | grep -q "hvf"; then
+        # hvf accelerator is supported
         ACCEL="-accel hvf"
     elif [ -e /dev/kvm ]; then
         # Linux with KVM available
@@ -100,18 +96,17 @@ else
     fi
 
     # Start QEMU in the background
-    echo "Starting QEMU with VNC on port 5900 and QMP socket at $QMP_SOCK"
+    echo "Starting QEMU with VNC on port 5900 and QMP TCP on port 4444"
     qemu-system-x86_64 \
         -m 8G \
         -smp 4 \
         $ACCEL \
         -drive file="$QCOW_IMAGE",format=qcow2 \
-        -vnc :0 \
-        -qmp unix:$QMP_SOCK,server,nowait \
-        -device usb-ehci,id=ehci \
-        -device usb-tablet,bus=ehci.0 \
-        -device intel-hda -device hda-duplex \
-        -device VGA,vgamem_mb=64 \
+        -vnc 0.0.0.0:0 \
+        -qmp tcp:0.0.0.0:4444,server,nowait \
+        -device qemu-xhci,id=xhci \
+        -device usb-tablet,bus=xhci.0 \
+        -boot c \
         &
 
     QEMU_PID=$!
@@ -123,9 +118,8 @@ else
     # Run the development container with a shared volume for QMP socket
     echo "Starting ByteBot development container"
     docker run -d --privileged \
-        -p 3000:3000 -p 6080:6080 -p 6081:6081 \
-        -v "$QMP_SOCK:$QMP_SOCK" \
-        --name "bytebot-$TAG" \
+    -e QEMU_HOST=host.docker.internal \
+        -p 3000:3000 -p 5900:5900 -p 6080:6080 -p 6081:6081  \
         "$IMAGE_NAME"
 
     echo "ByteBot development environment is running!"
@@ -133,12 +127,12 @@ else
     echo "Access the noVNC interface at: http://localhost:3000/vnc"
     echo ""
     echo "To stop the environment:"
-    echo "  1. Stop the Docker container: docker stop bytebot-$TAG"
+    echo "  1. Stop the Docker container: docker stop bytebot:$TAG"
     echo "  2. Kill the QEMU process: kill $QEMU_PID"
 fi
 
 # Check if container started successfully
-if docker ps | grep -q "bytebot-$TAG"; then
+if docker ps | grep -q "bytebot:$TAG"; then
     echo "ByteBot container started successfully!"
 else
     echo "Failed to start ByteBot container."
