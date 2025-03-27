@@ -105,6 +105,29 @@ export enum QKeyCode {
   SLASH = 'slash',
 }
 
+export const xKeySymToQKeyCodeMap: Record<string, QKeyCode> = {
+  Escape: QKeyCode.ESC,
+  BackSpace: QKeyCode.BACKSPACE,
+  Return: QKeyCode.RETURN,
+  Caps_Lock: QKeyCode.CAPS_LOCK,
+  Shift_L: QKeyCode.LEFT_SHIFT,
+  Shift_R: QKeyCode.RIGHT_SHIFT,
+  Control_L: QKeyCode.LEFT_CTRL,
+  Control_R: QKeyCode.RIGHT_CTRL,
+  Alt_L: QKeyCode.LEFT_ALT,
+  Alt_R: QKeyCode.RIGHT_ALT,
+  Meta_L: QKeyCode.LEFT_META,
+  Meta_R: QKeyCode.RIGHT_META,
+  space: QKeyCode.SPACE,
+  Page_Up: QKeyCode.PAGE_UP,
+  Page_Down: QKeyCode.PAGE_DOWN,
+
+  grave: QKeyCode.GRAVE,
+  bracketleft: QKeyCode.BRACKET_LEFT,
+  bracketright: QKeyCode.BRACKET_RIGHT,
+  period: QKeyCode.DOT,
+};
+
 @Injectable()
 export class QemuService {
   private readonly logger = new Logger(QemuService.name);
@@ -161,6 +184,11 @@ export class QemuService {
     const qkeyCodes: string[] = Object.values(QKeyCode);
 
     if (!qkeyCodes.includes(key)) {
+      const qkey = xKeySymToQKeyCodeMap[key];
+      if (qkey) {
+        return qkey;
+      }
+
       throw new Error(`Invalid key: ${key}`);
     }
 
