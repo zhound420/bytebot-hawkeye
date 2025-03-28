@@ -79,9 +79,9 @@ const messageStore: Anthropic.Beta.BetaMessageParam[] = [
     content: [
       {
         type: "text",
-        text: `You are a Engineer working with a web browser. Try your best to follow the user's instructions. When you choose to take an action, 
+        text: `You are a Engineer working with a computer. Try your best to follow the user's instructions. When you choose to take an action, 
           do so how a human would. For example, if you need to click on something, click confidently 
-          roughly in the center of the element. If you need to type something, type a realistic example 
+          roughly in the center of the element. To open a program, double click on its icon. If you need to type something, type a realistic example 
           of what a user would type based on the context of the site, page and task. Always make sure the 
           previous action was completed before taking the next action, where applicable.`,
       },
@@ -97,8 +97,9 @@ async function saveMessageToDatabase(message: Anthropic.Beta.BetaMessageParam) {
   }
 
   try {
-    const messageType = message.role === "user" ? MessageType.USER : MessageType.ASSISTANT;
-    
+    const messageType =
+      message.role === "user" ? MessageType.USER : MessageType.ASSISTANT;
+
     await prisma.message.create({
       data: {
         content: message.content as unknown as Prisma.InputJsonValue, // Store the content blocks as JSON
@@ -106,7 +107,7 @@ async function saveMessageToDatabase(message: Anthropic.Beta.BetaMessageParam) {
         taskId: currentTaskId,
       },
     });
-    
+
     console.log(`Saved ${messageType} message to database`);
   } catch (error) {
     console.error("Failed to save message to database:", error);
@@ -208,7 +209,7 @@ const handleText = async (text: string) => {
     role: "assistant",
     content: [{ type: "text", text: text }],
   };
-  
+
   await addMessage(message);
 };
 
@@ -232,7 +233,7 @@ const handleComputerToolUse = async (
         },
       ],
     };
-    
+
     messageStore.push(assistantMessage);
     await saveMessageToDatabase(assistantMessage);
 
@@ -260,7 +261,7 @@ const handleComputerToolUse = async (
           },
         ],
       };
-      
+
       messageStore.push(userResponseMessage);
       await saveMessageToDatabase(userResponseMessage);
     } else {
@@ -363,7 +364,7 @@ const handleComputerToolUse = async (
           },
         ],
       };
-      
+
       messageStore.push(userResponseMessage);
       await saveMessageToDatabase(userResponseMessage);
     }
@@ -380,7 +381,7 @@ const handleComputerToolUse = async (
         },
       ],
     };
-    
+
     messageStore.push(errorMessage);
     await saveMessageToDatabase(errorMessage);
     console.error("[agent.ts] handleComputerToolUse", error);
@@ -392,8 +393,30 @@ const handleComputerToolUse = async (
 export async function runAgent() {
   console.log("Running agent");
   while (isOnAutopilot) {
-    const currentMessages = await getMessages();
-    console.log(currentMessages);
+    let currentMessages = await getMessages();
+
+    // Strip images from all but the last message
+    currentMessages = currentMessages.map((msg, index) => {
+      if (index === currentMessages.length - 1) return msg; // Keep the last message intact
+      if (Array.isArray(msg.content)) {
+        return {
+          ...msg,
+          content: msg.content.map((item) => {
+            if (
+              item.type === "tool_result" &&
+              typeof item.content !== "string"
+            ) {
+              return {
+                ...item,
+                content: item.content?.filter((c) => c.type !== "image"),
+              };
+            }
+            return item;
+          }),
+        };
+      }
+      return msg;
+    });
 
     const response = await callAnthropicComputerUse(currentMessages, {
       width: DEFAULT_VIEWPORT_WIDTH,
@@ -437,11 +460,14 @@ export async function runAgent() {
   }
 }
 
-export async function triggerAgentWithMessage(initialMessage: string, taskId?: string) {
+export async function triggerAgentWithMessage(
+  initialMessage: string,
+  taskId?: string
+) {
   if (taskId) {
     setCurrentTaskId(taskId);
   }
-  
+
   await addUserMessage(initialMessage);
   setAutopilot(true); // Starts the autopilot, invoking runAgent()
 }
