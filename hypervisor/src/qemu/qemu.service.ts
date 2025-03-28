@@ -366,32 +366,36 @@ export class QemuService {
   /**
    * Sends a mouse wheel event to the VM.
    *
-   * @param axis Either 'vertical' for vertical or 'horizontal' for horizontal scrolling
-   * @param value Positive values scroll up/right, negative values scroll down/left
+   * @param direction Either 'right', 'left', 'up', or 'down'
+   * @param amount Number of scroll steps to perform
    */
   async mouseWheelEvent(
-    axis: 'vertical' | 'horizontal',
-    value: number,
+    direction: 'right' | 'left' | 'up' | 'down',
+    amount: number,
   ): Promise<any> {
-    const command = {
-      execute: 'input-send-event',
-      arguments: {
-        events: [
-          {
-            type: 'rel',
-            data: {
-              axis: axis === 'vertical' ? 'wheel' : 'hwheel',
-              value:
-                axis === 'vertical'
-                  ? this.scaleYCoordinate(value)
-                  : this.scaleXCoordinate(value),
-            },
-          },
-        ],
-      },
-    };
-    this.logger.log(`Mouse wheel event: ${axis}-axis, value: ${value}`);
-    return this.qmpClient.sendCommand(command);
+    const btn =
+      direction === 'right'
+        ? 'wheel-right'
+        : direction === 'left'
+          ? 'wheel-left'
+          : direction === 'up'
+            ? 'wheel-up'
+            : 'wheel-down';
+
+    for (let i = 0; i < amount; i++) {
+      const command = {
+        execute: 'input-send-event',
+        arguments: {
+          events: [
+            { type: 'btn', data: { down: true, button: btn } },
+            { type: 'btn', data: { down: false, button: btn } },
+          ],
+        },
+      };
+      this.logger.log(`Mouse wheel event: wheel-${direction}`);
+      await this.qmpClient.sendCommand(command);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
   }
 
   private scaleXCoordinate(value: number): number {

@@ -43,8 +43,8 @@ export type DragMouseAction = {
 export type ScrollAction = {
   action: 'scroll';
   coordinates?: Coordinates;
-  axis: Axis;
-  distance: number;
+  direction: 'up' | 'down' | 'left' | 'right';
+  amount: number;
   holdKeys?: string[];
 };
 
@@ -263,7 +263,7 @@ export class ComputerUseService {
   }
 
   private async scroll(action: ScrollAction): Promise<void> {
-    const { coordinates, axis, distance, holdKeys } = action;
+    const { coordinates, direction, amount, holdKeys } = action;
 
     // Move to coordinates if provided
     if (coordinates) {
@@ -276,7 +276,10 @@ export class ComputerUseService {
     }
 
     // Perform scroll
-    await this.qemuService.mouseWheelEvent(axis, distance);
+    for (let i = 0; i < amount; i++) {
+      await this.qemuService.mouseWheelEvent(direction, 3);
+      await new Promise((resolve) => setTimeout(resolve, 150));
+    }
 
     // Release hold keys
     if (holdKeys) {

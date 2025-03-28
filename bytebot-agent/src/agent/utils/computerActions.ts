@@ -385,15 +385,6 @@ export async function scroll(
     `Scrolling at coordinates: [${coordinates.x}, ${coordinates.y}], direction: ${scrollDirection}, amount: ${scrollAmount}`
   );
 
-  const axis =
-    scrollDirection === "up" || scrollDirection === "down"
-      ? "vertical"
-      : "horizontal";
-  const distance =
-    scrollDirection === "down" || scrollDirection === "right"
-      ? scrollAmount
-      : -scrollAmount;
-
   try {
     await fetch(`${COMPUTER_USE_URL}/computer-use`, {
       method: "POST",
@@ -401,8 +392,8 @@ export async function scroll(
       body: JSON.stringify({
         action: "scroll",
         coordinates,
-        axis,
-        distance,
+        direction: scrollDirection,
+        amount: scrollAmount,
         holdKeys,
       }),
     });
