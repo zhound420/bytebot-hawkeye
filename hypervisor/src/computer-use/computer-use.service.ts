@@ -204,13 +204,12 @@ export class ComputerUseService {
     if (numClicks && numClicks > 1) {
       // Perform multiple clicks
       for (let i = 0; i < numClicks; i++) {
-        await this.qemuService.mouseButtonEvent(button, true);
-        await this.qemuService.mouseButtonEvent(button, false);
+        await this.qemuService.mouseClickEvent(button);
+        await this.delay(150);
       }
     } else {
       // Perform a single click
-      await this.qemuService.mouseButtonEvent(button, true);
-      await this.qemuService.mouseButtonEvent(button, false);
+      await this.qemuService.mouseClickEvent(button);
     }
 
     // Release hold keys
@@ -296,7 +295,7 @@ export class ComputerUseService {
     await this.qemuService.typeText(text, delay);
   }
 
-  private delay(ms: number): Promise<void> {
+  private async delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 

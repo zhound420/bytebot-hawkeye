@@ -328,6 +328,43 @@ export class QemuService {
   }
 
   /**
+   * Sends a mouse click event to the VM.
+   *
+   * @param button One of 'left', 'right', or 'middle'.
+   */
+  async mouseClickEvent(button: 'left' | 'right' | 'middle'): Promise<any> {
+    const command = {
+      execute: 'input-send-event',
+      arguments: {
+        events: [
+          {
+            type: 'btn',
+            data: {
+              down: true,
+              button: button,
+            },
+          },
+          {
+            type: 'btn',
+            data: {
+              down: false,
+              button: button,
+            },
+          },
+        ],
+      },
+    };
+    this.logger.log(`Mouse click event: ${button}`);
+    try {
+      return await this.qmpClient.sendCommand(command);
+    } catch (error) {
+      throw new Error(
+        `Failed to send mouse ${button} button click event: ${error.message}`,
+      );
+    }
+  }
+
+  /**
    * Sends a mouse button event to the VM.
    *
    * @param button One of 'left', 'right', or 'middle'.
