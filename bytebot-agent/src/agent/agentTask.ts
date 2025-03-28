@@ -1,5 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import dotenv from "dotenv";
+import { prisma } from "../lib/prisma";
+import { MessageType, Prisma } from "@prisma/client";
 
 dotenv.config();
 
@@ -52,6 +54,7 @@ class AsyncMutex {
 
 let isOnAutopilot = false;
 const messageMutex = new AsyncMutex();
+let currentTaskId: string | null = null;
 
 export function setAutopilot(value: boolean) {
   if (isOnAutopilot === value) {
@@ -64,6 +67,10 @@ export function setAutopilot(value: boolean) {
   if (value) {
     runAgent();
   }
+}
+
+export function setCurrentTaskId(taskId: string) {
+  currentTaskId = taskId;
 }
 
 const messageStore: Anthropic.Beta.BetaMessageParam[] = [
@@ -82,11 +89,36 @@ const messageStore: Anthropic.Beta.BetaMessageParam[] = [
   },
 ];
 
+// Helper function to save message to database
+async function saveMessageToDatabase(message: Anthropic.Beta.BetaMessageParam) {
+  if (!currentTaskId) {
+    console.warn("No current task ID set, skipping database save");
+    return;
+  }
+
+  try {
+    const messageType = message.role === "user" ? MessageType.USER : MessageType.ASSISTANT;
+    
+    await prisma.message.create({
+      data: {
+        content: message.content as unknown as Prisma.InputJsonValue, // Store the content blocks as JSON
+        type: messageType,
+        taskId: currentTaskId,
+      },
+    });
+    
+    console.log(`Saved ${messageType} message to database`);
+  } catch (error) {
+    console.error("Failed to save message to database:", error);
+  }
+}
+
 // Update the addMessage function to be async and thread-safe
 async function addMessage(message: Anthropic.Beta.BetaMessageParam) {
   const release = await messageMutex.acquire();
   try {
     messageStore.push(message);
+    await saveMessageToDatabase(message);
   } finally {
     release();
   }
@@ -172,10 +204,12 @@ export type ToolCall = {
 };
 
 const handleText = async (text: string) => {
-  await addMessage({
+  const message: Anthropic.Beta.BetaMessageParam = {
     role: "assistant",
     content: [{ type: "text", text: text }],
-  });
+  };
+  
+  await addMessage(message);
 };
 
 const handleComputerToolUse = async (
@@ -187,7 +221,7 @@ const handleComputerToolUse = async (
   }
 
   try {
-    messageStore.push({
+    const assistantMessage: Anthropic.Beta.BetaMessageParam = {
       role: "assistant",
       content: [
         {
@@ -197,14 +231,17 @@ const handleComputerToolUse = async (
           name: content.name,
         },
       ],
-    });
+    };
+    
+    messageStore.push(assistantMessage);
+    await saveMessageToDatabase(assistantMessage);
 
     const toolCall: ToolCall = content.input as ToolCall;
 
     if (toolCall.action === "screenshot") {
       const image = await screenshot();
 
-      messageStore.push({
+      const userResponseMessage: Anthropic.Beta.BetaMessageParam = {
         role: "user",
         content: [
           {
@@ -222,7 +259,10 @@ const handleComputerToolUse = async (
             ],
           },
         ],
-      });
+      };
+      
+      messageStore.push(userResponseMessage);
+      await saveMessageToDatabase(userResponseMessage);
     } else {
       switch (toolCall.action) {
         case "key":
@@ -308,7 +348,7 @@ const handleComputerToolUse = async (
           break;
       }
 
-      messageStore.push({
+      const userResponseMessage: Anthropic.Beta.BetaMessageParam = {
         role: "user",
         content: [
           {
@@ -322,10 +362,13 @@ const handleComputerToolUse = async (
             ],
           },
         ],
-      });
+      };
+      
+      messageStore.push(userResponseMessage);
+      await saveMessageToDatabase(userResponseMessage);
     }
   } catch (error) {
-    messageStore.push({
+    const errorMessage: Anthropic.Beta.BetaMessageParam = {
       role: "user",
       content: [
         {
@@ -336,7 +379,10 @@ const handleComputerToolUse = async (
           ],
         },
       ],
-    });
+    };
+    
+    messageStore.push(errorMessage);
+    await saveMessageToDatabase(errorMessage);
     console.error("[agent.ts] handleComputerToolUse", error);
   } finally {
     release();
@@ -391,7 +437,11 @@ export async function runAgent() {
   }
 }
 
-export async function triggerAgentWithMessage(initialMessage: string) {
+export async function triggerAgentWithMessage(initialMessage: string, taskId?: string) {
+  if (taskId) {
+    setCurrentTaskId(taskId);
+  }
+  
   await addUserMessage(initialMessage);
   setAutopilot(true); // Starts the autopilot, invoking runAgent()
 }

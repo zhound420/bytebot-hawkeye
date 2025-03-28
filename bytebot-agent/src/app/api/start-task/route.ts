@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { queue } from "../../../workers/worker";
 import { z } from "zod";
 import { TaskStatus, TaskPriority } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 
 const taskSchema = z.object({
   description: z.string().min(1),
@@ -16,12 +17,24 @@ export async function POST(request: Request) {
     // Validate with Zod, leveraging Prisma types directly
     const validatedData = taskSchema.parse(requestData);
 
-    // Add job directly to the BullMQ queue
-    await queue.add("agentQueue", validatedData);
+    // Create the task in the database
+    const task = await prisma.task.create({
+      data: {
+        description: validatedData.description,
+        status: validatedData.status || TaskStatus.PENDING,
+        priority: validatedData.priority || TaskPriority.MEDIUM,
+      },
+    });
+
+    // Add job directly to the BullMQ queue with the task ID
+    await queue.add("agentQueue", {
+      ...validatedData,
+      taskId: task.id,
+    });
 
     return NextResponse.json({
       status: "Task queued successfully",
-      task: validatedData,
+      task: task,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
