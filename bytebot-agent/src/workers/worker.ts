@@ -19,10 +19,11 @@ const worker = new Worker(
   async (
     job: Job<{
       description: string;
+      taskId?: string;
     }>
   ) => {
-    const { description } = job.data;
-    await triggerAgentWithMessage(description);
+    const { description, taskId } = job.data;
+    await triggerAgentWithMessage(description, taskId);
   },
   {
     connection,
