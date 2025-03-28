@@ -132,20 +132,20 @@ Bytebot provides a unified computer action API that allows granular control over
 
 The unified API supports the following actions:
 
-| Action                | Description                                        | Parameters                                                                                                                     |
-| --------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `move_mouse`          | Move the mouse cursor to a specific position       | `coordinates: { x: number, y: number }`                                                                                        |
-| `trace_mouse`         | Moves the mouse along a specified path             | `path: { x: number, y: number }[]`, `holdKeys?: string[]`                                                                      |
-| `click_mouse`         | Perform a mouse click                              | `coordinates?: { x: number, y: number }`, `button: 'left' \| 'right' \| 'middle'`, `numClicks?: number`, `holdKeys?: string[]` |
-| `press_mouse`         | Press or release a mouse button                    | `coordinates?: { x: number, y: number }`, `button: 'left' \| 'right' \| 'middle'`, `press: 'down' \| 'up'`                     |
-| `drag_mouse`          | Click and drag the mouse from one point to another | `path: { x: number, y: number }[]`, `button: 'left' \| 'right' \| 'middle'`, `holdKeys?: string[]`                             |
-| `scroll`              | Scroll vertically or horizontally                  | `coordinates?: { x: number, y: number }`, `axis: 'vertical' \| 'horizontal'`, `distance: number`, `holdKeys?: string[]`        |
-| `type_keys`           | Type one or more keyboard keys                     | `keys: string[]`, `delay?: number`                                                                                             |
-| `press_keys`          | Press or release keyboard keys                     | `keys: string[]`, `press: 'down' \| 'up'`                                                                                      |
-| `type_text`           | Type a text string                                 | `text: string`, `delay?: number`                                                                                               |
-| `wait`                | Wait for a specified duration                      | `duration: number` (milliseconds)                                                                                              |
-| `screenshot`          | Capture a screenshot of the desktop                | None                                                                                                                           |
-| `get_cursor_position` | Get the current cursor position                    | None                                                                                                                           |
+| Action                | Description                                        | Parameters                                                                                                                          |
+| --------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `move_mouse`          | Move the mouse cursor to a specific position       | `coordinates: { x: number, y: number }`                                                                                             |
+| `trace_mouse`         | Moves the mouse along a specified path             | `path: { x: number, y: number }[]`, `holdKeys?: string[]`                                                                           |
+| `click_mouse`         | Perform a mouse click                              | `coordinates?: { x: number, y: number }`, `button: 'left' \| 'right' \| 'middle'`, `numClicks?: number`, `holdKeys?: string[]`      |
+| `press_mouse`         | Press or release a mouse button                    | `coordinates?: { x: number, y: number }`, `button: 'left' \| 'right' \| 'middle'`, `press: 'down' \| 'up'`                          |
+| `drag_mouse`          | Click and drag the mouse from one point to another | `path: { x: number, y: number }[]`, `button: 'left' \| 'right' \| 'middle'`, `holdKeys?: string[]`                                  |
+| `scroll`              | Scroll up, down, left, or right                    | `coordinates?: { x: number, y: number }`, `direction: 'up' \| 'down' \| 'left' \| 'right'`, `amount: number`, `holdKeys?: string[]` |
+| `type_keys`           | Type one or more keyboard keys                     | `keys: string[]`, `delay?: number`                                                                                                  |
+| `press_keys`          | Press or release keyboard keys                     | `keys: string[]`, `press: 'down' \| 'up'`                                                                                           |
+| `type_text`           | Type a text string                                 | `text: string`, `delay?: number`                                                                                                    |
+| `wait`                | Wait for a specified duration                      | `duration: number` (milliseconds)                                                                                                   |
+| `screenshot`          | Capture a screenshot of the desktop                | None                                                                                                                                |
+| `get_cursor_position` | Get the current cursor position                    | None                                                                                                                                |
 
 ### Example Usage
 
