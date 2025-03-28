@@ -109,6 +109,25 @@ else
         -boot c \
         &
 
+    # qemu-system-aarch64 \
+    # -machine virt,accel=hvf \
+    # -cpu max \
+    # -smp 4 \
+    # -m 8G \
+    # -drive if=pflash,format=raw,file=$(brew --prefix qemu)/share/qemu/edk2-aarch64-code.fd,readonly=on \
+    # -drive if=pflash,format=raw,file=$(brew --prefix qemu)/share/qemu/edk2-arm-vars.fd \
+    # -drive file="$QCOW_IMAGE",format=qcow2 \
+    # -device virtio-gpu-pci \
+    # -vnc 0.0.0.0:0 \
+    # -qmp tcp:0.0.0.0:4444,server,nowait \
+    # -device qemu-xhci,id=xhci \
+    # -device usb-tablet,bus=xhci.0 \
+    # -device usb-kbd,bus=xhci.0 \
+    # -netdev user,id=net0,hostfwd=tcp::2222-:22 \
+    # -device virtio-net-pci,netdev=net0 \
+    # -boot c \
+    # &
+
     QEMU_PID=$!
     echo "QEMU started with PID: $QEMU_PID"
 
@@ -119,6 +138,7 @@ else
     echo "Starting ByteBot development container"
     docker run -d --privileged \
     -e QEMU_HOST=host.docker.internal \
+        -v /tmp:/tmp \
         -p 3000:3000 -p 5900:5900 -p 6080:6080 -p 6081:6081  \
         "$IMAGE_NAME"
 
