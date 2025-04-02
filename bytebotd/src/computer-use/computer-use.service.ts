@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { QemuService } from '../qemu/qemu.service';
+import { NutService } from '../nut/nut.service';
 
 export type Coordinates = { x: number; y: number };
 export type Button = 'left' | 'right' | 'middle';
@@ -97,10 +97,8 @@ export type ComputerAction =
 @Injectable()
 export class ComputerUseService {
   private readonly logger = new Logger(ComputerUseService.name);
-  // Track the last known cursor position.
-  private cursorPosition: { x: number; y: number } = { x: 0, y: 0 };
 
-  constructor(private readonly qemuService: QemuService) {}
+  constructor(private readonly nutService: NutService) {}
 
   async action(params: ComputerAction): Promise<any> {
     this.logger.log(`Executing computer action: ${params.action}`);
@@ -162,28 +160,28 @@ export class ComputerUseService {
   }
 
   private async moveMouse(action: MoveMouseAction): Promise<void> {
-    await this.qemuService.mouseMoveEvent(action.coordinates);
+    await this.nutService.mouseMoveEvent(action.coordinates);
   }
 
   private async traceMouse(action: TraceMouseAction): Promise<void> {
     const { path, holdKeys } = action;
 
     // Move to the first coordinate
-    await this.qemuService.mouseMoveEvent(path[0]);
+    await this.nutService.mouseMoveEvent(path[0]);
 
     // Hold keys if provided
     if (holdKeys) {
-      await this.qemuService.holdKeys(holdKeys, true);
+      await this.nutService.holdKeys(holdKeys, true);
     }
 
     // Move to each coordinate in the path
     for (const coordinates of path) {
-      await this.qemuService.mouseMoveEvent(coordinates);
+      await this.nutService.mouseMoveEvent(coordinates);
     }
 
     // Release hold keys
     if (holdKeys) {
-      await this.qemuService.holdKeys(holdKeys, false);
+      await this.nutService.holdKeys(holdKeys, false);
     }
   }
 
@@ -192,33 +190,29 @@ export class ComputerUseService {
 
     // Move to coordinates if provided
     if (coordinates) {
-      await this.qemuService.mouseMoveEvent(coordinates);
+      await this.nutService.mouseMoveEvent(coordinates);
     }
 
     // Hold keys if provided
     if (holdKeys) {
-      await this.qemuService.holdKeys(holdKeys, true);
+      await this.nutService.holdKeys(holdKeys, true);
     }
 
     // Perform clicks
     if (numClicks && numClicks > 1) {
       // Perform multiple clicks
       for (let i = 0; i < numClicks; i++) {
-        await this.qemuService.mouseButtonEvent(button, true);
-        await this.delay(150);
-        await this.qemuService.mouseButtonEvent(button, false);
+        await this.nutService.mouseClickEvent(button);
         await this.delay(150);
       }
     } else {
       // Perform a single click
-      await this.qemuService.mouseButtonEvent(button, true);
-      await this.delay(150);
-      await this.qemuService.mouseButtonEvent(button, false);
+      await this.nutService.mouseClickEvent(button);
     }
 
     // Release hold keys
     if (holdKeys) {
-      await this.qemuService.holdKeys(holdKeys, false);
+      await this.nutService.holdKeys(holdKeys, false);
     }
   }
 
@@ -227,14 +221,14 @@ export class ComputerUseService {
 
     // Move to coordinates if provided
     if (coordinates) {
-      await this.qemuService.mouseMoveEvent(coordinates);
+      await this.nutService.mouseMoveEvent(coordinates);
     }
 
     // Perform press
     if (press === 'down') {
-      await this.qemuService.mouseButtonEvent(button, true);
+      await this.nutService.mouseButtonEvent(button, true);
     } else {
-      await this.qemuService.mouseButtonEvent(button, false);
+      await this.nutService.mouseButtonEvent(button, false);
     }
   }
 
@@ -242,23 +236,23 @@ export class ComputerUseService {
     const { path, button, holdKeys } = action;
 
     // Move to the first coordinate
-    await this.qemuService.mouseMoveEvent(path[0]);
+    await this.nutService.mouseMoveEvent(path[0]);
 
     // Hold keys if provided
     if (holdKeys) {
-      await this.qemuService.holdKeys(holdKeys, true);
+      await this.nutService.holdKeys(holdKeys, true);
     }
 
     // Perform drag
-    await this.qemuService.mouseButtonEvent(button, true);
+    await this.nutService.mouseButtonEvent(button, true);
     for (const coordinates of path) {
-      await this.qemuService.mouseMoveEvent(coordinates);
+      await this.nutService.mouseMoveEvent(coordinates);
     }
-    await this.qemuService.mouseButtonEvent(button, false);
+    await this.nutService.mouseButtonEvent(button, false);
 
     // Release hold keys
     if (holdKeys) {
-      await this.qemuService.holdKeys(holdKeys, false);
+      await this.nutService.holdKeys(holdKeys, false);
     }
   }
 
@@ -267,39 +261,39 @@ export class ComputerUseService {
 
     // Move to coordinates if provided
     if (coordinates) {
-      await this.qemuService.mouseMoveEvent(coordinates);
+      await this.nutService.mouseMoveEvent(coordinates);
     }
 
     // Hold keys if provided
     if (holdKeys) {
-      await this.qemuService.holdKeys(holdKeys, true);
+      await this.nutService.holdKeys(holdKeys, true);
     }
 
     // Perform scroll
     for (let i = 0; i < amount; i++) {
-      await this.qemuService.mouseWheelEvent(direction, 3);
+      await this.nutService.mouseWheelEvent(direction, 3);
       await new Promise((resolve) => setTimeout(resolve, 150));
     }
 
     // Release hold keys
     if (holdKeys) {
-      await this.qemuService.holdKeys(holdKeys, false);
+      await this.nutService.holdKeys(holdKeys, false);
     }
   }
 
   private async typeKeys(action: TypeKeysAction): Promise<void> {
     const { keys, delay } = action;
-    await this.qemuService.sendKeys(keys, delay);
+    await this.nutService.sendKeys(keys, delay);
   }
 
   private async pressKeys(action: PressKeysAction): Promise<void> {
     const { keys, press } = action;
-    await this.qemuService.holdKeys(keys, press === 'down');
+    await this.nutService.holdKeys(keys, press === 'down');
   }
 
   private async typeText(action: TypeTextAction): Promise<void> {
     const { text, delay } = action;
-    await this.qemuService.typeText(text, delay);
+    await this.nutService.typeText(text, delay);
   }
 
   private async delay(ms: number): Promise<void> {
@@ -308,12 +302,12 @@ export class ComputerUseService {
 
   private async screenshot(): Promise<{ image: string }> {
     this.logger.log(`Taking screenshot`);
-    const buffer = await this.qemuService.screendump();
+    const buffer = await this.nutService.screendump();
     return { image: `${buffer.toString('base64')}` };
   }
 
   private async cursor_position(): Promise<{ x: number; y: number }> {
     this.logger.log(`Getting cursor position`);
-    return { x: this.cursorPosition.x, y: this.cursorPosition.y };
+    return await this.nutService.getCursorPosition();
   }
 }

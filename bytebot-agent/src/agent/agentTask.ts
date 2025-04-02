@@ -28,7 +28,7 @@ import {
 } from "./utils/computerActions";
 
 const DEFAULT_VIEWPORT_WIDTH = 1280;
-const DEFAULT_VIEWPORT_HEIGHT = 800;
+const DEFAULT_VIEWPORT_HEIGHT = 720;
 
 // Simple mutex implementation
 class AsyncMutex {

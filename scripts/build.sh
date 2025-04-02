@@ -7,8 +7,7 @@ PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PRODUCTION=false
 TAG=""
 NO_CACHE=false
-QCOW_URL="https://bytebot-desktop-images.s3.us-east-2.amazonaws.com/bytebot-lubuntu-22.04.5-compressed.qcow2"
-QCOW_DEST="${PROJECT_ROOT}/docker/development/bytebot-os-image.qcow2"
+DOCKERFILE="${PROJECT_ROOT}/docker/Dockerfile"
 
 # Help message
 show_help() {
@@ -59,29 +58,6 @@ if [ -z "$TAG" ]; then
     fi
 fi
 
-# Set Dockerfile path based on build type
-if [ "$PRODUCTION" = true ]; then
-    DOCKERFILE="${PROJECT_ROOT}/docker/production/Dockerfile.prod"
-    echo "Building production Docker image..."
-else
-    DOCKERFILE="${PROJECT_ROOT}/docker/development/Dockerfile.dev"
-    
-    # For development builds, download the qcow image if it doesn't exist
-    if [ ! -f "$QCOW_DEST" ]; then
-        echo "Downloading bytebot qcow image to ${QCOW_DEST}..."
-        mkdir -p "$(dirname "$QCOW_DEST")"
-        curl -L "$QCOW_URL" -o "$QCOW_DEST"
-        if [ $? -ne 0 ]; then
-            echo "Failed to download qcow image!"
-            exit 1
-        fi
-        echo "Download completed successfully."
-    else
-        echo "Bytebot qcow image already exists at ${QCOW_DEST}. Skipping download."
-    fi
-    
-    echo "Building development Docker image..."
-fi
 
 # Check for existing image and remove it
 IMAGE_NAME="bytebot:$TAG"

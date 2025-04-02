@@ -1,14 +1,20 @@
 {
-  "name": "@bytebot/hypervisor",
+  "name": "bytebotd",
   "version": "0.0.1",
-  "description": "",
-  "author": "",
+  "email": "support@bytebot.ai",
+  "description": "Bytebot daemon",
+  "homepage": "https://bytebot.ai",
+  "author": {
+    "name": "Bytebot",
+    "email": "support@bytebot.ai"
+  },
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
+    "build": "nest build",
+    "compile": "tsc",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
@@ -24,9 +30,9 @@
     "@nestjs/config": "^4.0.1",
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
+    "@nut-tree-fork/nut-js": "^4.2.6",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1",
-    "sharp": "^0.33.5"
+    "rxjs": "^7.8.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
@@ -38,7 +44,7 @@
     "@swc/core": "^1.10.7",
     "@types/express": "^5.0.0",
     "@types/jest": "^29.5.14",
-    "@types/node": "^22.10.7",
+    "@types/node": "^22.13.14",
     "@types/supertest": "^6.0.2",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
