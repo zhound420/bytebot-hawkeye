@@ -38,16 +38,16 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /run/dbus && \
-    # Generate a machine-id so dbus-daemon doesn’t complain
+    # Generate a machine-id so dbus-daemon doesn't complain
     dbus-uuidgen --ensure=/etc/machine-id
 
 # -----------------------------------------------------------------------------
 # 3. Additional software installation
 # -----------------------------------------------------------------------------
-# Install Google Chrome
-RUN wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
-    apt-get update && \
-    apt-get install -y \
+# Install Firefox
+RUN apt-get update && apt-get install -y \
+    # Install necessary for adding PPA
+    software-properties-common apt-transport-https wget gnupg \
     # Install Additional Graphics Libraries
     mesa-utils \
     libgl1-mesa-dri \
@@ -59,26 +59,25 @@ RUN wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd6
     fonts-dejavu \
     fonts-liberation \
     fonts-freefont-ttf \
-    ./google-chrome-stable_current_amd64.deb && \
-    rm google-chrome-stable_current_amd64.deb && \
-    # Set Chrome as default browser system-wide
-    update-alternatives --install /usr/bin/x-www-browser x-www-browser /usr/bin/google-chrome-stable 200 && \
-    update-alternatives --set x-www-browser /usr/bin/google-chrome-stable && \
+    && add-apt-repository -y ppa:mozillateam/ppa \
+    && apt-get update \
+    && apt-get install -y firefox-esr \
+    && apt-get clean && rm -rf /var/lib/apt/lists/* \
+    # Set Firefox as default browser system-wide
+    && update-alternatives --install /usr/bin/x-www-browser x-www-browser /usr/bin/firefox-esr 200 \
+    && update-alternatives --set x-www-browser /usr/bin/firefox-esr \
     # Configure default MIME handlers for web content
-    mkdir -p /etc/xdg/xfce4/helpers && \
-    echo '[Desktop Entry]' > /etc/xdg/xfce4/helpers/google-chrome.desktop && \
-    echo 'Version=1.0' >> /etc/xdg/xfce4/helpers/google-chrome.desktop && \
-    echo 'Type=X-XFCE-Helper' >> /etc/xdg/xfce4/helpers/google-chrome.desktop && \
-    echo 'Name=Google Chrome' >> /etc/xdg/xfce4/helpers/google-chrome.desktop && \
-    echo 'X-XFCE-Binaries=google-chrome-stable;google-chrome;' >> /etc/xdg/xfce4/helpers/google-chrome.desktop && \
-    echo 'X-XFCE-Category=WebBrowser' >> /etc/xdg/xfce4/helpers/google-chrome.desktop && \
-    echo 'X-XFCE-Commands=%B;%B --incognito;' >> /etc/xdg/xfce4/helpers/google-chrome.desktop && \
-    echo 'X-XFCE-CommandsWithParameter=%B %s;%B --incognito %s;' >> /etc/xdg/xfce4/helpers/google-chrome.desktop && \
-    echo 'WebBrowser=google-chrome' > /etc/xdg/xfce4/helpers.rc && \
-    apt-get clean && rm -rf /var/lib/apt/lists/* \
-    && fc-cache -f -v \
-    && setcap cap_net_raw,cap_net_admin=eip /usr/bin/chrome-sandbox \
-    || true
+    && mkdir -p /etc/xdg/xfce4/helpers \
+    && echo '[Desktop Entry]' > /etc/xdg/xfce4/helpers/firefox.desktop \
+    && echo 'Version=1.0' >> /etc/xdg/xfce4/helpers/firefox.desktop \
+    && echo 'Type=X-XFCE-Helper' >> /etc/xdg/xfce4/helpers/firefox.desktop \
+    && echo 'Name=Firefox Web Browser' >> /etc/xdg/xfce4/helpers/firefox.desktop \
+    && echo 'X-XFCE-Binaries=firefox-esr;firefox;' >> /etc/xdg/xfce4/helpers/firefox.desktop \
+    && echo 'X-XFCE-Category=WebBrowser' >> /etc/xdg/xfce4/helpers/firefox.desktop \
+    && echo 'X-XFCE-Commands=%B;%B' >> /etc/xdg/xfce4/helpers/firefox.desktop \
+    && echo 'X-XFCE-CommandsWithParameter=%B %s;%B %s;' >> /etc/xdg/xfce4/helpers/firefox.desktop \
+    && echo 'WebBrowser=firefox-esr' > /etc/xdg/xfce4/helpers.rc \
+    && fc-cache -f -v
 
 # Install Node.js
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
@@ -157,53 +156,41 @@ RUN chmod 644 /usr/share/backgrounds/bytebot/background.jpg
 
 # Add XFCE configuration files
 COPY ./docker/xfce4/ /tmp/xfce4/
-COPY ./docker/chrome.desktop /tmp/chrome.desktop
 
 # Set up XFCE configuration
 RUN mkdir -p /home/bytebot/.config/xfce4/ && \
     mkdir -p /home/bytebot/Desktop && \
     # Copy the XFCE configuration files
     cp -r /tmp/xfce4/* /home/bytebot/.config/xfce4/ && \
-    # Create Chrome desktop shortcut
-    cp /tmp/chrome.desktop /home/bytebot/Desktop/ && \
-    chmod +x /home/bytebot/Desktop/chrome.desktop && \
     # Create .xsessionrc file for the user to ensure XFCE starts properly
     mkdir -p /home/bytebot/.config && \
     echo "exec startxfce4" > /home/bytebot/.xsessionrc && \
     # Ensure all settings are owned by the user
     chown -R bytebot:bytebot /home/bytebot/.config /home/bytebot/Desktop /home/bytebot/.xsessionrc
 
-# Configure Chrome flags
-RUN mkdir -p /home/bytebot/.config && \
-    echo "--password-store=basic" > /home/bytebot/.config/chrome-flags.conf && \
-    echo "--use-mock-keychain" >> /home/bytebot/.config/chrome-flags.conf && \
-    echo "--disable-gpu" >> /home/bytebot/.config/chrome-flags.conf && \
-    echo "--disable-software-rasterizer" >> /home/bytebot/.config/chrome-flags.conf && \
-    chown -R bytebot:bytebot /home/bytebot/.config
-
-# Replace default Web Browser shortcut with Google Chrome (using Chrome logo and name)
+# Replace default Web Browser shortcut with Chromium
 RUN mkdir -p /etc/skel/.config/xfce4/panel/launcher-* && \
     mkdir -p /usr/share/applications/ && \
-    echo '[Desktop Entry]' > /usr/share/applications/chrome.desktop && \
-    echo 'Version=1.0' >> /usr/share/applications/chrome.desktop && \
-    echo 'Type=Application' >> /usr/share/applications/chrome.desktop && \
-    echo 'Name=Google Chrome' >> /usr/share/applications/chrome.desktop && \
-    echo 'Comment=Browse the web with Google Chrome' >> /usr/share/applications/chrome.desktop && \
-    echo 'Exec=/usr/bin/google-chrome-stable %U' >> /usr/share/applications/chrome.desktop && \
-    echo 'Icon=google-chrome' >> /usr/share/applications/chrome.desktop && \
-    echo 'Path=' >> /usr/share/applications/chrome.desktop && \
-    echo 'Terminal=false' >> /usr/share/applications/chrome.desktop && \
-    echo 'StartupNotify=true' >> /usr/share/applications/chrome.desktop && \
-    echo 'Categories=Network;WebBrowser;' >> /usr/share/applications/chrome.desktop && \
-    chmod +x /usr/share/applications/chrome.desktop && \
-    # Copy Chrome desktop file to panel configuration
+    echo '[Desktop Entry]' > /usr/share/applications/firefox.desktop && \
+    echo 'Version=1.0' >> /usr/share/applications/firefox.desktop && \
+    echo 'Type=Application' >> /usr/share/applications/firefox.desktop && \
+    echo 'Name=Firefox Web Browser' >> /usr/share/applications/firefox.desktop && \
+    echo 'Comment=Browse the web with Firefox' >> /usr/share/applications/firefox.desktop && \
+    echo 'Exec=/usr/bin/firefox-esr %U' >> /usr/share/applications/firefox.desktop && \
+    echo 'Icon=firefox-esr' >> /usr/share/applications/firefox.desktop && \
+    echo 'Path=' >> /usr/share/applications/firefox.desktop && \
+    echo 'Terminal=false' >> /usr/share/applications/firefox.desktop && \
+    echo 'StartupNotify=true' >> /usr/share/applications/firefox.desktop && \
+    echo 'Categories=Network;WebBrowser;' >> /usr/share/applications/firefox.desktop && \
+    chmod +x /usr/share/applications/firefox.desktop && \
+    # Copy Chromium desktop file to panel configuration
     mkdir -p /home/bytebot/.config/xfce4/panel && \
-    cp -f /usr/share/applications/chrome.desktop /home/bytebot/.config/xfce4/panel/ && \
+    cp -f /usr/share/applications/firefox.desktop /home/bytebot/.config/xfce4/panel/ && \
     # Create a backup of the default XFCE panel configuration
     mkdir -p /etc/xdg/xfce4/panel/backup && \
-    # Also add Chrome to desktop
+    # Also add Chromium to desktop
     mkdir -p /home/bytebot/Desktop && \
-    cp -f /usr/share/applications/chrome.desktop /home/bytebot/Desktop/ && \
+    cp -f /usr/share/applications/firefox.desktop /home/bytebot/Desktop/ && \
     chown -R bytebot:bytebot /home/bytebot/.config/xfce4/panel /home/bytebot/Desktop
 
 # Add a desktop shortcut for the Terminal
