@@ -130,6 +130,12 @@ RUN chown -R root:root /bytebotd && \
 # Create non-root user
 RUN useradd -ms /bin/bash bytebot && echo "bytebot ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
+RUN chmod 755 /var/run/dbus && \
+    chown bytebot:bytebot /var/run/dbus
+
+RUN mkdir -p /tmp/bytebot-screenshots && \
+    chown -R bytebot:bytebot /tmp/bytebot-screenshots
+
 # Configure autologin for the bytebot user
 RUN mkdir -p /etc/lightdm/lightdm.conf.d && \
     echo '[Seat:*]' > /etc/lightdm/lightdm.conf.d/50-autologin.conf && \

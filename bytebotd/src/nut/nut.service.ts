@@ -393,25 +393,23 @@ export class NutService {
    * @returns A Promise that resolves with a Buffer containing the image.
    */
   async screendump(): Promise<Buffer> {
-    const filename = path.join(
-      this.screenshotDir,
-      `screenshot-${Date.now()}.png`,
-    );
-    this.logger.log(`Taking screenshot to ${filename}`);
+    const filename = `screenshot-${Date.now()}.png`;
+    const filepath = path.join(this.screenshotDir, filename);
+    this.logger.log(`Taking screenshot to ${filepath}`);
 
     try {
       // Take screenshot
-      await screen.capture(filename, FileType.PNG);
+      await screen.capture(filename, FileType.PNG, this.screenshotDir);
 
       // Read the file back and return as buffer
-      return await fs.readFile(filename);
+      return await fs.readFile(filepath);
     } catch (error) {
       this.logger.error(`Error taking screenshot: ${error.message}`);
       throw error;
     } finally {
       // Clean up the temporary file
       try {
-        await fs.unlink(filename);
+        await fs.unlink(filepath);
       } catch (unlinkError) {
         // Ignore if file doesn't exist
         this.logger.warn(
