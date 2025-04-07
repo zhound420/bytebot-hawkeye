@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import dotenv from "dotenv";
 import { prisma } from "../lib/prisma";
-import { MessageType, Prisma } from "@prisma/client";
+import { MessageType, Prisma, TaskStatus } from "@prisma/client";
 
 dotenv.config();
 
@@ -111,6 +111,22 @@ async function saveMessageToDatabase(message: Anthropic.Beta.BetaMessageParam) {
     console.log(`Saved ${messageType} message to database`);
   } catch (error) {
     console.error("Failed to save message to database:", error);
+  }
+}
+
+async function completeTask() {
+  if (!currentTaskId) {
+    console.warn("No current task ID set, cannot complete task");
+    return;
+  }
+  try {
+    await prisma.task.update({
+      where: { id: currentTaskId },
+      data: { status: TaskStatus.COMPLETED },
+    });
+    console.log("Task completed successfully");
+  } catch (error) {
+    console.error("Failed to complete task:", error);
   }
 }
 
@@ -455,6 +471,7 @@ export async function runAgent() {
     }
 
     if (!containsToolUse) {
+      await completeTask();
       break;
     }
   }

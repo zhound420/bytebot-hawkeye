@@ -40,6 +40,16 @@ interface ToolResultBlock {
 
 type ContentBlock = TextBlock | ToolUseBlock | ToolResultBlock | ImageBlock;
 
+// New interface for transformed message content
+interface TransformedContentBlock {
+  type: 'text' | 'image';
+  text?: string;
+  image?: {
+    media_type: string;
+    data: string;
+  };
+}
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -78,49 +88,66 @@ export async function GET(request: NextRequest) {
     }
 
     const messages = await prisma.message.findMany(query);
-    console.log(`Found ${messages.length} new messages for task ${taskId}`);
+
+    let messageRole = MessageType.USER ? 'user' : 'assistant'
 
     // Transform the messages to a format suitable for the frontend
     const transformedMessages = messages.map(message => {
-      // Handle different content types based on the Anthropic message structure
-      let displayContent = '';
+      const parsedContent = message.content as unknown as ContentBlock[];
+      const transformedContent: TransformedContentBlock[] = [];
       
-      const content = message.content as unknown as ContentBlock[];
-      
-      if (Array.isArray(content)) {
-        // Process content blocks
-        for (const block of content) {
-          if (block && typeof block === 'object') {
-            if (block.type === 'text' && 'text' in block) {
-              displayContent += block.text;
-            } else if (block.type === 'tool_use' && 'name' in block) {
-              displayContent += `[Using tool: ${block.name}]`;
-            } else if (block.type === 'tool_result' && 'content' in block && Array.isArray(block.content)) {
-              for (const resultBlock of block.content) {
-                if (resultBlock && typeof resultBlock === 'object') {
-                  if (resultBlock.type === 'text' && 'text' in resultBlock) {
-                    displayContent += resultBlock.text;
-                  } else if (resultBlock.type === 'image') {
-                    displayContent += '[Image]';
+      if (Array.isArray(parsedContent)) {
+        for (const block of parsedContent) {
+          if (!block || typeof block !== 'object') continue;
+          
+          // Handle text blocks
+          if (block.type === 'text' && 'text' in block) {
+            transformedContent.push({
+              type: 'text',
+              text: block.text
+            });
+          } 
+          // Handle tool_result blocks that contain images or text
+          else if (block.type === 'tool_result' && 'content' in block && Array.isArray(block.content)) {
+            messageRole = MessageType.ASSISTANT // This is an overwrite so it shows as assistant
+            for (const resultBlock of block.content) {
+              if (!resultBlock || typeof resultBlock !== 'object') continue;
+              
+              if (resultBlock.type === 'text' && 'text' in resultBlock) {
+                transformedContent.push({
+                  type: 'text',
+                  text: resultBlock.text
+                });
+              } 
+              else if (resultBlock.type === 'image' && 'source' in resultBlock && resultBlock.source) {
+                transformedContent.push({
+                  type: 'image',
+                  image: {
+                    media_type: resultBlock.source.media_type,
+                    data: resultBlock.source.data
                   }
-                }
+                });
               }
             }
           }
         }
-      } else if (typeof content === 'string') {
-        displayContent = content;
       }
 
+      if (transformedContent.length === 0) {
+        console.log('No content found for message', message);
+        return null;
+      }
+      
       return {
         id: message.id,
-        content: displayContent,
-        role: message.type === MessageType.USER ? 'user' : 'assistant',
+        content: transformedContent,
+        role: messageRole,
         createdAt: message.createdAt,
       };
     });
 
-    return NextResponse.json({ messages: transformedMessages });
+    const filteredMessages = transformedMessages.filter(Boolean)
+    return NextResponse.json({ messages: filteredMessages });
   } catch (error) {
     console.error('Error fetching messages:', error);
     return NextResponse.json({ error: 'Failed to fetch messages' }, { status: 500 });
