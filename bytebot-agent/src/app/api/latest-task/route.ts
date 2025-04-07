@@ -32,26 +32,26 @@ export async function GET() {
 
     // If no in-progress task is found, try to find the latest completed task
     if (!latestTask) {
-      const latestCompletedTask = await prisma.task.findFirst({
-        where: {
-          status: TaskStatus.COMPLETED
-        },
-        orderBy: {
-          updatedAt: 'desc'
-        },
-        include: {
-          messages: {
-            take: 1,
-            orderBy: {
-              createdAt: 'asc'
-            }
-          }
-        }
-      });
+      // const latestCompletedTask = await prisma.task.findFirst({
+      //   where: {
+      //     status: TaskStatus.COMPLETED
+      //   },
+      //   orderBy: {
+      //     updatedAt: 'desc'
+      //   },
+      //   include: {
+      //     messages: {
+      //       take: 1,
+      //       orderBy: {
+      //         createdAt: 'asc'
+      //       }
+      //     }
+      //   }
+      // });
 
-      if (latestCompletedTask) {
-        return NextResponse.json({ task: latestCompletedTask });
-      }
+      // if (latestCompletedTask) {
+      //   return NextResponse.json({ task: latestCompletedTask });
+      // }
       
       // No tasks found at all
       return NextResponse.json({ task: null });

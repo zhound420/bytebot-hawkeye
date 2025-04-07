@@ -89,10 +89,10 @@ export async function GET(request: NextRequest) {
 
     const messages = await prisma.message.findMany(query);
 
-    let messageRole = MessageType.USER ? 'user' : 'assistant'
-
+    
     // Transform the messages to a format suitable for the frontend
     const transformedMessages = messages.map(message => {
+      let messageRole = message.type;
       const parsedContent = message.content as unknown as ContentBlock[];
       const transformedContent: TransformedContentBlock[] = [];
       
@@ -114,6 +114,9 @@ export async function GET(request: NextRequest) {
               if (!resultBlock || typeof resultBlock !== 'object') continue;
               
               if (resultBlock.type === 'text' && 'text' in resultBlock) {
+                if (resultBlock.text === "Success") {
+                  continue;
+                }
                 transformedContent.push({
                   type: 'text',
                   text: resultBlock.text
@@ -134,7 +137,6 @@ export async function GET(request: NextRequest) {
       }
 
       if (transformedContent.length === 0) {
-        console.log('No content found for message', message);
         return null;
       }
       

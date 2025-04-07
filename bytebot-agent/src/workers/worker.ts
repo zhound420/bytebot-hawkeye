@@ -25,6 +25,7 @@ const worker = new Worker(
     const { description, taskId } = job.data;
     console.log('triggerAgentWithMessage', description, taskId)
     await triggerAgentWithMessage(description, taskId);
+    console.log("agent task completed")
   },
   {
     connection,
