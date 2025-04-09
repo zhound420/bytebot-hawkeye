@@ -13,7 +13,7 @@ DOCKERFILE="${PROJECT_ROOT}/docker/Dockerfile"
 show_help() {
     echo "Usage: ./build.sh [OPTIONS]"
     echo ""
-    echo "Build the ByteBot Docker image"
+    echo "Build the Bytebot Docker image"
     echo ""
     echo "Options:"
     echo "  -p, --production  Build the production Docker image (default: development)"
@@ -78,7 +78,7 @@ if [ "$NO_CACHE" = true ]; then
 fi
 
 # Execute the build with absolute paths
-echo "Building ByteBot Docker image with tag: $IMAGE_NAME"
+echo "Building Bytebot Docker image with tag: $IMAGE_NAME"
 $BUILD_CMD -t "$IMAGE_NAME" -f "$DOCKERFILE" "$PROJECT_ROOT"
 
 # Check if build was successful

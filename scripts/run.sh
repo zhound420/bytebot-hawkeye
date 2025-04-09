@@ -11,7 +11,7 @@ TAG=""
 show_help() {
     echo "Usage: ./run.sh [OPTIONS]"
     echo ""
-    echo "Run the ByteBot Docker container"
+    echo "Run the Bytebot Docker container"
     echo ""
     echo "Options:"
     echo "  -p, --production  Run the production Docker image (default: development)"
@@ -63,7 +63,7 @@ if ! docker image inspect "$IMAGE_NAME" >/dev/null 2>&1; then
     exit 1
 fi
 
-    echo "Running ByteBot with tag: $TAG"
+    echo "Running Bytebot with tag: $TAG"
 
     # Run the production container
     docker run -d --platform linux/amd64 \
@@ -74,8 +74,8 @@ fi
 
 # Check if container started successfully
 if docker ps | grep -q "bytebot:$TAG"; then
-    echo "ByteBot container started successfully!"
+    echo "Bytebot container started successfully!"
 else
-    echo "Failed to start ByteBot container."
+    echo "Failed to start Bytebot container."
     exit 1
 fi

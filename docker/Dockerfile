@@ -1,5 +1,5 @@
 # -----------------------------------------------------------------------------
-# ByteBot Dockerfile - Virtual Desktop Environment
+# Bytebot Dockerfile - Virtual Desktop Environment
 # -----------------------------------------------------------------------------
 
 # Base image
