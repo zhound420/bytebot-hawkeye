@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Chrome
+Comment=Browse the web with Google Chrome
+Exec=/usr/bin/google-chrome-stable %U
+Icon=google-chrome
+Path=
+Terminal=false
+StartupNotify=true
+Categories=Network;WebBrowser;
