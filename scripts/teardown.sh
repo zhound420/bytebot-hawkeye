@@ -80,13 +80,13 @@ else
     echo "No QEMU instances found running."
 fi
 
-# Find ByteBot Docker containers
+# Find Bytebot Docker containers
 CONTAINER_ID=$(docker ps -a --filter "ancestor=bytebot:$TAG" --format "{{.ID}}")
 CONTAINER_NAMES=$(docker ps -a --filter "name=bytebot" --format "{{.Names}}")
 
 # Stop and remove containers
 if [ -n "$CONTAINER_ID" ] || [ -n "$CONTAINER_NAMES" ]; then
-    echo "Found ByteBot containers matching tag $TAG:"
+    echo "Found Bytebot containers matching tag $TAG:"
     
     if [ -n "$CONTAINER_ID" ]; then
         echo "Stopping container(s) by image: $CONTAINER_ID"
@@ -108,12 +108,12 @@ if [ -n "$CONTAINER_ID" ] || [ -n "$CONTAINER_NAMES" ]; then
         done
     fi
     
-    echo "ByteBot containers removed."
+    echo "Bytebot containers removed."
 else
-    echo "No ByteBot containers found."
+    echo "No Bytebot containers found."
 fi
 
-echo "ByteBot environment teardown complete."
+echo "Bytebot environment teardown complete."
 
 # Make the script executable
 chmod +x "$0"
