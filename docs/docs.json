@@ -3,9 +3,9 @@
   "theme": "mint",
   "name": "Bytebot Documentation",
   "colors": {
-    "primary": "#2563EB",
-    "light": "#3B82F6",
-    "dark": "#1D4ED8"
+    "primary": "#000000",
+    "light": "#fbfaf9",
+    "dark": "#000000"
   },
   "favicon": "/favicon.svg",
   "navigation": {
