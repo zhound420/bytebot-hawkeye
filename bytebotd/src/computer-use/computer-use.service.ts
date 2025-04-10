@@ -271,7 +271,7 @@ export class ComputerUseService {
 
     // Perform scroll
     for (let i = 0; i < amount; i++) {
-      await this.nutService.mouseWheelEvent(direction, 3);
+      await this.nutService.mouseWheelEvent(direction, 1);
       await new Promise((resolve) => setTimeout(resolve, 150));
     }
 
