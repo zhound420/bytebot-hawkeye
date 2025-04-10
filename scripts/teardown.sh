@@ -12,7 +12,7 @@ FORCE=false
 show_help() {
     echo "Usage: ./teardown.sh [OPTIONS]"
     echo ""
-    echo "Kill any running QEMU instances and remove ByteBot Docker containers"
+    echo "Remove Bytebot Docker containers"
     echo ""
     echo "Options:"
     echo "  -p, --production  Target the production Docker container (default: development)"
@@ -57,28 +57,7 @@ if [ -z "$TAG" ]; then
     fi
 fi
 
-echo "Tearing down ByteBot environment with tag: $TAG"
-
-# Kill all QEMU processes
-echo "Stopping all QEMU instances..."
-QEMU_PIDS=$(pgrep -f "qemu-system")
-if [ -n "$QEMU_PIDS" ]; then
-    echo "Killing QEMU processes with PIDs: $QEMU_PIDS"
-    kill $QEMU_PIDS 2>/dev/null
-    
-    # Give QEMU a moment to terminate gracefully
-    sleep 2
-    
-    # Force kill if still running
-    QEMU_PIDS=$(pgrep -f "qemu-system")
-    if [ -n "$QEMU_PIDS" ]; then
-        echo "Force killing QEMU processes..."
-        kill -9 $QEMU_PIDS 2>/dev/null
-    fi
-    echo "QEMU instances terminated."
-else
-    echo "No QEMU instances found running."
-fi
+echo "Tearing down Bytebot environment with tag: $TAG"
 
 # Find Bytebot Docker containers
 CONTAINER_ID=$(docker ps -a --filter "ancestor=bytebot:$TAG" --format "{{.ID}}")

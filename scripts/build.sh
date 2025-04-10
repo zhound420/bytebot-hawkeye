@@ -7,7 +7,7 @@ PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PRODUCTION=false
 TAG=""
 NO_CACHE=false
-DOCKERFILE="${PROJECT_ROOT}/docker/Dockerfile"
+DOCKERFILE="${PROJECT_ROOT}/infrastructure/docker/Dockerfile"
 
 # Help message
 show_help() {
