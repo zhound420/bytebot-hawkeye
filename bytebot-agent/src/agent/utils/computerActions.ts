@@ -25,7 +25,7 @@ export async function key(key: string): Promise<void> {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         action: "type_keys",
-        keys: [key],
+        keys: key.split("+"),
       }),
     });
   } catch (error) {

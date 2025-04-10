@@ -198,12 +198,10 @@ export class NutService {
     this.logger.log(`Sending keys: ${keys}`);
 
     try {
-      for (const key of keys) {
-        const nutKey = this.validateKey(key);
-        await keyboard.pressKey(nutKey);
-        await this.delay(delay);
-        await keyboard.releaseKey(nutKey);
-      }
+      const nutKeys = keys.map((key) => this.validateKey(key));
+      await keyboard.pressKey(...nutKeys);
+      await this.delay(delay);
+      await keyboard.releaseKey(...nutKeys);
       return { success: true };
     } catch (error) {
       throw new Error(`Failed to send keys: ${error.message}`);
@@ -256,19 +254,100 @@ export class NutService {
     this.logger.log(`Typing text: ${text}`);
 
     try {
-      if (delayMs > 0) {
-        // Type with delay between characters
-        for (const char of text) {
-          await keyboard.type(char);
-          await this.delay(delayMs);
+      for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        const keyInfo = this.charToKeyInfo(char);
+
+        if (keyInfo) {
+          if (keyInfo.withShift) {
+            // Hold shift key, press the character key, and release shift key
+            await keyboard.pressKey(Key.LeftShift, keyInfo.keyCode);
+            await keyboard.releaseKey(Key.LeftShift, keyInfo.keyCode);
+          } else {
+            await keyboard.pressKey(keyInfo.keyCode);
+            await keyboard.releaseKey(keyInfo.keyCode);
+          }
+
+          if (delayMs > 0 && i < text.length - 1) {
+            await new Promise((resolve) => setTimeout(resolve, delayMs));
+          }
+        } else {
+          throw new Error(`No key mapping found for character: ${char}`);
         }
-      } else {
-        // Type all at once
-        await keyboard.type(text);
       }
     } catch (error) {
       throw new Error(`Failed to type text: ${error.message}`);
     }
+  }
+
+  /**
+   * Converts a character to its corresponding key information.
+   *
+   * @param char The character to convert.
+   * @returns An object containing the keyCode and whether shift is needed, or null if no mapping exists.
+   */
+  private charToKeyInfo(
+    char: string,
+  ): { keyCode: Key; withShift: boolean } | null {
+    // Handle lowercase letters
+    if (/^[a-z]$/.test(char)) {
+      return { keyCode: XKeySymToNutKeyMap[char], withShift: false };
+    }
+
+    // Handle uppercase letters (need to send shift + lowercase)
+    if (/^[A-Z]$/.test(char)) {
+      return {
+        keyCode: XKeySymToNutKeyMap[char.toLowerCase()],
+        withShift: true,
+      };
+    }
+
+    // Handle numbers
+    if (/^[0-9]$/.test(char)) {
+      return { keyCode: XKeySymToNutKeyMap[char], withShift: false };
+    }
+
+    // Handle special characters
+    const specialCharMap: Record<string, { keyCode: Key; withShift: boolean }> =
+      {
+        ' ': { keyCode: Key.Space, withShift: false },
+        '.': { keyCode: Key.Period, withShift: false },
+        ',': { keyCode: Key.Comma, withShift: false },
+        ';': { keyCode: Key.Semicolon, withShift: false },
+        "'": { keyCode: Key.Quote, withShift: false },
+        '`': { keyCode: Key.Grave, withShift: false },
+        '-': { keyCode: Key.Minus, withShift: false },
+        '=': { keyCode: Key.Equal, withShift: false },
+        '[': { keyCode: Key.LeftBracket, withShift: false },
+        ']': { keyCode: Key.RightBracket, withShift: false },
+        '\\': { keyCode: Key.Backslash, withShift: false },
+        '/': { keyCode: Key.Slash, withShift: false },
+
+        // Characters that require shift
+        '!': { keyCode: Key.Num1, withShift: true },
+        '@': { keyCode: Key.Num2, withShift: true },
+        '#': { keyCode: Key.Num3, withShift: true },
+        $: { keyCode: Key.Num4, withShift: true },
+        '%': { keyCode: Key.Num5, withShift: true },
+        '^': { keyCode: Key.Num6, withShift: true },
+        '&': { keyCode: Key.Num7, withShift: true },
+        '*': { keyCode: Key.Num8, withShift: true },
+        '(': { keyCode: Key.Num9, withShift: true },
+        ')': { keyCode: Key.Num0, withShift: true },
+        _: { keyCode: Key.Minus, withShift: true },
+        '+': { keyCode: Key.Equal, withShift: true },
+        '{': { keyCode: Key.LeftBracket, withShift: true },
+        '}': { keyCode: Key.RightBracket, withShift: true },
+        '|': { keyCode: Key.Backslash, withShift: true },
+        ':': { keyCode: Key.Semicolon, withShift: true },
+        '"': { keyCode: Key.Quote, withShift: true },
+        '<': { keyCode: Key.Comma, withShift: true },
+        '>': { keyCode: Key.Period, withShift: true },
+        '?': { keyCode: Key.Slash, withShift: true },
+        '~': { keyCode: Key.Grave, withShift: true },
+      };
+
+    return specialCharMap[char] || null;
   }
 
   /**
