@@ -168,7 +168,7 @@ RUN mkdir -p /home/bytebot/.config/xfce4/ && \
     # Ensure all settings are owned by the user
     chown -R bytebot:bytebot /home/bytebot/.config /home/bytebot/Desktop /home/bytebot/.xsessionrc
 
-# Replace default Web Browser shortcut with Chromium
+# Replace default Web Browser shortcut with Firefox
 RUN mkdir -p /etc/skel/.config/xfce4/panel/launcher-* && \
     mkdir -p /usr/share/applications/ && \
     echo '[Desktop Entry]' > /usr/share/applications/firefox.desktop && \
@@ -183,12 +183,12 @@ RUN mkdir -p /etc/skel/.config/xfce4/panel/launcher-* && \
     echo 'StartupNotify=true' >> /usr/share/applications/firefox.desktop && \
     echo 'Categories=Network;WebBrowser;' >> /usr/share/applications/firefox.desktop && \
     chmod +x /usr/share/applications/firefox.desktop && \
-    # Copy Chromium desktop file to panel configuration
+    # Copy Firefox desktop file to panel configuration
     mkdir -p /home/bytebot/.config/xfce4/panel && \
     cp -f /usr/share/applications/firefox.desktop /home/bytebot/.config/xfce4/panel/ && \
     # Create a backup of the default XFCE panel configuration
     mkdir -p /etc/xdg/xfce4/panel/backup && \
-    # Also add Chromium to desktop
+    # Also add Firefox to desktop
     mkdir -p /home/bytebot/Desktop && \
     cp -f /usr/share/applications/firefox.desktop /home/bytebot/Desktop/ && \
     chown -R bytebot:bytebot /home/bytebot/.config/xfce4/panel /home/bytebot/Desktop
