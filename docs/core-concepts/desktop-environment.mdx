@@ -1,0 +1,120 @@
+---
+title: 'Desktop Environment'
+description: 'Details about the Bytebot containerized desktop environment'
+---
+
+## Containerized Desktop
+
+Bytebot's containerized desktop environment provides a lightweight yet fully-functional Linux desktop inside a Docker container. This approach ensures consistency across different host systems and simplifies deployment.
+
+## Components
+
+### XFCE4 Desktop
+
+The desktop environment in Bytebot is based on XFCE4, a lightweight and efficient desktop environment for Unix-like operating systems:
+
+- **Lightweight**: Requires minimal system resources
+- **Customizable**: Easily adapted for different use cases
+- **Fast**: Provides responsive desktop experience
+- **Compatible**: Works well with automation tools
+
+### Base System
+
+- **Ubuntu 22.04** (Jammy Jellyfish) serves as the base operating system
+- Default user account: `bytebot` with sudo privileges
+- Pre-configured locale and timezone settings
+
+### Pre-installed Applications
+
+The Bytebot container comes with essential software pre-installed:
+
+- **Firefox** web browser
+- **Terminal emulator** for command-line access
+- **Text editor** for viewing and editing files
+- **File manager** for navigating the filesystem
+- **Basic system utilities** (calculator, image viewer, etc.)
+
+## Desktop Configuration
+
+The desktop environment is configured with automation in mind:
+
+- **Simplified layout**: Clean desktop with minimal distractions
+- **Predictable element positioning**: Consistent locations for UI elements
+- **Auto-login**: Desktop environment starts automatically
+- **Resolution control**: Configurable display settings
+
+## Remote Access
+
+### VNC Server
+
+The container runs a VNC server that allows direct access to the desktop:
+
+- Accessible on port 5900 (default VNC port)
+- Compatible with standard VNC clients (RealVNC, TightVNC, etc.)
+- Supports standard VNC authentication
+
+### noVNC
+
+For browser-based access, noVNC is included:
+
+- Accessible via web browser at `http://localhost:3000/vnc`
+- No client software required
+- Works across different platforms and devices
+
+## Display Server
+
+Bytebot uses Xvfb (X Virtual Framebuffer) as its display server:
+
+- Creates virtual displays in memory without hardware
+- Suitable for headless environments
+- Configurable resolution and color depth
+- Compatible with standard X11 applications
+
+## Using the Desktop Environment
+
+### Manual Interaction
+
+You can directly interact with the desktop environment using:
+
+1. **VNC client** connected to `localhost:5900`
+2. **Web browser** navigated to `http://localhost:3000/vnc`
+
+### Programmatic Interaction
+
+The primary purpose of the Bytebot desktop is programmatic control through the Computer Use API:
+
+- Control mouse and keyboard inputs
+- Capture screenshots
+- Interact with desktop applications
+- Automate workflows
+
+## Performance Considerations
+
+The containerized desktop has some performance characteristics to be aware of:
+
+- **Resource usage**: XFCE4 is lightweight but still requires CPU and memory resources
+- **Graphics performance**: Limited 3D acceleration compared to native desktop
+- **Network overhead**: Remote access adds some latency
+- **Disk I/O**: Container storage may be slower than native filesystem
+
+## Customization
+
+You can customize the desktop environment by:
+
+1. Modifying the Dockerfile to install additional software
+2. Adjusting the XFCE4 configuration files for different layouts
+3. Adding custom startup scripts 
+4. Setting environment variables to control behavior
+
+## Security Notes
+
+<Warning>
+  The default desktop environment provides convenience at the expense of security. For production use, additional hardening is recommended.
+</Warning>
+
+Security considerations:
+
+- User has sudo privileges by default
+- VNC password should be changed from default
+- Desktop autologin removes authentication requirement
+- NoVNC web access may expose the desktop to unauthorized users

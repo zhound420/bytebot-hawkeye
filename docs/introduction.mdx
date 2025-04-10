@@ -1,71 +1,73 @@
 ---
 title: Introduction
-description: "Welcome to the home of your new documentation"
+description: "A containerized computer use environment with an integrated XFCE4 desktop and automation daemon"
 ---
 
-<img
-  className="block dark:hidden"
-  src="/images/hero-light.png"
-  alt="Hero Light"
-/>
-<img
-  className="hidden dark:block"
-  src="/images/hero-dark.png"
-  alt="Hero Dark"
-/>
+<p align="center">
+  <img
+    className="block dark:hidden"
+    src="/logo/bytebot_transparent_logo_dark.svg"
+    alt="Bytebot Logo"
+    width="500"
+  />
+  <img
+    className="hidden dark:block"
+    src="/logo/bytebot_transparent_logo_white.svg"
+    alt="Bytebot Logo"
+    width="500"
+  />
+</p>
 
-## Setting up
+## What is Bytebot?
 
-The first step to world-class documentation is setting up your editing environments.
+Bytebot provides a complete, self-contained environment for computer use automation. It encapsulates a lightweight XFCE4 desktop environment inside a Docker container with the bytebotd daemon for programmatic control, making it easy to deploy across different platforms.
 
-<CardGroup cols={2}>
-  <Card
-    title="Edit Your Docs"
-    icon="pen-to-square"
-    href="https://mintlify.com/docs/quickstart"
-  >
-    Get your docs set up locally for easy development
-  </Card>
-  <Card
-    title="Preview Changes"
-    icon="image"
-    href="https://mintlify.com/docs/development"
-  >
-    Preview your changes before you push to make sure they're perfect
-  </Card>
-</CardGroup>
-
-## Make it yours
-
-Update your docs to your brand and add valuable content for the best user conversion.
+## Key Features
 
 <CardGroup cols={2}>
   <Card
-    title="Customize Style"
-    icon="palette"
-    href="https://mintlify.com/docs/settings/global"
+    title="Containerized Desktop"
+    icon="desktop"
+    href="/core-concepts/desktop-environment"
   >
-    Customize your docs to your company's colors and brands
+    Runs a lightweight XFCE4 desktop on Ubuntu 22.04 with pre-installed tools
   </Card>
   <Card
-    title="Reference APIs"
+    title="Computer Use API"
     icon="code"
-    href="https://mintlify.com/docs/api-playground/openapi"
+    href="/api-reference/computer-use/unified-endpoint"
   >
-    Automatically generate endpoints from an OpenAPI spec
+    Control the desktop environment programmatically through a unified REST API
   </Card>
-  <Card
-    title="Add Components"
-    icon="screwdriver-wrench"
-    href="https://mintlify.com/docs/content/components/accordions"
-  >
-    Build interactive features and designs to guide your users
+  <Card title="Cross-Platform" icon="globe" href="/quickstart">
+    Works on any system that supports Docker with simple setup
   </Card>
-  <Card
-    title="Get Inspiration"
-    icon="stars"
-    href="https://mintlify.com/customers"
-  >
-    Check out our showcase of our favorite documentation
+  <Card title="VNC Access" icon="eye" href="/quickstart">
+    View and interact with the desktop through VNC or browser-based noVNC
   </Card>
 </CardGroup>
+
+## Architecture Overview
+
+Bytebot is designed as a single, integrated container that provides both a desktop environment and the tools to control it:
+
+<img src="/static/bytebot-diagram.png" alt="Bytebot Architecture Diagram" />
+
+## Getting Started
+
+Get up and running with Bytebot in minutes:
+
+<CardGroup cols={2}>
+  <Card title="Quick Start Guide" icon="rocket" href="/quickstart">
+    Set up and run Bytebot on your system
+  </Card>
+  <Card title="API Reference" icon="book" href="/api-reference/introduction">
+    Learn how to programmatically control the Bytebot environment
+  </Card>
+</CardGroup>
+
+<Note>
+  The default container configuration is intended for development and testing
+  purposes only. It should **not** be used in production environments without
+  security hardening.
+</Note>

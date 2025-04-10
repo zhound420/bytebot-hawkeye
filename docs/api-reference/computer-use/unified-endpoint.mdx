@@ -1,0 +1,274 @@
+---
+title: 'Unified Computer Actions API'
+description: 'Control all aspects of the desktop environment with a single endpoint'
+---
+
+## Overview
+
+The unified computer action API allows for granular control over all aspects of the Bytebot virtual desktop environment through a single endpoint. It replaces multiple specific endpoints with a unified interface that handles various computer actions like mouse movements, clicks, key presses, and more.
+
+## Endpoint
+
+| Method | URL                           | Description                                   |
+| ------ | ----------------------------- | --------------------------------------------- |
+| POST   | `/computer-use/computer`      | Execute computer actions in the virtual desktop |
+
+## Request Format
+
+All requests to the unified endpoint follow this format:
+
+```json
+{
+  "action": "action_name",
+  ...action-specific parameters
+}
+```
+
+The `action` parameter determines which operation to perform, and the remaining parameters depend on the specific action.
+
+## Available Actions
+
+### move_mouse
+
+Move the mouse cursor to a specific position.
+
+**Parameters:**
+
+| Parameter    | Type   | Required | Description                           |
+| ------------ | ------ | -------- | ------------------------------------- |
+| `coordinates`| Object | Yes      | The target coordinates to move to     |
+| `coordinates.x` | Number | Yes   | X coordinate                          |
+| `coordinates.y` | Number | Yes   | Y coordinate                          |
+
+**Example:**
+
+```json
+{
+  "action": "move_mouse",
+  "coordinates": {
+    "x": 100,
+    "y": 200
+  }
+}
+```
+
+### click_mouse
+
+Perform a mouse click at the current or specified position.
+
+**Parameters:**
+
+| Parameter    | Type   | Required | Description                                       |
+| ------------ | ------ | -------- | ------------------------------------------------- |
+| `coordinates`| Object | No       | The coordinates to click (uses current if omitted)|
+| `coordinates.x` | Number | Yes*  | X coordinate                                      |
+| `coordinates.y` | Number | Yes*  | Y coordinate                                      |
+| `button`     | String | Yes      | Mouse button: 'left', 'right', or 'middle'        |
+| `numClicks`  | Number | No       | Number of clicks (default: 1)                     |
+| `holdKeys`   | Array  | No       | Keys to hold while clicking (e.g., ['ctrl', 'shift']) |
+
+**Example:**
+
+```json
+{
+  "action": "click_mouse",
+  "coordinates": {
+    "x": 150,
+    "y": 250
+  },
+  "button": "left",
+  "numClicks": 2
+}
+```
+
+### drag_mouse
+
+Click and drag the mouse from one point to another.
+
+**Parameters:**
+
+| Parameter    | Type   | Required | Description                                       |
+| ------------ | ------ | -------- | ------------------------------------------------- |
+| `path`       | Array  | Yes      | Array of coordinate objects for the drag path     |
+| `button`     | String | Yes      | Mouse button: 'left', 'right', or 'middle'        |
+| `holdKeys`   | Array  | No       | Keys to hold while dragging                       |
+
+**Example:**
+
+```json
+{
+  "action": "drag_mouse",
+  "path": [
+    {"x": 100, "y": 100},
+    {"x": 200, "y": 200}
+  ],
+  "button": "left"
+}
+```
+
+### scroll
+
+Scroll up, down, left, or right.
+
+**Parameters:**
+
+| Parameter    | Type   | Required | Description                                       |
+| ------------ | ------ | -------- | ------------------------------------------------- |
+| `coordinates`| Object | No       | The coordinates to scroll at (uses current if omitted) |
+| `direction`  | String | Yes      | Scroll direction: 'up', 'down', 'left', 'right'   |
+| `amount`     | Number | Yes      | Scroll amount (pixels)                            |
+| `holdKeys`   | Array  | No       | Keys to hold while scrolling                      |
+
+**Example:**
+
+```json
+{
+  "action": "scroll",
+  "direction": "down",
+  "amount": 100
+}
+```
+
+### press_key
+
+Press a keyboard key with optional modifiers.
+
+**Parameters:**
+
+| Parameter    | Type   | Required | Description                                       |
+| ------------ | ------ | -------- | ------------------------------------------------- |
+| `key`        | String | Yes      | The key to press (e.g., 'a', 'enter', 'tab')      |
+| `modifiers`  | Array  | No       | Modifier keys to hold (e.g., ['alt', 'shift'])    |
+
+**Example:**
+
+```json
+{
+  "action": "press_key",
+  "key": "tab",
+  "modifiers": ["alt"]
+}
+```
+
+### type_text
+
+Type a text string with optional delay.
+
+**Parameters:**
+
+| Parameter    | Type   | Required | Description                                       |
+| ------------ | ------ | -------- | ------------------------------------------------- |
+| `text`       | String | Yes      | The text to type                                  |
+| `delay`      | Number | No       | Delay between keystrokes in milliseconds (default: 0) |
+
+**Example:**
+
+```json
+{
+  "action": "type_text",
+  "text": "Hello, Bytebot!",
+  "delay": 50
+}
+```
+
+### wait
+
+Wait for a specified duration.
+
+**Parameters:**
+
+| Parameter    | Type   | Required | Description                                       |
+| ------------ | ------ | -------- | ------------------------------------------------- |
+| `duration`   | Number | Yes      | Wait duration in milliseconds                     |
+
+**Example:**
+
+```json
+{
+  "action": "wait",
+  "duration": 2000
+}
+```
+
+### screenshot
+
+Capture a screenshot of the desktop.
+
+**Parameters:** None required
+
+**Example:**
+
+```json
+{
+  "action": "screenshot"
+}
+```
+
+### get_cursor_position
+
+Get the current cursor position.
+
+**Parameters:** None required
+
+**Example:**
+
+```json
+{
+  "action": "get_cursor_position"
+}
+```
+
+## Response Format
+
+All actions return a standard response structure:
+
+```json
+{
+  "success": true,
+  "data": {
+    // Action-specific response data
+  },
+  "error": null
+}
+```
+
+### Response Examples
+
+**For screenshot action:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "image": "base64-encoded-image-data",
+    "width": 1280,
+    "height": 720
+  },
+  "error": null
+}
+```
+
+**For get_cursor_position action:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "x": 452,
+    "y": 213
+  },
+  "error": null
+}
+```
+
+## Error Handling
+
+If an action fails, the response will include an error message:
+
+```json
+{
+  "success": false,
+  "data": null,
+  "error": "Invalid coordinates provided"
+}
+```

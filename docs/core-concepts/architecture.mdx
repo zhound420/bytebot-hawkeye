@@ -1,0 +1,71 @@
+---
+title: 'Architecture'
+description: 'Overview of the Bytebot architecture and components'
+---
+
+## Bytebot Architecture
+
+Bytebot is designed as a single, integrated Docker container that provides both a desktop environment and the tools to programmatically control it.
+
+<img src="/static/bytebot-diagram.png" alt="Bytebot Architecture Diagram" className="w-full max-w-4xl" />
+
+## Core Components
+
+### Container Base
+
+- **Ubuntu 22.04** serves as the base operating system
+- Provides a stable foundation for the desktop environment and tools
+
+### Desktop Environment
+
+- **XFCE4** desktop environment 
+- Lightweight and customizable
+- Comes pre-configured with sensible defaults
+- Includes default user account: `bytebot` with sudo privileges
+
+### Automation Daemon (bytebotd)
+
+- **bytebotd daemon** is the core service that enables automation
+- Built on top of nutjs for desktop automation
+- Exposes a REST API for remote control
+- Provides unified endpoint for all computer actions
+
+### Browser and Tools
+
+- **Firefox** pre-installed and configured
+- Essential utilities for development and testing
+- Default applications for common tasks
+
+### Remote Access
+
+- **VNC server** for direct desktop access
+- **noVNC** for browser-based desktop access
+
+## Communication Flow
+
+1. **External Application** makes requests to the Bytebot API
+2. **bytebotd daemon** receives and processes these requests
+3. **Desktop Automation** is performed using nutjs 
+4. **Results/Screenshots** are returned to the calling application
+
+## Security Considerations
+
+<Warning>
+  The default container configuration is intended for development and testing purposes only. It should **not** be used in production environments without security hardening.
+</Warning>
+
+Security aspects to consider before deploying in production:
+
+1. The container runs with a default user account that has sudo privileges
+2. Remote access protocols (VNC, noVNC) are not encrypted by default
+3. The REST API does not implement authentication by default
+4. Container networking exposes several ports that should be secured
+
+## Customization Points
+
+Bytebot is designed to be customizable for different use cases:
+
+- **Docker base image** can be modified for different Linux distributions
+- **Desktop environment** can be replaced with alternatives (GNOME, KDE, etc.)
+- **Pre-installed applications** can be customized for specific testing needs
+- **API endpoints** can be extended for additional functionality
