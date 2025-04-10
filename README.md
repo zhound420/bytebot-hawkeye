@@ -33,7 +33,7 @@ The Bytebot container includes:
 - **Ubuntu 22.04** base system
 - **XFCE4** desktop environment (lightweight and customizable)
 - **bytebotd daemon** with nutjs for desktop automation
-- **Google Chrome** pre-installed and configured
+- **Firefox** pre-installed and configured
 - **VNC server** for remote desktop access
 - **noVNC** for browser-based desktop access
 - Default user account: `bytebot` with sudo privileges
@@ -49,13 +49,13 @@ The Bytebot container includes:
 ### Building the Image
 
 ```bash
-./build.sh
+./scripts/build.sh
 ```
 
 Or with custom options:
 
 ```bash
-./build.sh --tag custom-tag --no-cache
+./scripts/build.sh --tag custom-tag --no-cache
 ```
 
 ### Running the Container
@@ -80,13 +80,13 @@ The bytebotd daemon exposes a REST API on port 3000 that allows you to programma
 
 ## Computer Use API
 
-Bytebot provides a unified computer action API that allows granular control over all aspects of the virtual desktop environment through a single endpoint, `http://localhost:3000/computer-use/computer`.
+Bytebot provides a unified computer action API that allows granular control over all aspects of the virtual desktop environment through a single endpoint, `http://localhost:3000/computer-use`.
 
 ### Unified Endpoint
 
-| Endpoint           | Method | Description                                    |
-| ------------------ | ------ | ---------------------------------------------- |
-| `/computer-use/computer` | POST   | Unified endpoint for all computer interactions |
+| Endpoint        | Method | Description                                    |
+| --------------- | ------ | ---------------------------------------------- |
+| `/computer-use` | POST   | Unified endpoint for all computer interactions |
 
 ### Available Actions
 
@@ -98,52 +98,52 @@ The unified API supports the following actions:
 | `click_mouse`         | Perform a mouse click                              | `coordinates?: { x: number, y: number }`, `button: 'left' \| 'right' \| 'middle'`, `numClicks?: number`, `holdKeys?: string[]`      |
 | `drag_mouse`          | Click and drag the mouse from one point to another | `path: { x: number, y: number }[]`, `button: 'left' \| 'right' \| 'middle'`, `holdKeys?: string[]`                                  |
 | `scroll`              | Scroll up, down, left, or right                    | `coordinates?: { x: number, y: number }`, `direction: 'up' \| 'down' \| 'left' \| 'right'`, `amount: number`, `holdKeys?: string[]` |
-| `press_key`           | Press a keyboard key                               | `key: string`, `modifiers?: string[]`                                                                                              |
+| `press_key`           | Press a keyboard key                               | `key: string`, `modifiers?: string[]`                                                                                               |
 | `type_text`           | Type a text string                                 | `text: string`, `delay?: number`                                                                                                    |
 | `wait`                | Wait for a specified duration                      | `duration: number` (milliseconds)                                                                                                   |
-| `take_screenshot`     | Capture a screenshot of the desktop                | None                                                                                                                                |
+| `screenshot`          | Capture a screenshot of the desktop                | None                                                                                                                                |
 | `get_cursor_position` | Get the current cursor position                    | None                                                                                                                                |
 
 ### Example Usage
 
 ```bash
 # Move the mouse to coordinates (100, 200)
-curl -X POST http://localhost:3000/computer-use/computer \
+curl -X POST http://localhost:3000/computer-use \
   -H "Content-Type: application/json" \
   -d '{"action": "move_mouse", "coordinates": {"x": 100, "y": 200}}'
 
 # Click the mouse with the left button
-curl -X POST http://localhost:3000/computer-use/computer \
+curl -X POST http://localhost:3000/computer-use \
   -H "Content-Type: application/json" \
   -d '{"action": "click_mouse", "button": "left"}'
 
 # Type text with a 50ms delay between keystrokes
-curl -X POST http://localhost:3000/computer-use/computer \
+curl -X POST http://localhost:3000/computer-use \
   -H "Content-Type: application/json" \
   -d '{"action": "type_text", "text": "Hello, Bytebot!", "delay": 50}'
 
 # Take a screenshot
-curl -X POST http://localhost:3000/computer-use/computer \
+curl -X POST http://localhost:3000/computer-use \
   -H "Content-Type: application/json" \
-  -d '{"action": "take_screenshot"}'
+  -d '{"action": "screenshot"}'
 
 # Double-click at specific coordinates
-curl -X POST http://localhost:3000/computer-use/computer \
+curl -X POST http://localhost:3000/computer-use \
   -H "Content-Type: application/json" \
   -d '{"action": "click_mouse", "coordinates": {"x": 150, "y": 250}, "button": "left", "numClicks": 2}'
 
 # Press a key with modifiers (e.g., Alt+Tab)
-curl -X POST http://localhost:3000/computer-use/computer \
+curl -X POST http://localhost:3000/computer-use \
   -H "Content-Type: application/json" \
   -d '{"action": "press_key", "key": "tab", "modifiers": ["alt"]}'
 
 # Get the current cursor position
-curl -X POST http://localhost:3000/computer-use/computer \
+curl -X POST http://localhost:3000/computer-use \
   -H "Content-Type: application/json" \
   -d '{"action": "get_cursor_position"}'
 
 # Wait for 2 seconds
-curl -X POST http://localhost:3000/computer-use/computer \
+curl -X POST http://localhost:3000/computer-use \
   -H "Content-Type: application/json" \
   -d '{"action": "wait", "duration": 2000}'
 ```
@@ -159,7 +159,7 @@ import requests
 import json
 
 def control_computer(action, **params):
-    url = "http://localhost:3000/computer-use/computer"
+    url = "http://localhost:3000/computer-use"
     data = {"action": action, **params}
     response = requests.post(url, json=data)
     return response.json()
@@ -171,16 +171,16 @@ control_computer("move_mouse", coordinates={"x": 100, "y": 100})
 control_computer("type_text", text="Hello from Python")
 
 # Take a screenshot
-screenshot = control_computer("take_screenshot")
+screenshot = control_computer("screenshot")
 ```
 
 ### Node.js Example
 
 ```javascript
-const axios = require('axios');
+const axios = require("axios");
 
 async function controlComputer(action, params = {}) {
-  const url = 'http://localhost:3000/computer-use/computer';
+  const url = "http://localhost:3000/computer-use";
   const data = { action, ...params };
   const response = await axios.post(url, data);
   return response.data;
@@ -189,14 +189,14 @@ async function controlComputer(action, params = {}) {
 // Example usage
 async function runExample() {
   // Move mouse
-  await controlComputer('move_mouse', { coordinates: { x: 100, y: 100 } });
-  
+  await controlComputer("move_mouse", { coordinates: { x: 100, y: 100 } });
+
   // Type text
-  await controlComputer('type_text', { text: 'Hello from Node.js' });
-  
+  await controlComputer("type_text", { text: "Hello from Node.js" });
+
   // Take screenshot
-  const screenshot = await controlComputer('take_screenshot');
-  console.log('Screenshot taken:', screenshot);
+  const screenshot = await controlComputer("take_screenshot");
+  console.log("Screenshot taken:", screenshot);
 }
 
 runExample();
