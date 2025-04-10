@@ -1,44 +1,23 @@
-<p align="center">
+<div align="center">
+
   <img src="static/bytebot-logo.png" width="300" alt="Bytebot Logo">
-</p>
 
-# Bytebot
+**The computer use container**
 
-A containerized computer use environment with an integrated XFCE4 desktop and automation daemon.
+[Documentation](https://docs.bytebot.ai) | [Discord](https://discord.gg/6nxuF6cs) | [Twitter](https://x.com/bytebot_ai)
 
-## Overview
-
-Bytebot provides a complete, self-contained environment for computer use automation. It encapsulates a lightweight XFCE4 desktop environment inside a Docker container with the bytebotd daemon for programmatic control, making it easy to deploy across different platforms.
+</div>
 
 ## Features
 
-- **Containerized Desktop Environment**: Runs a lightweight XFCE4 desktop on Ubuntu 22.04
-- **VNC Access**: View and interact with the desktop through VNC or browser-based noVNC
-- **Computer Use API**: Control the desktop environment programmatically through bytebotd daemon
-- **Pre-installed Tools**: Comes with Chrome and other essential tools pre-installed
-- **Cross-Platform**: Works on any system that supports Docker
+- **Containerized Desktop** - Lightweight XFCE4 desktop on Ubuntu 22.04
+- **Access Anywhere** - VNC and browser-based noVNC remote access
+- **Unified API** - Control all desktop actions through a simple REST API
+- **Pre-installed Tools** - Firefox and other essential applications ready to use
 
-## Architecture
+## Documentation
 
-Bytebot is designed as a single, integrated container that provides both a desktop environment and the tools to control it:
-
-![Bytebot Architecture Diagram](static/bytebot-diagram.png)
-
-## Desktop Environment
-
-### Container Components
-
-The Bytebot container includes:
-
-- **Ubuntu 22.04** base system
-- **XFCE4** desktop environment (lightweight and customizable)
-- **bytebotd daemon** with nutjs for desktop automation
-- **Firefox** pre-installed and configured
-- **VNC server** for remote desktop access
-- **noVNC** for browser-based desktop access
-- Default user account: `bytebot` with sudo privileges
-
-> **⚠️ Security Warning**: The default container is intended for development and testing purposes only. It should **not** be used in production environments without security hardening.
+For full documentation, visit [**docs.bytebot.ai**](https://docs.bytebot.ai)
 
 ## Quick Start
 
@@ -46,42 +25,28 @@ The Bytebot container includes:
 
 - Docker installed on your system
 
-### Building the Image
+### Run Bytebot
 
 ```bash
+# Build the image
 ./scripts/build.sh
-```
 
-Or with custom options:
-
-```bash
-./scripts/build.sh --tag custom-tag --no-cache
-```
-
-### Running the Container
-
-```bash
+# Run the container
 ./scripts/run.sh
 ```
 
-### Accessing the Desktop
+More information can be found in the [Quickstart Guide](https://docs.bytebot.ai/quickstart).
+
+### Access Bytebot
 
 - **VNC Client**: Connect to `localhost:5900`
 - **Web Browser**: Navigate to `http://localhost:3000/vnc`
 
-### Using the Computer Use API
+## Automation API
 
-The bytebotd daemon exposes a REST API on port 3000 that allows you to programmatically control the desktop environment.
+Control Bytebot using the unified computer action API:
 
-## Computer Use API
-
-Bytebot provides a unified computer action API that allows granular control over all aspects of the virtual desktop environment through a single endpoint, `http://localhost:3000/computer-use`.
-
-### Unified Endpoint
-
-| Endpoint        | Method | Description                                    |
-| --------------- | ------ | ---------------------------------------------- |
-| `/computer-use` | POST   | Unified endpoint for all computer interactions |
+- [REST API Reference](https://docs.bytebot.ai/rest-api/computer-use)
 
 ### Available Actions
 
@@ -99,132 +64,28 @@ The unified API supports the following actions:
 | `screenshot`          | Capture a screenshot of the desktop                | None                                                                                                                                |
 | `get_cursor_position` | Get the current cursor position                    | None                                                                                                                                |
 
-### Example Usage
+## Contributing
 
-```bash
-# Move the mouse to coordinates (100, 200)
-curl -X POST http://localhost:3000/computer-use \
-  -H "Content-Type: application/json" \
-  -d '{"action": "move_mouse", "coordinates": {"x": 100, "y": 200}}'
+We welcome contributions from the community!
 
-# Click the mouse with the left button
-curl -X POST http://localhost:3000/computer-use \
-  -H "Content-Type: application/json" \
-  -d '{"action": "click_mouse", "button": "left"}'
+### Guidelines
 
-# Type text with a 50ms delay between keystrokes
-curl -X POST http://localhost:3000/computer-use \
-  -H "Content-Type: application/json" \
-  -d '{"action": "type_text", "text": "Hello, Bytebot!", "delay": 50}'
+1. Fork the repo and create a new branch from the main branch.
+2. Commit your changes to the branch (please keep commits small and focused).
+3. Open a pull request with a clear description of the changes.
+4. Wait for review and address any feedback.
+5. Once approved, your changes will be merged.
 
-# Take a screenshot
-curl -X POST http://localhost:3000/computer-use \
-  -H "Content-Type: application/json" \
-  -d '{"action": "screenshot"}'
+## Support
 
-# Double-click at specific coordinates
-curl -X POST http://localhost:3000/computer-use \
-  -H "Content-Type: application/json" \
-  -d '{"action": "click_mouse", "coordinates": {"x": 150, "y": 250}, "button": "left", "numClicks": 2}'
+For any questions or feedback, please join our community on [Discord](https://discord.gg/6nxuF6cs).
 
-# Press a key with modifiers (e.g., Alt+Tab)
-curl -X POST http://localhost:3000/computer-use \
-  -H "Content-Type: application/json" \
-  -d '{"action": "press_key", "key": "tab", "modifiers": ["alt"]}'
+## Acknowledgments
 
-# Get the current cursor position
-curl -X POST http://localhost:3000/computer-use \
-  -H "Content-Type: application/json" \
-  -d '{"action": "get_cursor_position"}'
-
-# Wait for 2 seconds
-curl -X POST http://localhost:3000/computer-use \
-  -H "Content-Type: application/json" \
-  -d '{"action": "wait", "duration": 2000}'
-```
-
-## Automation Integration
-
-Bytebot's computer use API can be easily integrated with any automation framework:
-
-### Python Example
-
-```python
-import requests
-import json
-
-def control_computer(action, **params):
-    url = "http://localhost:3000/computer-use"
-    data = {"action": action, **params}
-    response = requests.post(url, json=data)
-    return response.json()
-
-# Move the mouse
-control_computer("move_mouse", coordinates={"x": 100, "y": 100})
-
-# Type text
-control_computer("type_text", text="Hello from Python")
-
-# Take a screenshot
-screenshot = control_computer("screenshot")
-```
-
-### Node.js Example
-
-```javascript
-const axios = require("axios");
-
-async function controlComputer(action, params = {}) {
-  const url = "http://localhost:3000/computer-use";
-  const data = { action, ...params };
-  const response = await axios.post(url, data);
-  return response.data;
-}
-
-// Example usage
-async function runExample() {
-  // Move mouse
-  await controlComputer("move_mouse", { coordinates: { x: 100, y: 100 } });
-
-  // Type text
-  await controlComputer("type_text", { text: "Hello from Node.js" });
-
-  // Take screenshot
-  const screenshot = await controlComputer("take_screenshot");
-  console.log("Screenshot taken:", screenshot);
-}
-
-runExample();
-```
-
-## Container Internals
-
-### Service Architecture
-
-The container runs several services managed by `supervisord`:
-
-- **Xvfb**: Virtual framebuffer X server
-- **X11VNC**: VNC server for the X display
-- **noVNC**: HTML5 VNC client
-- **XFCE4**: Desktop environment
-- **bytebotd**: NestJS-based daemon for desktop control using nutjs
-
-### Technical Details
-
-- **Display**: Virtual display (:0) using Xvfb
-- **Desktop Automation**: Uses nutjs for low-level input control
-- **API Server**: NestJS application running on port 3000
-- **VNC Access**: Direct VNC on port 5900, noVNC on ports 6080/6081
-- **Window Manager**: XFCE4 with custom configuration
-
-## Use Cases
-
-- **UI Testing**: Automated testing of web and desktop applications
-- **Process Automation**: Automate repetitive desktop tasks
-- **Demo Environments**: Showcase applications in a consistent environment
-- **Remote Work**: Access and control a standardized desktop from anywhere
-- **AI Agent Environment**: Provide a controlled environment for AI computer use agents
+Bytebot builds on top of [nutjs](https://github.com/nut-tree/nut.js), and is inspired by Anthropic's original [computer use demo](https://github.com/anthropics/anthropic-quickstarts/tree/main/computer-use-demo).
 
 ## License
 
-See the [LICENSE](LICENSE) file for details.
+Licensed under the MIT License.
+
+Copyright 2025 Tantl Labs, Inc.
