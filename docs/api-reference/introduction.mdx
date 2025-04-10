@@ -1,0 +1,77 @@
+---
+title: 'API Reference'
+description: 'Overview of the Bytebot API endpoints'
+---
+
+## Computer Use API
+
+Bytebot's core functionality is exposed through its Computer Use API, which provides a unified endpoint for all interactions with the desktop environment. The API allows for programmatic control of mouse movement, keyboard input, and screen capture.
+
+### Authentication
+
+The Bytebot API does not require authentication by default when accessed locally. For remote access, standard network security practices should be implemented.
+
+### Base URL
+
+All API endpoints are relative to the base URL:
+
+```
+http://localhost:3000
+```
+
+The port can be configured when running the container.
+
+### API Endpoints
+
+<CardGroup cols={2}>
+  <Card 
+    title="Unified Computer Actions" 
+    icon="keyboard" 
+    href="/api-reference/computer-use/unified-endpoint"
+  >
+    Single endpoint for all desktop interactions including mouse, keyboard, and screen operations
+  </Card>
+  <Card 
+    title="Usage Examples" 
+    icon="code" 
+    href="/api-reference/computer-use/examples"
+  >
+    Code examples and snippets for common automation scenarios
+  </Card>
+</CardGroup>
+
+### Response Format
+
+All API responses follow a standard JSON format:
+
+```json
+{
+  "success": true,
+  "data": { ... },  // Response data specific to the action
+  "error": null     // Error message if success is false
+}
+```
+
+### Error Handling
+
+When an error occurs, the API returns:
+
+```json
+{
+  "success": false,
+  "data": null,
+  "error": "Detailed error message"
+}
+```
+
+Common HTTP status codes:
+
+| Status Code | Description |
+|-------------|-------------|
+| 200 | Success |
+| 400 | Bad Request - Invalid parameters |
+| 500 | Internal Server Error |
+
+### Rate Limiting
+
+The API currently does not implement rate limiting, but excessive requests may impact performance of the virtual desktop environment.

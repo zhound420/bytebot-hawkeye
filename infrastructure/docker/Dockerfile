@@ -101,19 +101,19 @@ RUN git clone https://github.com/novnc/noVNC.git /opt/noVNC \
 # 5. Application setup (bytebotd)
 # -----------------------------------------------------------------------------
 # Copy package files first to leverage Docker cache
-COPY ./bytebotd/package*.json /bytebotd/
+COPY ./apps/bytebotd/package*.json /bytebotd/
 WORKDIR /bytebotd
 RUN npm install
 
 # Copy the rest of the application code and build
-COPY ./bytebotd/ /bytebotd/
+COPY ./apps/bytebotd/ /bytebotd/
 RUN npm run build
 
 # -----------------------------------------------------------------------------
 # 6. System configuration
 # -----------------------------------------------------------------------------
 # Add Supervisor Configuration for service management
-COPY ./docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY ./infrastructure/docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Set restrictive permissions on supervisord configuration
 RUN chmod 644 /etc/supervisor/conf.d/supervisord.conf && \
@@ -155,7 +155,7 @@ COPY ./static/background.jpg /usr/share/backgrounds/bytebot/
 RUN chmod 644 /usr/share/backgrounds/bytebot/background.jpg
 
 # Add XFCE configuration files
-COPY ./docker/xfce4/ /tmp/xfce4/
+COPY ./infrastructure/docker/xfce4/ /tmp/xfce4/
 
 # Set up XFCE configuration
 RUN mkdir -p /home/bytebot/.config/xfce4/ && \

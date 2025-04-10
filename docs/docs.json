@@ -1,0 +1,91 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "Bytebot Documentation",
+  "colors": {
+    "primary": "#000000",
+    "light": "#fbfaf9",
+    "dark": "#000000"
+  },
+  "favicon": "/favicon.svg",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Guides",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": ["introduction", "quickstart"]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "core-concepts/architecture",
+              "core-concepts/desktop-environment"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "REST API",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": ["rest-api/introduction"]
+          },
+          {
+            "group": "Endpoints",
+            "pages": ["rest-api/computer-use", "rest-api/examples"]
+          }
+        ]
+      }
+    ],
+    "global": {
+      "anchors": [
+        {
+          "anchor": "GitHub",
+          "href": "https://github.com/bytebot-ai/bytebot",
+          "icon": "github"
+        },
+        {
+          "anchor": "Discord",
+          "href": "https://discord.gg/6nxuF6cs",
+          "icon": "discord"
+        },
+        {
+          "anchor": "Twitter",
+          "href": "https://x.com/bytebot_ai",
+          "icon": "twitter"
+        },
+        {
+          "anchor": "Blog",
+          "href": "https://bytebot.ai/blog",
+          "icon": "newspaper"
+        }
+      ]
+    }
+  },
+  "logo": {
+    "light": "/logo/bytebot_transparent_logo_dark.svg",
+    "dark": "/logo/bytebot_transparent_logo_white.svg"
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Support",
+        "href": "mailto:support@bytebot.ai"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "GitHub",
+      "href": "https://github.com/bytebot-ai/bytebot"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/bytebot-ai/bytebot",
+      "twitter": "https://twitter.com/bytebotai"
+    }
+  }
+}

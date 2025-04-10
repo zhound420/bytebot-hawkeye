@@ -1,0 +1,73 @@
+---
+title: Introduction
+description: "A containerized computer use environment with an integrated XFCE4 desktop and automation daemon"
+---
+
+<p align="center">
+  <img
+    className="block dark:hidden"
+    src="/logo/bytebot_transparent_logo_dark.svg"
+    alt="Bytebot Logo"
+    width="500"
+  />
+  <img
+    className="hidden dark:block"
+    src="/logo/bytebot_transparent_logo_white.svg"
+    alt="Bytebot Logo"
+    width="500"
+  />
+</p>
+
+## What is Bytebot?
+
+Bytebot provides a complete, self-contained environment for computer use automation. It encapsulates a lightweight XFCE4 desktop environment inside a Docker container with the bytebotd daemon for programmatic control, making it easy to deploy across different platforms.
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card
+    title="Containerized Desktop"
+    icon="desktop"
+    href="/core-concepts/desktop-environment"
+  >
+    Runs a lightweight XFCE4 desktop on Ubuntu 22.04 with pre-installed tools
+  </Card>
+  <Card
+    title="Computer Use API"
+    icon="code"
+    href="/api-reference/computer-use/unified-endpoint"
+  >
+    Control the desktop environment programmatically through a unified REST API
+  </Card>
+  <Card title="Cross-Platform" icon="globe" href="/quickstart">
+    Works on any system that supports Docker with simple setup
+  </Card>
+  <Card title="VNC Access" icon="eye" href="/quickstart">
+    View and interact with the desktop through VNC or browser-based noVNC
+  </Card>
+</CardGroup>
+
+## Architecture Overview
+
+Bytebot is designed as a single, integrated container that provides both a desktop environment and the tools to control it:
+
+<img src="/static/bytebot-diagram.png" alt="Bytebot Architecture Diagram" />
+
+## Getting Started
+
+Get up and running with Bytebot in minutes:
+
+<CardGroup cols={2}>
+  <Card title="Quick Start Guide" icon="rocket" href="/quickstart">
+    Set up and run Bytebot on your system
+  </Card>
+  <Card title="API Reference" icon="book" href="/api-reference/introduction">
+    Learn how to programmatically control the Bytebot environment
+  </Card>
+</CardGroup>
+
+<Note>
+  The default container configuration is intended for development and testing
+  purposes only. It should **not** be used in production environments without
+  security hardening.
+</Note>

@@ -1,0 +1,133 @@
+---
+title: 'Quickstart'
+description: 'Get Bytebot up and running in minutes'
+---
+
+## Prerequisites
+
+Before getting started with Bytebot, make sure you have:
+
+- Docker installed on your system
+- Sufficient system resources (recommended: 2+ CPU cores, 4GB+ RAM)
+
+## Running Bytebot
+
+Getting started with Bytebot is simple and straightforward.
+
+<AccordionGroup>
+  <Accordion icon="cube" title="Building the Docker Image">
+    You can build the Bytebot Docker image using the provided build script:
+
+    ```bash
+    ./scripts/build.sh
+    ```
+
+    For custom build options:
+
+    ```bash
+    ./scripts/build.sh --tag custom-tag --no-cache
+    ```
+  </Accordion>
+
+  <Accordion icon="play" title="Running the Container">
+    Once the image is built, you can run Bytebot using the provided run script:
+
+    ```bash
+    ./scripts/run.sh
+    ```
+
+    This will start Bytebot with default settings. The container exposes several ports:
+    - `3000`: REST API and noVNC web access
+    - `5900`: VNC server
+  </Accordion>
+
+  <Accordion icon="display" title="Accessing the Desktop">
+    You can access the Bytebot desktop environment in two ways:
+
+    **Using a VNC Client**:
+    Connect to `localhost:5900` with any VNC client.
+
+    **Using a Web Browser**:
+    Navigate to `http://localhost:3000/vnc` in your web browser for noVNC access.
+  </Accordion>
+</AccordionGroup>
+
+## Using the Computer Use API
+
+The core functionality of Bytebot is programmatic control of the desktop environment through its API.
+
+<CodeGroup>
+```bash Terminal
+# Example: Move the mouse to coordinates (100, 200)
+curl -X POST http://localhost:3000/computer-use \
+  -H "Content-Type: application/json" \
+  -d '{"action": "move_mouse", "coordinates": {"x": 100, "y": 200}}'
+
+# Example: Take a screenshot
+curl -X POST http://localhost:3000/computer-use \
+  -H "Content-Type: application/json" \
+  -d '{"action": "screenshot"}'
+```
+
+```python Python
+import requests
+
+def control_computer(action, **params):
+    url = "http://localhost:3000/computer-use"
+    data = {"action": action, **params}
+    response = requests.post(url, json=data)
+    return response.json()
+
+# Move the mouse
+control_computer("move_mouse", coordinates={"x": 100, "y": 100})
+
+# Take a screenshot
+screenshot = control_computer("screenshot")
+```
+
+```javascript JavaScript
+const axios = require("axios");
+
+async function controlComputer(action, params = {}) {
+  const url = "http://localhost:3000/computer-use";
+  const data = { action, ...params };
+  const response = await axios.post(url, data);
+  return response.data;
+}
+
+// Example usage
+async function runExample() {
+  // Move mouse
+  await controlComputer("move_mouse", { coordinates: { x: 100, y: 100 } });
+  
+  // Take screenshot
+  const screenshot = await controlComputer("screenshot");
+  console.log("Screenshot taken:", screenshot);
+}
+```
+</CodeGroup>
+
+<Card title="API Reference" icon="code" href="/api-reference/computer-use/unified-endpoint">
+  View the complete Computer Use API documentation
+</Card>
+
+## Next Steps
+
+Now that you have Bytebot up and running, here are some next steps:
+
+<CardGroup cols={2}>
+  <Card
+    title="Explore the Architecture"
+    icon="diagram-project"
+    href="/core-concepts/architecture"
+  >
+    Learn more about Bytebot's architecture and components
+  </Card>
+  <Card
+    title="Desktop Environment"
+    icon="desktop"
+    href="/core-concepts/desktop-environment"
+  >
+    Discover details about the containerized desktop environment
+  </Card>
+</CardGroup>
