@@ -198,12 +198,10 @@ export class NutService {
     this.logger.log(`Sending keys: ${keys}`);
 
     try {
-      for (const key of keys) {
-        const nutKey = this.validateKey(key);
-        await keyboard.pressKey(nutKey);
-        await this.delay(delay);
-        await keyboard.releaseKey(nutKey);
-      }
+      const nutKeys = keys.map((key) => this.validateKey(key));
+      await keyboard.pressKey(...nutKeys);
+      await this.delay(delay);
+      await keyboard.releaseKey(...nutKeys);
       return { success: true };
     } catch (error) {
       throw new Error(`Failed to send keys: ${error.message}`);
