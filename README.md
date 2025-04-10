@@ -61,12 +61,7 @@ Or with custom options:
 ### Running the Container
 
 ```bash
-docker run -d --privileged \
-  -p 3000:3000 \
-  -p 5900:5900 \
-  -p 6080:6080 \
-  -p 6081:6081 \
-  bytebot:latest
+./scripts/run.sh
 ```
 
 ### Accessing the Desktop
