@@ -1,6 +1,6 @@
 ---
-title: 'Introduction'
-description: 'Overview of the Bytebot REST API'
+title: "Introduction"
+description: "Overview of the Bytebot REST API"
 ---
 
 ## Bytebot REST API
@@ -12,7 +12,7 @@ Bytebot's core functionality is exposed through its REST API, which provides end
 All API endpoints are relative to the base URL:
 
 ```
-http://localhost:3000
+http://localhost:9990
 ```
 
 The port can be configured when running the container.
@@ -47,27 +47,24 @@ When an error occurs, the API returns:
 
 Common HTTP status codes:
 
-| Status Code | Description |
-|-------------|-------------|
-| 200 | Success |
-| 400 | Bad Request - Invalid parameters |
-| 500 | Internal Server Error |
+| Status Code | Description                      |
+| ----------- | -------------------------------- |
+| 200         | Success                          |
+| 400         | Bad Request - Invalid parameters |
+| 500         | Internal Server Error            |
 
 ### Available Endpoints
 
 <CardGroup cols={2}>
-  <Card 
-    title="Computer Use" 
-    icon="computer-mouse" 
+  <Card
+    title="Computer Use"
+    icon="computer-mouse"
     href="/rest-api/computer-use"
   >
-    Execute desktop automation actions like mouse movements, clicks, keyboard input, and screenshots
+    Execute desktop automation actions like mouse movements, clicks, keyboard
+    input, and screenshots
   </Card>
-  <Card 
-    title="Usage Examples" 
-    icon="code" 
-    href="/rest-api/examples"
-  >
+  <Card title="Usage Examples" icon="code" href="/rest-api/examples">
     Code examples and snippets for common automation scenarios
   </Card>
 </CardGroup>

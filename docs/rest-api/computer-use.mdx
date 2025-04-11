@@ -1,7 +1,7 @@
 ---
-title: 'Computer Action'
-openapi: 'POST /computer-use'
-description: 'Execute computer actions in the virtual desktop environment'
+title: "Computer Action"
+openapi: "POST /computer-use"
+description: "Execute computer actions in the virtual desktop environment"
 ---
 
 Execute actions like mouse movements, clicks, keyboard input, and screenshots in the Bytebot desktop environment.
@@ -9,7 +9,9 @@ Execute actions like mouse movements, clicks, keyboard input, and screenshots in
 ## Request
 
 <ParamField body="action" type="string" required>
-  The type of computer action to perform. Must be one of: `move_mouse`, `click_mouse`, `drag_mouse`, `scroll`, `press_key`, `type_text`, `wait`, `screenshot`, `get_cursor_position`.
+  The type of computer action to perform. Must be one of: `move_mouse`,
+  `click_mouse`, `drag_mouse`, `scroll`, `press_key`, `type_text`, `wait`,
+  `screenshot`, `get_cursor_position`.
 </ParamField>
 
 ### Mouse Actions
@@ -28,16 +30,18 @@ Execute actions like mouse movements, clicks, keyboard input, and screenshots in
     </Expandable>
   </ParamField>
 
-  **Example Request**
-  ```json
-  {
-    "action": "move_mouse",
-    "coordinates": {
-      "x": 100,
-      "y": 200
-    }
+**Example Request**
+
+```json
+{
+  "action": "move_mouse",
+  "coordinates": {
+    "x": 100,
+    "y": 200
   }
-  ```
+}
+```
+
 </Accordion>
 
 <Accordion title="click_mouse">
@@ -54,36 +58,40 @@ Execute actions like mouse movements, clicks, keyboard input, and screenshots in
     </Expandable>
   </ParamField>
 
-  <ParamField body="button" type="string" required>
-    Mouse button to click. Must be one of: `left`, `right`, `middle`.
-  </ParamField>
+{" "}
+<ParamField body="button" type="string" required>
+  Mouse button to click. Must be one of: `left`, `right`, `middle`.
+</ParamField>
 
-  <ParamField body="numClicks" type="number">
-    Number of clicks to perform. Default: `1`
-  </ParamField>
+{" "}
+<ParamField body="numClicks" type="number">
+  Number of clicks to perform. Default: `1`
+</ParamField>
 
-  <ParamField body="holdKeys" type="array">
-    Keys to hold while clicking (e.g., ['ctrl', 'shift'])
-    
-    <Expandable title="holdKeys">
-      <ParamField body="0" type="string">
-        Key name
-      </ParamField>
-    </Expandable>
-  </ParamField>
+{" "}
+<ParamField body="holdKeys" type="array">
+  Keys to hold while clicking (e.g., ['ctrl', 'shift'])
+  <Expandable title="holdKeys">
+    <ParamField body="0" type="string">
+      Key name
+    </ParamField>
+  </Expandable>
+</ParamField>
 
-  **Example Request**
-  ```json
-  {
-    "action": "click_mouse",
-    "coordinates": {
-      "x": 150,
-      "y": 250
-    },
-    "button": "left",
-    "numClicks": 2
-  }
-  ```
+**Example Request**
+
+```json
+{
+  "action": "click_mouse",
+  "coordinates": {
+    "x": 150,
+    "y": 250
+  },
+  "button": "left",
+  "numClicks": 2
+}
+```
+
 </Accordion>
 
 <Accordion title="drag_mouse">
@@ -104,25 +112,29 @@ Execute actions like mouse movements, clicks, keyboard input, and screenshots in
     </Expandable>
   </ParamField>
 
-  <ParamField body="button" type="string" required>
-    Mouse button to use for dragging. Must be one of: `left`, `right`, `middle`.
-  </ParamField>
+{" "}
+<ParamField body="button" type="string" required>
+  Mouse button to use for dragging. Must be one of: `left`, `right`, `middle`.
+</ParamField>
 
-  <ParamField body="holdKeys" type="array">
-    Keys to hold while dragging.
-  </ParamField>
+{" "}
+<ParamField body="holdKeys" type="array">
+  Keys to hold while dragging.
+</ParamField>
 
-  **Example Request**
-  ```json
-  {
-    "action": "drag_mouse",
-    "path": [
-      {"x": 100, "y": 100},
-      {"x": 200, "y": 200}
-    ],
-    "button": "left"
-  }
-  ```
+**Example Request**
+
+```json
+{
+  "action": "drag_mouse",
+  "path": [
+    { "x": 100, "y": 100 },
+    { "x": 200, "y": 200 }
+  ],
+  "button": "left"
+}
+```
+
 </Accordion>
 
 <Accordion title="scroll">
@@ -139,26 +151,31 @@ Execute actions like mouse movements, clicks, keyboard input, and screenshots in
     </Expandable>
   </ParamField>
 
-  <ParamField body="direction" type="string" required>
-    Scroll direction. Must be one of: `up`, `down`, `left`, `right`.
-  </ParamField>
+{" "}
+<ParamField body="direction" type="string" required>
+  Scroll direction. Must be one of: `up`, `down`, `left`, `right`.
+</ParamField>
 
-  <ParamField body="amount" type="number" required>
-    Scroll amount in pixels.
-  </ParamField>
+{" "}
+<ParamField body="amount" type="number" required>
+  Scroll amount in pixels.
+</ParamField>
 
-  <ParamField body="holdKeys" type="array">
-    Keys to hold while scrolling.
-  </ParamField>
+{" "}
+<ParamField body="holdKeys" type="array">
+  Keys to hold while scrolling.
+</ParamField>
 
-  **Example Request**
-  ```json
-  {
-    "action": "scroll",
-    "direction": "down",
-    "amount": 100
-  }
-  ```
+**Example Request**
+
+```json
+{
+  "action": "scroll",
+  "direction": "down",
+  "amount": 100
+}
+```
+
 </Accordion>
 
 ### Keyboard Actions
@@ -168,24 +185,26 @@ Execute actions like mouse movements, clicks, keyboard input, and screenshots in
     The key to press (e.g., 'a', 'enter', 'tab').
   </ParamField>
 
-  <ParamField body="modifiers" type="array">
-    Modifier keys to hold (e.g., ['alt', 'shift']).
-    
-    <Expandable title="modifiers">
-      <ParamField body="0" type="string">
-        Modifier key name
-      </ParamField>
-    </Expandable>
-  </ParamField>
+{" "}
+<ParamField body="modifiers" type="array">
+  Modifier keys to hold (e.g., ['alt', 'shift']).
+  <Expandable title="modifiers">
+    <ParamField body="0" type="string">
+      Modifier key name
+    </ParamField>
+  </Expandable>
+</ParamField>
 
-  **Example Request**
-  ```json
-  {
-    "action": "press_key",
-    "key": "tab",
-    "modifiers": ["alt"]
-  }
-  ```
+**Example Request**
+
+```json
+{
+  "action": "press_key",
+  "key": "tab",
+  "modifiers": ["alt"]
+}
+```
+
 </Accordion>
 
 <Accordion title="type_text">
@@ -193,18 +212,21 @@ Execute actions like mouse movements, clicks, keyboard input, and screenshots in
     The text to type.
   </ParamField>
 
-  <ParamField body="delay" type="number">
-    Delay between keystrokes in milliseconds. Default: `0`
-  </ParamField>
+{" "}
+<ParamField body="delay" type="number">
+  Delay between keystrokes in milliseconds. Default: `0`
+</ParamField>
 
-  **Example Request**
-  ```json
-  {
-    "action": "type_text",
-    "text": "Hello, Bytebot!",
-    "delay": 50
-  }
-  ```
+**Example Request**
+
+```json
+{
+  "action": "type_text",
+  "text": "Hello, Bytebot!",
+  "delay": 50
+}
+```
+
 </Accordion>
 
 ### System Actions
@@ -214,35 +236,41 @@ Execute actions like mouse movements, clicks, keyboard input, and screenshots in
     Wait duration in milliseconds.
   </ParamField>
 
-  **Example Request**
-  ```json
-  {
-    "action": "wait",
-    "duration": 2000
-  }
-  ```
+**Example Request**
+
+```json
+{
+  "action": "wait",
+  "duration": 2000
+}
+```
+
 </Accordion>
 
 <Accordion title="screenshot">
   No parameters required.
 
-  **Example Request**
-  ```json
-  {
-    "action": "screenshot"
-  }
-  ```
+**Example Request**
+
+```json
+{
+  "action": "screenshot"
+}
+```
+
 </Accordion>
 
 <Accordion title="get_cursor_position">
   No parameters required.
 
-  **Example Request**
-  ```json
-  {
-    "action": "get_cursor_position"
-  }
-  ```
+**Example Request**
+
+```json
+{
+  "action": "get_cursor_position"
+}
+```
+
 </Accordion>
 
 ## Response
@@ -304,7 +332,7 @@ Execute actions like mouse movements, clicks, keyboard input, and screenshots in
 
 <CodeGroup>
 ```bash cURL
-curl -X POST http://localhost:3000/computer-use \
+curl -X POST http://localhost:9990/computer-use \
   -H "Content-Type: application/json" \
   -d '{"action": "move_mouse", "coordinates": {"x": 100, "y": 200}}'
 ```
@@ -313,7 +341,7 @@ curl -X POST http://localhost:3000/computer-use \
 import requests
 
 def control_computer(action, **params):
-    url = "http://localhost:3000/computer-use"
+    url = "http://localhost:9990/computer-use"
     data = {"action": action, **params}
     response = requests.post(url, json=data)
     return response.json()
@@ -327,7 +355,7 @@ print(result)
 const axios = require("axios");
 
 async function controlComputer(action, params = {}) {
-  const url = "http://localhost:3000/computer-use";
+  const url = "http://localhost:9990/computer-use";
   const data = { action, ...params };
   const response = await axios.post(url, data);
   return response.data;
@@ -335,7 +363,8 @@ async function controlComputer(action, params = {}) {
 
 // Move mouse example
 controlComputer("move_mouse", { coordinates: { x: 100, y: 100 } })
-  .then(result => console.log(result))
-  .catch(error => console.error('Error:', error));
+  .then((result) => console.log(result))
+  .catch((error) => console.error("Error:", error));
 ```
+
 </CodeGroup>

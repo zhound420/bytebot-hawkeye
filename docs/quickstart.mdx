@@ -1,6 +1,6 @@
 ---
-title: 'Quickstart'
-description: 'Get Bytebot up and running in minutes'
+title: "Quickstart"
+description: "Get Bytebot up and running in minutes"
 ---
 
 ## Prerequisites
@@ -27,6 +27,7 @@ Getting started with Bytebot is simple and straightforward.
     ```bash
     ./scripts/build.sh --tag custom-tag --no-cache
     ```
+
   </Accordion>
 
   <Accordion icon="play" title="Running the Container">
@@ -37,8 +38,9 @@ Getting started with Bytebot is simple and straightforward.
     ```
 
     This will start Bytebot with default settings. The container exposes several ports:
-    - `3000`: REST API and noVNC web access
+    - `9990`: REST API and noVNC web access
     - `5900`: VNC server
+
   </Accordion>
 
   <Accordion icon="display" title="Accessing the Desktop">
@@ -48,7 +50,8 @@ Getting started with Bytebot is simple and straightforward.
     Connect to `localhost:5900` with any VNC client.
 
     **Using a Web Browser**:
-    Navigate to `http://localhost:3000/vnc` in your web browser for noVNC access.
+    Navigate to `http://localhost:9990/vnc` in your web browser for noVNC access.
+
   </Accordion>
 </AccordionGroup>
 
@@ -59,21 +62,23 @@ The core functionality of Bytebot is programmatic control of the desktop environ
 <CodeGroup>
 ```bash Terminal
 # Example: Move the mouse to coordinates (100, 200)
-curl -X POST http://localhost:3000/computer-use \
+curl -X POST http://localhost:9990/computer-use \
   -H "Content-Type: application/json" \
   -d '{"action": "move_mouse", "coordinates": {"x": 100, "y": 200}}'
 
 # Example: Take a screenshot
-curl -X POST http://localhost:3000/computer-use \
-  -H "Content-Type: application/json" \
-  -d '{"action": "screenshot"}'
-```
+
+curl -X POST http://localhost:9990/computer-use \
+ -H "Content-Type: application/json" \
+ -d '{"action": "screenshot"}'
+
+````
 
 ```python Python
 import requests
 
 def control_computer(action, **params):
-    url = "http://localhost:3000/computer-use"
+    url = "http://localhost:9990/computer-use"
     data = {"action": action, **params}
     response = requests.post(url, json=data)
     return response.json()
@@ -83,13 +88,13 @@ control_computer("move_mouse", coordinates={"x": 100, "y": 100})
 
 # Take a screenshot
 screenshot = control_computer("screenshot")
-```
+````
 
 ```javascript JavaScript
 const axios = require("axios");
 
 async function controlComputer(action, params = {}) {
-  const url = "http://localhost:3000/computer-use";
+  const url = "http://localhost:9990/computer-use";
   const data = { action, ...params };
   const response = await axios.post(url, data);
   return response.data;
@@ -99,15 +104,20 @@ async function controlComputer(action, params = {}) {
 async function runExample() {
   // Move mouse
   await controlComputer("move_mouse", { coordinates: { x: 100, y: 100 } });
-  
+
   // Take screenshot
   const screenshot = await controlComputer("screenshot");
   console.log("Screenshot taken:", screenshot);
 }
 ```
+
 </CodeGroup>
 
-<Card title="API Reference" icon="code" href="/api-reference/computer-use/unified-endpoint">
+<Card
+  title="API Reference"
+  icon="code"
+  href="/api-reference/computer-use/unified-endpoint"
+>
   View the complete Computer Use API documentation
 </Card>
 

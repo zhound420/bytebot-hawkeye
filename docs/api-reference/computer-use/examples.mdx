@@ -1,6 +1,6 @@
 ---
-title: 'Computer Use API Examples'
-description: 'Code examples for common automation scenarios using the Bytebot API'
+title: "Computer Use API Examples"
+description: "Code examples for common automation scenarios using the Bytebot API"
 ---
 
 ## Basic Examples
@@ -12,36 +12,38 @@ Here are some practical examples of how to use the Computer Use API in different
 <CodeGroup>
 ```bash Opening a Web Browser
 # Move to Firefox/Chrome icon in the dock and click it
-curl -X POST http://localhost:3000/computer-use \
+curl -X POST http://localhost:9990/computer-use \
   -H "Content-Type: application/json" \
   -d '{"action": "move_mouse", "coordinates": {"x": 100, "y": 960}}'
 
-curl -X POST http://localhost:3000/computer-use \
-  -H "Content-Type: application/json" \
-  -d '{"action": "click_mouse", "button": "left", "numClicks": 1}'
-```
+curl -X POST http://localhost:9990/computer-use \
+ -H "Content-Type: application/json" \
+ -d '{"action": "click_mouse", "button": "left", "numClicks": 1}'
+
+````
 
 ```bash Taking and Saving a Screenshot
 # Take a screenshot
-response=$(curl -s -X POST http://localhost:3000/computer-use \
+response=$(curl -s -X POST http://localhost:9990/computer-use \
   -H "Content-Type: application/json" \
   -d '{"action": "screenshot"}')
 
 # Extract the base64 image data and save to a file
 echo $response | jq -r '.data.image' | base64 -d > screenshot.png
-```
+````
 
 ```bash Typing and Keyboard Shortcuts
 # Type text in a text editor
-curl -X POST http://localhost:3000/computer-use \
+curl -X POST http://localhost:9990/computer-use \
   -H "Content-Type: application/json" \
   -d '{"action": "type_text", "text": "Hello, this is an automated test!", "delay": 30}'
 
 # Press Ctrl+S to save
-curl -X POST http://localhost:3000/computer-use \
+curl -X POST http://localhost:9990/computer-use \
   -H "Content-Type: application/json" \
   -d '{"action": "press_key", "key": "s", "modifiers": ["control"]}'
 ```
+
 </CodeGroup>
 
 ### Python Examples
@@ -56,22 +58,26 @@ from io import BytesIO
 from PIL import Image
 
 def control_computer(action, **params):
-    url = "http://localhost:3000/computer-use"
-    data = {"action": action, **params}
-    response = requests.post(url, json=data)
-    return response.json()
+url = "http://localhost:9990/computer-use"
+data = {"action": action, **params}
+response = requests.post(url, json=data)
+return response.json()
 
 # Open a web browser by clicking an icon
+
 control_computer("move_mouse", coordinates={"x": 100, "y": 960})
 control_computer("click_mouse", button="left")
 
 # Wait for the browser to open
+
 control_computer("wait", duration=2000)
 
 # Type a URL
+
 control_computer("type_text", text="https://example.com")
 control_computer("press_key", key="enter")
-```
+
+````
 
 ```python Screenshot and Analysis
 import requests
@@ -83,10 +89,10 @@ from PIL import Image
 from io import BytesIO
 
 def take_screenshot():
-    url = "http://localhost:3000/computer-use"
+    url = "http://localhost:9990/computer-use"
     data = {"action": "screenshot"}
     response = requests.post(url, json=data)
-    
+
     if response.json()["success"]:
         img_data = base64.b64decode(response.json()["data"]["image"])
         image = Image.open(BytesIO(img_data))
@@ -99,21 +105,21 @@ img = take_screenshot()
 # Convert to grayscale for analysis
 if img is not None:
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    
+
     # Save the screenshot
     cv2.imwrite("screenshot.png", img)
-    
+
     # Perform image analysis (example: find edges)
     edges = cv2.Canny(gray, 100, 200)
     cv2.imwrite("edges.png", edges)
-```
+````
 
 ```python Web Form Automation
 import requests
 import time
 
 def control_computer(action, **params):
-    url = "http://localhost:3000/computer-use"
+    url = "http://localhost:9990/computer-use"
     data = {"action": action, **params}
     response = requests.post(url, json=data)
     return response.json()
@@ -122,17 +128,17 @@ def fill_web_form(form_fields):
     # Click on the first form field
     control_computer("move_mouse", coordinates=form_fields[0])
     control_computer("click_mouse", button="left")
-    
+
     # Fill out each field
     for i, field in enumerate(form_fields):
         # Input the field value
         control_computer("type_text", text=field["value"])
-        
+
         # If not the last field, press Tab to move to next field
         if i < len(form_fields) - 1:
             control_computer("press_key", key="tab")
             time.sleep(0.5)
-    
+
     # Submit the form by pressing Enter
     control_computer("press_key", key="enter")
 
@@ -145,6 +151,7 @@ form_fields = [
 
 fill_web_form(form_fields)
 ```
+
 </CodeGroup>
 
 ### JavaScript/Node.js Examples
@@ -154,42 +161,44 @@ fill_web_form(form_fields)
 const axios = require('axios');
 
 async function controlComputer(action, params = {}) {
-  const url = "http://localhost:3000/computer-use";
-  const data = { action, ...params };
-  
-  try {
-    const response = await axios.post(url, data);
-    return response.data;
-  } catch (error) {
-    console.error('Error:', error.message);
-    return { success: false, error: error.message };
-  }
+const url = "http://localhost:9990/computer-use";
+const data = { action, ...params };
+
+try {
+const response = await axios.post(url, data);
+return response.data;
+} catch (error) {
+console.error('Error:', error.message);
+return { success: false, error: error.message };
+}
 }
 
 // Example: Automate opening an application and typing
 async function automateTextEditor() {
-  try {
-    // Open text editor by clicking its icon
-    await controlComputer("move_mouse", { coordinates: { x: 150, y: 960 } });
-    await controlComputer("click_mouse", { button: "left" });
-    
+try {
+// Open text editor by clicking its icon
+await controlComputer("move_mouse", { coordinates: { x: 150, y: 960 } });
+await controlComputer("click_mouse", { button: "left" });
+
     // Wait for it to open
     await controlComputer("wait", { duration: 2000 });
-    
+
     // Type some text
-    await controlComputer("type_text", { 
-      text: "This is an automated test using Node.js and Bytebot", 
-      delay: 30 
+    await controlComputer("type_text", {
+      text: "This is an automated test using Node.js and Bytebot",
+      delay: 30
     });
-    
+
     console.log("Automation completed successfully");
-  } catch (error) {
-    console.error("Automation failed:", error);
-  }
+
+} catch (error) {
+console.error("Automation failed:", error);
+}
 }
 
 automateTextEditor();
-```
+
+````
 
 ```javascript Advanced: Screenshot Comparison
 const axios = require('axios');
@@ -198,9 +207,9 @@ const { createCanvas, loadImage } = require('canvas');
 const pixelmatch = require('pixelmatch');
 
 async function controlComputer(action, params = {}) {
-  const url = "http://localhost:3000/computer-use";
+  const url = "http://localhost:9990/computer-use";
   const data = { action, ...params };
-  
+
   try {
     const response = await axios.post(url, data);
     return response.data;
@@ -214,23 +223,23 @@ async function compareScreenshots() {
   try {
     // Take first screenshot
     const screenshot1 = await controlComputer("screenshot");
-    
+
     // Do some actions
     await controlComputer("move_mouse", { coordinates: { x: 500, y: 500 } });
     await controlComputer("click_mouse", { button: "left" });
     await controlComputer("wait", { duration: 1000 });
-    
+
     // Take second screenshot
     const screenshot2 = await controlComputer("screenshot");
-    
+
     // Compare screenshots
     if (screenshot1.success && screenshot2.success) {
       const img1Data = Buffer.from(screenshot1.data.image, 'base64');
       const img2Data = Buffer.from(screenshot2.data.image, 'base64');
-      
+
       fs.writeFileSync('screenshot1.png', img1Data);
       fs.writeFileSync('screenshot2.png', img2Data);
-      
+
       // Now you could load and compare these images
       // This requires additional image comparison libraries
       console.log('Screenshots saved for comparison');
@@ -241,7 +250,8 @@ async function compareScreenshots() {
 }
 
 compareScreenshots();
-```
+````
+
 </CodeGroup>
 
 ## Automation Recipes
@@ -255,7 +265,7 @@ import requests
 import time
 
 def control_computer(action, **params):
-    url = "http://localhost:3000/computer-use"
+    url = "http://localhost:9990/computer-use"
     data = {"action": action, **params}
     response = requests.post(url, json=data)
     return response.json()
@@ -265,20 +275,20 @@ def automate_browser():
     control_computer("move_mouse", coordinates={"x": 100, "y": 960})
     control_computer("click_mouse", button="left")
     time.sleep(3)  # Wait for browser to open
-    
+
     # Type URL
     control_computer("type_text", text="https://example.com")
     control_computer("press_key", key="enter")
     time.sleep(2)  # Wait for page to load
-    
+
     # Take screenshot of the loaded page
     screenshot = control_computer("screenshot")
-    
+
     # Click on a link (coordinates would need to be adjusted for your target)
     control_computer("move_mouse", coordinates={"x": 300, "y": 400})
     control_computer("click_mouse", button="left")
     time.sleep(2)
-    
+
     # Scroll down
     control_computer("scroll", direction="down", amount=500)
 
@@ -290,10 +300,10 @@ automate_browser()
 This example shows how to automate filling out a form in a web application:
 
 ```javascript
-const axios = require('axios');
+const axios = require("axios");
 
 async function controlComputer(action, params = {}) {
-  const url = "http://localhost:3000/computer-use";
+  const url = "http://localhost:9990/computer-use";
   const data = { action, ...params };
   const response = await axios.post(url, data);
   return response.data;
@@ -303,28 +313,28 @@ async function fillForm() {
   // Click first input field
   await controlComputer("move_mouse", { coordinates: { x: 400, y: 300 } });
   await controlComputer("click_mouse", { button: "left" });
-  
+
   // Type name
   await controlComputer("type_text", { text: "John Doe" });
-  
+
   // Tab to next field
   await controlComputer("press_key", { key: "tab" });
-  
+
   // Type email
   await controlComputer("type_text", { text: "john@example.com" });
-  
+
   // Tab to next field
   await controlComputer("press_key", { key: "tab" });
-  
+
   // Type message
-  await controlComputer("type_text", { 
-    text: "This is an automated message sent using Bytebot's Computer Use API", 
-    delay: 30 
+  await controlComputer("type_text", {
+    text: "This is an automated message sent using Bytebot's Computer Use API",
+    delay: 30,
   });
-  
+
   // Tab to submit button
   await controlComputer("press_key", { key: "tab" });
-  
+
   // Press Enter to submit
   await controlComputer("press_key", { key: "enter" });
 }
@@ -346,38 +356,38 @@ import time
 import json
 
 class BytebotWebDriver:
-    def __init__(self, base_url="http://localhost:3000"):
+    def __init__(self, base_url="http://localhost:9990"):
         self.base_url = base_url
-        
+
     def control_computer(self, action, **params):
         url = f"{self.base_url}/computer-use"
         data = {"action": action, **params}
         response = requests.post(url, json=data)
         return response.json()
-        
+
     def open_browser(self, browser_icon_coords):
         self.control_computer("move_mouse", coordinates=browser_icon_coords)
         self.control_computer("click_mouse", button="left")
         time.sleep(3)  # Wait for browser to open
-        
+
     def navigate_to(self, url):
         self.control_computer("type_text", text=url)
         self.control_computer("press_key", key="enter")
         time.sleep(2)  # Wait for page to load
-        
+
     def click_element(self, coords):
         self.control_computer("move_mouse", coordinates=coords)
         self.control_computer("click_mouse", button="left")
-        
+
     def type_text(self, text):
         self.control_computer("type_text", text=text)
-        
+
     def press_key(self, key, modifiers=None):
         params = {"key": key}
         if modifiers:
             params["modifiers"] = modifiers
         self.control_computer("press_key", **params)
-        
+
     def take_screenshot(self):
         return self.control_computer("screenshot")
 

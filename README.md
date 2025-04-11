@@ -40,7 +40,7 @@ More information can be found in the [Quickstart Guide](https://docs.bytebot.ai/
 ### Access Bytebot
 
 - **VNC Client**: Connect to `localhost:5900`
-- **Web Browser**: Navigate to `http://localhost:3000/vnc`
+- **Web Browser**: Navigate to `http://localhost:9990/vnc`
 
 ## Automation API
 

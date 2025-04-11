@@ -5,7 +5,7 @@
  * based on the ToolCall action types defined in agentTask.ts.
  */
 const COMPUTER_USE_URL =
-  process.env.COMPUTER_USE_URL || "http://localhost:3000";
+  process.env.COMPUTER_USE_URL || "http://localhost:9990";
 
 // Types for parameters
 type Coordinates = { x: number; y: number };
