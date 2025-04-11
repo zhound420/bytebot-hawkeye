@@ -67,7 +67,7 @@ fi
 
     # Run the container
     docker run --privileged -d --platform linux/amd64 \
-        -p 3000:3000 -p 5900:5900 -p 6080:6080 -p 6081:6081 \
+        -p 9990:9990 -p 5900:5900 -p 6080:6080 -p 6081:6081 \
         --name "bytebot-$TAG" \
         "$IMAGE_NAME"
 
