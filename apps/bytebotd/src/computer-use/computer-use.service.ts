@@ -75,8 +75,8 @@ export type ScreenshotAction = {
   action: 'screenshot';
 };
 
-export type GetCursorPositionAction = {
-  action: 'get_cursor_position';
+export type CursorPositionAction = {
+  action: 'cursor_position';
 };
 
 // Define the union type using the individual action types
@@ -92,7 +92,7 @@ export type ComputerAction =
   | TypeTextAction
   | WaitAction
   | ScreenshotAction
-  | GetCursorPositionAction;
+  | CursorPositionAction;
 
 @Injectable()
 export class ComputerUseService {
@@ -149,7 +149,7 @@ export class ComputerUseService {
       case 'screenshot':
         return this.screenshot();
 
-      case 'get_cursor_position':
+      case 'cursor_position':
         return this.cursor_position();
 
       default:

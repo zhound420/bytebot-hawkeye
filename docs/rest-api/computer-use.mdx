@@ -11,7 +11,7 @@ Execute actions like mouse movements, clicks, keyboard input, and screenshots in
 <ParamField body="action" type="string" required>
   The type of computer action to perform. Must be one of: `move_mouse`,
   `click_mouse`, `drag_mouse`, `scroll`, `press_key`, `type_text`, `wait`,
-  `screenshot`, `get_cursor_position`.
+  `screenshot`, `cursor_position`.
 </ParamField>
 
 ### Mouse Actions
@@ -59,16 +59,19 @@ Execute actions like mouse movements, clicks, keyboard input, and screenshots in
   </ParamField>
 
 {" "}
+
 <ParamField body="button" type="string" required>
   Mouse button to click. Must be one of: `left`, `right`, `middle`.
 </ParamField>
 
 {" "}
+
 <ParamField body="numClicks" type="number">
   Number of clicks to perform. Default: `1`
 </ParamField>
 
 {" "}
+
 <ParamField body="holdKeys" type="array">
   Keys to hold while clicking (e.g., ['ctrl', 'shift'])
   <Expandable title="holdKeys">
@@ -113,11 +116,13 @@ Execute actions like mouse movements, clicks, keyboard input, and screenshots in
   </ParamField>
 
 {" "}
+
 <ParamField body="button" type="string" required>
   Mouse button to use for dragging. Must be one of: `left`, `right`, `middle`.
 </ParamField>
 
 {" "}
+
 <ParamField body="holdKeys" type="array">
   Keys to hold while dragging.
 </ParamField>
@@ -152,16 +157,19 @@ Execute actions like mouse movements, clicks, keyboard input, and screenshots in
   </ParamField>
 
 {" "}
+
 <ParamField body="direction" type="string" required>
   Scroll direction. Must be one of: `up`, `down`, `left`, `right`.
 </ParamField>
 
 {" "}
+
 <ParamField body="amount" type="number" required>
   Scroll amount in pixels.
 </ParamField>
 
 {" "}
+
 <ParamField body="holdKeys" type="array">
   Keys to hold while scrolling.
 </ParamField>
@@ -186,6 +194,7 @@ Execute actions like mouse movements, clicks, keyboard input, and screenshots in
   </ParamField>
 
 {" "}
+
 <ParamField body="modifiers" type="array">
   Modifier keys to hold (e.g., ['alt', 'shift']).
   <Expandable title="modifiers">
@@ -213,6 +222,7 @@ Execute actions like mouse movements, clicks, keyboard input, and screenshots in
   </ParamField>
 
 {" "}
+
 <ParamField body="delay" type="number">
   Delay between keystrokes in milliseconds. Default: `0`
 </ParamField>
@@ -260,14 +270,14 @@ Execute actions like mouse movements, clicks, keyboard input, and screenshots in
 
 </Accordion>
 
-<Accordion title="get_cursor_position">
+<Accordion title="cursor_position">
   No parameters required.
 
 **Example Request**
 
 ```json
 {
-  "action": "get_cursor_position"
+  "action": "cursor_position"
 }
 ```
 
@@ -304,7 +314,7 @@ Execute actions like mouse movements, clicks, keyboard input, and screenshots in
     ```
   </Accordion>
 
-  <Accordion title="get_cursor_position">
+  <Accordion title="cursor_position">
     ```json
     {
       "success": true,

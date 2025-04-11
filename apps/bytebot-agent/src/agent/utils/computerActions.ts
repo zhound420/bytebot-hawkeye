@@ -111,7 +111,7 @@ export async function cursor_position(): Promise<Coordinates> {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        action: "get_cursor_position",
+        action: "cursor_position",
       }),
     });
 

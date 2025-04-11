@@ -52,17 +52,17 @@ Control Bytebot using the unified computer action API:
 
 The unified API supports the following actions:
 
-| Action                | Description                                        | Parameters                                                                                                                          |
-| --------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `move_mouse`          | Move the mouse cursor to a specific position       | `coordinates: { x: number, y: number }`                                                                                             |
-| `click_mouse`         | Perform a mouse click                              | `coordinates?: { x: number, y: number }`, `button: 'left' \| 'right' \| 'middle'`, `numClicks?: number`, `holdKeys?: string[]`      |
-| `drag_mouse`          | Click and drag the mouse from one point to another | `path: { x: number, y: number }[]`, `button: 'left' \| 'right' \| 'middle'`, `holdKeys?: string[]`                                  |
-| `scroll`              | Scroll up, down, left, or right                    | `coordinates?: { x: number, y: number }`, `direction: 'up' \| 'down' \| 'left' \| 'right'`, `amount: number`, `holdKeys?: string[]` |
-| `press_key`           | Press a keyboard key                               | `key: string`, `modifiers?: string[]`                                                                                               |
-| `type_text`           | Type a text string                                 | `text: string`, `delay?: number`                                                                                                    |
-| `wait`                | Wait for a specified duration                      | `duration: number` (milliseconds)                                                                                                   |
-| `screenshot`          | Capture a screenshot of the desktop                | None                                                                                                                                |
-| `get_cursor_position` | Get the current cursor position                    | None                                                                                                                                |
+| Action            | Description                                        | Parameters                                                                                                                          |
+| ----------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `move_mouse`      | Move the mouse cursor to a specific position       | `coordinates: { x: number, y: number }`                                                                                             |
+| `click_mouse`     | Perform a mouse click                              | `coordinates?: { x: number, y: number }`, `button: 'left' \| 'right' \| 'middle'`, `numClicks?: number`, `holdKeys?: string[]`      |
+| `drag_mouse`      | Click and drag the mouse from one point to another | `path: { x: number, y: number }[]`, `button: 'left' \| 'right' \| 'middle'`, `holdKeys?: string[]`                                  |
+| `scroll`          | Scroll up, down, left, or right                    | `coordinates?: { x: number, y: number }`, `direction: 'up' \| 'down' \| 'left' \| 'right'`, `amount: number`, `holdKeys?: string[]` |
+| `press_key`       | Press a keyboard key                               | `key: string`, `modifiers?: string[]`                                                                                               |
+| `type_text`       | Type a text string                                 | `text: string`, `delay?: number`                                                                                                    |
+| `wait`            | Wait for a specified duration                      | `duration: number` (milliseconds)                                                                                                   |
+| `screenshot`      | Capture a screenshot of the desktop                | None                                                                                                                                |
+| `cursor_position` | Get the current cursor position                    | None                                                                                                                                |
 
 ## Contributing
 
