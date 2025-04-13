@@ -1,29 +1,20 @@
-import { Message, TASK_ID_STORAGE_KEY } from '@/types';
+import { Message } from "@/types";
 
 /**
  * Fetches messages for a specific task
  * @param taskId The ID of the task to fetch messages for
- * @param lastMessageId Optional ID of the last message received
  * @returns Array of new messages
  */
-export async function fetchMessages(taskId: string, lastMessageId: string | null): Promise<Message[]> {
+export async function fetchMessages(taskId: string): Promise<Message[]> {
   try {
-    const queryParams = new URLSearchParams({
-      taskId: taskId,
-    });
-
-    if (lastMessageId) {
-      queryParams.append("lastMessageId", lastMessageId);
-    }
-
-    const response = await fetch(`/api/messages?${queryParams.toString()}`);
+    const response = await fetch(`http://localhost:9991/tasks/${taskId}`);
 
     if (!response.ok) {
       throw new Error("Failed to fetch messages");
     }
 
-    const data = await response.json();
-    return data.messages || [];
+    const task = await response.json();
+    return task.messages || [];
   } catch (error) {
     console.error("Error fetching messages:", error);
     return [];
@@ -37,7 +28,7 @@ export async function fetchMessages(taskId: string, lastMessageId: string | null
  */
 export async function sendMessage(message: string): Promise<any> {
   try {
-    const response = await fetch("/api/start-task", {
+    const response = await fetch("http://localhost:9991/tasks", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -62,42 +53,21 @@ export async function sendMessage(message: string): Promise<any> {
  */
 export async function fetchLatestTask(): Promise<any> {
   try {
-    const response = await fetch('/api/latest-task');
-    
+    const response = await fetch("http://localhost:9991/tasks/in-progress", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
     if (!response.ok) {
       throw new Error("Failed to fetch latest task");
     }
-    
-    const data = await response.json();
-    return data.task || null;
+
+    const task = await response.json();
+    return task || null;
   } catch (error) {
-    console.error('Error fetching latest task:', error);
+    console.error("Error fetching latest task:", error);
     return null;
   }
-}
-
-/**
- * Saves the task ID to local storage
- * @param taskId The task ID to save
- */
-export function saveTaskToLocalStorage(taskId: string | null): void {
-  if (taskId) {
-    localStorage.setItem(TASK_ID_STORAGE_KEY, taskId);
-    console.log(`Saved task ID to local storage: ${taskId}`);
-  } else {
-    localStorage.removeItem(TASK_ID_STORAGE_KEY);
-    console.log('Removed task ID from local storage');
-  }
-}
-
-/**
- * Loads the task ID from local storage
- * @returns The saved task ID or null if none found
- */
-export function loadTaskFromLocalStorage(): string | null {
-  const savedTaskId = localStorage.getItem(TASK_ID_STORAGE_KEY);
-  if (savedTaskId) {
-    console.log(`Loaded task ID from local storage: ${savedTaskId}`);
-  }
-  return savedTaskId;
 }

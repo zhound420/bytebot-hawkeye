@@ -1,12 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { Message } from '@/types';
-import { 
-  fetchMessages, 
-  sendMessage, 
-  fetchLatestTask, 
-  loadTaskFromLocalStorage,
-  saveTaskToLocalStorage
-} from '@/utils/messageUtils';
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Message, MessageType } from "@/types";
+import {
+  fetchMessages,
+  sendMessage,
+  fetchLatestTask,
+} from "@/utils/messageUtils";
+import { MessageContentType } from "../../../shared/types/messageContent.types";
 
 export function useChatSession() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -38,8 +37,8 @@ export function useChatSession() {
     if (!taskId) return;
 
     try {
-      const newMessages = await fetchMessages(taskId, lastMessageId);
-      
+      const newMessages = await fetchMessages(taskId);
+
       if (newMessages && newMessages.length > 0) {
         // Filter out messages we've already processed to prevent duplicates
         const filteredMessages = newMessages.filter(
@@ -102,52 +101,44 @@ export function useChatSession() {
     const loadSession = async () => {
       setIsLoadingSession(true);
       try {
-        // First check if there's a saved task ID in local storage
-        const savedTaskId = loadTaskFromLocalStorage();
-        
-        if (savedTaskId) {
-          setCurrentTaskId(savedTaskId);
-        } else {
-          // If no saved task ID, fetch the latest task from the database
-          console.log('Fetching latest task from database...');
-          const latestTask = await fetchLatestTask();
-          
-          if (latestTask) {
-            console.log(`Found latest task: ${latestTask.id}`);
-            setCurrentTaskId(latestTask.id);
-            
-            // If the task has an initial message, add it to the messages
-            if (latestTask.messages && latestTask.messages.length > 0) {
-              const initialMessage = latestTask.messages[0];
-              
-              const formattedMessage: Message = {
-                id: initialMessage.id,
-                content: initialMessage.content,
-                role: initialMessage.type,
-                createdAt: initialMessage.createdAt
-              };
-              
-              processedMessageIds.current.add(initialMessage.id);
-              setMessages([formattedMessage]);
-            }
-          } else {
-            console.log('No active tasks found');
+        // Fetch the latest task from the database
+        console.log("Fetching latest task from database...");
+        const latestTask = await fetchLatestTask();
+
+        if (latestTask) {
+          console.log(`Found latest task: ${latestTask.id}`);
+          setCurrentTaskId(latestTask.id);
+
+          // If the task has an initial message, add it to the messages
+          if (latestTask.messages && latestTask.messages.length > 0) {
+            const initialMessage = latestTask.messages[0];
+
+            const formattedMessage: Message = {
+              id: initialMessage.id,
+              content: initialMessage.content,
+              role: initialMessage.type,
+              createdAt: initialMessage.createdAt,
+            };
+
+            processedMessageIds.current.add(initialMessage.id);
+            setMessages([formattedMessage]);
           }
+        } else {
+          console.log("No active tasks found");
         }
       } catch (error) {
-        console.error('Error loading session:', error);
+        console.error("Error loading session:", error);
       } finally {
         setIsLoadingSession(false);
       }
     };
-    
+
     loadSession();
   }, []);
 
-  // Update the ref when the state changes and save to local storage
+  // Update the ref when the state changes
   useEffect(() => {
     currentTaskIdRef.current = currentTaskId;
-    saveTaskToLocalStorage(currentTaskId);
   }, [currentTaskId]);
 
   // Set up polling when task ID changes
@@ -178,17 +169,6 @@ export function useChatSession() {
     setIsLoading(true);
 
     try {
-      // Add user message to local state immediately for UI feedback
-      const userMessage: Message = {
-        id: Date.now().toString(),
-        content: input,
-        role: "user",
-      };
-
-      // Add to processed IDs to prevent duplicate
-      processedMessageIds.current.add(userMessage.id);
-
-      setMessages((prev) => [...prev, userMessage]);
       setInput("");
 
       // Send request to start a new task or continue existing task
@@ -197,7 +177,7 @@ export function useChatSession() {
       if (data) {
         // Reset processed message IDs when starting a new task
         if (currentTaskId !== data.task.id) {
-          processedMessageIds.current = new Set([userMessage.id]);
+          processedMessageIds.current = new Set();
         }
 
         // Store the task ID for polling
@@ -206,8 +186,13 @@ export function useChatSession() {
         // Add error message to chat
         const errorMessage: Message = {
           id: Date.now().toString(),
-          content: "Sorry, there was an error processing your request. Please try again.",
-          role: "assistant",
+          content: [
+            {
+              type: MessageContentType.Text,
+              text: "Sorry, there was an error processing your request. Please try again.",
+            },
+          ],
+          role: MessageType.ASSISTANT,
         };
 
         processedMessageIds.current.add(errorMessage.id);
@@ -222,20 +207,17 @@ export function useChatSession() {
   const startNewConversation = () => {
     // Clear the current task ID
     setCurrentTaskId(null);
-    
+
     // Clear messages
     setMessages([]);
-    
+
     // Clear last message ID
     setLastMessageId(null);
-    
+
     // Clear processed message IDs
     processedMessageIds.current = new Set();
-    
-    // Remove from local storage
-    saveTaskToLocalStorage(null);
-    
-    console.log('Started new conversation');
+
+    console.log("Started new conversation");
   };
 
   return {
@@ -246,6 +228,6 @@ export function useChatSession() {
     isLoading,
     isLoadingSession,
     handleSend,
-    startNewConversation
+    startNewConversation,
   };
 }

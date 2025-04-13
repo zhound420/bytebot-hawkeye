@@ -52,7 +52,15 @@ export class TasksService implements OnModuleDestroy {
   }
 
   async findAll(): Promise<Task[]> {
-    return this.prisma.task.findMany();
+    return await this.prisma.task.findMany();
+  }
+
+  async findInProgress(): Promise<Task | null> {
+    return await this.prisma.task.findFirst({
+      where: {
+        status: TaskStatus.IN_PROGRESS,
+      },
+    });
   }
 
   async findById(id: string): Promise<Task & { messages: Message[] }> {
@@ -71,18 +79,26 @@ export class TasksService implements OnModuleDestroy {
   }
 
   async update(id: string, updateTaskDto: UpdateTaskDto): Promise<Task> {
-    await this.findById(id); // Validate task exists before updating
+    const task = await this.findById(id); // Validate task exists before updating
 
-    return this.prisma.task.update({
+    if (!task) {
+      throw new NotFoundException(`Task with ID ${id} not found`);
+    }
+
+    return await this.prisma.task.update({
       where: { id },
       data: updateTaskDto,
     });
   }
 
   async delete(id: string): Promise<Task> {
-    await this.findById(id); // Validate task exists before deleting
+    const task = await this.findById(id);
 
-    return this.prisma.task.delete({
+    if (!task) {
+      throw new NotFoundException(`Task with ID ${id} not found`);
+    }
+
+    return await this.prisma.task.delete({
       where: { id },
     });
   }

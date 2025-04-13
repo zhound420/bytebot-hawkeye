@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Param, Patch, Delete, HttpStatus, HttpCode } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Patch,
+  Delete,
+  HttpStatus,
+  HttpCode,
+} from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
@@ -17,6 +27,11 @@ export class TasksController {
   @Get()
   async findAll(): Promise<Task[]> {
     return this.tasksService.findAll();
+  }
+
+  @Get('in-progress')
+  async findInProgress(): Promise<Task | null> {
+    return this.tasksService.findInProgress();
   }
 
   @Get(':id')
