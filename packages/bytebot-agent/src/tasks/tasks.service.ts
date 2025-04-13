@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
-import { Task, MessageType } from '@prisma/client';
+import { Task, MessageType, Message, Prisma } from '@prisma/client';
 
 @Injectable()
 export class TasksService {
@@ -20,10 +20,12 @@ export class TasksService {
       // Create the initial system message
       await prisma.message.create({
         data: {
-          content: {
-            type: 'text',
-            text: createTaskDto.description,
-          },
+          content: [
+            {
+              type: 'text',
+              text: createTaskDto.description,
+            },
+          ] as Prisma.InputJsonValue,
           type: MessageType.USER,
           taskId: task.id,
         },
@@ -37,9 +39,12 @@ export class TasksService {
     return this.prisma.task.findMany();
   }
 
-  async findById(id: string): Promise<Task> {
+  async findById(id: string): Promise<Task & { messages: Message[] }> {
     const task = await this.prisma.task.findUnique({
       where: { id },
+      include: {
+        messages: true,
+      },
     });
 
     if (!task) {

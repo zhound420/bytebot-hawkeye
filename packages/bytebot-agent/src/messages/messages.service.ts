@@ -13,7 +13,7 @@ export class MessagesService {
    * @returns The created message
    */
   async create(data: {
-    content: MessageContentBlock;
+    content: MessageContentBlock[];
     type: MessageType;
     taskId: string;
   }): Promise<Message> {

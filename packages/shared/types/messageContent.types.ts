@@ -11,7 +11,7 @@ export enum MessageContentType {
 // Base type with only the discriminator
 export type MessageContentBlockBase = {
   type: MessageContentType;
-  content: MessageContentBlock[] | string;
+  content?: MessageContentBlock[];
 };
 
 export type TextContentBlock = {
@@ -21,8 +21,9 @@ export type TextContentBlock = {
 
 export type ImageContentBlock = {
   type: MessageContentType.Image;
-  image: {
-    media_type: string;
+  source: {
+    media_type: "image/png";
+    type: "base64";
     data: string;
   };
 } & MessageContentBlockBase;
@@ -128,12 +129,14 @@ export type TripleClickToolUseBlock = ComputerToolUseBlockBase & {
   };
 };
 
+export type ScrollDirection = "up" | "down" | "left" | "right";
+
 export type ScrollToolUseBlock = ComputerToolUseBlockBase & {
   input: {
     action: "scroll";
     coordinate: [number, number];
     scroll_amount: number;
-    scroll_direction: string;
+    scroll_direction: ScrollDirection;
   };
 };
 
