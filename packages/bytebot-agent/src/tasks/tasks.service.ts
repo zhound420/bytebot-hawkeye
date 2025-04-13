@@ -1,12 +1,18 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, OnModuleDestroy } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
-import { Task, MessageType, Message, Prisma } from '@prisma/client';
+import { Task, MessageType, Message, Prisma, TaskStatus } from '@prisma/client';
+import { InjectQueue } from '@nestjs/bullmq';
+import { AGENT_QUEUE_NAME } from '../common/constants';
+import { Queue } from 'bullmq';
 
 @Injectable()
-export class TasksService {
-  constructor(private prisma: PrismaService) {}
+export class TasksService implements OnModuleDestroy {
+  constructor(
+    @InjectQueue(AGENT_QUEUE_NAME) private agentQueue: Queue,
+    readonly prisma: PrismaService,
+  ) {}
 
   async create(createTaskDto: CreateTaskDto): Promise<Task> {
     return this.prisma.$transaction(async (prisma) => {
@@ -30,6 +36,16 @@ export class TasksService {
           taskId: task.id,
         },
       });
+      // Check if there's no in progress tasks
+      const inProgressTasks = await prisma.task.findMany({
+        where: {
+          status: TaskStatus.IN_PROGRESS,
+        },
+      });
+      if (inProgressTasks.length === 0) {
+        // Add the task to the queue
+        await this.agentQueue.add('task', { taskId: task.id });
+      }
 
       return task;
     });
@@ -68,6 +84,21 @@ export class TasksService {
 
     return this.prisma.task.delete({
       where: { id },
+    });
+  }
+
+  async onModuleDestroy() {
+    // Remove all tasks from the queue
+    await this.agentQueue.drain();
+
+    // Set any pending tasks to cancelled
+    await this.prisma.task.updateMany({
+      where: {
+        status: TaskStatus.IN_PROGRESS,
+      },
+      data: {
+        status: TaskStatus.CANCELLED,
+      },
     });
   }
 }

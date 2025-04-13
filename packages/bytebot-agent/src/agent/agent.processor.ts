@@ -1,7 +1,8 @@
 import { TasksService } from '../tasks/tasks.service';
 import { MessagesService } from '../messages/messages.service';
-import { Injectable, Logger } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { MessageType, TaskStatus } from '@prisma/client';
+import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { AnthropicService } from '../anthropic/anthropic.service';
 import {
   isKeyToolUseBlock,
@@ -46,53 +47,60 @@ import {
   type,
   wait,
 } from './agent.utils';
+import { AGENT_QUEUE_NAME } from '../common/constants';
+import { Job } from 'bullmq';
 
-@Injectable()
-export class AgentOrchestratorService {
+@Processor(AGENT_QUEUE_NAME)
+export class AgentProcessor extends WorkerHost {
   constructor(
     private readonly tasksService: TasksService,
     private readonly messagesService: MessagesService,
     private readonly anthropicService: AnthropicService,
-  ) {}
+  ) {
+    super();
+  }
 
-  private readonly logger = new Logger(AgentOrchestratorService.name);
+  private readonly logger = new Logger(AgentProcessor.name);
 
-  async runAgentLoop(taskId: string) {
-    const task = await this.tasksService.findById(taskId);
+  async process(job: Job) {
+    const taskId = job.data.taskId;
+    let task = await this.tasksService.findById(taskId);
 
-    if (task.status != TaskStatus.IN_PROGRESS) {
-      return;
-    }
+    while (task.status == TaskStatus.IN_PROGRESS) {
+      const messages = task.messages;
 
-    const messages = task.messages;
+      const messageContentBlocks: MessageContentBlock[] =
+        await this.anthropicService.sendMessage(messages);
 
-    const messageContentBlocks: MessageContentBlock[] =
-      await this.anthropicService.sendMessage(messages);
+      await this.messagesService.create({
+        content: messageContentBlocks,
+        type: MessageType.ASSISTANT,
+        taskId: taskId,
+      });
 
-    await this.messagesService.create({
-      content: messageContentBlocks,
-      type: MessageType.ASSISTANT,
-      taskId: taskId,
-    });
+      let toolUseCount = 0;
 
-    let toolUseCount = 0;
-
-    for (const block of messageContentBlocks) {
-      if (isComputerToolUseContentBlock(block)) {
-        toolUseCount++;
-        const toolResult = await this.handleComputerToolUse(block);
-        await this.messagesService.create({
-          content: [toolResult],
-          type: MessageType.USER,
-          taskId: taskId,
-        });
+      for (const block of messageContentBlocks) {
+        if (isComputerToolUseContentBlock(block)) {
+          toolUseCount++;
+          const toolResult = await this.handleComputerToolUse(block);
+          await this.messagesService.create({
+            content: [toolResult],
+            type: MessageType.USER,
+            taskId: taskId,
+          });
+        }
       }
-    }
 
-    if (toolUseCount === 0) {
-      await this.tasksService.update(taskId, { status: TaskStatus.COMPLETED });
-    } else {
-      // signal that we should loop again
+      if (toolUseCount === 0) {
+        // We interpret this as a signal to complete the task
+        await this.tasksService.update(taskId, {
+          status: TaskStatus.COMPLETED,
+        });
+        break;
+      }
+
+      task = await this.tasksService.findById(taskId);
     }
   }
 

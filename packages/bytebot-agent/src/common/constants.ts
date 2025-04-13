@@ -8,3 +8,5 @@ previous action was completed before taking the next action, where applicable.
 `;
 
 export const DEFAULT_MODEL = 'claude-3-7-sonnet-20250219';
+
+export const AGENT_QUEUE_NAME = 'agent';

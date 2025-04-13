@@ -175,6 +175,7 @@ export type ComputerToolUseContentBlock =
 export type ToolResultContentBlock = {
   type: MessageContentType.ToolResult;
   tool_use_id: string;
+  content: MessageContentBlock[];
 } & MessageContentBlockBase;
 
 // Union type of all possible content blocks
