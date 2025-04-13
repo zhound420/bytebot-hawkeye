@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, OnModuleDestroy } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
-import { Task, MessageType, Message, Prisma, TaskStatus } from '@prisma/client';
+import { Task, Message, MessageRole, Prisma, TaskStatus } from '@prisma/client';
 import { InjectQueue } from '@nestjs/bullmq';
 import { AGENT_QUEUE_NAME } from '../common/constants';
 import { Queue } from 'bullmq';
@@ -32,7 +32,7 @@ export class TasksService implements OnModuleDestroy {
               text: createTaskDto.description,
             },
           ] as Prisma.InputJsonValue,
-          type: MessageType.USER,
+          role: MessageRole.USER,
           taskId: task.id,
         },
       });

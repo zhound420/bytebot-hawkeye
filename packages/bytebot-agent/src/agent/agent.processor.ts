@@ -1,7 +1,7 @@
 import { TasksService } from '../tasks/tasks.service';
 import { MessagesService } from '../messages/messages.service';
 import { Logger } from '@nestjs/common';
-import { MessageType, TaskStatus } from '@prisma/client';
+import { MessageRole, TaskStatus } from '@prisma/client';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { AnthropicService } from '../anthropic/anthropic.service';
 import {
@@ -74,7 +74,7 @@ export class AgentProcessor extends WorkerHost {
 
       await this.messagesService.create({
         content: messageContentBlocks,
-        type: MessageType.ASSISTANT,
+        role: MessageRole.ASSISTANT,
         taskId: taskId,
       });
 
@@ -86,7 +86,7 @@ export class AgentProcessor extends WorkerHost {
           const toolResult = await this.handleComputerToolUse(block);
           await this.messagesService.create({
             content: [toolResult],
-            type: MessageType.USER,
+            role: MessageRole.USER,
             taskId: taskId,
           });
         }

@@ -9,7 +9,7 @@ import {
 } from '../../../shared/types/messageContent.types';
 import { DEFAULT_DISPLAY_SIZE } from '../../../shared/constants';
 import { AGENT_SYSTEM_PROMPT, DEFAULT_MODEL } from '../common/constants';
-import { Message, MessageType } from '@prisma/client';
+import { Message, MessageRole } from '@prisma/client';
 
 @Injectable()
 export class AnthropicService {
@@ -89,7 +89,7 @@ export class AnthropicService {
         message.content as unknown as Anthropic.ContentBlockParam[];
 
       anthropicMessages.push({
-        role: message.type === MessageType.USER ? 'user' : 'assistant',
+        role: message.role === MessageRole.USER ? 'user' : 'assistant',
         content: content,
       });
     }

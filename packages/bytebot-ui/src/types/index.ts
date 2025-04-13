@@ -1,6 +1,6 @@
 import { MessageContentBlock } from "../../../shared/types/messageContent.types";
 
-export enum MessageType {
+export enum MessageRole {
   USER,
   ASSISTANT,
 }
@@ -9,6 +9,6 @@ export enum MessageType {
 export interface Message {
   id: string;
   content: MessageContentBlock[];
-  role: MessageType;
+  role: MessageRole;
   createdAt?: string;
 }

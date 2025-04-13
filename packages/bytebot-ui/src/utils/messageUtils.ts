@@ -26,7 +26,10 @@ export async function fetchMessages(taskId: string): Promise<Message[]> {
  * @param message The message content to send
  * @returns The task data or null if there was an error
  */
-export async function sendMessage(message: string): Promise<any> {
+
+export async function sendMessage(
+  message: string
+): Promise<{ id: string } | null> {
   try {
     const response = await fetch("http://localhost:9991/tasks", {
       method: "POST",
@@ -51,7 +54,10 @@ export async function sendMessage(message: string): Promise<any> {
  * Fetches the latest task from the server
  * @returns The latest task or null if none found
  */
-export async function fetchLatestTask(): Promise<any> {
+export async function fetchLatestTask(): Promise<{
+  id: string;
+  messages: Message[];
+} | null> {
   try {
     const response = await fetch("http://localhost:9991/tasks/in-progress", {
       method: "GET",

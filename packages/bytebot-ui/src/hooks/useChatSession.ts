@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Message, MessageType } from "@/types";
+import { Message, MessageRole } from "@/types";
 import {
   fetchMessages,
   sendMessage,
@@ -116,7 +116,7 @@ export function useChatSession() {
             const formattedMessage: Message = {
               id: initialMessage.id,
               content: initialMessage.content,
-              role: initialMessage.type,
+              role: initialMessage.role,
               createdAt: initialMessage.createdAt,
             };
 
@@ -172,16 +172,16 @@ export function useChatSession() {
       setInput("");
 
       // Send request to start a new task or continue existing task
-      const data = await sendMessage(input);
+      const task = await sendMessage(input);
 
-      if (data) {
+      if (task) {
         // Reset processed message IDs when starting a new task
-        if (currentTaskId !== data.task.id) {
+        if (currentTaskId !== task.id) {
           processedMessageIds.current = new Set();
         }
 
         // Store the task ID for polling
-        setCurrentTaskId(data.task.id);
+        setCurrentTaskId(task.id);
       } else {
         // Add error message to chat
         const errorMessage: Message = {
@@ -192,7 +192,7 @@ export function useChatSession() {
               text: "Sorry, there was an error processing your request. Please try again.",
             },
           ],
-          role: MessageType.ASSISTANT,
+          role: MessageRole.ASSISTANT,
         };
 
         processedMessageIds.current.add(errorMessage.id);

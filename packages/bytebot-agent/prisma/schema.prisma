@@ -30,7 +30,7 @@ enum TaskPriority {
   URGENT
 }
 
-enum MessageType {
+enum MessageRole {
   USER
   ASSISTANT
 }
@@ -71,7 +71,7 @@ model Message {
   //   {"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": "..."}}
   // ]
   content   Json
-  type      MessageType @default(ASSISTANT)
+  role      MessageRole @default(ASSISTANT)
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
   task      Task        @relation(fields: [taskId], references: [id])

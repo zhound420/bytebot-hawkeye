@@ -2,7 +2,7 @@ import React from "react";
 import { User } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import Image from "next/image";
-import { Message, MessageType } from "@/types";
+import { Message, MessageRole } from "@/types";
 import {
   isImageContentBlock,
   isTextContentBlock,
@@ -13,7 +13,7 @@ interface MessageItemProps {
 }
 
 export function MessageItem({ message }: MessageItemProps) {
-  if (message.role === MessageType.ASSISTANT) {
+  if (message.role === MessageRole.ASSISTANT) {
     return <AssistantMessage message={message} />;
   }
 
