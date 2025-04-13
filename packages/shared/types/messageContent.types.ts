@@ -30,13 +30,13 @@ export type ImageContentBlock = {
 
 export type ToolUseContentBlock = {
   type: MessageContentType.ToolUse;
-  tool_name: string;
+  name: string;
   id: string;
   input: Record<string, unknown>;
 } & MessageContentBlockBase;
 
 export type ComputerToolUseBlockBase = ToolUseContentBlock & {
-  tool_name: typeof DEFAULT_COMPUTER_TOOL_USE_NAME;
+  name: "computer";
 };
 export type KeyToolUseBlock = ComputerToolUseBlockBase & {
   input: {
@@ -176,6 +176,7 @@ export type ToolResultContentBlock = {
   type: MessageContentType.ToolResult;
   tool_use_id: string;
   content: MessageContentBlock[];
+  is_error?: boolean;
 } & MessageContentBlockBase;
 
 // Union type of all possible content blocks

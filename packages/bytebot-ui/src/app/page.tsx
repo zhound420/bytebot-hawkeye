@@ -100,31 +100,4 @@ export default function Home() {
       </main>
     </div>
   );
-
-  // return (
-  //   <div className="flex flex-col h-screen">
-  //     {/* Header */}
-  //     <Header />
-
-  //     {/* Main content */}
-  //     <div className="flex flex-1 overflow-hidden">
-  //       {/* Left side - VNC client */}
-  //       <VncViewer />
-
-  //       {/* Right side - chat */}
-  //       <div className="w-2/5 flex flex-col">
-  //         <ChatContainer
-  //           messages={messages}
-  //           isLoadingSession={isLoadingSession}
-  //         />
-  //         <ChatInput
-  //           input={input}
-  //           isLoading={isLoading}
-  //           onInputChange={setInput}
-  //           onSend={handleSend}
-  //         />
-  //       </div>
-  //     </div>
-  //   </div>
-  // );
 }

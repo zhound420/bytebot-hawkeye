@@ -61,7 +61,7 @@ export function isToolUseContentBlock(
   const block = obj as Partial<ToolUseContentBlock>;
   return (
     block.type === MessageContentType.ToolUse &&
-    typeof block.tool_name === "string" &&
+    typeof block.name === "string" &&
     typeof block.id === "string" &&
     block.input !== undefined &&
     typeof block.input === "object"
@@ -80,9 +80,7 @@ export function isComputerToolUseContentBlock(
     return false;
   }
 
-  return (
-    (obj as ToolUseContentBlock).tool_name === DEFAULT_COMPUTER_TOOL_USE_NAME
-  );
+  return (obj as ToolUseContentBlock).name === "computer";
 }
 
 /**

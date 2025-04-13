@@ -39,7 +39,7 @@ function AssistantMessage({ message }: MessageItemProps) {
                 {isImageContentBlock(block) && (
                   <div className="my-2">
                     <Image
-                      src={`data:${block.source.media_type};base64,${block.source.data}`}
+                      src={`data:${block.source.data};base64,${block.source.media_type}`}
                       alt="Image in message"
                       width={500}
                       height={300}

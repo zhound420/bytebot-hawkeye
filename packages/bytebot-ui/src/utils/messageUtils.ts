@@ -7,7 +7,12 @@ import { Message } from "@/types";
  */
 export async function fetchMessages(taskId: string): Promise<Message[]> {
   try {
-    const response = await fetch(`http://localhost:9991/tasks/${taskId}`);
+    const response = await fetch(`http://localhost:9991/tasks/${taskId}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
 
     if (!response.ok) {
       throw new Error("Failed to fetch messages");

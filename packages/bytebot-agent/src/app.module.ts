@@ -8,17 +8,21 @@ import { MessagesModule } from './messages/messages.module';
 import { AnthropicModule } from './anthropic/anthropic.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ConfigModule } from '@nestjs/config';
+import { Redis } from 'ioredis';
 
 @Module({
   imports: [
-    BullModule.forRoot({
-      connection: {
-        host: 'localhost',
-        port: 6379,
-      },
+    BullModule.forRootAsync({
+      useFactory: () => ({
+        connection: new Redis({
+          host: 'redis',
+          port: 6379,
+          maxRetriesPerRequest: null,
+        }),
+      }),
     }),
     ConfigModule.forRoot({
-      isGlobal: true, // Explicitly makes it globally available
+      isGlobal: true,
     }),
     AgentModule,
     TasksModule,

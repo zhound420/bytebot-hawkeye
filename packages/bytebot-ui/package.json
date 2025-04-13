@@ -3,10 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack -p 8081",
-    "start:worker": "tsx src/workers/worker.ts",
+    "dev": "next dev --turbopack -p 9992",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 9992",
     "lint": "next lint"
   },
   "dependencies": {
@@ -37,7 +36,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
-    "@tailwindcss/postcss": "^4",
+    "@tailwindcss/postcss": "^4.1.3",
     "@types/node": "^20.17.27",
     "@types/react": "^19",
     "@types/react-dom": "^19",

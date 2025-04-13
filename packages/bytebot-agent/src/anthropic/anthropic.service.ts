@@ -114,7 +114,7 @@ export class AnthropicService {
         case 'tool_use':
           return {
             type: MessageContentType.ToolUse,
-            tool_name: block.name,
+            name: block.name,
             id: block.id,
             input: block.input as Record<string, unknown>,
           } as ToolUseContentBlock;

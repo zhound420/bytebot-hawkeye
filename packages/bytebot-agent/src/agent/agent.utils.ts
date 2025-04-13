@@ -7,7 +7,7 @@
 
 import { ScrollDirection } from '../../../shared/types/messageContent.types';
 
-const COMPUTER_USE_URL = 'http://localhost:9990';
+const COMPUTER_USE_URL = 'http://bytebot-desktop:9990';
 
 // Types for parameters
 type Coordinates = { x: number; y: number };
