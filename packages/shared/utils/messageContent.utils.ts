@@ -38,10 +38,11 @@ export function isImageContentBlock(obj: unknown): obj is ImageContentBlock {
   const block = obj as Partial<ImageContentBlock>;
   return (
     block.type === MessageContentType.Image &&
-    block.image !== undefined &&
-    typeof block.image === "object" &&
-    typeof block.image?.media_type === "string" &&
-    typeof block.image?.data === "string"
+    block.source !== undefined &&
+    typeof block.source === "object" &&
+    typeof block.source.media_type === "string" &&
+    typeof block.source.type === "string" &&
+    typeof block.source.data === "string"
   );
 }
 

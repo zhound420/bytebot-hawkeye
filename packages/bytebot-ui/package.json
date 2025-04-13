@@ -6,7 +6,7 @@
     "dev": "next dev --turbopack -p 8081",
     "start:worker": "tsx src/workers/worker.ts",
     "build": "next build",
-    "start": "next start -p 8081 & tsx src/workers/worker.ts",
+    "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
