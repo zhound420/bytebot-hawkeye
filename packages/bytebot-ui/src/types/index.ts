@@ -1,8 +1,8 @@
 import { MessageContentBlock } from "../../../shared/types/messageContent.types";
 
 export enum MessageRole {
-  USER,
-  ASSISTANT,
+  USER = "USER",
+  ASSISTANT = "ASSISTANT",
 }
 
 // Message interface

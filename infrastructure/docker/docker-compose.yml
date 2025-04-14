@@ -24,6 +24,8 @@ services:
     command: redis-server --save 20 1 --loglevel warning
     networks:
       - bytebot-network
+    volumes:
+      - redis_data:/data
 
   postgres:
     image: postgres:16-alpine
@@ -37,6 +39,8 @@ services:
       - POSTGRES_DB=bytebotdb
     networks:
       - bytebot-network
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
 
   bytebot-agent:
     build:
@@ -45,7 +49,7 @@ services:
     container_name: bytebot-agent
     restart: unless-stopped
     ports:
-      - "9991:9991" # NestJS app
+      - "9991:9991"
     environment:
       - REDIS_URL=redis://redis:6379
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/bytebotdb
@@ -63,7 +67,7 @@ services:
     container_name: bytebot-ui
     restart: unless-stopped
     ports:
-      - "9992:9992" # Next.js app
+      - "9992:9992"
     environment:
       - NODE_ENV=production
     depends_on:
@@ -74,3 +78,7 @@ services:
 networks:
   bytebot-network:
     driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:

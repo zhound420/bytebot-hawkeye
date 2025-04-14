@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   OnModuleDestroy,
+  OnModuleInit,
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
@@ -13,7 +14,7 @@ import { AGENT_QUEUE_NAME } from '../common/constants';
 import { Queue } from 'bullmq';
 
 @Injectable()
-export class TasksService implements OnModuleDestroy {
+export class TasksService implements OnModuleDestroy, OnModuleInit {
   private readonly logger = new Logger(TasksService.name);
 
   constructor(
@@ -21,6 +22,27 @@ export class TasksService implements OnModuleDestroy {
     readonly prisma: PrismaService,
   ) {
     this.logger.log('TasksService initialized');
+  }
+
+  async onModuleInit() {
+    const resumeTask = await this.prisma.task.findFirst({
+      where: {
+        status: {
+          in: [TaskStatus.IN_PROGRESS, TaskStatus.PENDING],
+        },
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+
+    if (resumeTask) {
+      this.logger.log(
+        `Found existing task with ID: ${resumeTask.id}, and status ${resumeTask.status}. Resuming.`,
+      );
+
+      await this.addTaskToQueue(resumeTask.id);
+    }
   }
 
   async create(createTaskDto: CreateTaskDto): Promise<Task> {
@@ -74,7 +96,7 @@ export class TasksService implements OnModuleDestroy {
           data: { status: TaskStatus.IN_PROGRESS },
         });
 
-        await this.agentQueue.add('task', { taskId: task.id });
+        await this.addTaskToQueue(task.id);
         this.logger.debug(
           `Task ID: ${task.id} added to agent queue successfully`,
         );
@@ -197,6 +219,20 @@ export class TasksService implements OnModuleDestroy {
         error.stack,
       );
       throw error;
+    }
+  }
+
+  async addTaskToQueue(taskId: string) {
+    const existingJob = await this.agentQueue.getJob(`task-${taskId}`);
+    if (!existingJob) {
+      await this.agentQueue.add(
+        AGENT_QUEUE_NAME,
+        { taskId },
+        {
+          jobId: `task-${taskId}`,
+          removeOnComplete: true,
+        },
+      );
     }
   }
 

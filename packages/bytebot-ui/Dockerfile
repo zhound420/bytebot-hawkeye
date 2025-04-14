@@ -4,12 +4,11 @@ FROM node:20-alpine
 # Create app directory
 WORKDIR /app
 
+# Copy app source
 COPY ./shared ./shared
+COPY ./bytebot-ui/ ./bytebot-ui
 
 WORKDIR /app/bytebot-ui
-
-# Copy app source
-COPY ./bytebot-ui/ .
 
 # Install dependencies
 RUN npm install

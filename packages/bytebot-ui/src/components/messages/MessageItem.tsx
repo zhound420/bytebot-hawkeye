@@ -6,6 +6,7 @@ import { Message, MessageRole } from "@/types";
 import {
   isImageContentBlock,
   isTextContentBlock,
+  isToolResultContentBlock,
 } from "../../../../shared/utils/messageContent.utils";
 
 interface MessageItemProps {
@@ -27,31 +28,15 @@ function AssistantMessage({ message }: MessageItemProps) {
         <span className="text-primary-foreground text-xs">B</span>
       </div>
       <div className="text-sm">
-        {typeof message.content === "string" ? (
-          <ReactMarkdown>{message.content}</ReactMarkdown>
-        ) : (
-          <div>
-            {message.content.map((block, index) => (
-              <div key={index} className="mb-2">
-                {isTextContentBlock(block) && (
-                  <ReactMarkdown>{block.text}</ReactMarkdown>
-                )}
-                {isImageContentBlock(block) && (
-                  <div className="my-2">
-                    <Image
-                      src={`data:${block.source.data};base64,${block.source.media_type}`}
-                      alt="Image in message"
-                      width={500}
-                      height={300}
-                      className="max-w-full rounded-md object-contain"
-                      style={{ maxHeight: "300px" }}
-                    />
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+        <div>
+          {message.content.map((block, index) => (
+            <div key={index} className="mb-2">
+              {isTextContentBlock(block) && (
+                <ReactMarkdown>{block.text}</ReactMarkdown>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -64,15 +49,31 @@ function UserMessage({ message }: MessageItemProps) {
         <User className="h-3 w-3" />
       </div>
       <div className="text-sm">
-        {typeof message.content === "string" ? (
-          <ReactMarkdown>{message.content}</ReactMarkdown>
-        ) : (
-          message.content.map((block, index) =>
-            isTextContentBlock(block) ? (
-              <ReactMarkdown key={index}>{block.text}</ReactMarkdown>
-            ) : null
-          )
-        )}
+        <div>
+          {message.content.map((block, index) => (
+            <div key={index} className="mb-2">
+              {isTextContentBlock(block) && (
+                <ReactMarkdown>{block.text}</ReactMarkdown>
+              )}
+              {isToolResultContentBlock(block) &&
+                block.content.map(
+                  (contentBlock, contentIndex) =>
+                    isImageContentBlock(contentBlock) && (
+                      <div key={`${index}-${contentIndex}`} className="my-2">
+                        <Image
+                          src={`data:${contentBlock.source.media_type};base64,${contentBlock.source.data}`}
+                          alt="Image in message"
+                          width={500}
+                          height={300}
+                          className="max-w-full rounded-md object-contain"
+                          style={{ maxHeight: "300px" }}
+                        />
+                      </div>
+                    )
+                )}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
