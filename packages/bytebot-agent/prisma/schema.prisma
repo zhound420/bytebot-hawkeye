@@ -1,0 +1,81 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  NEEDS_HELP
+  NEEDS_REVIEW
+  COMPLETED
+  CANCELLED
+  FAILED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+}
+
+model Task {
+  id          String       @id @default(uuid())
+  description String
+  status      TaskStatus   @default(PENDING)
+  priority    TaskPriority @default(MEDIUM)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  messages    Message[]
+  summaries   Summary[]
+}
+
+model Summary {
+  id             String     @id @default(uuid())
+  content        String
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  messages       Message[]  // One-to-many relationship: one Summary has many Messages
+
+  task      Task        @relation(fields: [taskId], references: [id])
+  taskId    String
+  
+  // Self-referential relationship
+  parentSummary  Summary?   @relation("SummaryHierarchy", fields: [parentId], references: [id])
+  parentId       String?
+  childSummaries Summary[]  @relation("SummaryHierarchy")
+}
+
+model Message {
+  id        String      @id @default(uuid())
+  // Content field follows Anthropic's content blocks structure
+  // Example: 
+  // [
+  //   {"type": "text", "text": "Hello world"},
+  //   {"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": "..."}}
+  // ]
+  content   Json
+  role      MessageRole @default(ASSISTANT)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  task      Task        @relation(fields: [taskId], references: [id])
+  taskId    String
+  summary   Summary?    @relation(fields: [summaryId], references: [id])
+  summaryId String?     // Optional foreign key to Summary
+}

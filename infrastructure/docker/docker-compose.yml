@@ -1,0 +1,84 @@
+services:
+  bytebot-desktop:
+    build:
+      context: ../../
+      dockerfile: infrastructure/docker/Dockerfile
+    container_name: bytebot-desktop
+    restart: unless-stopped
+    ports:
+      - "9990:9990" # bytebotd service
+      - "5900:5900" # VNC display
+      - "6080:6080" # noVNC client
+      - "6081:6081" # noVNC HTTP proxy
+    environment:
+      - DISPLAY=:0
+    networks:
+      - bytebot-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: bytebot-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --save 20 1 --loglevel warning
+    networks:
+      - bytebot-network
+    volumes:
+      - redis_data:/data
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: bytebot-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=bytebotdb
+    networks:
+      - bytebot-network
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  bytebot-agent:
+    build:
+      context: ../../packages/
+      dockerfile: bytebot-agent/Dockerfile
+    container_name: bytebot-agent
+    restart: unless-stopped
+    ports:
+      - "9991:9991"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/bytebotdb
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      - bytebot-network
+
+  bytebot-ui:
+    build:
+      context: ../../packages/
+      dockerfile: bytebot-ui/Dockerfile
+    container_name: bytebot-ui
+    restart: unless-stopped
+    ports:
+      - "9992:9992"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      - bytebot-agent
+    networks:
+      - bytebot-network
+
+networks:
+  bytebot-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:

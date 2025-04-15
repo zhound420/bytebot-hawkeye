@@ -27,6 +27,8 @@ For full documentation, visit [**docs.bytebot.ai**](https://docs.bytebot.ai)
 
 ### Run Bytebot
 
+#### Core Container Only
+
 ```bash
 # Build the image
 ./scripts/build.sh
@@ -35,12 +37,30 @@ For full documentation, visit [**docs.bytebot.ai**](https://docs.bytebot.ai)
 ./scripts/run.sh
 ```
 
+#### Full Agent Setup (Recommended)
+
+```bash
+# Create .env file with your Anthropic API key
+echo "ANTHROPIC_API_KEY=your_api_key_here" > infrastructure/docker/.env
+
+# Start all services (Bytebot, agent, UI, databases)
+docker-compose -f infrastructure/docker/docker-compose.yml --env-file infrastructure/docker/.env up -d --build
+```
+
+To shut down all services:
+
+```bash
+docker-compose -f infrastructure/docker/docker-compose.yml --env-file infrastructure/docker/.env down
+```
+
 More information can be found in the [Quickstart Guide](https://docs.bytebot.ai/quickstart).
 
 ### Access Bytebot
 
 - **VNC Client**: Connect to `localhost:5900`
-- **Web Browser**: Navigate to `http://localhost:9990/vnc`
+- **Web Browser (noVNC)**: Navigate to `http://localhost:9990/vnc`
+- **Bytebot Agent API**: Available at `http://localhost:9991`
+- **Bytebot Chat UI**: Available at `http://localhost:9992`
 
 ## Automation API
 
@@ -52,17 +72,17 @@ Control Bytebot using the unified computer action API:
 
 The unified API supports the following actions:
 
-| Action                | Description                                        | Parameters                                                                                                                          |
-| --------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `move_mouse`          | Move the mouse cursor to a specific position       | `coordinates: { x: number, y: number }`                                                                                             |
-| `click_mouse`         | Perform a mouse click                              | `coordinates?: { x: number, y: number }`, `button: 'left' \| 'right' \| 'middle'`, `numClicks?: number`, `holdKeys?: string[]`      |
-| `drag_mouse`          | Click and drag the mouse from one point to another | `path: { x: number, y: number }[]`, `button: 'left' \| 'right' \| 'middle'`, `holdKeys?: string[]`                                  |
-| `scroll`              | Scroll up, down, left, or right                    | `coordinates?: { x: number, y: number }`, `direction: 'up' \| 'down' \| 'left' \| 'right'`, `amount: number`, `holdKeys?: string[]` |
-| `press_key`           | Press a keyboard key                               | `key: string`, `modifiers?: string[]`                                                                                               |
-| `type_text`           | Type a text string                                 | `text: string`, `delay?: number`                                                                                                    |
-| `wait`                | Wait for a specified duration                      | `duration: number` (milliseconds)                                                                                                   |
-| `screenshot`          | Capture a screenshot of the desktop                | None                                                                                                                                |
-| `get_cursor_position` | Get the current cursor position                    | None                                                                                                                                |
+| Action            | Description                                        | Parameters                                                                                                                          |
+| ----------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `move_mouse`      | Move the mouse cursor to a specific position       | `coordinates: { x: number, y: number }`                                                                                             |
+| `click_mouse`     | Perform a mouse click                              | `coordinates?: { x: number, y: number }`, `button: 'left' \| 'right' \| 'middle'`, `numClicks?: number`, `holdKeys?: string[]`      |
+| `drag_mouse`      | Click and drag the mouse from one point to another | `path: { x: number, y: number }[]`, `button: 'left' \| 'right' \| 'middle'`, `holdKeys?: string[]`                                  |
+| `scroll`          | Scroll up, down, left, or right                    | `coordinates?: { x: number, y: number }`, `direction: 'up' \| 'down' \| 'left' \| 'right'`, `amount: number`, `holdKeys?: string[]` |
+| `press_key`       | Press a keyboard key                               | `key: string`, `modifiers?: string[]`                                                                                               |
+| `type_text`       | Type a text string                                 | `text: string`, `delay?: number`                                                                                                    |
+| `wait`            | Wait for a specified duration                      | `duration: number` (milliseconds)                                                                                                   |
+| `screenshot`      | Capture a screenshot of the desktop                | None                                                                                                                                |
+| `cursor_position` | Get the current cursor position                    | None                                                                                                                                |
 
 ## Contributing
 

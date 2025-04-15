@@ -1,0 +1,178 @@
+---
+title: 'Agent System'
+description: 'Understanding the Bytebot agent architecture and task management system'
+---
+
+## Agent System Overview
+
+The Bytebot agent system extends the core desktop container with AI-driven automation capabilities. It's designed to execute tasks autonomously using a structured task management system, message-based interactions, and database persistence.
+
+<img src="/static/agent-architecture.png" alt="Bytebot Agent Architecture" className="w-full max-w-4xl" />
+
+## Core Components
+
+### Agent Service
+
+The agent service is the central processing unit of the Bytebot agent system. Built with NestJS, it:
+
+- Processes tasks in a structured loop
+- Integrates with Anthropic's Claude for AI capabilities
+- Manages the task state and messages
+- Dispatches computer actions to the bytebotd service
+- Provides a REST API for task management
+
+### Task Management
+
+Tasks are the primary unit of work in the Bytebot agent system:
+
+```typescript
+interface Task {
+  id: string;
+  description: string;
+  status: TaskStatus;
+  priority: TaskPriority;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+enum TaskStatus {
+  PENDING,
+  IN_PROGRESS,
+  NEEDS_HELP,
+  NEEDS_REVIEW,
+  COMPLETED,
+  CANCELLED,
+  FAILED
+}
+
+enum TaskPriority {
+  LOW,
+  MEDIUM,
+  HIGH,
+  URGENT
+}
+```
+
+The task lifecycle involves:
+
+1. **Creation**: Tasks are created via the API or UI with a description
+2. **Queuing**: Tasks are queued for processing using BullMQ
+3. **Processing**: The agent processor handles tasks one at a time
+4. **Completion/Cancellation**: Tasks are marked as complete, cancelled, or other terminal states
+
+### Message System
+
+The agent communicates through a structured message system using Anthropic's content block format:
+
+```typescript
+interface Message {
+  id: string;
+  content: MessageContentBlock[];
+  role: MessageRole;
+  taskId: string;
+  summaryId?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+enum MessageRole {
+  USER,
+  ASSISTANT
+}
+
+interface MessageContentBlock {
+  type: string;
+  [key: string]: any;
+}
+
+interface TextContentBlock extends MessageContentBlock {
+  type: "text";
+  text: string;
+}
+
+interface ImageContentBlock extends MessageContentBlock {
+  type: "image";
+  source: {
+    type: "base64";
+    media_type: string;
+    data: string;
+  };
+}
+```
+
+Messages are stored with their associated tasks and can be included in summaries for context retention.
+
+### Database Structure
+
+The agent system uses PostgreSQL for data persistence with a schema that includes:
+
+- **Tasks**: Storing task metadata and status
+- **Messages**: Storing conversation history using a JSON structure for content blocks
+- **Summaries**: Storing context summaries for long-running tasks, with hierarchical relationships
+
+### Queue System
+
+The BullMQ-based queue system manages:
+
+- Task processing jobs
+- Retry logic
+- Job prioritization
+- Concurrency control
+
+## Agent Processing Loop
+
+The agent processing loop follows these steps:
+
+1. **Fetch Task**: Retrieve the task and its associated messages
+2. **Update Status**: Mark the task as in-progress
+3. **Process Messages**: Send messages to the AI for processing
+4. **Execute Actions**: Perform computer actions through the bytebotd API
+5. **Store Results**: Save responses and action results
+6. **Create Summaries**: Periodically summarize conversation context
+7. **Complete Task**: Mark task as complete when finished
+
+## Computer Action Integration
+
+The agent leverages the unified computer action API to perform actions on the desktop:
+
+1. The AI identifies required actions based on the task and conversation
+2. The agent service sends computer action requests to the bytebotd daemon
+3. The bytebotd daemon executes actions on the desktop
+4. Results (including screenshots) are returned to the agent service
+5. The agent integrates these results into the conversation
+
+## Web UI Integration
+
+The NextJS-based web UI provides:
+
+- A chat interface for user-agent interaction
+- Task management controls
+- Real-time desktop view via embedded noVNC
+- Task history and status views
+
+## Security Considerations
+
+When using the agent system, consider these security aspects:
+
+- The agent has access to your desktop environment
+- API keys (like ANTHROPIC_API_KEY) are required and should be secured
+- Database persistence stores conversation history
+- Network security for the additional exposed ports (9991, 9992)
+
+## Customization and Extension
+
+The agent system can be extended in several ways:
+
+- Custom tools integration via the NestJS API
+- UI customization through the NextJS frontend
+- Additional AI model integration
+- Workflow automation through the task system
+
+## Troubleshooting
+
+Common issues and solutions:
+
+- **Agent not starting**: Check environment variables and database connection
+- **Task processing errors**: Check the agent logs for error messages
+- **UI connection issues**: Ensure all services are running and ports are accessible
+- **Computer action failures**: Verify the bytebotd service is running and accessible

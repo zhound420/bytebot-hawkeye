@@ -21,7 +21,8 @@
             "group": "Core Concepts",
             "pages": [
               "core-concepts/architecture",
-              "core-concepts/desktop-environment"
+              "core-concepts/desktop-environment",
+              "core-concepts/agent-system"
             ]
           }
         ]

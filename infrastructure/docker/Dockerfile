@@ -101,12 +101,12 @@ RUN git clone https://github.com/novnc/noVNC.git /opt/noVNC \
 # 5. Application setup (bytebotd)
 # -----------------------------------------------------------------------------
 # Copy package files first to leverage Docker cache
-COPY ./apps/bytebotd/package*.json /bytebotd/
+COPY ./packages/bytebotd/package*.json /bytebotd/
 WORKDIR /bytebotd
 RUN npm install
 
 # Copy the rest of the application code and build
-COPY ./apps/bytebotd/ /bytebotd/
+COPY ./packages/bytebotd/ /bytebotd/
 RUN npm run build
 
 # -----------------------------------------------------------------------------
