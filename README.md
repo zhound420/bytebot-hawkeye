@@ -27,6 +27,8 @@ For full documentation, visit [**docs.bytebot.ai**](https://docs.bytebot.ai)
 
 ### Run Bytebot
 
+#### Core Container Only
+
 ```bash
 # Build the image
 ./scripts/build.sh
@@ -35,12 +37,30 @@ For full documentation, visit [**docs.bytebot.ai**](https://docs.bytebot.ai)
 ./scripts/run.sh
 ```
 
+#### Full Agent Setup (Recommended)
+
+```bash
+# Create .env file with your Anthropic API key
+echo "ANTHROPIC_API_KEY=your_api_key_here" > infrastructure/docker/.env
+
+# Start all services (Bytebot, agent, UI, databases)
+docker-compose -f infrastructure/docker/docker-compose.yml --env-file infrastructure/docker/.env up -d --build
+```
+
+To shut down all services:
+
+```bash
+docker-compose -f infrastructure/docker/docker-compose.yml --env-file infrastructure/docker/.env down
+```
+
 More information can be found in the [Quickstart Guide](https://docs.bytebot.ai/quickstart).
 
 ### Access Bytebot
 
 - **VNC Client**: Connect to `localhost:5900`
-- **Web Browser**: Navigate to `http://localhost:9990/vnc`
+- **Web Browser (noVNC)**: Navigate to `http://localhost:9990/vnc`
+- **Bytebot Agent API**: Available at `http://localhost:9991`
+- **Bytebot Chat UI**: Available at `http://localhost:9992`
 
 ## Automation API
 

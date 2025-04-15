@@ -5,7 +5,7 @@ description: 'Overview of the Bytebot architecture and components'
 
 ## Bytebot Architecture
 
-Bytebot is designed as a single, integrated Docker container that provides both a desktop environment and the tools to programmatically control it.
+Bytebot is designed with a modular architecture that can be run as a standalone desktop container or as a full-featured agent system with a web UI.
 
 <img src="/static/bytebot-diagram.png" alt="Bytebot Architecture Diagram" className="w-full max-w-4xl" />
 
@@ -29,6 +29,7 @@ Bytebot is designed as a single, integrated Docker container that provides both 
 - Built on top of nutjs for desktop automation
 - Exposes a REST API for remote control
 - Provides unified endpoint for all computer actions
+- Accessible at `localhost:9990`
 
 ### Browser and Tools
 
@@ -41,12 +42,55 @@ Bytebot is designed as a single, integrated Docker container that provides both 
 - **VNC server** for direct desktop access
 - **noVNC** for browser-based desktop access
 
+## Agent System Components
+
+When running the full Bytebot system using docker-compose, the following additional components are available:
+
+### Bytebot Agent
+
+- **Agent service** that manages tasks and AI-driven automation
+- Built with NestJS for reliable API services
+- Implements a task processing system with queues via BullMQ
+- Integrates with Anthropic's Claude for AI capabilities
+- Accessible at `localhost:9991`
+
+### Databases
+
+- **PostgreSQL database** for storing tasks, messages, and agent state
+- **Redis** for job queue management and caching
+- Provides persistence for tasks and conversations
+
+### Chat UI
+
+- **NextJS web application** for interacting with the agent
+- Provides a chat interface for communicating with the AI
+- Includes an embedded noVNC view for observing desktop actions
+- Accessible at `localhost:9992`
+
+## Task Management
+
+The agent system implements a task-based workflow:
+
+1. **Tasks** are the primary unit of work with properties like status, priority, and description
+2. **Messages** represent the conversation between user and assistant
+3. **Summaries** capture the state and progress of tasks
+
 ## Communication Flow
+
+### Standalone Mode
 
 1. **External Application** makes requests to the Bytebot API
 2. **bytebotd daemon** receives and processes these requests
 3. **Desktop Automation** is performed using nutjs 
 4. **Results/Screenshots** are returned to the calling application
+
+### Agent Mode
+
+1. **User** creates tasks and sends messages via the Chat UI
+2. **Agent service** processes tasks and messages through a queue system
+3. **AI Integration** with Claude generates responses and computer actions
+4. **Computer Use API** executes actions on the Bytebot desktop
+5. **Results** are returned to the user through the Chat UI
 
 ## Security Considerations
 
@@ -60,6 +104,7 @@ Security aspects to consider before deploying in production:
 2. Remote access protocols (VNC, noVNC) are not encrypted by default
 3. The REST API does not implement authentication by default
 4. Container networking exposes several ports that should be secured
+5. API keys (like ANTHROPIC_API_KEY) should be properly secured
 
 ## Customization Points
 
@@ -69,3 +114,4 @@ Bytebot is designed to be customizable for different use cases:
 - **Desktop environment** can be replaced with alternatives (GNOME, KDE, etc.)
 - **Pre-installed applications** can be customized for specific testing needs
 - **API endpoints** can be extended for additional functionality
+- **Agent system** can be extended with custom tools and integrations
