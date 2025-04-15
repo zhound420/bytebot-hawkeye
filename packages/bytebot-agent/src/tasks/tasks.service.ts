@@ -141,7 +141,11 @@ export class TasksService implements OnModuleDestroy, OnModuleInit {
       const task = await this.prisma.task.findUnique({
         where: { id },
         include: {
-          messages: true,
+          messages: {
+            orderBy: {
+              createdAt: 'asc',
+            },
+          },
         },
       });
 

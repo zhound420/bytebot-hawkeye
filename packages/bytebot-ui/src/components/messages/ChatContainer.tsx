@@ -1,19 +1,23 @@
-import React, { useRef, useEffect } from 'react';
-import { Message } from '@/types';
-import { MessageItem } from './MessageItem';
+import React, { useRef, useEffect } from "react";
+import { Message } from "@/types";
+import { MessageItem } from "./MessageItem";
 
 interface ChatContainerProps {
   messages: Message[];
   isLoadingSession: boolean;
 }
 
-export function ChatContainer({ messages, isLoadingSession }: ChatContainerProps) {
+export function ChatContainer({
+  messages,
+  isLoadingSession,
+}: ChatContainerProps) {
   const chatContainerRef = useRef<HTMLDivElement | null>(null);
 
   // Scroll to bottom when messages change
   useEffect(() => {
     if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+      chatContainerRef.current.scrollTop =
+        chatContainerRef.current.scrollHeight;
     }
   }, [messages]);
 
@@ -25,9 +29,7 @@ export function ChatContainer({ messages, isLoadingSession }: ChatContainerProps
         </div>
       ) : messages.length > 0 ? (
         messages.map((message) => (
-          <div key={message.id} className="mb-4">
-            <MessageItem message={message} />
-          </div>
+          <MessageItem key={message.id} message={message} />
         ))
       ) : (
         <div className="flex justify-center items-center h-full">
