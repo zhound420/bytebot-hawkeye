@@ -1,13 +1,17 @@
 ---
-title: 'Architecture'
-description: 'Overview of the Bytebot architecture and components'
+title: "Architecture"
+description: "Overview of the Bytebot architecture and components"
 ---
 
 ## Bytebot Architecture
 
 Bytebot is designed with a modular architecture that can be run as a standalone desktop container or as a full-featured agent system with a web UI.
 
-<img src="/static/bytebot-diagram.png" alt="Bytebot Architecture Diagram" className="w-full max-w-4xl" />
+<img
+  src="/images/agent-architecture.png"
+  alt="Bytebot Architecture Diagram"
+  className="w-full max-w-4xl"
+/>
 
 ## Core Components
 
@@ -18,7 +22,7 @@ Bytebot is designed with a modular architecture that can be run as a standalone 
 
 ### Desktop Environment
 
-- **XFCE4** desktop environment 
+- **XFCE4** desktop environment
 - Lightweight and customizable
 - Comes pre-configured with sensible defaults
 - Includes default user account: `bytebot` with sudo privileges
@@ -81,7 +85,7 @@ The agent system implements a task-based workflow:
 
 1. **External Application** makes requests to the Bytebot API
 2. **bytebotd daemon** receives and processes these requests
-3. **Desktop Automation** is performed using nutjs 
+3. **Desktop Automation** is performed using nutjs
 4. **Results/Screenshots** are returned to the calling application
 
 ### Agent Mode
@@ -95,7 +99,9 @@ The agent system implements a task-based workflow:
 ## Security Considerations
 
 <Warning>
-  The default container configuration is intended for development and testing purposes only. It should **not** be used in production environments without security hardening.
+  The default container configuration is intended for development and testing
+  purposes only. It should **not** be used in production environments without
+  security hardening.
 </Warning>
 
 Security aspects to consider before deploying in production:
