@@ -1,8 +1,12 @@
-# 🖥️ Bytebot – **The Easiest Way to Build Desktop Agents**
+<div className="flex justify-center items-center w-full mx-auto">
 
-<img src="static/bytebot-logo.png" width="300" alt="Bytebot Logo">
+<img src="static/bytebot-logo.png" width="500" alt="Bytebot Logo">
 
-[🌐 Website](https://bytebot.ai) • [📚 Docs](https://docs.bytebot.ai) • [💬 Discord](https://discord.gg/tYhrV7zj) • [𝕏 Twitter](https://x.com/bytebot_ai)
+[🌐 Website](https://bytebot.ai) • [📚 Docs](https://docs.bytebot.ai) • [💬 Discord](https://discord.com/invite/zcb5wA2t4u) • [𝕏 Twitter](https://x.com/bytebot_ai)
+
+## 🖥️ Bytebot – **The Easiest Way to Build Desktop Agents**
+
+</div>
 
 ## ✨ Why Bytebot?
 
@@ -101,7 +105,7 @@ _(See docs for parameter details.)_
 
 ## 💬 Support
 
-Questions or ideas? Join us on [**Discord**](https://discord.gg/6nxuF6cs).
+Questions or ideas? Join us on [**Discord**](https://discord.com/invite/zcb5wA2t4u).
 
 ## 🙏 Acknowledgments
 
