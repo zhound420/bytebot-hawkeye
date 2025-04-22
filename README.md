@@ -1,10 +1,10 @@
-<div className="flex justify-center items-center w-full mx-auto">
+<div align="center">
 
 <img src="static/bytebot-logo.png" width="500" alt="Bytebot Logo">
 
 [🌐 Website](https://bytebot.ai) • [📚 Docs](https://docs.bytebot.ai) • [💬 Discord](https://discord.com/invite/zcb5wA2t4u) • [𝕏 Twitter](https://x.com/bytebot_ai)
 
-## 🖥️ Bytebot – **The Easiest Way to Build Desktop Agents**
+## Bytebot – **The Easiest Way to Build Desktop Agents**
 
 </div>
 
