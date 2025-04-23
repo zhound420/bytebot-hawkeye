@@ -203,7 +203,7 @@ export class ComputerUseService {
       // Perform multiple clicks
       for (let i = 0; i < numClicks; i++) {
         await this.nutService.mouseClickEvent(button);
-        await this.delay(150);
+        await this.delay(50);
       }
     } else {
       // Perform a single click

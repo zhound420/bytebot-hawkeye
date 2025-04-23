@@ -125,7 +125,7 @@ EOF
 RUN install -Dm0755 /dev/null /etc/xdg/openbox/autostart && \
     cat > /etc/xdg/openbox/autostart <<'EOF'
 #!/bin/sh
-pcmanfm --desktop --profile=PCManFM &
+pcmanfm --desktop &
 sleep 1
 pcmanfm --set-wallpaper=/usr/share/backgrounds/bytebot/wall.jpg --wallpaper-mode=fit &
 EOF
