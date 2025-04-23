@@ -14,7 +14,7 @@ Bytebot spins up a containerized Linux desktop you can **drive programmatically*
 
 ## 🚀 Features
 
-- 📦 **Containerized Desktop** – XFCE4 on Ubuntu 22.04 in a single Docker image
+- 📦 **Containerized Desktop** – Openbox on Ubuntu 22.04 in a single Docker image
 - 🌍 **Access Anywhere** – VNC & browser‑based **noVNC** built‑in
 - 🛠️ **Unified API** – Script every click & keystroke with a clean REST interface
 - ⚙️ **Ready‑to‑Go Tools** – Firefox & essentials pre‑installed
@@ -36,6 +36,7 @@ Dive deeper at [**docs.bytebot.ai**](https://docs.bytebot.ai).
 ```bash
 docker run --privileged -d \
   -p 9990:9990 -p 5900:5900 -p 6080:6080 -p 6081:6081 \
+  -h computer \
   --name bytebot \
   ghcr.io/bytebot-ai/bytebot:edge
 ```

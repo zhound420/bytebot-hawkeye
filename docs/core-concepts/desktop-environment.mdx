@@ -9,9 +9,9 @@ Bytebot's containerized desktop environment provides a lightweight yet fully-fun
 
 ## Components
 
-### XFCE4 Desktop
+### Desktop
 
-The desktop environment in Bytebot is based on XFCE4, a lightweight and efficient desktop environment for Unix-like operating systems:
+The desktop environment in Bytebot is based on Openbox, a lightweight and efficient desktop environment for Unix-like operating systems:
 
 - **Lightweight**: Requires minimal system resources
 - **Customizable**: Easily adapted for different use cases
@@ -92,7 +92,6 @@ The primary purpose of the Bytebot desktop is programmatic control through the C
 
 The containerized desktop has some performance characteristics to be aware of:
 
-- **Resource usage**: XFCE4 is lightweight but still requires CPU and memory resources
 - **Graphics performance**: Limited 3D acceleration compared to native desktop
 - **Network overhead**: Remote access adds some latency
 - **Disk I/O**: Container storage may be slower than native filesystem
@@ -102,7 +101,7 @@ The containerized desktop has some performance characteristics to be aware of:
 You can customize the desktop environment by:
 
 1. Modifying the Dockerfile to install additional software
-2. Adjusting the XFCE4 configuration files for different layouts
+2. Adjusting the Openbox configuration files for different layouts
 3. Adding custom startup scripts
 4. Setting environment variables to control behavior
 

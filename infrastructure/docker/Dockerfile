@@ -1,246 +1,196 @@
-# -----------------------------------------------------------------------------
-# Bytebot Dockerfile - Virtual Desktop Environment
-# -----------------------------------------------------------------------------
+###############################################################################
+# Stage 0 – build bytebotd + libnut
+###############################################################################
+ARG BUILDPLATFORM
+FROM --platform=$BUILDPLATFORM node:20-bookworm-slim AS builder
+WORKDIR /src
 
-# Base image
-FROM ubuntu:22.04
-
-# -----------------------------------------------------------------------------
-# 1. Environment setup
-# -----------------------------------------------------------------------------
-# Set non-interactive installation
-ARG DEBIAN_FRONTEND=noninteractive
-# Configure display for X11 applications
-ENV DISPLAY=:0
-
-# -----------------------------------------------------------------------------
-# 2. System dependencies installation
-# -----------------------------------------------------------------------------
-RUN apt-get update && apt-get install -y \
-    # X11 / VNC
-    xvfb x11vnc xauth x11-xserver-utils \
-    x11-apps sudo software-properties-common \
-    # Desktop environment 
-    xfce4 xfce4-goodies dbus \
-    # Display manager with autologin capability
-    lightdm \
-    # Development tools
-    python3 python3-pip curl wget git vim \
-    # Utilities
-    supervisor netcat-openbsd \
-    # Applications
-    xpdf gedit xpaint \
-    # Libraries
-    libxtst-dev \
-    # Remove unneeded dependencies
-    && apt-get remove -y light-locker xfce4-screensaver xfce4-power-manager || true \
-    # Clean up to reduce image size
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-RUN mkdir -p /run/dbus && \
-    # Generate a machine-id so dbus-daemon doesn't complain
-    dbus-uuidgen --ensure=/etc/machine-id
-
-# -----------------------------------------------------------------------------
-# 3. Additional software installation
-# -----------------------------------------------------------------------------
-# Install Firefox
-RUN apt-get update && apt-get install -y \
-    # Install necessary for adding PPA
-    software-properties-common apt-transport-https wget gnupg \
-    # Install Additional Graphics Libraries
-    mesa-utils \
-    libgl1-mesa-dri \
-    libgl1-mesa-glx \
-    # Install Sandbox Capabilities
-    libcap2-bin \
-    # Install Fonts
-    fontconfig \
-    fonts-dejavu \
-    fonts-liberation \
-    fonts-freefont-ttf \
-    && add-apt-repository -y ppa:mozillateam/ppa \
-    && apt-get update \
-    && apt-get install -y firefox-esr \
-    && apt-get clean && rm -rf /var/lib/apt/lists/* \
-    # Set Firefox as default browser system-wide
-    && update-alternatives --install /usr/bin/x-www-browser x-www-browser /usr/bin/firefox-esr 200 \
-    && update-alternatives --set x-www-browser /usr/bin/firefox-esr \
-    # Configure default MIME handlers for web content
-    && mkdir -p /etc/xdg/xfce4/helpers \
-    && echo '[Desktop Entry]' > /etc/xdg/xfce4/helpers/firefox.desktop \
-    && echo 'Version=1.0' >> /etc/xdg/xfce4/helpers/firefox.desktop \
-    && echo 'Type=X-XFCE-Helper' >> /etc/xdg/xfce4/helpers/firefox.desktop \
-    && echo 'Name=Firefox Web Browser' >> /etc/xdg/xfce4/helpers/firefox.desktop \
-    && echo 'X-XFCE-Binaries=firefox-esr;firefox;' >> /etc/xdg/xfce4/helpers/firefox.desktop \
-    && echo 'X-XFCE-Category=WebBrowser' >> /etc/xdg/xfce4/helpers/firefox.desktop \
-    && echo 'X-XFCE-Commands=%B;%B' >> /etc/xdg/xfce4/helpers/firefox.desktop \
-    && echo 'X-XFCE-CommandsWithParameter=%B %s;%B %s;' >> /etc/xdg/xfce4/helpers/firefox.desktop \
-    && echo 'WebBrowser=firefox-esr' > /etc/xdg/xfce4/helpers.rc \
-    && fc-cache -f -v
-
-# Install Node.js
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get update \
-    && apt-get install -y nodejs \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# Upgrade pip
-RUN pip3 install --upgrade pip
-
-# -----------------------------------------------------------------------------
-# 4. VNC and remote access setup
-# -----------------------------------------------------------------------------
-# Install noVNC and websockify
-RUN git clone https://github.com/novnc/noVNC.git /opt/noVNC \
-    && git clone https://github.com/novnc/websockify.git /opt/websockify \
-    && cd /opt/websockify \
-    && pip3 install --break-system-packages .
-
-# -----------------------------------------------------------------------------
-# 5. Application setup (bytebotd)
-# -----------------------------------------------------------------------------
-# Copy package files first to leverage Docker cache
-
-# Install dependencies required to build libnut-core
+# ---- build prerequisites ----------------------------------------------------
 RUN apt-get update && \
-    apt-get install -y cmake libx11-dev libxtst-dev libxinerama-dev libxi-dev libxrandr-dev git build-essential && \
+    apt-get install -y --no-install-recommends \
+        ca-certificates build-essential cmake git \
+        libx11-dev libxi-dev libxtst-dev libxinerama-dev libxrandr-dev && \
     rm -rf /var/lib/apt/lists/*
 
+# ---- bytebotd ---------------------------------------------------------------
+COPY packages/bytebotd ./bytebotd
+RUN cd bytebotd && npm install && npm run build
 
-COPY ./packages/bytebotd/ /bytebotd/
-WORKDIR /bytebotd
-RUN npm install --build-from-source
-
-RUN npm run build 
-
-WORKDIR /compile
-
+# ---- libnut -----------------------------------------------------------------
 RUN git clone https://github.com/ZachJW34/libnut-core.git && \
     cd libnut-core && \
-    npm install && \
-    npm run build:release
+    npm install && npm run build:release
 
-# replace /bytebotd/node_modules/@nut-tree-fork/libnut-linux/build/Release/libnut.node with /compile/libnut-core/build/Release/libnut.node
-RUN rm -f /bytebotd/node_modules/@nut-tree-fork/libnut-linux/build/Release/libnut.node && \
-    cp /compile/libnut-core/build/Release/libnut.node /bytebotd/node_modules/@nut-tree-fork/libnut-linux/build/Release/libnut.node
+###############################################################################
+# Stage 1 – minimal runtime with GUI
+###############################################################################
+FROM debian:bookworm-slim
 
-RUN rm -rf /compile
+ENV DEBIAN_FRONTEND=noninteractive \
+    DISPLAY=:0 \
+    NODE_VERSION=20
 
-WORKDIR /bytebotd
+# --------------------------------------------------------------------------- #
+# 1. Core OS, X11 stack, GUI apps, Firefox, supervisor
+# --------------------------------------------------------------------------- #
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        # X11 / GUI
+        xvfb x11vnc xauth x11-utils openbox tint2 pcmanfm \
+        xfce4-terminal firefox-esr \
+        # Runtime helpers
+        python3 python3-websockify python3-pyxdg git sudo curl ca-certificates \
+        shared-mime-info desktop-file-utils supervisor && \
+    rm -rf /usr/share/doc /usr/share/man /usr/share/locale && \
+    rm -rf /var/lib/apt/lists/*
 
-# -----------------------------------------------------------------------------
-# 6. System configuration
-# -----------------------------------------------------------------------------
-# Add Supervisor Configuration for service management
-COPY ./infrastructure/docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+# --------------------------------------------------------------------------- #
+# 2. Node 20 (via NodeSource)
+# --------------------------------------------------------------------------- #
+RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash - && \
+    apt-get update && \
+    apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
 
-# Set restrictive permissions on supervisord configuration
-RUN chmod 644 /etc/supervisor/conf.d/supervisord.conf && \
-    chown root:root /etc/supervisor/conf.d/supervisord.conf
+# --------------------------------------------------------------------------- #
+# 3. Firefox enterprise policy (skip onboarding, etc.)
+# --------------------------------------------------------------------------- #
+RUN install -m 0755 -d /etc/firefox/policies && \
+    cat > /etc/firefox/policies/policies.json <<'EOF'
+{
+  "policies": {
+    "FirefoxHome": {
+      "Search": true, "TopSites": false, "SponsoredTopSites": false,
+      "Highlights": false, "Pocket": false, "SponsoredPocket": false,
+      "Snippets": false, "Locked": true
+    },
+    "PDFjs": { "Enabled": true, "EnablePermissions": true },
+    "Notifications": { "BlockNewRequests": true, "Locked": true },
+    "UserMessaging": {
+      "ExtensionRecommendations": false, "FeatureRecommendations": false,
+      "UrlbarInterventions": false, "SkipOnboarding": true,
+      "MoreFromMozilla": false, "FirefoxLabs": false
+    }
+  }
+}
+EOF
 
-# Set restrictive permissions on bytebotd directory
-RUN chown -R root:root /bytebotd && \
-    chmod -R 755 /bytebotd
+# --------------------------------------------------------------------------- #
+# 4. Global tint2 panel (single-line clock)
+# --------------------------------------------------------------------------- #
+RUN install -Dm0644 /dev/null /etc/xdg/tint2/tint2rc && \
+    cat > /etc/xdg/tint2/tint2rc <<'EOF'
+rounded = 0
+border_width = 0
+background_color = #212121 80   # 80% opacity
+border_color = #000000 0
+panel_items = TSC
+panel_size = 100% 28
+panel_position = bottom center
+panel_padding = 0 2 4
+panel_background_id = 1
+time1_format = %a %b %d %l:%M%p
+time1_font   = Sans 10
+clock_font_color = #ffffff 100
+clock_padding = 4 0
+systray_monitor = 1
+systray_padding = 2 2
+taskbar_mode = single_desktop
+taskbar_padding = 2 2 2
+EOF
 
-# -----------------------------------------------------------------------------
-# 7. User setup and autologin configuration
-# -----------------------------------------------------------------------------
-# Create non-root user
-RUN useradd -ms /bin/bash bytebot && echo "bytebot ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+# --------------------------------------------------------------------------- #
+# 5. noVNC (latest shallow clone) & wallpaper
+# --------------------------------------------------------------------------- #
+RUN git clone --depth 1 https://github.com/novnc/noVNC.git /opt/noVNC
+RUN install -Dm0644 /dev/null /usr/share/backgrounds/bytebot/wall.jpg
+COPY static/background.jpg /usr/share/backgrounds/bytebot/wall.jpg
 
-RUN chmod 755 /var/run/dbus && \
-    chown bytebot:bytebot /var/run/dbus
-
+# --------------------------------------------------------------------------- #
+# 6. Non-root user + GUI session tweaks
+# --------------------------------------------------------------------------- #
+RUN useradd -m bytebot && echo "bytebot ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 RUN mkdir -p /tmp/bytebot-screenshots && \
     chown -R bytebot:bytebot /tmp/bytebot-screenshots
-
-# Configure autologin for the bytebot user
-RUN mkdir -p /etc/lightdm/lightdm.conf.d && \
-    echo '[Seat:*]' > /etc/lightdm/lightdm.conf.d/50-autologin.conf && \
-    echo 'autologin-user=bytebot' >> /etc/lightdm/lightdm.conf.d/50-autologin.conf && \
-    echo 'autologin-user-timeout=0' >> /etc/lightdm/lightdm.conf.d/50-autologin.conf && \
-    echo 'autologin-session=xfce' >> /etc/lightdm/lightdm.conf.d/50-autologin.conf
-
-# Make sure the lightdm configuration has proper permissions
-RUN chmod 644 /etc/lightdm/lightdm.conf.d/50-autologin.conf && \
-    chown root:root /etc/lightdm/lightdm.conf.d/50-autologin.conf
-
-# Set custom desktop background
-# Create backgrounds directory
-RUN mkdir -p /usr/share/backgrounds/bytebot
-
-# Copy background.jpg from the build context
-COPY ./static/background.jpg /usr/share/backgrounds/bytebot/ 
-RUN chmod 644 /usr/share/backgrounds/bytebot/background.jpg
-
-# Add XFCE configuration files
-COPY ./infrastructure/docker/xfce4/ /tmp/xfce4/
-
-# Set up XFCE configuration
-RUN mkdir -p /home/bytebot/.config/xfce4/ && \
-    mkdir -p /home/bytebot/Desktop && \
-    # Copy the XFCE configuration files
-    cp -r /tmp/xfce4/* /home/bytebot/.config/xfce4/ && \
-    # Create .xsessionrc file for the user to ensure XFCE starts properly
-    mkdir -p /home/bytebot/.config && \
-    echo "exec startxfce4" > /home/bytebot/.xsessionrc && \
-    # Ensure all settings are owned by the user
-    chown -R bytebot:bytebot /home/bytebot/.config /home/bytebot/Desktop /home/bytebot/.xsessionrc
-
-# Replace default Web Browser shortcut with Firefox
-RUN mkdir -p /etc/skel/.config/xfce4/panel/launcher-* && \
-    mkdir -p /usr/share/applications/ && \
-    echo '[Desktop Entry]' > /usr/share/applications/firefox.desktop && \
-    echo 'Version=1.0' >> /usr/share/applications/firefox.desktop && \
-    echo 'Type=Application' >> /usr/share/applications/firefox.desktop && \
-    echo 'Name=Firefox Web Browser' >> /usr/share/applications/firefox.desktop && \
-    echo 'Comment=Browse the web with Firefox' >> /usr/share/applications/firefox.desktop && \
-    echo 'Exec=/usr/bin/firefox-esr %U' >> /usr/share/applications/firefox.desktop && \
-    echo 'Icon=firefox-esr' >> /usr/share/applications/firefox.desktop && \
-    echo 'Path=' >> /usr/share/applications/firefox.desktop && \
-    echo 'Terminal=false' >> /usr/share/applications/firefox.desktop && \
-    echo 'StartupNotify=true' >> /usr/share/applications/firefox.desktop && \
-    echo 'Categories=Network;WebBrowser;' >> /usr/share/applications/firefox.desktop && \
-    chmod +x /usr/share/applications/firefox.desktop && \
-    # Copy Firefox desktop file to panel configuration
-    mkdir -p /home/bytebot/.config/xfce4/panel && \
-    cp -f /usr/share/applications/firefox.desktop /home/bytebot/.config/xfce4/panel/ && \
-    # Create a backup of the default XFCE panel configuration
-    mkdir -p /etc/xdg/xfce4/panel/backup && \
-    # Also add Firefox to desktop
-    mkdir -p /home/bytebot/Desktop && \
-    cp -f /usr/share/applications/firefox.desktop /home/bytebot/Desktop/ && \
-    chown -R bytebot:bytebot /home/bytebot/.config/xfce4/panel /home/bytebot/Desktop
-
-# Add a desktop shortcut for the Terminal
-RUN echo '[Desktop Entry]' > /usr/share/applications/terminal.desktop && \
-    echo 'Version=1.0' >> /usr/share/applications/terminal.desktop && \
-    echo 'Type=Application' >> /usr/share/applications/terminal.desktop && \
-    echo 'Name=Terminal Emulator' >> /usr/share/applications/terminal.desktop && \
-    echo 'Comment=Open a terminal' >> /usr/share/applications/terminal.desktop && \
-    echo 'Exec=exo-open --launch TerminalEmulator' >> /usr/share/applications/terminal.desktop && \
-    echo 'Icon=org.xfce.terminalemulator' >> /usr/share/applications/terminal.desktop && \
-    echo 'Path=' >> /usr/share/applications/terminal.desktop && \
-    echo 'Terminal=false' >> /usr/share/applications/terminal.desktop && \
-    echo 'StartupNotify=true' >> /usr/share/applications/terminal.desktop && \
-    echo 'Categories=Utility;TerminalEmulator;' >> /usr/share/applications/terminal.desktop && \
-    chmod +x /usr/share/applications/terminal.desktop && \
-    mkdir -p /home/bytebot/Desktop && \
-    cp -f /usr/share/applications/terminal.desktop /home/bytebot/Desktop/ && \
-    chown -R bytebot:bytebot /home/bytebot/Desktop
-
-USER bytebot
 WORKDIR /home/bytebot
 
-# -----------------------------------------------------------------------------
-# 8. Port configuration and runtime
-# -----------------------------------------------------------------------------
-# - Port 9990: bytebotd
-# - Port 5900: VNC display for the Ubuntu VM
-# - Port 6080: noVNC client
-# - Port 6081: noVNC HTTP proxy
-EXPOSE 9990 5900 6080 6081
+# -- PCManFM behaviour (skip “Open With” prompt) -----------------------------
+RUN install -Dm0644 /dev/null /home/bytebot/.config/libfm/libfm.conf && \
+    cat > /home/bytebot/.config/libfm/libfm.conf <<'EOF'
+[config]
+quick_exec=1
+EOF
 
-# Start supervisor to manage all services
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf", "-n"]
+# -- Openbox autostart & single workspace ------------------------------------
+RUN install -Dm0755 /dev/null /etc/xdg/openbox/autostart && \
+    cat > /etc/xdg/openbox/autostart <<'EOF'
+#!/bin/sh
+pcmanfm --desktop --profile=PCManFM &
+sleep 1
+pcmanfm --set-wallpaper=/usr/share/backgrounds/bytebot/wall.jpg --wallpaper-mode=fit &
+EOF
+RUN sed -i 's#<number>4</number>#<number>1</number>#' /etc/xdg/openbox/rc.xml
+
+# --------------------------------------------------------------------------- #
+# 7. Desktop entries (Firefox, terminal, file manager)
+# --------------------------------------------------------------------------- #
+RUN install -dm0755 /usr/share/applications && \
+    install -Dm0755 /dev/null /usr/share/applications/firefox.desktop && \
+    install -Dm0755 /dev/null /usr/share/applications/terminal.desktop && \
+    install -Dm0755 /dev/null /usr/share/applications/file-manager.desktop && \
+    cat > /usr/share/applications/firefox.desktop <<'EOF'
+[Desktop Entry]
+Name=Firefox
+Exec=/usr/bin/firefox-esr %u
+Icon=firefox-esr
+Type=Application
+Terminal=false
+StartupNotify=true
+Categories=Applications;
+EOF
+RUN cat > /usr/share/applications/terminal.desktop <<'EOF'
+[Desktop Entry]
+Name=Terminal
+Exec=xfce4-terminal
+Icon=org.xfce.terminal
+Type=Application
+Terminal=false
+Categories=Utility;TerminalEmulator;
+EOF
+RUN cat > /usr/share/applications/file-manager.desktop <<'EOF'
+[Desktop Entry]
+Name=File Manager
+Exec=pcmanfm
+Icon=system-file-manager
+Type=Application
+Terminal=false
+Categories=System;FileTools;FileManager;Utility;Core;GTK;
+MimeType=inode/directory
+EOF
+RUN mkdir -p /home/bytebot/Desktop && \
+    cp /usr/share/applications/firefox.desktop /home/bytebot/Desktop/ && \
+    cp /usr/share/applications/terminal.desktop /home/bytebot/Desktop/ && \
+    cp /usr/share/applications/file-manager.desktop /home/bytebot/Desktop/ && \
+    chown -R bytebot:bytebot /home/bytebot/Desktop
+
+# --------------------------------------------------------------------------- #
+# 8. Copy app artefacts from builder stage
+# --------------------------------------------------------------------------- #
+COPY --from=builder /src/bytebotd /opt/bytebotd
+# Set restrictive permissions on bytebotd directory
+RUN chown -R root:root /opt/bytebotd && \
+    chmod -R 755 /opt/bytebotd
+
+COPY --from=builder /src/libnut-core/build/Release/libnut.node \
+     /opt/bytebotd/node_modules/@nut-tree-fork/libnut-linux/build/Release/
+
+# --------------------------------------------------------------------------- #
+# 9. Final cleanup & supervisor
+# --------------------------------------------------------------------------- #
+COPY infrastructure/docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+RUN update-desktop-database /usr/share/applications && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+EXPOSE 5900 6080 6081 9990
+USER bytebot
+CMD ["/usr/bin/supervisord","-c","/etc/supervisor/conf.d/supervisord.conf","-n"]
