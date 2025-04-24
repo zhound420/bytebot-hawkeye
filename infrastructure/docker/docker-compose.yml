@@ -10,6 +10,8 @@ services:
 
     container_name: bytebot-desktop
     restart: unless-stopped
+    hostname: computer
+    privileged: true
     ports:
       - "9990:9990" # bytebotd service
       - "5900:5900" # VNC display
