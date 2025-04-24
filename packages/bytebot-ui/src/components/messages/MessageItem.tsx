@@ -8,7 +8,7 @@ import {
   isTextContentBlock,
   isToolResultContentBlock,
   isToolUseContentBlock,
-} from "../../../../shared/utils/messageContent.utils";
+} from "../../../shared/utils/messageContent.utils";
 
 interface MessageItemProps {
   message: Message;
