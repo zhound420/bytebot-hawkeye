@@ -33,7 +33,7 @@ export function ChatContainer({
         ))
       ) : (
         <div className="flex justify-center items-center h-full">
-          <p className="text-muted">No messages yet...</p>
+          <p className="">No messages yet...</p>
         </div>
       )}
     </div>

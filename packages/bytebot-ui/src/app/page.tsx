@@ -28,8 +28,8 @@ export default function Home() {
     const updateSize = () => {
       if (!containerRef.current) return;
 
-      const parentWidth = window.innerWidth * 0.5; // Use 50% of viewport width
-      const parentHeight = window.innerHeight * 0.5; // Use 50% of viewport height
+      const parentWidth = containerRef.current.offsetWidth;
+      const parentHeight = containerRef.current.offsetHeight;
 
       // Calculate the maximum size while maintaining 1280:960 aspect ratio
       let width, height;
@@ -58,41 +58,44 @@ export default function Home() {
   }, [isMounted]);
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-screen overflow-hidden">
       {/* Header */}
       <Header />
-      <main className="p-0.5 bg-white rounded-2xl border-1 border-bytebot-bronze-light-7 m-2">
-        <div className="rounded-2xl bg-bronze-light-4">
-          <div className="bg-bytebot-bronze-light-4 p-2 rounded-2xl">
-            <div className="flex flex-1 items-start justify-center">
-              <div className="bg-white rounded-2xl border-1 border-bytebot-bronze-light-7 p-0.5 w-full">
-                <div className="">
-                  {/* Main 16:9 container */}
+      <main className="flex-1 p-0.5 m-2 overflow-hidden">
+            <div className="grid grid-cols-6 gap-4 h-full">
+              {/* Main container */}
+              
+              <div className="col-span-4 ">
+                <div className="bg-white w-full rounded-2xl border-1 border-bytebot-bronze-light-7 h-full p-3 flex flex-col">
                   <BrowserHeader />
-                  <div className="bg-white w-full h-0.75 border-b border-bytebot-bronze-light-7"></div>
-                  <div
-                    ref={containerRef}
-                    className="relative overflow-hidden rounded-b-2xl"
-                    style={{
-                      width: `${containerSize.width}px`,
-                      height: `${containerSize.height}px`,
-                    }}
+                  <div 
+                    className="relative overflow-hidden rounded-b-2xl flex-1 flex justify-center items-center"
                   >
-                    {/* Content for the main container would go here */}
-                    <div className="flex items-center justify-center h-full">
-                      <VncViewer />
+                    <div 
+                      ref={containerRef}
+                      className="w-full h-full flex justify-center items-center"
+                    >
+                      <div 
+                        style={{
+                          width: `${containerSize.width}px`,
+                          height: `${containerSize.height}px`,
+                          maxWidth: '100%'
+                        }}
+                      >
+                        <VncViewer />
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
               {/* Chat Area */}
-              <div className="flex flex-col h-[80vh] max-h-[80vh] ml-4">
+              <div className="col-span-2 flex flex-col h-full">
                 {/* Messages scrollable area */}
-                <div className="flex-1 overflow-y-auto px-4 pt-4 pb-2 min-h-0">
+                <div className="flex flex-1 overflow-y-auto px-4 pt-4 pb-2">
                   <ChatContainer messages={messages} isLoadingSession={isLoadingSession} />
                 </div>
                 {/* Fixed chat input */}
-                <div className="px-4 py-3 bg-bytebot-bronze-light-2 rounded-2xl">
+                <div className="p-3 bg-white rounded-2xl border-1 border-bytebot-bronze-light-7">
                   <ChatInput
                     input={input}
                     isLoading={isLoading}
@@ -102,8 +105,6 @@ export default function Home() {
                 </div>
               </div>
             </div>
-          </div>
-        </div>
       </main>
     </div>
   );
