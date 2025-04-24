@@ -31,9 +31,9 @@ export default function Home() {
       const parentWidth = window.innerWidth * 0.5; // Use 50% of viewport width
       const parentHeight = window.innerHeight * 0.5; // Use 50% of viewport height
 
-      // Calculate the maximum size while maintaining 1280:720 aspect ratio
+      // Calculate the maximum size while maintaining 1280:960 aspect ratio
       let width, height;
-      const aspectRatio = 1280 / 720;
+      const aspectRatio = 1280 / 960;
 
       if (parentWidth / parentHeight > aspectRatio) {
         // Width is the limiting factor
@@ -47,7 +47,7 @@ export default function Home() {
 
       // Cap at maximum dimensions
       width = Math.min(width, 1280);
-      height = Math.min(height, 720);
+      height = Math.min(height, 960);
 
       setContainerSize({ width, height });
     };
