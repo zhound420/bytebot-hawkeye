@@ -17,10 +17,10 @@ export function ChatInput({ input, isLoading, onInputChange, onSend }: ChatInput
   };
 
   return (
-    <div className="p-4 border-t">
+    <div className="p-2">
       <form onSubmit={handleSubmit} className="relative">
         <Input
-          placeholder="Ask me to do something"
+          placeholder="Ask me to do something..."
           value={input}
           onChange={(e) => onInputChange(e.target.value)}
           className="w-full py-3 px-4 pr-10 rounded-md"

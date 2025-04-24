@@ -1,4 +1,4 @@
-import { MessageContentBlock } from "../../../shared/types/messageContent.types";
+import { MessageContentBlock } from "../../shared/types/messageContent.types";
 
 export enum MessageRole {
   USER = "USER",

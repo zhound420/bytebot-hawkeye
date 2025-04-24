@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useTheme } from "next-themes";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 // Uncommenting interface if needed in the future
 // interface HeaderProps {
@@ -33,7 +32,7 @@ export function Header() {
               alt="Bytebot Logo"
               width={100}
               height={30}
-              className="h-10 w-auto"
+              className="h-8 w-auto"
             />
           ) : (
             <div className="h-10 w-[100px]" />
@@ -51,7 +50,6 @@ export function Header() {
             New Conversation
           </Button>
         )} */}
-        <ThemeToggle />
       </div>
     </header>
   );
