@@ -79,6 +79,26 @@ RUN apt-get update && apt-get install -y \
     && echo 'WebBrowser=firefox-esr' > /etc/xdg/xfce4/helpers.rc \
     && fc-cache -f -v
 
+RUN install -m 0755 -d /etc/firefox/policies && \
+    cat > /etc/firefox/policies/policies.json <<'EOF'
+{
+  "policies": {
+    "FirefoxHome": {
+      "Search": true, "TopSites": false, "SponsoredTopSites": false,
+      "Highlights": false, "Pocket": false, "SponsoredPocket": false,
+      "Snippets": false, "Locked": true
+    },
+    "PDFjs": { "Enabled": true, "EnablePermissions": true },
+    "Notifications": { "BlockNewRequests": true, "Locked": true },
+    "UserMessaging": {
+      "ExtensionRecommendations": false, "FeatureRecommendations": false,
+      "UrlbarInterventions": false, "SkipOnboarding": true,
+      "MoreFromMozilla": false, "FirefoxLabs": false
+    }
+  }
+}
+EOF
+
 # Install Node.js
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get update \
