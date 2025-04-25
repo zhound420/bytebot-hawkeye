@@ -89,9 +89,9 @@ export default function Home() {
                 </div>
               </div>
               {/* Chat Area */}
-              <div className="col-span-2 flex flex-col h-full">
+              <div className="col-span-2 flex flex-col h-full overflow-hidden">
                 {/* Messages scrollable area */}
-                <div className="flex flex-1 overflow-y-auto px-4 pt-4 pb-2">
+                <div className="flex-1 overflow-y-auto px-4 pt-4 pb-2">
                   <ChatContainer messages={messages} isLoadingSession={isLoadingSession} />
                 </div>
                 {/* Fixed chat input */}
