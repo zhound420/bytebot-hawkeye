@@ -15,7 +15,7 @@ interface MessageItemProps {
 }
 
 export function MessageItem({ message }: MessageItemProps) {
-  if (message.role === MessageRole.ASSISTANT) {
+  if (message.role === MessageRole.ASSISTANT || isToolResultContentBlock(message.content[0])) {
     return <AssistantMessage message={message} />;
   }
 
@@ -34,22 +34,30 @@ function AssistantMessage({ message }: MessageItemProps) {
     return <></>;
   }
 
+  console.log(contentBlocks)
+
   return (
     <div className="mb-4">
       <div className="flex items-start gap-2">
-        <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-          <span className="text-primary-foreground text-xs">B</span>
+        <div className="flex-shrink-0 w-[28px] h-[28px] bg-white rounded-sm flex items-center justify-center border border-bytebot-bronze-light-7">
+          <img src="/bytebot_square_light.svg" alt="Bytebot" className="w-4 h-4" />
         </div>
-        <div className="text-sm">
-          <div>
-            {contentBlocks.map((block, index) => (
-              <div key={index} className="mb-2">
-                {isTextContentBlock(block) && (
-                  <ReactMarkdown>{block.text}</ReactMarkdown>
+        <div>
+          {contentBlocks.map((block, index) => (
+            <div key={index} className="mb-2 text-xs text-bytebot-bronze-dark-8">
+              {isTextContentBlock(block) && (
+                <ReactMarkdown>{block.text}</ReactMarkdown>
+              )}
+              {isToolResultContentBlock(block) &&
+                block.content.map(
+                  (contentBlock, contentIndex) => (
+                    <p key={contentIndex}>
+                      {contentBlock.text}
+                    </p>
+                  )
                 )}
-              </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>
@@ -70,36 +78,18 @@ function UserMessage({ message }: MessageItemProps) {
 
   return (
     <div className="mb-4">
-      <div className="flex items-start gap-2">
-        <div className="flex-shrink-0 w-6 h-6 rounded-full bg-muted flex items-center justify-center">
+      <div className="flex flex-row-reverse items-start gap-2">
+        <div className="flex-shrink-0 w-6 h-6 rounded-sm border border-bytebot-bronze-light-7 bg-muted flex items-center justify-center">
           <User className="h-3 w-3" />
         </div>
-        <div className="text-sm">
-          <div>
-            {contentBlocks.map((block, index) => (
-              <div key={index} className="mb-2">
-                {isTextContentBlock(block) && (
-                  <ReactMarkdown>{block.text}</ReactMarkdown>
-                )}
-                {isToolResultContentBlock(block) &&
-                  block.content.map(
-                    (contentBlock, contentIndex) =>
-                      isImageContentBlock(contentBlock) && (
-                        <div key={`${index}-${contentIndex}`} className="my-2">
-                          <Image
-                            src={`data:${contentBlock.source.media_type};base64,${contentBlock.source.data}`}
-                            alt="Image in message"
-                            width={500}
-                            height={300}
-                            className="max-w-full rounded-md object-contain"
-                            style={{ maxHeight: "300px" }}
-                          />
-                        </div>
-                      )
-                  )}
-              </div>
-            ))}
-          </div>
+        <div className="bg-bytebot-bronze-light-2 border border-bytebot-bronze-light-7 rounded-md py-2 px-3 shadow-[0px_0px_0px_1.5px_#FFF_inset] max-w-4/5">
+          {contentBlocks.map((block, index) => (
+            <div key={index} className="mb-2 text-xs text-bytebot-bronze-dark-9">
+              {isTextContentBlock(block) && (
+                <ReactMarkdown>{block.text}</ReactMarkdown>
+              )}
+            </div>
+          ))}
         </div>
       </div>
     </div>
