@@ -34,17 +34,22 @@ Dive deeper at [**docs.bytebot.ai**](https://docs.bytebot.ai).
 #### Core Container (fastest way)
 
 ```bash
-docker run --privileged -d \
-  -p 9990:9990 -p 5900:5900 -p 6080:6080 -p 6081:6081 \
-  --name bytebot \
-  ghcr.io/bytebot-ai/bytebot:edge
+docker-compose -f infrastructure/docker/docker-compose.core.yml pull # pull latest remote image
+
+docker-compose -f infrastructure/docker/docker-compose.core.yml up -d --no-build # start container
 ```
 
 Build locally instead:
 
 ```bash
-./scripts/build.sh   # 🔨 build
-./scripts/run.sh     # 🚀 run
+
+docker-compose -f infrastructure/docker/docker-compose.core.yml up -d --build # build image and start container
+```
+
+Stop:
+
+```bash
+docker-compose -f infrastructure/docker/docker-compose.core.yml down
 ```
 
 #### 🤖 Full Agent Stack (alpha)

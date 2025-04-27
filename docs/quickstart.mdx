@@ -22,10 +22,8 @@ Getting started with Bytebot is simple and straightforward. You can run it as a 
         The easiest way to get started is to use the pre-built Bytebot image:
 
         ```bash
-        docker run --privileged -d \
-          -p 9990:9990 -p 5900:5900 -p 6080:6080 -p 6081:6081 \
-          --name "bytebot" \
-          ghcr.io/bytebot-ai/bytebot:edge
+        docker-compose -f infrastructure/docker/docker-compose.core.yml pull # pull latest remote image
+        docker-compose -f infrastructure/docker/docker-compose.core.yml up -d --no-build # start container
         ```
 
         This will start Bytebot with default settings. The container exposes several ports:
@@ -36,22 +34,18 @@ Getting started with Bytebot is simple and straightforward. You can run it as a 
       </Accordion>
 
       <Accordion icon="cube" title="Building the Docker Image (Alternative)">
-        Alternatively, you can build the Bytebot Docker image locally using the provided build script:
+        Alternatively, you can build the Bytebot Docker image locally:
 
         ```bash
-        ./scripts/build.sh
+        docker-compose -f infrastructure/docker/docker-compose.core.yml up -d --build # build image and start container
         ```
+      </Accordion>
 
-        For custom build options:
+      <Accordion icon="stop" title="Stopping the Container">
+        To shut down the container:
 
         ```bash
-        ./scripts/build.sh --tag custom-tag --no-cache
-        ```
-        
-        Then run the container with:
-        
-        ```bash
-        ./scripts/run.sh
+        docker-compose -f infrastructure/docker/docker-compose.core.yml down
         ```
       </Accordion>
 

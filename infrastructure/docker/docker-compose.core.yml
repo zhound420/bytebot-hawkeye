@@ -1,0 +1,22 @@
+version: "3.9"
+
+services:
+  bytebot-desktop:
+    # Build from source
+    build:
+      context: ../../
+      dockerfile: infrastructure/docker/Dockerfile
+    # Use pre-built image
+    image: ghcr.io/bytebot-ai/bytebot:edge
+
+    container_name: bytebot-desktop
+    restart: unless-stopped
+    hostname: computer
+    privileged: true
+    ports:
+      - "9990:9990" # bytebotd service
+      - "5900:5900" # VNC display
+      - "6080:6080" # noVNC client
+      - "6081:6081" # noVNC HTTP proxy
+    environment:
+      - DISPLAY=:0
