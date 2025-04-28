@@ -6,7 +6,8 @@ import { VncViewer } from "@/components/vnc/VncViewer";
 import { ChatContainer } from "@/components/messages/ChatContainer";
 import { ChatInput } from "@/components/messages/ChatInput";
 import { useChatSession } from "@/hooks/useChatSession";
-import { BrowserHeader } from "@/components/layout/BrowserHeader";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+// import { BrowserHeader } from "@/components/layout/BrowserHeader";
 
 export default function Home() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -28,8 +29,8 @@ export default function Home() {
     const updateSize = () => {
       if (!containerRef.current) return;
 
-      const parentWidth = containerRef.current.offsetWidth;
-      const parentHeight = containerRef.current.offsetHeight;
+      const parentWidth = containerRef.current.parentElement?.offsetWidth || containerRef.current.offsetWidth;
+      const parentHeight = containerRef.current.parentElement?.offsetHeight || containerRef.current.offsetHeight;
 
       // Calculate the maximum size while maintaining 1280:960 aspect ratio
       let width, height;
@@ -59,52 +60,58 @@ export default function Home() {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
-      {/* Header */}
       <Header />
-      <main className="flex-1 p-0.5 m-2 overflow-hidden">
-            <div className="grid grid-cols-6 gap-4 h-full">
-              {/* Main container */}
-              
-              <div className="col-span-4 ">
-                <div className="bg-white w-full rounded-2xl border-1 border-bytebot-bronze-light-7 h-full p-3 flex flex-col">
-                  <BrowserHeader />
+
+      <main className="flex-1 px-2 py-4 m-2 overflow-hidden">
+        <div className="grid grid-cols-7 gap-4 h-full">
+
+          {/* Main container */}
+          <div className="col-span-4">
+            <div className="shadow-[0px_0px_0px_1.5px_#FFF_inset] w-full rounded-2xl border border-bytebot-bronze-light-5 aspect-[4/3] p-[1px] flex flex-col">
+              <div
+                  ref={containerRef}
+                  className="overflow-hidden rounded-[14px]"
+                >
                   <div 
-                    className="relative overflow-hidden rounded-b-2xl flex-1 flex justify-center items-center"
+                    style={{
+                      width: `${containerSize.width}px`,
+                      height: `${containerSize.height}px`,
+                      maxWidth: '100%'
+                    }}
                   >
-                    <div 
-                      ref={containerRef}
-                      className="w-full h-full flex justify-center items-center"
-                    >
-                      <div 
-                        style={{
-                          width: `${containerSize.width}px`,
-                          height: `${containerSize.height}px`,
-                          maxWidth: '100%'
-                        }}
-                      >
-                        <VncViewer />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              {/* Chat Area */}
-              <div className="col-span-2 flex flex-col h-full overflow-hidden">
-                {/* Messages scrollable area */}
-                <div className="flex-1 overflow-y-auto px-4 pt-4 pb-2">
-                  <ChatContainer messages={messages} isLoadingSession={isLoadingSession} />
-                </div>
-                {/* Fixed chat input */}
-                <div className="p-3 bg-white rounded-2xl border-1 border-bytebot-bronze-light-7">
-                  <ChatInput
-                    input={input}
-                    isLoading={isLoading}
-                    onInputChange={setInput}
-                    onSend={handleSend}
-                  />
+                  <VncViewer />
                 </div>
               </div>
             </div>
+          </div>              
+
+          {/* Chat Area */}
+          <div className="col-span-3 flex flex-col h-full overflow-hidden">
+            {/* Messages scrollable area */}
+            <div className="flex-1 overflow-y-auto px-4 pt-4 pb-2">
+              <ChatContainer messages={messages} isLoadingSession={isLoadingSession} />
+            </div>
+            {/* Fixed chat input */}
+            <div className="p-2 bg-bytebot-bronze-light-2 rounded-2xl border-[0.5px] border-bytebot-bronze-light-5 shadow-[0px_0px_0px_1.5px_#FFF_inset]">
+              <ChatInput
+                input={input}
+                isLoading={isLoading}
+                onInputChange={setInput}
+                onSend={handleSend}
+              />
+              <div className="mt-2">
+                <Select value="sonnet-3.7">
+                  <SelectTrigger className="w-auto">
+                    <SelectValue placeholder="Select an model" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sonnet-3.7">Sonnet 3.7</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+        </div>
       </main>
     </div>
   );

@@ -13,6 +13,15 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { AGENT_QUEUE_NAME } from '../common/constants';
 import { Queue } from 'bullmq';
 
+// Define interfaces for the task response with image
+interface TaskWithImage extends Task {
+  imageData?: {
+    data: string;
+    type: string;
+    media_type: string;
+  };
+}
+
 @Injectable()
 export class TasksService implements OnModuleDestroy, OnModuleInit {
   private readonly logger = new Logger(TasksService.name);
@@ -110,11 +119,37 @@ export class TasksService implements OnModuleDestroy, OnModuleInit {
     });
   }
 
-  async findAll(): Promise<Task[]> {
+  async findAll(): Promise<TaskWithImage[]> {
     this.logger.log('Retrieving all tasks');
-    const tasks = await this.prisma.task.findMany();
+
+    console.log('getting tasks')
+    const tasks = await this.prisma.task.findMany({
+      include: {
+        messages: {
+          orderBy: {
+            createdAt: 'desc',
+          },
+        },
+      },
+    });
+    
     this.logger.debug(`Retrieved ${tasks.length} tasks`);
-    return tasks;
+    
+    // Process each task to find and attach image data
+    const tasksWithImages = await Promise.all(
+      tasks.map(async (task) => {
+        const imageData = await this.findLastImageFromMessages(task.id);
+        console.log('imageData', imageData)
+        return {
+          ...task,
+          imageData,
+          // Remove messages from the response to keep it clean
+          messages: undefined,
+        };
+      }),
+    );
+    
+    return tasksWithImages;
   }
 
   async findInProgress(): Promise<Task | null> {
@@ -238,6 +273,52 @@ export class TasksService implements OnModuleDestroy, OnModuleInit {
         },
       );
     }
+  }
+
+  /**
+   * Finds the last image from tool results in messages for a task
+   * @param taskId The ID of the task
+   * @returns The image data or undefined if no image is found
+   */
+  async findLastImageFromMessages(taskId: string): Promise<{ data: string; type: string; media_type: string } | undefined> {
+    this.logger.debug(`Finding last image for task ID: ${taskId}`);
+    
+    // Get all messages for the task, ordered by most recent first
+    const messages = await this.prisma.message.findMany({
+      where: { taskId },
+      orderBy: { createdAt: 'desc' },
+    });
+    
+    // Iterate through messages to find the first one with an image
+    for (const message of messages) {
+      try {
+        const content = message.content as any[];
+        
+        // Check if this is a tool result message with an image
+        for (const block of content) {
+          if (block.type === 'tool_result' && Array.isArray(block.content)) {
+            // Look for image content in the tool result
+            for (const item of block.content) {
+              if (item.type === 'image' && item.source) {
+                this.logger.debug(`Found image in message for task ID: ${taskId}`);
+                return {
+                  data: item.source.data,
+                  type: item.source.type,
+                  media_type: item.source.media_type,
+                };
+              }
+            }
+          }
+        }
+      } catch (error) {
+        this.logger.warn(`Error parsing message content for task ID: ${taskId} - ${error.message}`);
+        // Continue to next message if there's an error
+        continue;
+      }
+    }
+    
+    this.logger.debug(`No image found for task ID: ${taskId}`);
+    return undefined;
   }
 
   async onModuleDestroy() {

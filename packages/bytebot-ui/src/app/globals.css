@@ -4,7 +4,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --color-background: var(--color-bytebot-bronze-light-3);
+  --color-background: var(--color-bytebot-bronze-light-4);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -41,6 +41,10 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+
+  
+    /* Gradients */
+    --bytebot-gradient: "linear-gradient(rgba(255, 95, 239, 1) 54.00000214576721%, rgba(255, 172, 247, 1) 83.99999737739563%, rgba(255, 95, 239, 1) 100%)",
 
   /* Colors */
 
@@ -154,9 +158,6 @@
   --color-bytebot-green-a10: rgba(41, 149, 0, 0.8744999766349792);
   --color-bytebot-green-a11: rgba(43, 128, 0, 1);
   --color-bytebot-green-a12: rgba(10, 41, 0, 0.9059000015258789);
-    
-  /* Gradients */
-  --gradient-bytebot: "linear-gradient(rgba(255, 95, 239, 1) 54.00000214576721%, rgba(255, 172, 247, 1) 83.99999737739563%, rgba(255, 95, 239, 1) 100%)",
 
   /* letterSpacing */
   --letter-spacing-wide: 0.02em;
