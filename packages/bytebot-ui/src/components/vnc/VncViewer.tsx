@@ -1,18 +1,29 @@
-import React from "react";
+"use client";
+
+import React, { useRef, useEffect, useState } from "react";
 
 export function VncViewer() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [VncComponent, setVncComponent] = useState<any>(null);
+
+  useEffect(() => {
+    // Dynamically import the VncScreen component only on the client side
+    import("react-vnc").then(({ VncScreen }) => {
+      setVncComponent(() => VncScreen);
+    });
+  }, []);
+
   return (
-    <div className="h-full w-full flex items-center justify-center">
-      <iframe
-        src="http://localhost:6081/vnc.html?host=localhost&port=6080&resize=scale&autoconnect=true&viewonly=true"
-        style={{
-          width: "100%",
-          height: "100%",
-          border: "none",
-          objectFit: "contain"
-        }}
-        title="VNC Desktop"
-      />
+    <div ref={containerRef} className="h-full w-full">
+      {VncComponent && (
+        <VncComponent
+          url="ws://localhost:6080"
+          scaleViewport={true}
+          viewOnly={true}
+          style={{ width: "100%", height: "100%" }}
+        />
+      )}
     </div>
   );
 }

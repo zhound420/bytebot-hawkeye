@@ -15,7 +15,10 @@ interface MessageItemProps {
 }
 
 export function MessageItem({ message }: MessageItemProps) {
-  if (message.role === MessageRole.ASSISTANT || isToolResultContentBlock(message.content[0])) {
+  if (
+    message.role === MessageRole.ASSISTANT ||
+    isToolResultContentBlock(message.content[0])
+  ) {
     return <AssistantMessage message={message} />;
   }
 
@@ -24,13 +27,21 @@ export function MessageItem({ message }: MessageItemProps) {
 
 function AssistantMessage({ message }: MessageItemProps) {
   // filter content blocks
-  const contentBlocks = message.content.filter(
-    (block) => !isToolUseContentBlock(block)
+  let contentBlocks = message.content.filter(
+    (block) => !isToolUseContentBlock(block),
   );
 
-  if (contentBlocks[0]?.content?.[0]?.text === "Tool executed successfully") {
-    return <></>;
-  }
+  contentBlocks = contentBlocks.map((block) => {
+    if (block.content) {
+      block.content = block.content.filter((contentBlock) => {
+        if (isTextContentBlock(contentBlock)) {
+          return contentBlock.text !== "Tool executed successfully";
+        }
+        return true;
+      });
+    }
+    return block;
+  });
 
   if (contentBlocks.length === 0) {
     return <></>;
@@ -39,14 +50,18 @@ function AssistantMessage({ message }: MessageItemProps) {
   return (
     <div className="mb-4">
       <div className="flex items-start gap-2">
-        <div className="flex-shrink-0 w-[28px] h-[28px] bg-white rounded-sm flex items-center justify-center border border-bytebot-bronze-light-7">
-          <img src="/bytebot_square_light.svg" alt="Bytebot" className="w-4 h-4" />
+        <div className="border-bytebot-bronze-light-7 flex h-[28px] w-[28px] flex-shrink-0 items-center justify-center rounded-sm border bg-white">
+          <img
+            src="/bytebot_square_light.svg"
+            alt="Bytebot"
+            className="h-4 w-4"
+          />
         </div>
         <div className="w-full">
           {contentBlocks.map((block, index) => (
             <>
               {isTextContentBlock(block) && (
-                <div className="mb-2 text-xs text-bytebot-bronze-dark-8">
+                <div className="text-bytebot-bronze-dark-8 mb-2 text-xs">
                   <ReactMarkdown>{block.text}</ReactMarkdown>
                 </div>
               )}
@@ -60,22 +75,20 @@ function AssistantMessage({ message }: MessageItemProps) {
                 />
               )}
               {isImageContentBlock(block.content?.[0]) && (
-                <div className="flex py-1.5 px-2 items-center justify-between w-full bg-bytebot-bronze-light-2 shadowshadow-[0px_1px_1px_rgba(0,0,0,0.06)] border border-bytebot-bronze-light-7 rounded-sm">
-                    <p className="text-bytebot-bronze-light-11 text-sm">Screenshot</p>
-                    <Image
-                      key={index}
-                      src={`data:${block.content?.[0]?.source?.media_type};${block.content?.[0]?.source?.type},${block.content?.[0]?.source?.data}`}
-                      alt={"image"}
-                      width={50}
-                      height={50}
-                    />
+                <div className="bg-bytebot-bronze-light-2 shadowshadow-[0px_1px_1px_rgba(0,0,0,0.06)] border-bytebot-bronze-light-7 flex w-full items-center justify-between rounded-sm border px-2 py-1.5">
+                  <p className="text-bytebot-bronze-light-11 text-sm">
+                    Screenshot
+                  </p>
+                  <Image
+                    key={index}
+                    src={`data:${block.content?.[0]?.source?.media_type};${block.content?.[0]?.source?.type},${block.content?.[0]?.source?.data}`}
+                    alt={"image"}
+                    width={50}
+                    height={50}
+                  />
                 </div>
               )}
-              {isToolUseContentBlock(block) && (
-                <p>
-                  {block.name}
-                </p>
-              )}
+              {isToolUseContentBlock(block) && <p>{block.name}</p>}
             </>
           ))}
         </div>
@@ -89,7 +102,7 @@ function UserMessage({ message }: MessageItemProps) {
     (block) =>
       (isToolResultContentBlock(block) &&
         block.content.filter(isImageContentBlock).length > 0) ||
-      !isToolResultContentBlock(block)
+      !isToolResultContentBlock(block),
   );
 
   if (contentBlocks.length === 0) {
@@ -99,12 +112,15 @@ function UserMessage({ message }: MessageItemProps) {
   return (
     <div className="mb-4">
       <div className="flex flex-row-reverse items-start gap-2">
-        <div className="flex-shrink-0 w-6 h-6 rounded-sm border border-bytebot-bronze-light-7 bg-muted flex items-center justify-center">
+        <div className="border-bytebot-bronze-light-7 bg-muted flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-sm border">
           <User className="h-3 w-3" />
         </div>
-        <div className="bg-bytebot-bronze-light-2 border border-bytebot-bronze-light-7 rounded-md py-2 px-3 shadow-[0px_0px_0px_1.5px_#FFF_inset] max-w-4/5">
+        <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-7 max-w-4/5 rounded-md border px-3 py-2 shadow-[0px_0px_0px_1.5px_#FFF_inset]">
           {contentBlocks.map((block, index) => (
-            <div key={index} className="mb-2 text-xs text-bytebot-bronze-dark-9">
+            <div
+              key={index}
+              className="text-bytebot-bronze-dark-9 mb-2 text-xs"
+            >
               {isTextContentBlock(block) && (
                 <ReactMarkdown>{block.text}</ReactMarkdown>
               )}
