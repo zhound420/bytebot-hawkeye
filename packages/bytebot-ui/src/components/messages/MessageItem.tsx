@@ -1,7 +1,6 @@
 import React from "react";
 import { User } from "lucide-react";
 import ReactMarkdown from "react-markdown";
-import Image from "next/image";
 import { Message, MessageRole } from "@/types";
 import {
   isImageContentBlock,
@@ -9,6 +8,7 @@ import {
   isToolResultContentBlock,
   isToolUseContentBlock,
 } from "../../../shared/utils/messageContent.utils";
+import Image from "next/image";
 
 interface MessageItemProps {
   message: Message;
@@ -23,18 +23,18 @@ export function MessageItem({ message }: MessageItemProps) {
 }
 
 function AssistantMessage({ message }: MessageItemProps) {
-  // TODO: Handle tool blocks
-
   // filter content blocks
   const contentBlocks = message.content.filter(
     (block) => !isToolUseContentBlock(block)
   );
 
-  if (contentBlocks.length === 0) {
+  if (contentBlocks[0]?.content?.[0]?.text === "Tool executed successfully") {
     return <></>;
   }
 
-  console.log(contentBlocks)
+  if (contentBlocks.length === 0) {
+    return <></>;
+  }
 
   return (
     <div className="mb-4">
@@ -42,21 +42,41 @@ function AssistantMessage({ message }: MessageItemProps) {
         <div className="flex-shrink-0 w-[28px] h-[28px] bg-white rounded-sm flex items-center justify-center border border-bytebot-bronze-light-7">
           <img src="/bytebot_square_light.svg" alt="Bytebot" className="w-4 h-4" />
         </div>
-        <div>
+        <div className="w-full">
           {contentBlocks.map((block, index) => (
-            <div key={index} className="mb-2 text-xs text-bytebot-bronze-dark-8">
+            <>
               {isTextContentBlock(block) && (
-                <ReactMarkdown>{block.text}</ReactMarkdown>
+                <div className="mb-2 text-xs text-bytebot-bronze-dark-8">
+                  <ReactMarkdown>{block.text}</ReactMarkdown>
+                </div>
               )}
-              {isToolResultContentBlock(block) &&
-                block.content.map(
-                  (contentBlock, contentIndex) => (
-                    <p key={contentIndex}>
-                      {contentBlock.text}
-                    </p>
-                  )
-                )}
-            </div>
+              {isImageContentBlock(block) && (
+                <Image
+                  key={index}
+                  src={block?.source?.data}
+                  alt={"image"}
+                  width={50}
+                  height={50}
+                />
+              )}
+              {isImageContentBlock(block.content?.[0]) && (
+                <div className="flex py-1.5 px-2 items-center justify-between w-full bg-bytebot-bronze-light-2 shadowshadow-[0px_1px_1px_rgba(0,0,0,0.06)] border border-bytebot-bronze-light-7 rounded-sm">
+                    <p className="text-bytebot-bronze-light-11 text-sm">Screenshot</p>
+                    <Image
+                      key={index}
+                      src={`data:${block.content?.[0]?.source?.media_type};${block.content?.[0]?.source?.type},${block.content?.[0]?.source?.data}`}
+                      alt={"image"}
+                      width={50}
+                      height={50}
+                    />
+                </div>
+              )}
+              {isToolUseContentBlock(block) && (
+                <p>
+                  {block.name}
+                </p>
+              )}
+            </>
           ))}
         </div>
       </div>

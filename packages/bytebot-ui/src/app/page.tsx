@@ -32,9 +32,6 @@ export default function Home() {
       const parentWidth = containerRef.current.parentElement?.offsetWidth || containerRef.current.offsetWidth;
       const parentHeight = containerRef.current.parentElement?.offsetHeight || containerRef.current.offsetHeight;
 
-      console.log('parentWidth', parentWidth);
-      console.log('parentHeight', parentHeight);
-
       // Calculate the maximum size while maintaining 1280:960 aspect ratio
       let width, height;
       const aspectRatio = 1280 / 960;
