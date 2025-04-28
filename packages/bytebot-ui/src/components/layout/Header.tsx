@@ -20,7 +20,7 @@ export function Header() {
 
   return (
     <header className="flex items-center justify-between p-4 border-b bg-background">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 space-x-4">
         <Link href="/">
           {mounted ? (
             <Image
@@ -38,19 +38,15 @@ export function Header() {
             <div className="h-10 w-[100px]" />
           )}
         </Link>
+        <div className="border border-l-[0.5px] border-bytebot-bronze-dark-11 h-5"></div>
+        <Link href="/tasks" className="text-bytebot-bronze-dark-9 text-sm">
+          Tasks
+        </Link>
+        <Link href="/docs" className="text-bytebot-bronze-dark-9 text-sm">
+          Docs
+        </Link>
       </div>
-      <div className="flex items-center gap-3">
-        {/* {currentTaskId && (
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={onNewConversation}
-            className="mr-2"
-          >
-            New Conversation
-          </Button>
-        )} */}
-      </div>
+      <div className="flex items-center gap-3"></div>
     </header>
   );
 }
