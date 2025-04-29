@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useTheme } from "next-themes";
+import { HugeiconsIcon } from '@hugeicons/react'
+import { DocumentCodeIcon, TaskDaily01Icon } from '@hugeicons/core-free-icons'
 
 // Uncommenting interface if needed in the future
 // interface HeaderProps {
@@ -39,12 +41,18 @@ export function Header() {
           )}
         </Link>
         <div className="border border-l-[0.5px] border-bytebot-bronze-dark-11 h-5"></div>
-        <Link href="/tasks" className="text-bytebot-bronze-dark-9 text-sm">
-          Tasks
-        </Link>
-        <Link href="/docs" className="text-bytebot-bronze-dark-9 text-sm">
-          Docs
-        </Link>
+        <div className="flex items-center gap-1.5">
+          <HugeiconsIcon icon={TaskDaily01Icon} className="text-bytebot-bronze-dark-9 w-4 h-4" />
+          <Link href="/tasks" className="text-bytebot-bronze-dark-9 text-sm">
+            Tasks
+          </Link>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <HugeiconsIcon icon={DocumentCodeIcon} className="text-bytebot-bronze-dark-9 w-4 h-4" />
+          <Link href="https://docs.bytebot.ai/quickstart" className="text-bytebot-bronze-dark-9 text-sm">
+            Docs
+          </Link>
+        </div>
       </div>
       <div className="flex items-center gap-3"></div>
     </header>

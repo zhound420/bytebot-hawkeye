@@ -122,7 +122,6 @@ export class TasksService implements OnModuleDestroy, OnModuleInit {
   async findAll(): Promise<TaskWithImage[]> {
     this.logger.log('Retrieving all tasks');
 
-    console.log('getting tasks')
     const tasks = await this.prisma.task.findMany({
       include: {
         messages: {
@@ -139,7 +138,6 @@ export class TasksService implements OnModuleDestroy, OnModuleInit {
     const tasksWithImages = await Promise.all(
       tasks.map(async (task) => {
         const imageData = await this.findLastImageFromMessages(task.id);
-        console.log('imageData', imageData)
         return {
           ...task,
           imageData,

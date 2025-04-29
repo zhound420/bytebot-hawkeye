@@ -2,7 +2,8 @@
 
 import * as React from "react"
 import * as SelectPrimitive from "@radix-ui/react-select"
-import { Check, ChevronDown } from "lucide-react"
+import { HugeiconsIcon } from '@hugeicons/react'
+import { ArrowDown01Icon, Tick02Icon } from '@hugeicons/core-free-icons'
 
 import { cn } from "@/lib/utils"
 
@@ -26,7 +27,7 @@ const SelectTrigger = React.forwardRef<
   >
     {children}
     <SelectPrimitive.Icon asChild>
-      <ChevronDown className="ml-4 h-4 w-4 opacity-50" />
+      <HugeiconsIcon icon={ArrowDown01Icon} className="ml-4 h-4 w-4 opacity-50" />
     </SelectPrimitive.Icon>
   </SelectPrimitive.Trigger>
 ))
@@ -89,7 +90,7 @@ const SelectItem = React.forwardRef<
     <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
     <span className="flex h-3.5 w-3.5 items-center justify-center">
       <SelectPrimitive.ItemIndicator>
-        <Check className="h-4 w-4" />
+        <HugeiconsIcon icon={Tick02Icon} className="h-4 w-4" />
       </SelectPrimitive.ItemIndicator>
     </span>
   </SelectPrimitive.Item>

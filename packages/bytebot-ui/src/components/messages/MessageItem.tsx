@@ -1,5 +1,4 @@
 import React from "react";
-import { User } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Message, MessageRole } from "@/types";
 import {
@@ -9,6 +8,8 @@ import {
   isToolUseContentBlock,
 } from "../../../shared/utils/messageContent.utils";
 import Image from "next/image";
+import { HugeiconsIcon } from '@hugeicons/react'
+import { User03Icon } from '@hugeicons/core-free-icons'
 
 interface MessageItemProps {
   message: Message;
@@ -113,7 +114,7 @@ function UserMessage({ message }: MessageItemProps) {
     <div className="mb-4">
       <div className="flex flex-row-reverse items-start gap-2">
         <div className="border-bytebot-bronze-light-7 bg-muted flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-sm border">
-          <User className="h-3 w-3" />
+          <HugeiconsIcon icon={User03Icon} className="text-bytebot-bronze-dark-9 w-4 h-4" />
         </div>
         <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-7 max-w-4/5 rounded-md border px-3 py-2 shadow-[0px_0px_0px_1.5px_#FFF_inset]">
           {contentBlocks.map((block, index) => (

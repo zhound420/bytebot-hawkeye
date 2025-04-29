@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
+    "@hugeicons/core-free-icons": "^1.0.14",
+    "@hugeicons/react": "^1.0.5",
     "@prisma/client": "^6.5.0",
     "@radix-ui/react-dropdown-menu": "^2.1.6",
     "@radix-ui/react-scroll-area": "^1.2.3",
@@ -24,7 +26,6 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "ioredis": "^5.6.0",
-    "lucide-react": "^0.484.0",
     "next": ">=15.2.4",
     "next-themes": "^0.4.6",
     "react": "^19.0.0",
