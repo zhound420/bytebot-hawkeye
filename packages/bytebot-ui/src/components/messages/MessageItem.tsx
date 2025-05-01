@@ -20,6 +20,7 @@ function getIcon(type: 'screenshot' | 'left_click' | 'right_click' | 'move' | 't
     'screenshot': Camera01Icon,
     'left_click': Cursor02Icon,
     'right_click': Cursor02Icon,
+    'double_click': Cursor02Icon,
     'move': Cursor02Icon,
     'type': TypeCursorIcon,
     'key': MouseRightClick06Icon,
@@ -33,6 +34,7 @@ function getLabel(type: 'screenshot' | 'left_click' | 'right_click' | 'move' | '
     'screenshot': 'Screenshot',
     'left_click': 'Left Click',
     'right_click': 'Right Click',
+    'double_click': 'Double Click',
     'move': 'Move',
     'type': 'Type',
     'key': 'Key',
@@ -85,7 +87,7 @@ function AssistantMessage({ message }: MessageItemProps) {
                     <div className="flex items-center gap-2">
                       <HugeiconsIcon icon={getIcon('screenshot')} className="text-bytebot-bronze-dark-9 w-4 h-4" />
                       <p className="text-bytebot-bronze-light-11 text-xs">
-                        {getLabel('screenshot')}
+                        {getLabel('screenshot')} taken
                       </p>
                     </div>
                   </div>
