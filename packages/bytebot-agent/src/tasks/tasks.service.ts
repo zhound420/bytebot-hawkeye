@@ -122,7 +122,6 @@ export class TasksService implements OnModuleDestroy, OnModuleInit {
   async findAll(): Promise<TaskWithImage[]> {
     this.logger.log('Retrieving all tasks');
 
-    console.log('getting tasks')
     const tasks = await this.prisma.task.findMany({
       include: {
         messages: {
@@ -132,14 +131,13 @@ export class TasksService implements OnModuleDestroy, OnModuleInit {
         },
       },
     });
-    
+
     this.logger.debug(`Retrieved ${tasks.length} tasks`);
-    
+
     // Process each task to find and attach image data
     const tasksWithImages = await Promise.all(
       tasks.map(async (task) => {
         const imageData = await this.findLastImageFromMessages(task.id);
-        console.log('imageData', imageData)
         return {
           ...task,
           imageData,
@@ -148,7 +146,7 @@ export class TasksService implements OnModuleDestroy, OnModuleInit {
         };
       }),
     );
-    
+
     return tasksWithImages;
   }
 
@@ -189,15 +187,24 @@ export class TasksService implements OnModuleDestroy, OnModuleInit {
         throw new NotFoundException(`Task with ID ${id} not found`);
       }
 
-      this.logger.debug(
-        `Successfully retrieved task ID: ${id} with ${task.messages.length} messages`,
-      );
-      return task;
-    } catch (error) {
-      this.logger.error(
-        `Error retrieving task ID: ${id} - ${error.message}`,
-        error.stack,
-      );
+      // Filter out messages containing "Tool executed successfully" in post-processing
+      // TODO move into the database query
+      const filteredMessages = task.messages.filter((message) => {
+        const contentStr = JSON.stringify(message.content);
+        return !contentStr.includes('Tool executed successfully');
+      });
+
+      // Create a new task object with filtered messages
+      const filteredTask = {
+        ...task,
+        messages: filteredMessages,
+      };
+
+      this.logger.debug(`Retrieved task with ID: ${id}`);
+      return filteredTask;
+    } catch (error: any) {
+      this.logger.error(`Error retrieving task ID: ${id} - ${error.message}`);
+      this.logger.error(error.stack);
       throw error;
     }
   }
@@ -282,18 +289,18 @@ export class TasksService implements OnModuleDestroy, OnModuleInit {
    */
   async findLastImageFromMessages(taskId: string): Promise<{ data: string; type: string; media_type: string } | undefined> {
     this.logger.debug(`Finding last image for task ID: ${taskId}`);
-    
+
     // Get all messages for the task, ordered by most recent first
     const messages = await this.prisma.message.findMany({
       where: { taskId },
       orderBy: { createdAt: 'desc' },
     });
-    
+
     // Iterate through messages to find the first one with an image
     for (const message of messages) {
       try {
         const content = message.content as any[];
-        
+
         // Check if this is a tool result message with an image
         for (const block of content) {
           if (block.type === 'tool_result' && Array.isArray(block.content)) {
@@ -316,7 +323,7 @@ export class TasksService implements OnModuleDestroy, OnModuleInit {
         continue;
       }
     }
-    
+
     this.logger.debug(`No image found for task ID: ${taskId}`);
     return undefined;
   }

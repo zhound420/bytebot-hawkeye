@@ -1,7 +1,8 @@
 import React from 'react';
-import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { HugeiconsIcon } from '@hugeicons/react'
+import { ArrowRight02Icon } from '@hugeicons/core-free-icons'
 
 interface ChatInputProps {
   input: string;
@@ -37,7 +38,7 @@ export function ChatInput({ input, isLoading, onInputChange, onSend }: ChatInput
               className="rounded-sm bg-bytebot-bronze-dark-7 w-6 h-6 hover:bg-bytebot-bronze-dark-6 cursor-pointer"
               disabled={isLoading}
             >
-              <ArrowRight className="h-5 w-5 text-white" />
+              <HugeiconsIcon icon={ArrowRight02Icon} className="text-white w-4 h-4" />
             </Button>
           )}
         </div>
