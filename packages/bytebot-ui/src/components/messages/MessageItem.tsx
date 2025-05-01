@@ -9,10 +9,36 @@ import {
 } from "../../../shared/utils/messageContent.utils";
 import Image from "next/image";
 import { HugeiconsIcon } from '@hugeicons/react'
-import { User03Icon } from '@hugeicons/core-free-icons'
+import { Camera01Icon, User03Icon, Cursor02Icon, TypeCursorIcon, MouseRightClick06Icon, TimeQuarter02Icon } from '@hugeicons/core-free-icons'
 
 interface MessageItemProps {
   message: Message;
+}
+
+function getIcon(type: 'screenshot' | 'left_click' | 'right_click' | 'move' | 'type' | 'key' | 'wait') {
+  const iconLookup = {
+    'screenshot': Camera01Icon,
+    'left_click': Cursor02Icon,
+    'right_click': Cursor02Icon,
+    'move': Cursor02Icon,
+    'type': TypeCursorIcon,
+    'key': MouseRightClick06Icon,
+    'wait': TimeQuarter02Icon,
+  }
+  return iconLookup[type] || User03Icon;
+}
+
+function getLabel(type: 'screenshot' | 'left_click' | 'right_click' | 'move' | 'type' | 'key' | 'wait') {
+  const labelLookup = {
+    'screenshot': 'Screenshot',
+    'left_click': 'Left Click',
+    'right_click': 'Right Click',
+    'move': 'Move',
+    'type': 'Type',
+    'key': 'Key',
+    'wait': 'Wait',
+  }
+  return labelLookup[type] || type;
 }
 
 export function MessageItem({ message }: MessageItemProps) {
@@ -27,24 +53,8 @@ export function MessageItem({ message }: MessageItemProps) {
 }
 
 function AssistantMessage({ message }: MessageItemProps) {
-  // filter content blocks
-  let contentBlocks = message.content.filter(
-    (block) => !isToolUseContentBlock(block),
-  );
-
-  contentBlocks = contentBlocks.map((block) => {
-    if (block.content) {
-      block.content = block.content.filter((contentBlock) => {
-        if (isTextContentBlock(contentBlock)) {
-          return contentBlock.text !== "Tool executed successfully";
-        }
-        return true;
-      });
-    }
-    return block;
-  });
-
-  if (contentBlocks.length === 0) {
+  const contentBlocks = message.content;
+  if (contentBlocks.length === 0 || contentBlocks.every((block) => block.content?.length === 0)) {
     return <></>;
   }
 
@@ -52,46 +62,62 @@ function AssistantMessage({ message }: MessageItemProps) {
     <div className="mb-4">
       <div className="flex items-start gap-2">
         <div className="border-bytebot-bronze-light-7 flex h-[28px] w-[28px] flex-shrink-0 items-center justify-center rounded-sm border bg-white">
-          <img
+          <Image
             src="/bytebot_square_light.svg"
             alt="Bytebot"
+            width={16}
+            height={16}
             className="h-4 w-4"
           />
         </div>
         <div className="w-full">
-          {contentBlocks.map((block, index) => (
-            <>
-              {isTextContentBlock(block) && (
-                <div className="text-bytebot-bronze-dark-8 mb-2 text-xs">
-                  <ReactMarkdown>{block.text}</ReactMarkdown>
-                </div>
-              )}
-              {isImageContentBlock(block) && (
-                <Image
-                  key={index}
-                  src={block?.source?.data}
-                  alt={"image"}
-                  width={50}
-                  height={50}
-                />
-              )}
-              {isImageContentBlock(block.content?.[0]) && (
-                <div className="bg-bytebot-bronze-light-2 shadowshadow-[0px_1px_1px_rgba(0,0,0,0.06)] border-bytebot-bronze-light-7 flex w-full items-center justify-between rounded-sm border px-2 py-1.5">
-                  <p className="text-bytebot-bronze-light-11 text-sm">
-                    Screenshot
-                  </p>
-                  <Image
-                    key={index}
-                    src={`data:${block.content?.[0]?.source?.media_type};${block.content?.[0]?.source?.type},${block.content?.[0]?.source?.data}`}
-                    alt={"image"}
-                    width={50}
-                    height={50}
-                  />
-                </div>
-              )}
-              {isToolUseContentBlock(block) && <p>{block.name}</p>}
-            </>
-          ))}
+          {contentBlocks
+            .map((block) => (
+              <>
+                {isTextContentBlock(block) && (
+                  <div className="text-bytebot-bronze-dark-8 mb-2 text-xs">
+                    <ReactMarkdown>{block.text}</ReactMarkdown>
+                  </div>
+                )}
+
+                {isImageContentBlock(block.content?.[0]) && (
+                  <div className="bg-bytebot-bronze-light-2 shadowshadow-[0px_1px_1px_rgba(0,0,0,0.06)] border-bytebot-bronze-light-7 flex w-full items-center justify-between rounded-sm border px-2 py-1.5">
+                    <div className="flex items-center gap-2">
+                      <HugeiconsIcon icon={getIcon('screenshot')} className="text-bytebot-bronze-dark-9 w-4 h-4" />
+                      <p className="text-bytebot-bronze-light-11 text-xs">
+                        {getLabel('screenshot')}
+                      </p>
+                    </div>
+                    {/* <Image
+                      key={index}
+                      src={`data:${block.content?.[0]?.source?.media_type};${block.content?.[0]?.source?.type},${block.content?.[0]?.source?.data}`}
+                      alt={"image"}
+                      width={50}
+                      height={50}
+                    /> */}
+                  </div>
+                )}
+
+                {isToolUseContentBlock(block) && (
+                  <div className="bg-bytebot-bronze-light-2 shadowshadow-[0px_1px_1px_rgba(0,0,0,0.06)] border-bytebot-bronze-light-7 flex w-full items-center justify-between rounded-sm border px-2 py-1.5">
+                    <div className="flex items-center gap-2">
+                      <HugeiconsIcon icon={getIcon(block.input.action as string)} className="text-bytebot-bronze-dark-9 w-4 h-4" />
+                      <p className="text-bytebot-bronze-light-11 text-xs">{getLabel(block.input.action as string)}</p>
+                      {block.input.action === 'type' && (
+                        <p className="rounded-md bg-bytebot-bronze-light-1 py-0.5 px-1 text-xs border-bytebot-bronze-light-7 border text-bytebot-bronze-light-11">{block.input.text as string}</p>
+                      )}
+                      {(block.input.action === 'left_click' || block.input.action === 'right_click') && (
+                        <p className="rounded-md bg-bytebot-bronze-light-1 py-0.5 px-1 text-xs border-bytebot-bronze-light-7 border text-bytebot-bronze-light-11">{(block.input.coordinate as number[])[0]}, {(block.input.coordinate as number[])[1]}</p>
+                      )}
+                      {block.input.action === 'key' && (
+                        <p className="rounded-md bg-bytebot-bronze-light-1 py-0.5 px-1 text-xs border-bytebot-bronze-light-7 border text-bytebot-bronze-light-11">{block.input.text as string}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </>
+            )
+          )}
         </div>
       </div>
     </div>
