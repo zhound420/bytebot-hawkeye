@@ -81,25 +81,18 @@ function AssistantMessage({ message }: MessageItemProps) {
                 )}
 
                 {isImageContentBlock(block.content?.[0]) && (
-                  <div className="bg-bytebot-bronze-light-2 shadowshadow-[0px_1px_1px_rgba(0,0,0,0.06)] border-bytebot-bronze-light-7 flex w-full items-center justify-between rounded-sm border px-2 py-1.5">
+                  <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-7 max-w-4/5 rounded-md border px-3 py-2 shadow-[0px_0px_0px_1.5px_#FFF_inset]">
                     <div className="flex items-center gap-2">
                       <HugeiconsIcon icon={getIcon('screenshot')} className="text-bytebot-bronze-dark-9 w-4 h-4" />
                       <p className="text-bytebot-bronze-light-11 text-xs">
                         {getLabel('screenshot')}
                       </p>
                     </div>
-                    {/* <Image
-                      key={index}
-                      src={`data:${block.content?.[0]?.source?.media_type};${block.content?.[0]?.source?.type},${block.content?.[0]?.source?.data}`}
-                      alt={"image"}
-                      width={50}
-                      height={50}
-                    /> */}
                   </div>
                 )}
 
                 {isToolUseContentBlock(block) && (
-                  <div className="bg-bytebot-bronze-light-2 shadowshadow-[0px_1px_1px_rgba(0,0,0,0.06)] border-bytebot-bronze-light-7 flex w-full items-center justify-between rounded-sm border px-2 py-1.5">
+                  <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-7 max-w-4/5 rounded-md border px-3 py-2 shadow-[0px_0px_0px_1.5px_#FFF_inset]">
                     <div className="flex items-center gap-2">
                       <HugeiconsIcon icon={getIcon(block.input.action as string)} className="text-bytebot-bronze-dark-9 w-4 h-4" />
                       <p className="text-bytebot-bronze-light-11 text-xs">{getLabel(block.input.action as string)}</p>
