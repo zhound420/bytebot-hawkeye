@@ -1,11 +1,9 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState } from "react";
 import { Header } from "@/components/layout/Header";
-import { VncViewer } from "@/components/vnc/VncViewer";
-import { ChatContainer } from "@/components/messages/ChatContainer";
 import { ChatInput } from "@/components/messages/ChatInput";
-import { useChatSession } from "@/hooks/useChatSession";
+import { useRouter } from "next/navigation";
 import {
   Select,
   SelectContent,
@@ -13,116 +11,72 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-// import { BrowserHeader } from "@/components/layout/BrowserHeader";
+import { sendMessage } from "@/utils/messageUtils";
 
 export default function Home() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
-  const { messages, input, setInput, isLoading, isLoadingSession, handleSend } =
-    useChatSession();
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
-  const [isMounted, setIsMounted] = useState(false);
+  const handleSend = async () => {
+    if (!input.trim()) return;
 
-  // Set isMounted to true after component mounts
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+    setIsLoading(true);
 
-  // Calculate the container size on mount and window resize
-  useEffect(() => {
-    if (!isMounted) return;
+    try {
+      // Send request to start a new task
+      const task = await sendMessage(input);
 
-    const updateSize = () => {
-      if (!containerRef.current) return;
-
-      const parentWidth =
-        containerRef.current.parentElement?.offsetWidth ||
-        containerRef.current.offsetWidth;
-      const parentHeight =
-        containerRef.current.parentElement?.offsetHeight ||
-        containerRef.current.offsetHeight;
-
-      // Calculate the maximum size while maintaining 1280:960 aspect ratio
-      let width, height;
-      const aspectRatio = 1280 / 960;
-
-      if (parentWidth / parentHeight > aspectRatio) {
-        // Width is the limiting factor
-        height = parentHeight;
-        width = height * aspectRatio;
+      if (task && task.id) {
+        // Redirect to the task page
+        router.push(`/tasks/${task.id}`);
       } else {
-        // Height is the limiting factor
-        width = parentWidth;
-        height = width / aspectRatio;
+        // Handle error
+        console.error("Failed to create task");
       }
-
-      // Cap at maximum dimensions
-      width = Math.min(width, 1280);
-      height = Math.min(height, 960);
-
-      setContainerSize({ width, height });
-    };
-
-    updateSize();
-    window.addEventListener("resize", updateSize);
-    return () => window.removeEventListener("resize", updateSize);
-  }, [isMounted]);
+    } catch (error) {
+      console.error("Error sending message:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="flex h-screen flex-col overflow-hidden">
       <Header />
 
-      <main className="m-2 flex-1 overflow-hidden px-2 py-4">
-        <div className="grid h-full grid-cols-7 gap-4">
-          {/* Main container */}
-          <div className="col-span-4">
-            <div className="border-bytebot-bronze-light-5 flex aspect-[4/3] w-full flex-col rounded-2xl border shadow-[0px_0px_0px_1.5px_#FFF_inset]">
-              <div
-                ref={containerRef}
-                className="overflow-hidden rounded-[14px]"
-              >
-                <div
-                  style={{
-                    width: `${containerSize.width}px`,
-                    height: `${containerSize.height}px`,
-                    maxWidth: "100%",
-                  }}
-                >
-                  <VncViewer />
-                </div>
-              </div>
+      <main className="flex flex-1 flex-col items-center justify-center overflow-hidden">
+        <div className="flex flex-col items-center max-w-xl w-full px-4">
+          <h1 className="text-2xl font-semibold text-gray-800 mb-1">Got something brewing?</h1>
+          <p className="text-gray-600 mb-6">Let&apos;s dive in!</p>
+          
+          <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-5 rounded-2xl border-[0.5px] p-2 shadow-[0px_0px_0px_1.5px_#FFF_inset] w-full">
+            <ChatInput
+              input={input}
+              isLoading={isLoading}
+              onInputChange={setInput}
+              onSend={handleSend}
+              minLines={3}
+            />
+            <div className="mt-2">
+              <Select value="sonnet-3.7">
+                <SelectTrigger className="w-auto">
+                  <SelectValue placeholder="Select a model" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="sonnet-3.7">Sonnet 3.7</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
-
-          {/* Chat Area */}
-          <div className="col-span-3 flex h-full flex-col overflow-hidden">
-            {/* Messages scrollable area */}
-            <div className="flex-1 overflow-y-auto px-4 pt-4 pb-2">
-              <ChatContainer
-                messages={messages}
-                isLoadingSession={isLoadingSession}
-              />
-            </div>
-            {/* Fixed chat input */}
-            <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-5 rounded-2xl border-[0.5px] p-2 shadow-[0px_0px_0px_1.5px_#FFF_inset]">
-              <ChatInput
-                input={input}
-                isLoading={isLoading}
-                onInputChange={setInput}
-                onSend={handleSend}
-              />
-              <div className="mt-2">
-                <Select value="sonnet-3.7">
-                  <SelectTrigger className="w-auto">
-                    <SelectValue placeholder="Select an model" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sonnet-3.7">Sonnet 3.7</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
+          
+          {/* <div className="flex flex-wrap gap-2 mt-6 justify-center">
+            <button className="px-4 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-100">Research</button>
+            <button className="px-4 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-100">Create</button>
+            <button className="px-4 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-100">Plan</button>
+            <button className="px-4 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-100">Analyze</button>
+            <button className="px-4 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-100">Learn</button>
+          </div> */}
         </div>
       </main>
     </div>

@@ -27,6 +27,34 @@ export async function fetchMessages(taskId: string): Promise<Message[]> {
 }
 
 /**
+ * Fetches a specific task by ID
+ * @param taskId The ID of the task to fetch
+ * @returns The task data or null if not found
+ */
+export async function fetchTaskById(taskId: string): Promise<{
+  id: string;
+  messages: Message[];
+} | null> {
+  try {
+    const response = await fetch(`http://localhost:9991/tasks/${taskId}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch task with ID ${taskId}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error(`Error fetching task ${taskId}:`, error);
+    return null;
+  }
+}
+
+/**
  * Sends a message to start a new task or continue an existing one
  * @param message The message content to send
  * @returns The task data or null if there was an error
