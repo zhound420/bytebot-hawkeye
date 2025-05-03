@@ -42,10 +42,6 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
-  
-    /* Gradients */
-    --bytebot-gradient: "linear-gradient(rgba(255, 95, 239, 1) 54.00000214576721%, rgba(255, 172, 247, 1) 83.99999737739563%, rgba(255, 95, 239, 1) 100%)",
-
   /* Colors */
 
   /* Base */
@@ -165,6 +161,8 @@
   --letter-spacing-narrow: -0.009999999776482582em;
   --letter-spacing-narrow: -0.01em;
 
+  /* Shadow */
+  --shadow-bytebot: 0px 0px 0px 1.5px #FFF inset;
 }
 
 :root {

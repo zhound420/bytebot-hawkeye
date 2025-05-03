@@ -38,7 +38,7 @@ export function ChatInput({ input, isLoading, onInputChange, onSend, minLines = 
   }, [input, minLines]);
 
   // Determine button position based on minLines
-  const buttonPositionClass = minLines > 1 ? "bottom-2" : "top-1/2 -translate-y-1/2";
+  const buttonPositionClass = minLines > 1 ? "bottom-1.5" : "top-1/2 -translate-y-1/2";
 
   return (
     <div>
@@ -49,9 +49,8 @@ export function ChatInput({ input, isLoading, onInputChange, onSend, minLines = 
           value={input}
           onChange={(e) => onInputChange(e.target.value)}
           className={cn(
-            "w-full py-1.5 pl-3 pr-10 rounded-md placeholder:text-bytebot-bronze-dark-10 placeholder:text-[13px]",
+            "w-full py-1.5 pl-3 pr-10 rounded-md placeholder:text-bytebot-bronze-light-10 placeholder:text-[13px]",
             "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-bytebot-bronze-light-7 flex min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
-            "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
             "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
             "resize-none overflow-hidden"
           )}
@@ -64,7 +63,7 @@ export function ChatInput({ input, isLoading, onInputChange, onSend, minLines = 
             }
           }}
         />
-        <div className={`absolute right-2 ${buttonPositionClass}`}>
+        <div className={`absolute right-1.5 ${buttonPositionClass}`}>
           {isLoading ? (
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-bytebot-bronze-light-7 border-t-primary" />
           ) : (

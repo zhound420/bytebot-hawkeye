@@ -39,7 +39,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
 
   return (
     <Link href={`/tasks/${task.id}`} className="block">
-      <div className="py-4 px-5 shadow-[0px_0px_0px_1.5px_#FFF_inset] bg-bytebot-bronze-light-2 border-[0.5px] rounded-lg border-bytebot-bronze-light-5 flex items-start min-h-24 hover:bg-bytebot-bronze-light-3 transition-colors">
+      <div className="py-4 px-5 shadow-bytebot bg-bytebot-bronze-light-2 border-[0.5px] rounded-lg border-bytebot-bronze-light-5 flex items-start min-h-24 hover:bg-bytebot-bronze-light-3 transition-colors">
         {/* Task icon or image */}
         <div className="w-20 h-auto mr-4 flex-shrink-0 overflow-hidden rounded">
           {task.imageData ? (
