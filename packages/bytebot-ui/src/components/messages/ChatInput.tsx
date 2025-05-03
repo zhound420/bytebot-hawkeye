@@ -30,7 +30,7 @@ export function ChatInput({ input, isLoading, onInputChange, onSend, minLines = 
     
     // Calculate minimum height based on minLines
     const lineHeight = 24; // approximate line height in pixels
-    const minHeight = lineHeight * minLines;
+    const minHeight = lineHeight * minLines + 12;
     
     // Set height to scrollHeight or minHeight, whichever is larger
     const newHeight = Math.max(textarea.scrollHeight, minHeight);
