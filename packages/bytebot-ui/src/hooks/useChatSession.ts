@@ -4,13 +4,18 @@ import {
   fetchMessages,
   sendMessage,
   fetchLatestTask,
+  fetchTaskById,
 } from "@/utils/messageUtils";
 import { MessageContentType } from "../../shared/types/messageContent.types";
 
-export function useChatSession() {
+interface UseChatSessionProps {
+  initialTaskId?: string;
+}
+
+export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [currentTaskId, setCurrentTaskId] = useState<string | null>(null);
+  const [currentTaskId, setCurrentTaskId] = useState<string | null>(initialTaskId || null);
   const [lastMessageId, setLastMessageId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingSession, setIsLoadingSession] = useState(true);
@@ -18,7 +23,7 @@ export function useChatSession() {
   // Use refs to track polling state to avoid closure issues
   const isPollingRef = useRef(false);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const currentTaskIdRef = useRef<string | null>(null);
+  const currentTaskIdRef = useRef<string | null>(currentTaskId);
   const processedMessageIds = useRef<Set<string>>(new Set());
 
   // Stop polling for messages
@@ -63,7 +68,7 @@ export function useChatSession() {
     } catch (error) {
       console.error("Error fetching messages:", error);
     }
-  }, [lastMessageId]);
+  }, []); 
 
   // Start polling for new messages
   const startPolling = useCallback(() => {
@@ -96,35 +101,66 @@ export function useChatSession() {
     }, 2000); // Poll every 2 seconds
   }, [fetchNewMessages, stopPolling]);
 
-  // Load task ID from local storage or fetch the latest task on initial render
+  // Load task ID from URL parameter or fetch the latest task on initial render
   useEffect(() => {
     const loadSession = async () => {
       setIsLoadingSession(true);
       try {
-        // Fetch the latest task from the database
-        console.log("Fetching latest task from database...");
-        const latestTask = await fetchLatestTask();
-
-        if (latestTask) {
-          console.log(`Found latest task: ${latestTask.id}`);
-          setCurrentTaskId(latestTask.id);
-
-          // If the task has an initial message, add it to the messages
-          if (latestTask.messages && latestTask.messages.length > 0) {
-            const initialMessage = latestTask.messages[0];
-
-            const formattedMessage: Message = {
-              id: initialMessage.id,
-              content: initialMessage.content,
-              role: initialMessage.role,
-              createdAt: initialMessage.createdAt,
-            };
-
-            processedMessageIds.current.add(initialMessage.id);
-            setMessages([formattedMessage]);
+        if (initialTaskId) {
+          // If we have an initial task ID (from URL), fetch that specific task
+          console.log(`Fetching specific task: ${initialTaskId}`);
+          const task = await fetchTaskById(initialTaskId);
+          
+          if (task) {
+            console.log(`Found task: ${task.id}`);
+            setCurrentTaskId(task.id);
+            
+            // If the task has messages, add them to the messages state
+            if (task.messages && task.messages.length > 0) {
+              // Process all messages
+              const formattedMessages = task.messages.map((msg: Message) => ({
+                id: msg.id,
+                content: msg.content,
+                role: msg.role,
+                createdAt: msg.createdAt,
+              }));
+              
+              // Add message IDs to processed set
+              formattedMessages.forEach((msg: Message) => {
+                processedMessageIds.current.add(msg.id);
+              });
+              
+              setMessages(formattedMessages);
+            }
+          } else {
+            console.log(`Task with ID ${initialTaskId} not found`);
           }
         } else {
-          console.log("No active tasks found");
+          // Otherwise fetch the latest task from the database
+          console.log("No task ID provided, fetching latest task from database...");
+          const latestTask = await fetchLatestTask();
+
+          if (latestTask) {
+            console.log(`Found latest task: ${latestTask.id}`);
+            setCurrentTaskId(latestTask.id);
+
+            // If the task has an initial message, add it to the messages
+            if (latestTask.messages && latestTask.messages.length > 0) {
+              const initialMessage = latestTask.messages[0];
+
+              const formattedMessage: Message = {
+                id: initialMessage.id,
+                content: initialMessage.content,
+                role: initialMessage.role,
+                createdAt: initialMessage.createdAt,
+              };
+
+              processedMessageIds.current.add(initialMessage.id);
+              setMessages([formattedMessage]);
+            }
+          } else {
+            console.log("No active tasks found");
+          }
         }
       } catch (error) {
         console.error("Error loading session:", error);
@@ -134,7 +170,7 @@ export function useChatSession() {
     };
 
     loadSession();
-  }, []);
+  }, [initialTaskId]);
 
   // Update the ref when the state changes
   useEffect(() => {

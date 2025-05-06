@@ -1,6 +1,6 @@
 export const BrowserHeader: React.FC = () => {
   return (
-    <header className="shadow-[0px_0px_0px_1.5px_#FFF_inset] bg-[#F6F4F4] flex w-full gap-2 overflow-hidden px-4 py-2.5 rounded-[12px_12px_0px_0px] border-[0.5px] border-solid border-[rgba(0,0,0,0.16)] max-md:max-w-full">
+    <header className="shadow-bytebot bg-[#F6F4F4] flex w-full gap-2 overflow-hidden px-4 py-2.5 rounded-[12px_12px_0px_0px] border-[0.5px] border-solid border-[rgba(0,0,0,0.16)] max-md:max-w-full">
       <div className="flex min-w-60 h-10 w-full items-center gap-2.5 flex-wrap flex-1 shrink basis-[0%] max-md:max-w-full">
         <div className="self-stretch flex min-w-60 flex-col items-stretch text-xs justify-center flex-1 shrink basis-4 max-md:max-w-full">
         </div>

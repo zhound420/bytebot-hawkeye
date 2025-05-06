@@ -72,18 +72,18 @@ function AssistantMessage({ message }: MessageItemProps) {
             className="h-4 w-4"
           />
         </div>
-        <div className="w-full">
+        <div className="w-full space-y-2">
           {contentBlocks
             .map((block) => (
               <>
                 {isTextContentBlock(block) && (
-                  <div className="text-bytebot-bronze-dark-8 mb-2 text-xs">
+                  <div className="text-bytebot-bronze-dark-8 text-xs">
                     <ReactMarkdown>{block.text}</ReactMarkdown>
                   </div>
                 )}
 
                 {isImageContentBlock(block.content?.[0]) && (
-                  <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-7 max-w-4/5 rounded-md border px-3 py-2 shadow-[0px_0px_0px_1.5px_#FFF_inset]">
+                  <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-7 max-w-4/5 rounded-md border px-3 py-2 shadow-bytebot">
                     <div className="flex items-center gap-2">
                       <HugeiconsIcon icon={getIcon('screenshot')} className="text-bytebot-bronze-dark-9 w-4 h-4" />
                       <p className="text-bytebot-bronze-light-11 text-xs">
@@ -94,7 +94,7 @@ function AssistantMessage({ message }: MessageItemProps) {
                 )}
 
                 {isToolUseContentBlock(block) && (
-                  <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-7 max-w-4/5 rounded-md border px-3 py-2 shadow-[0px_0px_0px_1.5px_#FFF_inset]">
+                  <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-7 max-w-4/5 rounded-md border px-3 py-2 shadow-bytebot">
                     <div className="flex items-center gap-2">
                       <HugeiconsIcon icon={getIcon(block.input.action as string)} className="text-bytebot-bronze-dark-9 w-4 h-4" />
                       <p className="text-bytebot-bronze-light-11 text-xs">{getLabel(block.input.action as string)}</p>
@@ -137,11 +137,11 @@ function UserMessage({ message }: MessageItemProps) {
         <div className="border-bytebot-bronze-light-7 bg-muted flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-sm border">
           <HugeiconsIcon icon={User03Icon} className="text-bytebot-bronze-dark-9 w-4 h-4" />
         </div>
-        <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-7 max-w-4/5 rounded-md border px-3 py-2 shadow-[0px_0px_0px_1.5px_#FFF_inset]">
+        <div className="bg-bytebot-bronze-light-2 space-y-2 border-bytebot-bronze-light-7 max-w-4/5 rounded-md border px-3 py-2 shadow-bytebot">
           {contentBlocks.map((block, index) => (
             <div
               key={index}
-              className="text-bytebot-bronze-dark-9 mb-2 text-xs"
+              className="text-bytebot-bronze-dark-9 text-xs"
             >
               {isTextContentBlock(block) && (
                 <ReactMarkdown>{block.text}</ReactMarkdown>

@@ -3,7 +3,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { useTheme } from "next-themes";
 import { HugeiconsIcon } from '@hugeicons/react'
-import { DocumentCodeIcon, TaskDaily01Icon } from '@hugeicons/core-free-icons'
+import { DocumentCodeIcon, TaskDaily01Icon, Home01Icon } from '@hugeicons/core-free-icons'
+import { usePathname } from 'next/navigation';
 
 // Uncommenting interface if needed in the future
 // interface HeaderProps {
@@ -14,16 +15,35 @@ import { DocumentCodeIcon, TaskDaily01Icon } from '@hugeicons/core-free-icons'
 export function Header() {
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const pathname = usePathname();
 
   // After mounting, we can safely show the theme-dependent content
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  // Function to determine if a link is active
+  const isActive = (path: string) => {
+    if (path === '/') {
+      return pathname === '/';
+    }
+    return pathname?.startsWith(path);
+  };
+
+  // Get classes for navigation links based on active state
+  const getLinkClasses = (path: string) => {
+    const baseClasses = "flex items-center gap-1.5 transition-colors px-3 py-1.5 rounded-lg";
+    const activeClasses = "bg-bytebot-bronze-light-a3 text-bytebot-bronze-light-12";
+    const inactiveClasses = "text-bytebot-bronze-dark-9 hover:bg-bytebot-bronze-light-a1 hover:text-bytebot-bronze-light-12";
+    
+    return `${baseClasses} ${isActive(path) ? activeClasses : inactiveClasses}`;
+  };
+
   return (
     <header className="flex items-center justify-between p-4 border-b bg-background">
-      <div className="flex items-center gap-2 space-x-4">
-        <Link href="/">
+      <div className="flex items-center gap-6">
+        {/* Logo without link */}
+        <div>
           {mounted ? (
             <Image
               src={
@@ -39,18 +59,20 @@ export function Header() {
           ) : (
             <div className="h-10 w-[100px]" />
           )}
-        </Link>
-        <div className="border border-l-[0.5px] border-bytebot-bronze-dark-11 h-5"></div>
-        <div className="flex items-center gap-1.5">
-          <HugeiconsIcon icon={TaskDaily01Icon} className="text-bytebot-bronze-dark-9 w-4 h-4" />
-          <Link href="/tasks" className="text-bytebot-bronze-dark-9 text-sm">
-            Tasks
-          </Link>
         </div>
-        <div className="flex items-center gap-1.5">
-          <HugeiconsIcon icon={DocumentCodeIcon} className="text-bytebot-bronze-dark-9 w-4 h-4" />
-          <Link href="https://docs.bytebot.ai/quickstart" className="text-bytebot-bronze-dark-9 text-sm">
-            Docs
+        <div className="border border-l-[0.5px] border-bytebot-bronze-dark-11 h-5"></div>
+        <div className="flex items-center gap-2">
+          <Link href="/" className={getLinkClasses('/')}>
+            <HugeiconsIcon icon={Home01Icon} className="w-4 h-4" />
+            <span className="text-sm">Home</span>
+          </Link>
+          <Link href="/tasks" className={getLinkClasses('/tasks')}>
+            <HugeiconsIcon icon={TaskDaily01Icon} className="w-4 h-4" />
+            <span className="text-sm">Tasks</span>
+          </Link>
+          <Link href="https://docs.bytebot.ai/quickstart" className={getLinkClasses('https://docs.bytebot.ai')}>
+            <HugeiconsIcon icon={DocumentCodeIcon} className="w-4 h-4" />
+            <span className="text-sm">Docs</span>
           </Link>
         </div>
       </div>
