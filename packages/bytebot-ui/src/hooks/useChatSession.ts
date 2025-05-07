@@ -15,8 +15,9 @@ interface UseChatSessionProps {
 export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [currentTaskId, setCurrentTaskId] = useState<string | null>(initialTaskId || null);
-  const [lastMessageId, setLastMessageId] = useState<string | null>(null);
+  const [currentTaskId, setCurrentTaskId] = useState<string | null>(
+    initialTaskId || null,
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingSession, setIsLoadingSession] = useState(true);
 
@@ -47,7 +48,7 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
       if (newMessages && newMessages.length > 0) {
         // Filter out messages we've already processed to prevent duplicates
         const filteredMessages = newMessages.filter(
-          (msg: Message) => !processedMessageIds.current.has(msg.id)
+          (msg: Message) => !processedMessageIds.current.has(msg.id),
         );
 
         if (filteredMessages.length > 0) {
@@ -60,15 +61,12 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
 
           // Add new messages to state
           setMessages((prev) => [...prev, ...filteredMessages]);
-
-          // Update the last message ID
-          setLastMessageId(newMessages[newMessages.length - 1].id);
         }
       }
     } catch (error) {
       console.error("Error fetching messages:", error);
     }
-  }, []); 
+  }, []);
 
   // Start polling for new messages
   const startPolling = useCallback(() => {
@@ -110,11 +108,11 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
           // If we have an initial task ID (from URL), fetch that specific task
           console.log(`Fetching specific task: ${initialTaskId}`);
           const task = await fetchTaskById(initialTaskId);
-          
+
           if (task) {
             console.log(`Found task: ${task.id}`);
             setCurrentTaskId(task.id);
-            
+
             // If the task has messages, add them to the messages state
             if (task.messages && task.messages.length > 0) {
               // Process all messages
@@ -124,12 +122,12 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
                 role: msg.role,
                 createdAt: msg.createdAt,
               }));
-              
+
               // Add message IDs to processed set
               formattedMessages.forEach((msg: Message) => {
                 processedMessageIds.current.add(msg.id);
               });
-              
+
               setMessages(formattedMessages);
             }
           } else {
@@ -137,7 +135,9 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
           }
         } else {
           // Otherwise fetch the latest task from the database
-          console.log("No task ID provided, fetching latest task from database...");
+          console.log(
+            "No task ID provided, fetching latest task from database...",
+          );
           const latestTask = await fetchLatestTask();
 
           if (latestTask) {
@@ -246,9 +246,6 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
 
     // Clear messages
     setMessages([]);
-
-    // Clear last message ID
-    setLastMessageId(null);
 
     // Clear processed message IDs
     processedMessageIds.current = new Set();

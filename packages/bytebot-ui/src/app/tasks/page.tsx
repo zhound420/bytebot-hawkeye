@@ -3,11 +3,10 @@
 import React, { useEffect, useState } from "react";
 import { Header } from "@/components/layout/Header";
 import { TaskItem } from "@/components/tasks/TaskItem";
-import { fetchTasks } from "@/utils/taskUtils";
+// import { fetchTasks } from "@/utils/taskUtils";
 import { Task } from "@/types";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import Image from "next/image";
 
 export default function Tasks() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -17,7 +16,7 @@ export default function Tasks() {
     const loadTasks = async () => {
       setIsLoading(true);
       try {
-        const fetchedTasks = await fetchTasks();
+        // const fetchedTasks = await fetchTasks();
         // setTasks(fetchedTasks);
         setTasks([]);
       } catch (error) {
@@ -31,23 +30,27 @@ export default function Tasks() {
   }, []);
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
+    <div className="flex h-screen flex-col overflow-hidden">
       <Header />
 
-      <main className="flex-1 px-6 py-6 overflow-hidden">
-        <div className="max-w-3xl mx-auto">
-          <h1 className="text-xl font-medium mb-6">Tasks</h1>
-          
+      <main className="flex-1 overflow-hidden px-6 py-6">
+        <div className="mx-auto max-w-3xl">
+          <h1 className="mb-6 text-xl font-medium">Tasks</h1>
+
           {isLoading ? (
             <div className="p-8 text-center">
-              <div className="animate-spin h-8 w-8 border-4 border-bytebot-bronze-light-5 border-t-bytebot-bronze rounded-full mx-auto mb-4"></div>
+              <div className="border-bytebot-bronze-light-5 border-t-bytebot-bronze mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4"></div>
               <p className="text-gray-500">Loading tasks...</p>
             </div>
           ) : tasks.length === 0 ? (
-            <div className="p-8 text-center bg-bytebot-bronze-light-2 border border-bytebot-bronze-light-7 rounded-xl shadow-bytebot">
+            <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-7 shadow-bytebot rounded-xl border p-8 text-center">
               <div className="flex flex-col items-center justify-center">
-                <h3 className="text-lg font-medium text-bytebot-bronze-light-12 mb-1">No tasks yet</h3>
-                <p className="text-sm text-bytebot-bronze-light-11 mb-6">Get started by creating a first task</p>
+                <h3 className="text-bytebot-bronze-light-12 mb-1 text-lg font-medium">
+                  No tasks yet
+                </h3>
+                <p className="text-bytebot-bronze-light-11 mb-6 text-sm">
+                  Get started by creating a first task
+                </p>
                 <Link href="/">
                   <Button className="bg-bytebot-bronze-dark-7 hover:bg-bytebot-bronze-dark-6 text-white">
                     + New Task

@@ -11,35 +11,55 @@ import Image from "next/image";
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Camera01Icon, User03Icon, Cursor02Icon, TypeCursorIcon, MouseRightClick06Icon, TimeQuarter02Icon } from '@hugeicons/core-free-icons'
 
+// Define the IconType for proper type checking
+type IconType = typeof Camera01Icon | typeof User03Icon | typeof Cursor02Icon | 
+               typeof TypeCursorIcon | typeof MouseRightClick06Icon | typeof TimeQuarter02Icon
+
 interface MessageItemProps {
   message: Message;
 }
 
-function getIcon(type: 'screenshot' | 'left_click' | 'right_click' | 'move' | 'type' | 'key' | 'wait') {
-  const iconLookup = {
+function getIcon(type: string): IconType {
+  const iconLookup: Record<string, IconType> = {
     'screenshot': Camera01Icon,
     'left_click': Cursor02Icon,
-    'right_click': Cursor02Icon,
+    'right_click': MouseRightClick06Icon,
     'double_click': Cursor02Icon,
-    'move': Cursor02Icon,
+    'triple_click': Cursor02Icon,
+    'middle_click': Cursor02Icon,
+    'mouse_move': Cursor02Icon,
+    'left_mouse_down': Cursor02Icon,
+    'left_mouse_up': Cursor02Icon,
+    'left_click_drag': Cursor02Icon,
+    'scroll': Cursor02Icon,
     'type': TypeCursorIcon,
     'key': MouseRightClick06Icon,
+    'hold_key': MouseRightClick06Icon,
     'wait': TimeQuarter02Icon,
-  }
+    'cursor_position': Cursor02Icon
+  };
   return iconLookup[type] || User03Icon;
 }
 
-function getLabel(type: 'screenshot' | 'left_click' | 'right_click' | 'move' | 'type' | 'key' | 'wait') {
-  const labelLookup = {
+function getLabel(type: string) {
+  const labelLookup: Record<string, string> = {
     'screenshot': 'Screenshot',
     'left_click': 'Left Click',
     'right_click': 'Right Click',
     'double_click': 'Double Click',
-    'move': 'Move',
+    'triple_click': 'Triple Click',
+    'middle_click': 'Middle Click',
+    'mouse_move': 'Mouse Move',
+    'left_mouse_down': 'Mouse Down',
+    'left_mouse_up': 'Mouse Up',
+    'left_click_drag': 'Drag',
+    'scroll': 'Scroll',
     'type': 'Type',
     'key': 'Key',
+    'hold_key': 'Hold Key',
     'wait': 'Wait',
-  }
+    'cursor_position': 'Cursor Position'
+  };
   return labelLookup[type] || type;
 }
 
@@ -98,14 +118,31 @@ function AssistantMessage({ message }: MessageItemProps) {
                     <div className="flex items-center gap-2">
                       <HugeiconsIcon icon={getIcon(block.input.action as string)} className="text-bytebot-bronze-dark-9 w-4 h-4" />
                       <p className="text-bytebot-bronze-light-11 text-xs">{getLabel(block.input.action as string)}</p>
-                      {block.input.action === 'type' && (
-                        <p className="rounded-md bg-bytebot-bronze-light-1 py-0.5 px-1 text-xs border-bytebot-bronze-light-7 border text-bytebot-bronze-light-11">{block.input.text as string}</p>
+                      {/* Text for type and key actions */}
+                      {(block.input.action === 'type' || block.input.action === 'key' || block.input.action === 'hold_key') && 'text' in block.input && (
+                        <p className="rounded-md bg-bytebot-bronze-light-1 py-0.5 px-1 text-xs border-bytebot-bronze-light-7 border text-bytebot-bronze-light-11">{String(block.input.text)}</p>
                       )}
-                      {(block.input.action === 'left_click' || block.input.action === 'right_click') && (
-                        <p className="rounded-md bg-bytebot-bronze-light-1 py-0.5 px-1 text-xs border-bytebot-bronze-light-7 border text-bytebot-bronze-light-11">{(block.input.coordinate as number[])[0]}, {(block.input.coordinate as number[])[1]}</p>
+                      {/* Duration for wait and hold_key actions */}
+                      {(block.input.action === 'wait' || block.input.action === 'hold_key') && 'duration' in block.input && (
+                        <p className="rounded-md bg-bytebot-bronze-light-1 py-0.5 px-1 text-xs border-bytebot-bronze-light-7 border text-bytebot-bronze-light-11">{Number(block.input.duration)}ms</p>
                       )}
-                      {block.input.action === 'key' && (
-                        <p className="rounded-md bg-bytebot-bronze-light-1 py-0.5 px-1 text-xs border-bytebot-bronze-light-7 border text-bytebot-bronze-light-11">{block.input.text as string}</p>
+                      {/* Coordinates for click/mouse actions */}
+                      {(['left_click', 'right_click', 'middle_click', 'double_click', 'triple_click', 'mouse_move', 'scroll'].includes(block.input.action as string)) && 'coordinate' in block.input && Array.isArray(block.input.coordinate) && (
+                        <p className="rounded-md bg-bytebot-bronze-light-1 py-0.5 px-1 text-xs border-bytebot-bronze-light-7 border text-bytebot-bronze-light-11">{block.input.coordinate[0]}, {block.input.coordinate[1]}</p>
+                      )}
+                      {/* Start and end coordinates for drag actions */}
+                      {block.input.action === 'left_click_drag' && 'start_coordinate' in block.input && 'coordinate' in block.input && 
+                       Array.isArray(block.input.start_coordinate) && Array.isArray(block.input.coordinate) && (
+                        <p className="rounded-md bg-bytebot-bronze-light-1 py-0.5 px-1 text-xs border-bytebot-bronze-light-7 border text-bytebot-bronze-light-11">
+                          From: {block.input.start_coordinate[0]}, {block.input.start_coordinate[1]} → 
+                          To: {block.input.coordinate[0]}, {block.input.coordinate[1]}
+                        </p>
+                      )}
+                      {/* Scroll information */}
+                      {block.input.action === 'scroll' && 'scroll_amount' in block.input && 'scroll_direction' in block.input && (
+                        <p className="rounded-md bg-bytebot-bronze-light-1 py-0.5 px-1 text-xs border-bytebot-bronze-light-7 border text-bytebot-bronze-light-11">
+                          {String(block.input.scroll_direction)} {Number(block.input.scroll_amount)}
+                        </p>
                       )}
                     </div>
                   </div>
