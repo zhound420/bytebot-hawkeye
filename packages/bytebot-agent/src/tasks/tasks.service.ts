@@ -187,21 +187,8 @@ export class TasksService implements OnModuleDestroy, OnModuleInit {
         throw new NotFoundException(`Task with ID ${id} not found`);
       }
 
-      // Filter out messages containing "Tool executed successfully" in post-processing
-      // TODO move into the database query
-      const filteredMessages = task.messages.filter((message) => {
-        const contentStr = JSON.stringify(message.content);
-        return !contentStr.includes('Tool executed successfully');
-      });
-
-      // Create a new task object with filtered messages
-      const filteredTask = {
-        ...task,
-        messages: filteredMessages,
-      };
-
       this.logger.debug(`Retrieved task with ID: ${id}`);
-      return filteredTask;
+      return task;
     } catch (error: any) {
       this.logger.error(`Error retrieving task ID: ${id} - ${error.message}`);
       this.logger.error(error.stack);
@@ -287,7 +274,9 @@ export class TasksService implements OnModuleDestroy, OnModuleInit {
    * @param taskId The ID of the task
    * @returns The image data or undefined if no image is found
    */
-  async findLastImageFromMessages(taskId: string): Promise<{ data: string; type: string; media_type: string } | undefined> {
+  async findLastImageFromMessages(
+    taskId: string,
+  ): Promise<{ data: string; type: string; media_type: string } | undefined> {
     this.logger.debug(`Finding last image for task ID: ${taskId}`);
 
     // Get all messages for the task, ordered by most recent first
@@ -307,7 +296,9 @@ export class TasksService implements OnModuleDestroy, OnModuleInit {
             // Look for image content in the tool result
             for (const item of block.content) {
               if (item.type === 'image' && item.source) {
-                this.logger.debug(`Found image in message for task ID: ${taskId}`);
+                this.logger.debug(
+                  `Found image in message for task ID: ${taskId}`,
+                );
                 return {
                   data: item.source.data,
                   type: item.source.type,
@@ -318,7 +309,9 @@ export class TasksService implements OnModuleDestroy, OnModuleInit {
           }
         }
       } catch (error) {
-        this.logger.warn(`Error parsing message content for task ID: ${taskId} - ${error.message}`);
+        this.logger.warn(
+          `Error parsing message content for task ID: ${taskId} - ${error.message}`,
+        );
         // Continue to next message if there's an error
         continue;
       }

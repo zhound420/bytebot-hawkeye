@@ -99,26 +99,32 @@ export class AgentProcessor extends WorkerHost {
           );
 
           let toolUseCount = 0;
+          const generatedToolResults: ToolResultContentBlock[] = [];
 
           for (const block of messageContentBlocks) {
             if (isComputerToolUseContentBlock(block)) {
               toolUseCount++;
               this.logger.log(
-                `Processing tool use block #${toolUseCount}: ${block.input.action}`,
+                `Processing tool use block #${toolUseCount}: ${block.input.action} (ID: ${block.id})`,
               );
 
               const toolResult = await this.handleComputerToolUse(block);
-              this.logger.debug(`Tool execution completed, saving result`);
-
-              await this.messagesService.create({
-                content: [toolResult],
-                role: MessageRole.USER,
-                taskId: taskId,
-              });
               this.logger.debug(
-                `Tool result saved to database for task ID: ${taskId}`,
+                `Tool execution completed for tool_use_id: ${block.id}, saving result`,
               );
+              generatedToolResults.push(toolResult);
             }
+          }
+
+          if (generatedToolResults.length > 0) {
+            await this.messagesService.create({
+              content: generatedToolResults,
+              role: MessageRole.USER,
+              taskId: taskId,
+            });
+            this.logger.debug(
+              `Saved ${generatedToolResults.length} tool result(s) to database for task ID: ${taskId}`,
+            );
           }
 
           this.logger.log(
@@ -126,7 +132,6 @@ export class AgentProcessor extends WorkerHost {
           );
 
           if (toolUseCount === 0) {
-            // We interpret this as a signal to complete the task
             this.logger.log(
               `No tool use blocks detected, marking task ID: ${taskId} as COMPLETED`,
             );
@@ -147,7 +152,10 @@ export class AgentProcessor extends WorkerHost {
             `Error during task processing loop for task ID: ${taskId} - ${error.message}`,
             error.stack,
           );
-          // Update task to error state or retry logic could be added here
+
+          await this.tasksService.update(taskId, {
+            status: TaskStatus.FAILED,
+          });
           break;
         }
       }
@@ -160,7 +168,6 @@ export class AgentProcessor extends WorkerHost {
         `Critical error processing job for task ID: ${taskId} - ${error.message}`,
         error.stack,
       );
-      // Could implement fallback logic here
     }
   }
 
