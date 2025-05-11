@@ -18,7 +18,7 @@ export function VncViewer() {
     <div ref={containerRef} className="h-full w-full">
       {VncComponent && (
         <VncComponent
-          url="ws://localhost:6080"
+          url={`ws://${process.env.VNC_HOST}:${process.env.VNC_PORT}`}
           scaleViewport={true}
           viewOnly={true}
           style={{ width: "100%", height: "100%" }}

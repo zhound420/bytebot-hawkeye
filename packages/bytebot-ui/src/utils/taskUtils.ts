@@ -6,7 +6,7 @@ import { Task } from "@/types";
  */
 export async function fetchTasks(): Promise<Task[]> {
   try {
-    const response = await fetch(`http://localhost:9991/tasks`, {
+    const response = await fetch(`${process.env.API_BASE_URL}/tasks`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

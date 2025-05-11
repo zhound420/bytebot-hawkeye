@@ -9,7 +9,7 @@ async function bootstrap() {
 
     // Enable CORS
     app.enableCors({
-      origin: 'http://localhost:9992', // Your Next.js app's address
+      origin: process.env.CLIENT_BASE_URL,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       credentials: true,
     });
