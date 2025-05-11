@@ -7,7 +7,7 @@ import { Message } from "@/types";
  */
 export async function fetchMessages(taskId: string): Promise<Message[]> {
   try {
-    const response = await fetch(`${process.env.API_BASE_URL}/tasks/${taskId}`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/tasks/${taskId}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -36,7 +36,7 @@ export async function fetchTaskById(taskId: string): Promise<{
   messages: Message[];
 } | null> {
   try {
-    const response = await fetch(`${process.env.API_BASE_URL}/tasks/${taskId}`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/tasks/${taskId}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -64,7 +64,7 @@ export async function sendMessage(
   message: string
 ): Promise<{ id: string } | null> {
   try {
-    const response = await fetch("${process.env.API_BASE_URL}/tasks", {
+    const response = await fetch("${process.env.NEXT_PUBLIC_API_BASE_URL}/tasks", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -92,7 +92,7 @@ export async function fetchLatestTask(): Promise<{
   messages: Message[];
 } | null> {
   try {
-    const response = await fetch("${process.env.API_BASE_URL}/tasks/in-progress", {
+    const response = await fetch("${process.env.NEXT_PUBLIC_API_BASE_URL}/tasks/in-progress", {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
