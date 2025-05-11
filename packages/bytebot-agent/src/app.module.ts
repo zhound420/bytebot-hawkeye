@@ -14,7 +14,8 @@ import { Redis } from 'ioredis';
   imports: [
     BullModule.forRootAsync({
       useFactory: () => ({
-        connection: new Redis(process.env.REDIS_URL || 'redis://redis:6379')
+        connection: new Redis(process.env.REDIS_URL || 'redis://redis:6379'),
+        maxRetriesPerRequest: null
       }),
     }),
     ConfigModule.forRoot({
