@@ -57,8 +57,9 @@ services:
     ports:
       - "9991:9991"
     environment:
-      - REDIS_URL=redis://redis:6379
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/bytebotdb
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+      - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/bytebotdb}
+      - BYTEBOT_DESKTOP_BASE_URL=${BYTEBOT_DESKTOP_BASE_URL:-http://bytebot-desktop:9990}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
     depends_on:
       - redis
@@ -70,6 +71,9 @@ services:
     build:
       context: ../../packages/
       dockerfile: bytebot-ui/Dockerfile
+      args:
+        - NEXT_PUBLIC_BYTEBOT_AGENT_BASE_URL=${BYTEBOT_AGENT_BASE_URL:-http://localhost:9991}
+        - NEXT_PUBLIC_BYTEBOT_DESKTOP_VNC_URL=${BYTEBOT_DESKTOP_VNC_URL:-ws://localhost:6080}
     container_name: bytebot-ui
     restart: unless-stopped
     ports:

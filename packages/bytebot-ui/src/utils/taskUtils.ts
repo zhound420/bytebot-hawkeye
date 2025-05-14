@@ -6,12 +6,15 @@ import { Task } from "@/types";
  */
 export async function fetchTasks(): Promise<Task[]> {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/tasks`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_BYTEBOT_AGENT_BASE_URL}/tasks`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
       },
-    });
+    );
 
     if (!response.ok) {
       throw new Error("Failed to fetch tasks");

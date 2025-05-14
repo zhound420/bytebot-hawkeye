@@ -7,12 +7,15 @@ import { Message } from "@/types";
  */
 export async function fetchMessages(taskId: string): Promise<Message[]> {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/tasks/${taskId}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_BYTEBOT_AGENT_BASE_URL}/tasks/${taskId}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
       },
-    });
+    );
 
     if (!response.ok) {
       throw new Error("Failed to fetch messages");
@@ -36,12 +39,15 @@ export async function fetchTaskById(taskId: string): Promise<{
   messages: Message[];
 } | null> {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/tasks/${taskId}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_BYTEBOT_AGENT_BASE_URL}/tasks/${taskId}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
       },
-    });
+    );
 
     if (!response.ok) {
       throw new Error(`Failed to fetch task with ID ${taskId}`);
@@ -61,16 +67,19 @@ export async function fetchTaskById(taskId: string): Promise<{
  */
 
 export async function sendMessage(
-  message: string
+  message: string,
 ): Promise<{ id: string } | null> {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/tasks`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_BYTEBOT_AGENT_BASE_URL}/tasks`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ description: message }),
       },
-      body: JSON.stringify({ description: message }),
-    });
+    );
 
     if (!response.ok) {
       throw new Error("Failed to start task");
@@ -92,12 +101,15 @@ export async function fetchLatestTask(): Promise<{
   messages: Message[];
 } | null> {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/tasks/in-progress`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_BYTEBOT_AGENT_BASE_URL}/tasks/in-progress`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
       },
-    });
+    );
 
     if (!response.ok) {
       throw new Error("Failed to fetch latest task");

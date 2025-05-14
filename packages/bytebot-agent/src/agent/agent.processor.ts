@@ -5,50 +5,32 @@ import { MessageRole, TaskStatus } from '@prisma/client';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { AnthropicService } from '../anthropic/anthropic.service';
 import {
-  isKeyToolUseBlock,
-  isHoldKeyToolUseBlock,
-  isTypeToolUseBlock,
-  isMouseMoveToolUseBlock,
-  isLeftClickToolUseBlock,
-  isRightClickToolUseBlock,
-  isMiddleClickToolUseBlock,
-  isDoubleClickToolUseBlock,
-  isTripleClickToolUseBlock,
   isScrollToolUseBlock,
   isWaitToolUseBlock,
   isScreenshotToolUseBlock,
-  isLeftClickDragToolUseBlock,
-  isLeftMouseDownToolUseBlock,
-  isLeftMouseUpToolUseBlock,
   isCursorPositionToolUseBlock,
   isComputerToolUseContentBlock,
+  isMoveMouseToolUseBlock,
+  isTraceMouseToolUseBlock,
+  isClickMouseToolUseBlock,
+  isPressMouseToolUseBlock,
+  isDragMouseToolUseBlock,
+  isTypeKeysToolUseBlock,
+  isTypeTextToolUseBlock,
+  isPressKeysToolUseBlock,
 } from '../../../shared/utils/messageContent.utils';
 import {
+  Button,
   ComputerToolUseContentBlock,
+  Coordinates,
   MessageContentBlock,
   MessageContentType,
+  Press,
   ToolResultContentBlock,
 } from '../../../shared/types/messageContent.types';
-import {
-  cursor_position,
-  double_click,
-  hold_key,
-  key,
-  left_click,
-  left_click_drag,
-  left_mouse_down,
-  left_mouse_up,
-  middle_click,
-  mouse_move,
-  right_click,
-  screenshot,
-  scroll,
-  triple_click,
-  type,
-  wait,
-} from './agent.utils';
 import { AGENT_QUEUE_NAME } from '../common/constants';
 import { Job } from 'bullmq';
+import { ConfigService } from '@nestjs/config';
 
 @Processor(AGENT_QUEUE_NAME)
 export class AgentProcessor extends WorkerHost {
@@ -58,6 +40,7 @@ export class AgentProcessor extends WorkerHost {
     private readonly tasksService: TasksService,
     private readonly messagesService: MessagesService,
     private readonly anthropicService: AnthropicService,
+    private readonly configService: ConfigService,
   ) {
     super();
     this.logger.log('AgentProcessor initialized');
@@ -175,14 +158,14 @@ export class AgentProcessor extends WorkerHost {
     block: ComputerToolUseContentBlock,
   ): Promise<ToolResultContentBlock> {
     this.logger.debug(
-      `Handling computer tool use: ${block.input.action}, tool_use_id: ${block.id}`,
+      `Handling computer tool use: ${block.name}, tool_use_id: ${block.id}`,
     );
 
     if (isScreenshotToolUseBlock(block)) {
       this.logger.debug('Processing screenshot request');
       try {
         this.logger.debug('Taking screenshot');
-        const image = await screenshot();
+        const image = await this.screenshot();
         this.logger.debug('Screenshot captured successfully');
 
         return {
@@ -219,7 +202,7 @@ export class AgentProcessor extends WorkerHost {
       this.logger.debug('Processing cursor position request');
       try {
         this.logger.debug('Getting cursor position');
-        const position = await cursor_position();
+        const position = await this.cursorPosition();
         this.logger.debug(
           `Cursor position obtained: ${position.x}, ${position.y}`,
         );
@@ -254,130 +237,36 @@ export class AgentProcessor extends WorkerHost {
     }
 
     try {
-      if (isKeyToolUseBlock(block)) {
-        this.logger.debug(`Pressing key: ${block.input.text}`);
-        await key(block.input.text);
-        this.logger.debug(`Key press completed: ${block.input.text}`);
+      if (isMoveMouseToolUseBlock(block)) {
+        await this.moveMouse(block.input);
       }
-      if (isHoldKeyToolUseBlock(block)) {
-        this.logger.debug(
-          `Holding key: ${block.input.text} for ${block.input.duration}ms`,
-        );
-        await hold_key(block.input.text, block.input.duration);
-        this.logger.debug(`Key hold completed: ${block.input.text}`);
+      if (isTraceMouseToolUseBlock(block)) {
+        await this.traceMouse(block.input);
       }
-      if (isTypeToolUseBlock(block)) {
-        this.logger.debug(
-          `Typing text: ${block.input.text.substring(0, 20)}${block.input.text.length > 20 ? '...' : ''}`,
-        );
-        await type(block.input.text);
-        this.logger.debug('Text typing completed');
+      if (isClickMouseToolUseBlock(block)) {
+        await this.clickMouse(block.input);
       }
-
-      if (isMouseMoveToolUseBlock(block)) {
-        const coordinate = block.input.coordinate;
-        this.logger.debug(
-          `Moving mouse to coordinates: ${coordinate[0]}, ${coordinate[1]}`,
-        );
-        await mouse_move({ x: coordinate[0], y: coordinate[1] });
-        this.logger.debug('Mouse move completed');
+      if (isPressMouseToolUseBlock(block)) {
+        await this.pressMouse(block.input);
       }
-
-      if (isLeftClickToolUseBlock(block)) {
-        const coordinate = block.input.coordinate;
-        this.logger.debug(
-          `Left clicking at coordinates: ${coordinate[0]}, ${coordinate[1]}`,
-        );
-        await left_click({ x: coordinate[0], y: coordinate[1] });
-        this.logger.debug('Left click completed');
+      if (isDragMouseToolUseBlock(block)) {
+        await this.dragMouse(block.input);
       }
-
-      if (isLeftClickDragToolUseBlock(block)) {
-        const startCoordinate = block.input.start_coordinate;
-        const endCoordinate = block.input.coordinate;
-        const holdKeys = block.input.text ? block.input.text.split('+') : [];
-        this.logger.debug(
-          `Left click drag from (${startCoordinate[0]}, ${startCoordinate[1]}) to (${endCoordinate[0]}, ${endCoordinate[1]})${
-            holdKeys.length > 0
-              ? ` while holding keys: ${holdKeys.join('+')}`
-              : ''
-          }`,
-        );
-        await left_click_drag(
-          { x: startCoordinate[0], y: startCoordinate[1] },
-          { x: endCoordinate[0], y: endCoordinate[1] },
-          holdKeys,
-        );
-        this.logger.debug('Left click drag completed');
-      }
-
-      if (isLeftMouseDownToolUseBlock(block)) {
-        this.logger.debug('Pressing left mouse button down');
-        await left_mouse_down();
-        this.logger.debug('Left mouse down completed');
-      }
-
-      if (isLeftMouseUpToolUseBlock(block)) {
-        this.logger.debug('Releasing left mouse button');
-        await left_mouse_up();
-        this.logger.debug('Left mouse up completed');
-      }
-
-      if (isRightClickToolUseBlock(block)) {
-        const coordinate = block.input.coordinate;
-        this.logger.debug(
-          `Right clicking at coordinates: ${coordinate[0]}, ${coordinate[1]}`,
-        );
-        await right_click({ x: coordinate[0], y: coordinate[1] });
-        this.logger.debug('Right click completed');
-      }
-
-      if (isMiddleClickToolUseBlock(block)) {
-        const coordinate = block.input.coordinate;
-        this.logger.debug(
-          `Middle clicking at coordinates: ${coordinate[0]}, ${coordinate[1]}`,
-        );
-        await middle_click({ x: coordinate[0], y: coordinate[1] });
-        this.logger.debug('Middle click completed');
-      }
-
-      if (isDoubleClickToolUseBlock(block)) {
-        const coordinate = block.input.coordinate;
-        this.logger.debug(
-          `Double clicking at coordinates: ${coordinate[0]}, ${coordinate[1]}`,
-        );
-        await double_click({ x: coordinate[0], y: coordinate[1] });
-        this.logger.debug('Double click completed');
-      }
-
-      if (isTripleClickToolUseBlock(block)) {
-        const coordinate = block.input.coordinate;
-        this.logger.debug(
-          `Triple clicking at coordinates: ${coordinate[0]}, ${coordinate[1]}`,
-        );
-        await triple_click({ x: coordinate[0], y: coordinate[1] });
-        this.logger.debug('Triple click completed');
-      }
-
       if (isScrollToolUseBlock(block)) {
-        const coordinate = block.input.coordinate;
-        this.logger.debug(
-          `Scrolling at coordinates: ${coordinate[0]}, ${coordinate[1]} in direction ${block.input.scroll_direction} with amount ${block.input.scroll_amount}`,
-        );
-        await scroll(
-          { x: coordinate[0], y: coordinate[1] },
-          block.input.scroll_direction,
-          block.input.scroll_amount,
-        );
-        this.logger.debug('Scroll completed');
+        await this.scroll(block.input);
       }
-
+      if (isTypeKeysToolUseBlock(block)) {
+        await this.typeKeys(block.input);
+      }
+      if (isPressKeysToolUseBlock(block)) {
+        await this.pressKeys(block.input);
+      }
+      if (isTypeTextToolUseBlock(block)) {
+        await this.typeText(block.input);
+      }
       if (isWaitToolUseBlock(block)) {
-        this.logger.debug(`Waiting for ${block.input.duration}ms`);
-        await wait(block.input.duration);
-        this.logger.debug('Wait completed');
+        await this.wait(block.input);
       }
-
       this.logger.debug(
         `Tool execution successful for tool_use_id: ${block.id}`,
       );
@@ -407,6 +296,339 @@ export class AgentProcessor extends WorkerHost {
         ],
         is_error: true,
       };
+    }
+  }
+
+  private async moveMouse(input: { coordinates: Coordinates }): Promise<void> {
+    const { coordinates } = input;
+    console.log(
+      `Moving mouse to coordinates: [${coordinates.x}, ${coordinates.y}]`,
+    );
+
+    try {
+      await fetch(
+        `${this.configService.get<string>('BYTEBOT_DESKTOP_BASE_URL')}/computer-use`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'move_mouse',
+            coordinates,
+          }),
+        },
+      );
+    } catch (error) {
+      console.error('Error in move_mouse action:', error);
+      throw error;
+    }
+  }
+
+  private async traceMouse(input: {
+    path: Coordinates[];
+    holdKeys?: string[];
+  }): Promise<void> {
+    const { path, holdKeys } = input;
+    console.log(
+      `Tracing mouse to path: ${path} ${holdKeys ? `with holdKeys: ${holdKeys}` : ''}`,
+    );
+
+    try {
+      await fetch(
+        `${this.configService.get<string>('BYTEBOT_DESKTOP_BASE_URL')}/computer-use`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'trace_mouse',
+            path,
+            holdKeys,
+          }),
+        },
+      );
+    } catch (error) {
+      console.error('Error in trace_mouse action:', error);
+      throw error;
+    }
+  }
+
+  private async clickMouse(input: {
+    coordinates?: Coordinates;
+    button: Button;
+    holdKeys?: string[];
+    numClicks?: number;
+  }): Promise<void> {
+    const { coordinates, button, holdKeys, numClicks } = input;
+    console.log(
+      `Clicking mouse ${button} ${numClicks} times ${coordinates ? `at coordinates: [${coordinates.x}, ${coordinates.y}] ` : ''} ${holdKeys ? `with holdKeys: ${holdKeys}` : ''}`,
+    );
+
+    try {
+      await fetch(
+        `${this.configService.get<string>('BYTEBOT_DESKTOP_BASE_URL')}/computer-use`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'click_mouse',
+            coordinates,
+            button,
+            holdKeys,
+            numClicks,
+          }),
+        },
+      );
+    } catch (error) {
+      console.error('Error in click_mouse action:', error);
+      throw error;
+    }
+  }
+
+  private async pressMouse(input: {
+    coordinates?: Coordinates;
+    button: Button;
+    press: Press;
+  }): Promise<void> {
+    const { coordinates, button, press } = input;
+    console.log(
+      `Pressing mouse ${button} ${press} ${coordinates ? `at coordinates: [${coordinates.x}, ${coordinates.y}]` : ''}`,
+    );
+
+    try {
+      await fetch(
+        `${this.configService.get<string>('BYTEBOT_DESKTOP_BASE_URL')}/computer-use`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'press_mouse',
+            coordinates,
+            button,
+            press,
+          }),
+        },
+      );
+    } catch (error) {
+      console.error('Error in press_mouse action:', error);
+      throw error;
+    }
+  }
+
+  private async dragMouse(input: {
+    path: Coordinates[];
+    button: Button;
+    holdKeys?: string[];
+  }): Promise<void> {
+    const { path, button, holdKeys } = input;
+    console.log(
+      `Dragging mouse to path: ${path} ${holdKeys ? `with holdKeys: ${holdKeys}` : ''}`,
+    );
+
+    try {
+      await fetch(
+        `${this.configService.get<string>('BYTEBOT_DESKTOP_BASE_URL')}/computer-use`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'drag_mouse',
+            path,
+            button,
+            holdKeys,
+          }),
+        },
+      );
+    } catch (error) {
+      console.error('Error in drag_mouse action:', error);
+      throw error;
+    }
+  }
+
+  private async scroll(input: {
+    coordinates?: Coordinates;
+    direction: 'up' | 'down' | 'left' | 'right';
+    numScrolls: number;
+    holdKeys?: string[];
+  }): Promise<void> {
+    const { coordinates, direction, numScrolls, holdKeys } = input;
+    console.log(
+      `Scrolling ${direction} ${numScrolls} times ${coordinates ? `at coordinates: [${coordinates.x}, ${coordinates.y}]` : ''}`,
+    );
+
+    try {
+      await fetch(
+        `${this.configService.get<string>('BYTEBOT_DESKTOP_BASE_URL')}/computer-use`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'scroll',
+            coordinates,
+            direction,
+            numScrolls,
+            holdKeys,
+          }),
+        },
+      );
+    } catch (error) {
+      console.error('Error in scroll action:', error);
+      throw error;
+    }
+  }
+
+  private async typeKeys(input: {
+    keys: string[];
+    delay?: number;
+  }): Promise<void> {
+    const { keys, delay } = input;
+    console.log(`Typing keys: ${keys}`);
+
+    try {
+      await fetch(
+        `${this.configService.get<string>('BYTEBOT_DESKTOP_BASE_URL')}/computer-use`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'type_keys',
+            keys,
+            delay,
+          }),
+        },
+      );
+    } catch (error) {
+      console.error('Error in type_keys action:', error);
+      throw error;
+    }
+  }
+
+  private async pressKeys(input: {
+    keys: string[];
+    press: Press;
+  }): Promise<void> {
+    const { keys, press } = input;
+    console.log(`Pressing keys: ${keys}`);
+
+    try {
+      await fetch(
+        `${this.configService.get<string>('BYTEBOT_DESKTOP_BASE_URL')}/computer-use`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'press_keys',
+            keys,
+            press,
+          }),
+        },
+      );
+    } catch (error) {
+      console.error('Error in press_keys action:', error);
+      throw error;
+    }
+  }
+
+  private async typeText(input: {
+    text: string;
+    delay?: number;
+  }): Promise<void> {
+    const { text, delay } = input;
+    console.log(`Typing text: ${text}`);
+
+    try {
+      await fetch(
+        `${this.configService.get<string>('BYTEBOT_DESKTOP_BASE_URL')}/computer-use`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'type_text',
+            text,
+            delay,
+          }),
+        },
+      );
+    } catch (error) {
+      console.error('Error in type_text action:', error);
+      throw error;
+    }
+  }
+
+  private async wait(input: { duration: number }): Promise<void> {
+    const { duration } = input;
+    console.log(`Waiting for ${duration}ms`);
+
+    try {
+      await fetch(
+        `${this.configService.get<string>('BYTEBOT_DESKTOP_BASE_URL')}/computer-use`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'wait',
+            duration,
+          }),
+        },
+      );
+    } catch (error) {
+      console.error('Error in wait action:', error);
+      throw error;
+    }
+  }
+
+  private async cursorPosition(): Promise<Coordinates> {
+    console.log('Getting cursor position');
+
+    try {
+      const response = await fetch(
+        `${this.configService.get<string>('BYTEBOT_DESKTOP_BASE_URL')}/computer-use`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'cursor_position',
+          }),
+        },
+      );
+
+      const data = await response.json();
+      return { x: data.x, y: data.y };
+    } catch (error) {
+      console.error('Error in cursor_position action:', error);
+      throw error;
+    }
+  }
+
+  private async screenshot(): Promise<string> {
+    console.log('Taking screenshot');
+
+    try {
+      const requestBody = {
+        action: 'screenshot',
+      };
+
+      const response = await fetch(
+        `${this.configService.get<string>('BYTEBOT_DESKTOP_BASE_URL')}/computer-use`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to take screenshot: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      if (!data.image) {
+        throw new Error('Failed to take screenshot: No image data received');
+      }
+
+      return data.image; // Base64 encoded image
+    } catch (error) {
+      console.error('Error in screenshot action:', error);
+      throw error;
     }
   }
 }

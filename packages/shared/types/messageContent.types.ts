@@ -1,5 +1,3 @@
-import { DEFAULT_COMPUTER_TOOL_USE_NAME } from "../constants";
-
 // Content block types
 export enum MessageContentType {
   Text = "text",
@@ -32,145 +30,119 @@ export type ToolUseContentBlock = {
   type: MessageContentType.ToolUse;
   name: string;
   id: string;
-  input: Record<string, unknown>;
+  input: Record<string, any>;
 } & MessageContentBlockBase;
 
-export type ComputerToolUseBlockBase = ToolUseContentBlock & {
-  name: "computer";
-};
-export type KeyToolUseBlock = ComputerToolUseBlockBase & {
+export type Coordinates = { x: number; y: number };
+export type Button = "left" | "right" | "middle";
+export type Press = "up" | "down";
+
+export type MoveMouseToolUseBlock = ToolUseContentBlock & {
+  name: "computer_move_mouse";
   input: {
-    action: "key";
-    text: string;
+    coordinates: Coordinates;
   };
 };
 
-export type HoldKeyToolUseBlock = ComputerToolUseBlockBase & {
+export type TraceMouseToolUseBlock = ToolUseContentBlock & {
+  name: "computer_trace_mouse";
   input: {
-    action: "hold_key";
+    path: Coordinates[];
+    holdKeys?: string[];
+  };
+};
+
+export type ClickMouseToolUseBlock = ToolUseContentBlock & {
+  name: "computer_click_mouse";
+  input: {
+    coordinates?: Coordinates;
+    button: Button;
+    holdKeys?: string[];
+    numClicks?: number;
+  };
+};
+
+export type PressMouseToolUseBlock = ToolUseContentBlock & {
+  name: "computer_press_mouse";
+  input: {
+    coordinates?: Coordinates;
+    button: Button;
+    press: Press;
+  };
+};
+
+export type DragMouseToolUseBlock = ToolUseContentBlock & {
+  name: "computer_drag_mouse";
+  input: {
+    path: Coordinates[];
+    button: Button;
+    holdKeys?: string[];
+  };
+};
+
+export type ScrollToolUseBlock = ToolUseContentBlock & {
+  name: "computer_scroll";
+  input: {
+    coordinates?: Coordinates;
+    direction: "up" | "down" | "left" | "right";
+    numScrolls: number;
+    holdKeys?: string[];
+  };
+};
+
+export type TypeKeysToolUseBlock = ToolUseContentBlock & {
+  name: "computer_type_keys";
+  input: {
+    keys: string[];
+    delay?: number;
+  };
+};
+
+export type PressKeysToolUseBlock = ToolUseContentBlock & {
+  name: "computer_press_keys";
+  input: {
+    keys: string[];
+    press: Press;
+  };
+};
+
+export type TypeTextToolUseBlock = ToolUseContentBlock & {
+  name: "computer_type_text";
+  input: {
     text: string;
+    delay?: number;
+  };
+};
+
+export type WaitToolUseBlock = ToolUseContentBlock & {
+  name: "computer_wait";
+  input: {
     duration: number;
   };
 };
 
-export type TypeToolUseBlock = ComputerToolUseBlockBase & {
-  input: {
-    action: "type";
-    text: string;
-  };
+export type ScreenshotToolUseBlock = ToolUseContentBlock & {
+  name: "computer_screenshot";
 };
 
-export type CursorPositionToolUseBlock = ComputerToolUseBlockBase & {
-  input: {
-    action: "cursor_position";
-  };
-};
-
-export type MouseMoveToolUseBlock = ComputerToolUseBlockBase & {
-  input: {
-    action: "mouse_move";
-    coordinate: [number, number];
-  };
-};
-
-export type LeftMouseDownToolUseBlock = ComputerToolUseBlockBase & {
-  input: {
-    action: "left_mouse_down";
-  };
-};
-
-export type LeftMouseUpToolUseBlock = ComputerToolUseBlockBase & {
-  input: {
-    action: "left_mouse_up";
-  };
-};
-
-export type LeftClickToolUseBlock = ComputerToolUseBlockBase & {
-  input: {
-    action: "left_click";
-    coordinate: [number, number];
-  };
-};
-
-export type LeftClickDragToolUseBlock = ComputerToolUseBlockBase & {
-  input: {
-    action: "left_click_drag";
-    start_coordinate: [number, number];
-    coordinate: [number, number];
-    text?: string;
-  };
-};
-
-export type RightClickToolUseBlock = ComputerToolUseBlockBase & {
-  input: {
-    action: "right_click";
-    coordinate: [number, number];
-  };
-};
-
-export type MiddleClickToolUseBlock = ComputerToolUseBlockBase & {
-  input: {
-    action: "middle_click";
-    coordinate: [number, number];
-  };
-};
-
-export type DoubleClickToolUseBlock = ComputerToolUseBlockBase & {
-  input: {
-    action: "double_click";
-    coordinate: [number, number];
-  };
-};
-
-export type TripleClickToolUseBlock = ComputerToolUseBlockBase & {
-  input: {
-    action: "triple_click";
-    coordinate: [number, number];
-  };
-};
-
-export type ScrollDirection = "up" | "down" | "left" | "right";
-
-export type ScrollToolUseBlock = ComputerToolUseBlockBase & {
-  input: {
-    action: "scroll";
-    coordinate: [number, number];
-    scroll_amount: number;
-    scroll_direction: ScrollDirection;
-  };
-};
-
-export type WaitToolUseBlock = ComputerToolUseBlockBase & {
-  input: {
-    action: "wait";
-    duration: number;
-  };
-};
-
-export type ScreenshotToolUseBlock = ComputerToolUseBlockBase & {
-  input: {
-    action: "screenshot";
-  };
+export type CursorPositionToolUseBlock = ToolUseContentBlock & {
+  name: "computer_cursor_position";
 };
 
 export type ComputerToolUseContentBlock =
-  | ComputerToolUseBlockBase
-  | KeyToolUseBlock
-  | HoldKeyToolUseBlock
-  | TypeToolUseBlock
-  | CursorPositionToolUseBlock
-  | MouseMoveToolUseBlock
-  | LeftMouseDownToolUseBlock
-  | LeftMouseUpToolUseBlock
-  | LeftClickToolUseBlock
-  | LeftClickDragToolUseBlock
-  | RightClickToolUseBlock
-  | MiddleClickToolUseBlock
-  | DoubleClickToolUseBlock
-  | TripleClickToolUseBlock
-  | ScrollToolUseBlock
+  | MoveMouseToolUseBlock
+  | TraceMouseToolUseBlock
+  | ClickMouseToolUseBlock
+  | PressMouseToolUseBlock
+  | TypeKeysToolUseBlock
+  | PressKeysToolUseBlock
+  | TypeTextToolUseBlock
   | WaitToolUseBlock
-  | ScreenshotToolUseBlock;
+  | ScreenshotToolUseBlock
+  | DragMouseToolUseBlock
+  | ScrollToolUseBlock
+  | TypeTextToolUseBlock
+  | CursorPositionToolUseBlock;
 
 export type ToolResultContentBlock = {
   type: MessageContentType.ToolResult;

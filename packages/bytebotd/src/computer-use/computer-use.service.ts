@@ -4,7 +4,6 @@ import { NutService } from '../nut/nut.service';
 export type Coordinates = { x: number; y: number };
 export type Button = 'left' | 'right' | 'middle';
 export type Press = 'up' | 'down';
-export type Axis = 'vertical' | 'horizontal';
 
 // Define individual computer action types
 export type MoveMouseAction = {
@@ -44,7 +43,7 @@ export type ScrollAction = {
   action: 'scroll';
   coordinates?: Coordinates;
   direction: 'up' | 'down' | 'left' | 'right';
-  amount: number;
+  numScrolls: number;
   holdKeys?: string[];
 };
 
@@ -257,7 +256,7 @@ export class ComputerUseService {
   }
 
   private async scroll(action: ScrollAction): Promise<void> {
-    const { coordinates, direction, amount, holdKeys } = action;
+    const { coordinates, direction, numScrolls, holdKeys } = action;
 
     // Move to coordinates if provided
     if (coordinates) {
@@ -270,7 +269,7 @@ export class ComputerUseService {
     }
 
     // Perform scroll
-    for (let i = 0; i < amount; i++) {
+    for (let i = 0; i < numScrolls; i++) {
       await this.nutService.mouseWheelEvent(direction, 1);
       await new Promise((resolve) => setTimeout(resolve, 150));
     }

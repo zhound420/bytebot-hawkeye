@@ -5,62 +5,144 @@ import {
   isImageContentBlock,
   isTextContentBlock,
   isToolResultContentBlock,
-  isToolUseContentBlock,
+  isComputerToolUseContentBlock,
+  isScreenshotToolUseBlock,
+  isWaitToolUseBlock,
+  isMoveMouseToolUseBlock,
+  isCursorPositionToolUseBlock,
+  isScrollToolUseBlock,
+  isClickMouseToolUseBlock,
+  isDragMouseToolUseBlock,
+  isPressMouseToolUseBlock,
+  isTraceMouseToolUseBlock,
+  isTypeKeysToolUseBlock,
+  isTypeTextToolUseBlock,
+  isPressKeysToolUseBlock,
 } from "../../../shared/utils/messageContent.utils";
 import Image from "next/image";
-import { HugeiconsIcon } from '@hugeicons/react'
-import { Camera01Icon, User03Icon, Cursor02Icon, TypeCursorIcon, MouseRightClick06Icon, TimeQuarter02Icon } from '@hugeicons/core-free-icons'
+import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  Camera01Icon,
+  User03Icon,
+  Cursor02Icon,
+  TypeCursorIcon,
+  MouseRightClick06Icon,
+  TimeQuarter02Icon,
+} from "@hugeicons/core-free-icons";
+import { ComputerToolUseContentBlock } from "../../../shared/types/messageContent.types";
 
 // Define the IconType for proper type checking
-type IconType = typeof Camera01Icon | typeof User03Icon | typeof Cursor02Icon | 
-               typeof TypeCursorIcon | typeof MouseRightClick06Icon | typeof TimeQuarter02Icon
+type IconType =
+  | typeof Camera01Icon
+  | typeof User03Icon
+  | typeof Cursor02Icon
+  | typeof TypeCursorIcon
+  | typeof MouseRightClick06Icon
+  | typeof TimeQuarter02Icon;
 
 interface MessageItemProps {
   message: Message;
 }
 
-function getIcon(type: string): IconType {
-  const iconLookup: Record<string, IconType> = {
-    'screenshot': Camera01Icon,
-    'left_click': Cursor02Icon,
-    'right_click': MouseRightClick06Icon,
-    'double_click': Cursor02Icon,
-    'triple_click': Cursor02Icon,
-    'middle_click': Cursor02Icon,
-    'mouse_move': Cursor02Icon,
-    'left_mouse_down': Cursor02Icon,
-    'left_mouse_up': Cursor02Icon,
-    'left_click_drag': Cursor02Icon,
-    'scroll': Cursor02Icon,
-    'type': TypeCursorIcon,
-    'key': MouseRightClick06Icon,
-    'hold_key': MouseRightClick06Icon,
-    'wait': TimeQuarter02Icon,
-    'cursor_position': Cursor02Icon
-  };
-  return iconLookup[type] || User03Icon;
+function getIcon(block: ComputerToolUseContentBlock): IconType {
+  if (isScreenshotToolUseBlock(block)) {
+    return Camera01Icon;
+  }
+
+  if (isWaitToolUseBlock(block)) {
+    return TimeQuarter02Icon;
+  }
+
+  if (
+    isTypeKeysToolUseBlock(block) ||
+    isTypeTextToolUseBlock(block) ||
+    isPressKeysToolUseBlock(block)
+  ) {
+    return TypeCursorIcon;
+  }
+
+  if (
+    isMoveMouseToolUseBlock(block) ||
+    isScrollToolUseBlock(block) ||
+    isCursorPositionToolUseBlock(block) ||
+    isClickMouseToolUseBlock(block) ||
+    isDragMouseToolUseBlock(block) ||
+    isPressMouseToolUseBlock(block) ||
+    isTraceMouseToolUseBlock(block)
+  ) {
+    if (block.input.button === "right") {
+      return MouseRightClick06Icon;
+    }
+
+    return Cursor02Icon;
+  }
+
+  return User03Icon;
 }
 
-function getLabel(type: string) {
-  const labelLookup: Record<string, string> = {
-    'screenshot': 'Screenshot',
-    'left_click': 'Left Click',
-    'right_click': 'Right Click',
-    'double_click': 'Double Click',
-    'triple_click': 'Triple Click',
-    'middle_click': 'Middle Click',
-    'mouse_move': 'Mouse Move',
-    'left_mouse_down': 'Mouse Down',
-    'left_mouse_up': 'Mouse Up',
-    'left_click_drag': 'Drag',
-    'scroll': 'Scroll',
-    'type': 'Type',
-    'key': 'Key',
-    'hold_key': 'Hold Key',
-    'wait': 'Wait',
-    'cursor_position': 'Cursor Position'
-  };
-  return labelLookup[type] || type;
+function getLabel(block: ComputerToolUseContentBlock) {
+  if (isScreenshotToolUseBlock(block)) {
+    return "Screenshot";
+  }
+
+  if (isWaitToolUseBlock(block)) {
+    return "Wait";
+  }
+
+  if (isTypeKeysToolUseBlock(block)) {
+    return "Keys";
+  }
+
+  if (isTypeTextToolUseBlock(block)) {
+    return "Type";
+  }
+
+  if (isPressKeysToolUseBlock(block)) {
+    return "Press Keys";
+  }
+
+  if (isMoveMouseToolUseBlock(block)) {
+    return "Move Mouse";
+  }
+
+  if (isScrollToolUseBlock(block)) {
+    return "Scroll";
+  }
+
+  if (isCursorPositionToolUseBlock(block)) {
+    return "Cursor Position";
+  }
+
+  if (isClickMouseToolUseBlock(block)) {
+    const button = block.input.button;
+    if (button === "left") {
+      if (block.input.numClicks === 2) {
+        return "Double Click";
+      }
+
+      if (block.input.numClicks === 3) {
+        return "Triple Click";
+      }
+
+      return "Click";
+    }
+
+    return `${block.input.button.charAt(0).toUpperCase() + block.input.button.slice(1)} Click`;
+  }
+
+  if (isDragMouseToolUseBlock(block)) {
+    return "Drag";
+  }
+
+  if (isPressMouseToolUseBlock(block)) {
+    return "Press Mouse";
+  }
+
+  if (isTraceMouseToolUseBlock(block)) {
+    return "Trace Mouse";
+  }
+
+  return "Unknown";
 }
 
 export function MessageItem({ message }: MessageItemProps) {
@@ -76,7 +158,10 @@ export function MessageItem({ message }: MessageItemProps) {
 
 function AssistantMessage({ message }: MessageItemProps) {
   const contentBlocks = message.content;
-  if (contentBlocks.length === 0 || contentBlocks.every((block) => block.content?.length === 0)) {
+  if (
+    contentBlocks.length === 0 ||
+    contentBlocks.every((block) => block.content?.length === 0)
+  ) {
     return <></>;
   }
 
@@ -93,63 +178,96 @@ function AssistantMessage({ message }: MessageItemProps) {
           />
         </div>
         <div className="w-full space-y-2">
-          {contentBlocks
-            .map((block) => (
-              <>
-                {isTextContentBlock(block) && (
-                  <div className="text-bytebot-bronze-dark-8 text-xs">
-                    <ReactMarkdown>{block.text}</ReactMarkdown>
-                  </div>
-                )}
+          {contentBlocks.map((block) => (
+            <>
+              {isTextContentBlock(block) && (
+                <div className="text-bytebot-bronze-dark-8 text-xs">
+                  <ReactMarkdown>{block.text}</ReactMarkdown>
+                </div>
+              )}
 
-                {isImageContentBlock(block.content?.[0]) && (
-                  <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-7 max-w-4/5 rounded-md border px-3 py-2 shadow-bytebot">
-                    <div className="flex items-center gap-2">
-                      <HugeiconsIcon icon={getIcon('screenshot')} className="text-bytebot-bronze-dark-9 w-4 h-4" />
-                      <p className="text-bytebot-bronze-light-11 text-xs">
-                        {getLabel('screenshot')} taken
+              {isImageContentBlock(block.content?.[0]) && (
+                <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-7 shadow-bytebot max-w-4/5 rounded-md border px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <HugeiconsIcon
+                      icon={Camera01Icon}
+                      className="text-bytebot-bronze-dark-9 h-4 w-4"
+                    />
+                    <p className="text-bytebot-bronze-light-11 text-xs">
+                      Screenshot taken
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {isComputerToolUseContentBlock(block) && (
+                <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-7 shadow-bytebot max-w-4/5 rounded-md border px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <HugeiconsIcon
+                      icon={getIcon(block)}
+                      className="text-bytebot-bronze-dark-9 h-4 w-4"
+                    />
+                    <p className="text-bytebot-bronze-light-11 text-xs">
+                      {getLabel(block)}
+                    </p>
+                    {/* Text for type and key actions */}
+                    {(isTypeKeysToolUseBlock(block) ||
+                      isPressKeysToolUseBlock(block)) && (
+                      <p className="bg-bytebot-bronze-light-1 border-bytebot-bronze-light-7 text-bytebot-bronze-light-11 rounded-md border px-1 py-0.5 text-xs">
+                        {String(block.input.keys.join("+"))}
                       </p>
-                    </div>
-                  </div>
-                )}
-
-                {isToolUseContentBlock(block) && (
-                  <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-7 max-w-4/5 rounded-md border px-3 py-2 shadow-bytebot">
-                    <div className="flex items-center gap-2">
-                      <HugeiconsIcon icon={getIcon(block.input.action as string)} className="text-bytebot-bronze-dark-9 w-4 h-4" />
-                      <p className="text-bytebot-bronze-light-11 text-xs">{getLabel(block.input.action as string)}</p>
-                      {/* Text for type and key actions */}
-                      {(block.input.action === 'type' || block.input.action === 'key' || block.input.action === 'hold_key') && 'text' in block.input && (
-                        <p className="rounded-md bg-bytebot-bronze-light-1 py-0.5 px-1 text-xs border-bytebot-bronze-light-7 border text-bytebot-bronze-light-11">{String(block.input.text)}</p>
-                      )}
-                      {/* Duration for wait and hold_key actions */}
-                      {(block.input.action === 'wait' || block.input.action === 'hold_key') && 'duration' in block.input && (
-                        <p className="rounded-md bg-bytebot-bronze-light-1 py-0.5 px-1 text-xs border-bytebot-bronze-light-7 border text-bytebot-bronze-light-11">{Number(block.input.duration)}ms</p>
-                      )}
-                      {/* Coordinates for click/mouse actions */}
-                      {(['left_click', 'right_click', 'middle_click', 'double_click', 'triple_click', 'mouse_move', 'scroll'].includes(block.input.action as string)) && 'coordinate' in block.input && Array.isArray(block.input.coordinate) && (
-                        <p className="rounded-md bg-bytebot-bronze-light-1 py-0.5 px-1 text-xs border-bytebot-bronze-light-7 border text-bytebot-bronze-light-11">{block.input.coordinate[0]}, {block.input.coordinate[1]}</p>
-                      )}
-                      {/* Start and end coordinates for drag actions */}
-                      {block.input.action === 'left_click_drag' && 'start_coordinate' in block.input && 'coordinate' in block.input && 
-                       Array.isArray(block.input.start_coordinate) && Array.isArray(block.input.coordinate) && (
-                        <p className="rounded-md bg-bytebot-bronze-light-1 py-0.5 px-1 text-xs border-bytebot-bronze-light-7 border text-bytebot-bronze-light-11">
-                          From: {block.input.start_coordinate[0]}, {block.input.start_coordinate[1]} → 
-                          To: {block.input.coordinate[0]}, {block.input.coordinate[1]}
+                    )}
+                    {isTypeTextToolUseBlock(block) && (
+                      <p className="bg-bytebot-bronze-light-1 border-bytebot-bronze-light-7 text-bytebot-bronze-light-11 rounded-md border px-1 py-0.5 text-xs">
+                        {String(block.input.text)}
+                      </p>
+                    )}
+                    {/* Duration for wait and hold_key actions */}
+                    {isWaitToolUseBlock(block) && (
+                      <p className="bg-bytebot-bronze-light-1 border-bytebot-bronze-light-7 text-bytebot-bronze-light-11 rounded-md border px-1 py-0.5 text-xs">
+                        {`${block.input.duration}ms`}
+                      </p>
+                    )}
+                    {/* Coordinates for click/mouse actions */}
+                    {block.input.coordinates && (
+                      <p className="bg-bytebot-bronze-light-1 border-bytebot-bronze-light-7 text-bytebot-bronze-light-11 rounded-md border px-1 py-0.5 text-xs">
+                        {
+                          (block.input.coordinates as { x: number; y: number })
+                            .x
+                        }
+                        ,{" "}
+                        {
+                          (block.input.coordinates as { x: number; y: number })
+                            .y
+                        }
+                      </p>
+                    )}
+                    {/* Start and end coordinates for path actions */}
+                    {"path" in block.input &&
+                      Array.isArray(block.input.path) &&
+                      block.input.path.every(
+                        (point) =>
+                          point.x !== undefined && point.y !== undefined,
+                      ) && (
+                        <p className="bg-bytebot-bronze-light-1 border-bytebot-bronze-light-7 text-bytebot-bronze-light-11 rounded-md border px-1 py-0.5 text-xs">
+                          From: {block.input.path[0].x}, {block.input.path[0].y}{" "}
+                          → To:{" "}
+                          {block.input.path[block.input.path.length - 1].x},{" "}
+                          {block.input.path[block.input.path.length - 1].y}
                         </p>
                       )}
-                      {/* Scroll information */}
-                      {block.input.action === 'scroll' && 'scroll_amount' in block.input && 'scroll_direction' in block.input && (
-                        <p className="rounded-md bg-bytebot-bronze-light-1 py-0.5 px-1 text-xs border-bytebot-bronze-light-7 border text-bytebot-bronze-light-11">
-                          {String(block.input.scroll_direction)} {Number(block.input.scroll_amount)}
-                        </p>
-                      )}
-                    </div>
+                    {/* Scroll information */}
+                    {isScrollToolUseBlock(block) && (
+                      <p className="bg-bytebot-bronze-light-1 border-bytebot-bronze-light-7 text-bytebot-bronze-light-11 rounded-md border px-1 py-0.5 text-xs">
+                        {String(block.input.direction)}{" "}
+                        {Number(block.input.numScrolls)}
+                      </p>
+                    )}
                   </div>
-                )}
-              </>
-            )
-          )}
+                </div>
+              )}
+            </>
+          ))}
         </div>
       </div>
     </div>
@@ -172,14 +290,14 @@ function UserMessage({ message }: MessageItemProps) {
     <div className="mb-4">
       <div className="flex flex-row-reverse items-start gap-2">
         <div className="border-bytebot-bronze-light-7 bg-muted flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-sm border">
-          <HugeiconsIcon icon={User03Icon} className="text-bytebot-bronze-dark-9 w-4 h-4" />
+          <HugeiconsIcon
+            icon={User03Icon}
+            className="text-bytebot-bronze-dark-9 h-4 w-4"
+          />
         </div>
-        <div className="bg-bytebot-bronze-light-2 space-y-2 border-bytebot-bronze-light-7 max-w-4/5 rounded-md border px-3 py-2 shadow-bytebot">
+        <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-7 shadow-bytebot max-w-4/5 space-y-2 rounded-md border px-3 py-2">
           {contentBlocks.map((block, index) => (
-            <div
-              key={index}
-              className="text-bytebot-bronze-dark-9 text-xs"
-            >
+            <div key={index} className="text-bytebot-bronze-dark-9 text-xs">
               {isTextContentBlock(block) && (
                 <ReactMarkdown>{block.text}</ReactMarkdown>
               )}
