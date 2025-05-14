@@ -50,6 +50,11 @@ export class TasksService implements OnModuleDestroy, OnModuleInit {
         `Found existing task with ID: ${resumeTask.id}, and status ${resumeTask.status}. Resuming.`,
       );
 
+      await this.prisma.task.update({
+        where: { id: resumeTask.id },
+        data: { status: TaskStatus.IN_PROGRESS },
+      });
+
       await this.addTaskToQueue(resumeTask.id);
     }
   }
@@ -126,9 +131,12 @@ export class TasksService implements OnModuleDestroy, OnModuleInit {
       include: {
         messages: {
           orderBy: {
-            createdAt: 'desc',
+            createdAt: 'asc',
           },
         },
+      },
+      orderBy: {
+        createdAt: 'asc',
       },
     });
 
