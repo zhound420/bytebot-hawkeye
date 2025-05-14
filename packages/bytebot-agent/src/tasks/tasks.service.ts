@@ -34,29 +34,7 @@ export class TasksService implements OnModuleDestroy, OnModuleInit {
   }
 
   async onModuleInit() {
-    const resumeTask = await this.prisma.task.findFirst({
-      where: {
-        status: {
-          in: [TaskStatus.IN_PROGRESS, TaskStatus.PENDING],
-        },
-      },
-      orderBy: {
-        createdAt: 'asc',
-      },
-    });
-
-    if (resumeTask) {
-      this.logger.log(
-        `Found existing task with ID: ${resumeTask.id}, and status ${resumeTask.status}. Resuming.`,
-      );
-
-      await this.prisma.task.update({
-        where: { id: resumeTask.id },
-        data: { status: TaskStatus.IN_PROGRESS },
-      });
-
-      await this.addTaskToQueue(resumeTask.id);
-    }
+    this.resumeOrStartNextTask();
   }
 
   async create(createTaskDto: CreateTaskDto): Promise<Task> {
@@ -122,6 +100,32 @@ export class TasksService implements OnModuleDestroy, OnModuleInit {
 
       return task;
     });
+  }
+
+  async resumeOrStartNextTask() {
+    const task = await this.prisma.task.findFirst({
+      where: {
+        status: {
+          in: [TaskStatus.IN_PROGRESS, TaskStatus.PENDING],
+        },
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+
+    if (task) {
+      this.logger.log(
+        `Found existing task with ID: ${task.id}, and status ${task.status}. Resuming.`,
+      );
+
+      await this.prisma.task.update({
+        where: { id: task.id },
+        data: { status: TaskStatus.IN_PROGRESS },
+      });
+
+      await this.addTaskToQueue(task.id);
+    }
   }
 
   async findAll(): Promise<TaskWithImage[]> {
@@ -224,6 +228,16 @@ export class TasksService implements OnModuleDestroy, OnModuleInit {
 
       this.logger.log(`Successfully updated task ID: ${id}`);
       this.logger.debug(`Updated task: ${JSON.stringify(updatedTask)}`);
+
+      if (
+        updatedTask.status === TaskStatus.COMPLETED ||
+        updatedTask.status === TaskStatus.FAILED
+      ) {
+        this.logger.log(
+          `Task ID: ${id} has been completed or failed, resuming or starting next task`,
+        );
+        await this.resumeOrStartNextTask();
+      }
 
       return updatedTask;
     } catch (error) {
