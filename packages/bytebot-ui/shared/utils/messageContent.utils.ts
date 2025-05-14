@@ -18,9 +18,7 @@ import {
   CursorPositionToolUseBlock,
   DragMouseToolUseBlock,
   ScrollToolUseBlock,
-  Coordinates,
-  Button,
-  Press,
+  EndTaskToolUseBlock,
 } from "../types/messageContent.types";
 
 /**
@@ -189,21 +187,6 @@ export function isMoveMouseToolUseBlock(
   return block.name === "computer_move_mouse";
 }
 
-export function createMoveMouseToolUseBlock(content: {
-  id: string;
-  coordinates: Coordinates;
-}): MoveMouseToolUseBlock {
-  const { id, coordinates } = content;
-  return {
-    type: MessageContentType.ToolUse,
-    name: "computer_move_mouse",
-    id,
-    input: {
-      coordinates,
-    },
-  };
-}
-
 /**
  * Type guard to check if an object is a TraceMouseToolUseBlock
  * @param obj The object to validate
@@ -218,23 +201,6 @@ export function isTraceMouseToolUseBlock(
 
   const block = obj as Record<string, any>;
   return block.name === "computer_trace_mouse";
-}
-
-export function createTraceMouseToolUseBlock(content: {
-  id: string;
-  path: Coordinates[];
-  holdKeys?: string[];
-}): TraceMouseToolUseBlock {
-  const { id, path, holdKeys } = content;
-  return {
-    type: MessageContentType.ToolUse,
-    name: "computer_trace_mouse",
-    id,
-    input: {
-      path,
-      holdKeys,
-    },
-  };
 }
 
 /**
@@ -253,27 +219,6 @@ export function isClickMouseToolUseBlock(
   return block.name === "computer_click_mouse";
 }
 
-export function createClickMouseToolUseBlock(content: {
-  id: string;
-  button: Button;
-  coordinates?: Coordinates;
-  holdKeys?: string[];
-  numClicks?: number;
-}): ClickMouseToolUseBlock {
-  const { id, button, coordinates, holdKeys, numClicks } = content;
-  return {
-    type: MessageContentType.ToolUse,
-    name: "computer_click_mouse",
-    id,
-    input: {
-      coordinates,
-      button,
-      holdKeys,
-      numClicks,
-    },
-  };
-}
-
 /**
  * Type guard to check if an object is a CursorPositionToolUseBlock
  * @param obj The object to validate
@@ -288,18 +233,6 @@ export function isCursorPositionToolUseBlock(
 
   const block = obj as Record<string, any>;
   return block.name === "computer_cursor_position";
-}
-
-export function createCursorPositionToolUseBlock(content: {
-  id: string;
-}): CursorPositionToolUseBlock {
-  const { id } = content;
-  return {
-    type: MessageContentType.ToolUse,
-    name: "computer_cursor_position",
-    id,
-    input: {},
-  };
 }
 
 /**
@@ -318,25 +251,6 @@ export function isPressMouseToolUseBlock(
   return block.name === "computer_press_mouse";
 }
 
-export function createPressMouseToolUseBlock(content: {
-  id: string;
-  button: Button;
-  press: Press;
-  coordinates?: Coordinates;
-}): PressMouseToolUseBlock {
-  const { id, button, press, coordinates } = content;
-  return {
-    type: MessageContentType.ToolUse,
-    name: "computer_press_mouse",
-    id,
-    input: {
-      button,
-      press,
-      coordinates,
-    },
-  };
-}
-
 /**
  * Type guard to check if an object is a DragMouseToolUseBlock
  * @param obj The object to validate
@@ -353,25 +267,6 @@ export function isDragMouseToolUseBlock(
   return block.name === "computer_drag_mouse";
 }
 
-export function createDragMouseToolUseBlock(content: {
-  id: string;
-  path: Coordinates[];
-  button: Button;
-  holdKeys?: string[];
-}): DragMouseToolUseBlock {
-  const { id, path, button, holdKeys } = content;
-  return {
-    type: MessageContentType.ToolUse,
-    name: "computer_drag_mouse",
-    id,
-    input: {
-      path,
-      button,
-      holdKeys,
-    },
-  };
-}
-
 /**
  * Type guard to check if an object is a ScrollToolUseBlock
  * @param obj The object to validate
@@ -384,27 +279,6 @@ export function isScrollToolUseBlock(obj: unknown): obj is ScrollToolUseBlock {
 
   const block = obj as Record<string, any>;
   return block.name === "computer_scroll";
-}
-
-export function createScrollToolUseBlock(content: {
-  id: string;
-  direction: "up" | "down" | "left" | "right";
-  coordinates?: Coordinates;
-  numScrolls: number;
-  holdKeys?: string[];
-}): ScrollToolUseBlock {
-  const { id, direction, coordinates, numScrolls, holdKeys } = content;
-  return {
-    type: MessageContentType.ToolUse,
-    name: "computer_scroll",
-    id,
-    input: {
-      coordinates,
-      direction,
-      numScrolls,
-      holdKeys,
-    },
-  };
 }
 
 /**
@@ -423,23 +297,6 @@ export function isTypeKeysToolUseBlock(
   return block.name === "computer_type_keys";
 }
 
-export function createTypeKeysToolUseBlock(content: {
-  id: string;
-  keys: string[];
-  delay?: number;
-}): TypeKeysToolUseBlock {
-  const { id, keys, delay } = content;
-  return {
-    type: MessageContentType.ToolUse,
-    name: "computer_type_keys",
-    id,
-    input: {
-      keys,
-      delay,
-    },
-  };
-}
-
 /**
  * Type guard to check if an object is a PressKeysToolUseBlock
  * @param obj The object to validate
@@ -454,23 +311,6 @@ export function isPressKeysToolUseBlock(
 
   const block = obj as Record<string, any>;
   return block.name === "computer_press_keys";
-}
-
-export function createPressKeysToolUseBlock(content: {
-  id: string;
-  keys: string[];
-  press: Press;
-}): PressKeysToolUseBlock {
-  const { id, keys, press } = content;
-  return {
-    type: MessageContentType.ToolUse,
-    name: "computer_press_keys",
-    id,
-    input: {
-      keys,
-      press,
-    },
-  };
 }
 
 /**
@@ -489,23 +329,6 @@ export function isTypeTextToolUseBlock(
   return block.name === "computer_type_text";
 }
 
-export function createTypeTextToolUseBlock(content: {
-  id: string;
-  text: string;
-  delay?: number;
-}): TypeTextToolUseBlock {
-  const { id, text, delay } = content;
-  return {
-    type: MessageContentType.ToolUse,
-    name: "computer_type_text",
-    id,
-    input: {
-      text,
-      delay,
-    },
-  };
-}
-
 /**
  * Type guard to check if an object is a WaitToolUseBlock
  * @param obj The object to validate
@@ -518,21 +341,6 @@ export function isWaitToolUseBlock(obj: unknown): obj is WaitToolUseBlock {
 
   const block = obj as Record<string, any>;
   return block.name === "computer_wait";
-}
-
-export function createWaitToolUseBlock(content: {
-  id: string;
-  duration: number;
-}): WaitToolUseBlock {
-  const { id, duration } = content;
-  return {
-    type: MessageContentType.ToolUse,
-    name: "computer_wait",
-    id,
-    input: {
-      duration,
-    },
-  };
 }
 
 /**
@@ -551,14 +359,13 @@ export function isScreenshotToolUseBlock(
   return block.name === "computer_screenshot";
 }
 
-export function createScreenshotToolUseBlock(content: {
-  id: string;
-}): ScreenshotToolUseBlock {
-  const { id } = content;
-  return {
-    type: MessageContentType.ToolUse,
-    name: "computer_screenshot",
-    id,
-    input: {},
-  };
+export function isEndTaskToolUseBlock(
+  obj: unknown
+): obj is EndTaskToolUseBlock {
+  if (!isToolUseContentBlock(obj)) {
+    return false;
+  }
+
+  const block = obj as Record<string, any>;
+  return block.name === "end_task";
 }

@@ -144,6 +144,13 @@ export type ComputerToolUseContentBlock =
   | TypeTextToolUseBlock
   | CursorPositionToolUseBlock;
 
+export type EndTaskToolUseBlock = ToolUseContentBlock & {
+  name: "end_task";
+  input: {
+    status: "completed" | "failed";
+  };
+};
+
 export type ToolResultContentBlock = {
   type: MessageContentType.ToolResult;
   tool_use_id: string;
