@@ -136,7 +136,7 @@ export class TasksService implements OnModuleDestroy, OnModuleInit {
         },
       },
       orderBy: {
-        createdAt: 'asc',
+        createdAt: 'desc',
       },
     });
 
