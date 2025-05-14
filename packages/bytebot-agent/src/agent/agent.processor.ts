@@ -18,6 +18,8 @@ import {
   isTypeKeysToolUseBlock,
   isTypeTextToolUseBlock,
   isPressKeysToolUseBlock,
+  isToolUseContentBlock,
+  isEndTaskToolUseBlock,
 } from '../../../shared/utils/messageContent.utils';
 import {
   Button,
@@ -97,6 +99,30 @@ export class AgentProcessor extends WorkerHost {
               );
               generatedToolResults.push(toolResult);
             }
+
+            if (isEndTaskToolUseBlock(block)) {
+              this.logger.log(
+                `Processing end task tool use block: ${block.input.status}`,
+              );
+              switch (block.input.status) {
+                case 'completed':
+                  await this.tasksService.update(taskId, {
+                    status: TaskStatus.COMPLETED,
+                  });
+                  break;
+                case 'failed':
+                  await this.tasksService.update(taskId, {
+                    status: TaskStatus.FAILED,
+                  });
+                  break;
+              }
+
+              this.logger.log(
+                `Task ID: ${taskId} has been ${block.input.status}`,
+              );
+
+              break;
+            }
           }
 
           if (generatedToolResults.length > 0) {
@@ -108,21 +134,6 @@ export class AgentProcessor extends WorkerHost {
             this.logger.debug(
               `Saved ${generatedToolResults.length} tool result(s) to database for task ID: ${taskId}`,
             );
-          }
-
-          this.logger.log(
-            `Processed ${toolUseCount} tool use blocks for task ID: ${taskId}`,
-          );
-
-          if (toolUseCount === 0) {
-            this.logger.log(
-              `No tool use blocks detected, marking task ID: ${taskId} as COMPLETED`,
-            );
-            await this.tasksService.update(taskId, {
-              status: TaskStatus.COMPLETED,
-            });
-            this.logger.log(`Task ID: ${taskId} has been completed`);
-            break;
           }
 
           this.logger.debug(`Refreshing task data for task ID: ${taskId}`);
