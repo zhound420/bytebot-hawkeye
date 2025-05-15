@@ -14,16 +14,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { TaskStatus } from "@/types";
 
 export default function TaskPage() {
   const params = useParams();
   const router = useRouter();
   const taskId = params.id as string;
-  
+
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
-  const { messages, input, setInput, isLoading, isLoadingSession, handleSend, currentTaskId } =
-    useChatSession({ initialTaskId: taskId });
+  const {
+    messages,
+    taskStatus,
+    input,
+    setInput,
+    isLoading,
+    isLoadingSession,
+    handleGuideTask,
+    currentTaskId,
+  } = useChatSession({ initialTaskId: taskId });
 
   const [isMounted, setIsMounted] = useState(false);
 
@@ -87,7 +96,7 @@ export default function TaskPage() {
         <div className="grid h-full grid-cols-7 gap-4">
           {/* Main container */}
           <div className="col-span-4">
-            <div className="border-bytebot-bronze-light-5 flex aspect-[4/3] w-full flex-col rounded-2xl border shadow-bytebot">
+            <div className="border-bytebot-bronze-light-5 shadow-bytebot flex aspect-[4/3] w-full flex-col rounded-2xl border">
               <div
                 ref={containerRef}
                 className="overflow-hidden rounded-[14px]"
@@ -115,25 +124,28 @@ export default function TaskPage() {
               />
             </div>
             {/* Fixed chat input */}
-            <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-5 rounded-2xl border-[0.5px] p-2 shadow-bytebot">
-              <ChatInput
-                input={input}
-                isLoading={isLoading}
-                onInputChange={setInput}
-                onSend={handleSend}
-                minLines={1}
-              />
-              <div className="mt-2">
-                <Select value="sonnet-3.7">
-                  <SelectTrigger className="w-auto">
-                    <SelectValue placeholder="Select an model" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sonnet-3.7">Sonnet 3.7</SelectItem>
-                  </SelectContent>
-                </Select>
+
+            {taskStatus === TaskStatus.NEEDS_HELP && (
+              <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-5 shadow-bytebot rounded-2xl border-[0.5px] p-2">
+                <ChatInput
+                  input={input}
+                  isLoading={isLoading}
+                  onInputChange={setInput}
+                  onSend={handleGuideTask}
+                  minLines={1}
+                />
+                <div className="mt-2">
+                  <Select value="sonnet-3.7">
+                    <SelectTrigger className="w-auto">
+                      <SelectValue placeholder="Select an model" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="sonnet-3.7">Sonnet 3.7</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </main>

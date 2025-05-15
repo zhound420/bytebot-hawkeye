@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { sendMessage } from "@/utils/messageUtils";
+import { startTask } from "@/utils/messageUtils";
 import { TaskList } from "@/components/tasks/TaskList";
 
 // Stock photo component for easy image switching
@@ -21,17 +21,14 @@ interface StockPhotoProps {
   alt?: string;
 }
 
-const StockPhoto: React.FC<StockPhotoProps> = ({ src, alt = "Decorative image" }) => {
+const StockPhoto: React.FC<StockPhotoProps> = ({
+  src,
+  alt = "Decorative image",
+}) => {
   return (
-    <div className="w-full h-full rounded-lg bg-white overflow-hidden">
-      <div className="relative w-full h-full">
-        <Image
-          src={src}
-          alt={alt}
-          fill
-          className="object-cover"
-          priority
-        />
+    <div className="h-full w-full overflow-hidden rounded-lg bg-white">
+      <div className="relative h-full w-full">
+        <Image src={src} alt={alt} fill className="object-cover" priority />
       </div>
     </div>
   );
@@ -41,7 +38,9 @@ export default function Home() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const [activePopoverIndex, setActivePopoverIndex] = useState<number | null>(null);
+  const [activePopoverIndex, setActivePopoverIndex] = useState<number | null>(
+    null,
+  );
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -50,7 +49,7 @@ export default function Home() {
 
     try {
       // Send request to start a new task
-      const task = await sendMessage(input);
+      const task = await startTask(input);
 
       if (task && task.id) {
         // Redirect to the task page
@@ -82,65 +81,71 @@ export default function Home() {
     Research: [
       "Create a comprehensive report on computer use agents",
       "Find market trends for my industry",
-      "Analyze competitor strategies"
+      "Analyze competitor strategies",
     ],
     Create: [
       "Draft a blog post about AI trends",
       "Design a marketing campaign",
-      "Create a content calendar"
+      "Create a content calendar",
     ],
     Plan: [
       "Develop a project timeline",
       "Create a business strategy",
-      "Plan a product launch"
+      "Plan a product launch",
     ],
     Analyze: [
       "Analyze trending startup keywords on Product Hunt",
       "Review my website analytics",
-      "Evaluate marketing campaign performance"
+      "Evaluate marketing campaign performance",
     ],
     Learn: [
       "Summarize the top blog posts from Hacker News",
       "Fetch YouTube videos about AI tools",
-      "Collect insights from Reddit"
-    ]
+      "Collect insights from Reddit",
+    ],
   };
 
   const renderTopicButtons = () => {
-    const topicNames = Object.keys(topicUseCases) as Array<keyof typeof topicUseCases>;
-    
+    const topicNames = Object.keys(topicUseCases) as Array<
+      keyof typeof topicUseCases
+    >;
+
     return (
-      <div className="flex flex-wrap gap-1 mt-6 justify-start w-full relative">
+      <div className="relative mt-6 flex w-full flex-wrap justify-start gap-1">
         {/* Container for buttons */}
-        <div className="flex flex-wrap gap-1 w-full">
+        <div className="flex w-full flex-wrap gap-1">
           {topicNames.map((topic, index) => (
             <div key={topic} className="relative">
-              <button 
-                className={`cursor-pointer shadow-bytebot px-3 py-[5px] text-sm ${activePopoverIndex === index ? 'text-bytebot-bronze-light-12' : 'text-bytebot-bronze-light-11'} rounded-full bg-bytebot-bronze-light-3 border border-bytebot-bronze-light-a7 hover:bg-bytebot-bronze-light-2 transition-colors`}
-                onClick={() => handleOpenChange(activePopoverIndex !== index, index)}
+              <button
+                className={`shadow-bytebot cursor-pointer px-3 py-[5px] text-sm ${activePopoverIndex === index ? "text-bytebot-bronze-light-12" : "text-bytebot-bronze-light-11"} bg-bytebot-bronze-light-3 border-bytebot-bronze-light-a7 hover:bg-bytebot-bronze-light-2 rounded-full border transition-colors`}
+                onClick={() =>
+                  handleOpenChange(activePopoverIndex !== index, index)
+                }
               >
                 {topic}
               </button>
             </div>
           ))}
         </div>
-        
+
         {/* Popover container positioned relative to the parent */}
         {activePopoverIndex !== null && (
-          <div className="absolute z-40 top-full left-0 mt-1 w-[500px] bg-bytebot-bronze-light-2 shadow-bytebot rounded-xl border border-bytebot-bronze-light-7 overflow-hidden p-2">
-            <div className="max-h-[300px] overflow-y-auto space-y-1">
-              {topicUseCases[topicNames[activePopoverIndex]].map((useCase: string, idx: number) => (
-                <div 
-                  key={idx} 
-                  className="text-sm text-bytebot-bronze-light-12 px-3 py-1.5 hover:bg-bytebot-bronze-light-3 cursor-pointer transition-colors rounded-lg"
-                  onClick={() => {
-                    console.log("Clicked use case:", useCase);
-                    handleSelectUseCase(useCase);
-                  }}
-                >
-                  {useCase}
-                </div>
-              ))}
+          <div className="bg-bytebot-bronze-light-2 shadow-bytebot border-bytebot-bronze-light-7 absolute top-full left-0 z-40 mt-1 w-[500px] overflow-hidden rounded-xl border p-2">
+            <div className="max-h-[300px] space-y-1 overflow-y-auto">
+              {topicUseCases[topicNames[activePopoverIndex]].map(
+                (useCase: string, idx: number) => (
+                  <div
+                    key={idx}
+                    className="text-bytebot-bronze-light-12 hover:bg-bytebot-bronze-light-3 cursor-pointer rounded-lg px-3 py-1.5 text-sm transition-colors"
+                    onClick={() => {
+                      console.log("Clicked use case:", useCase);
+                      handleSelectUseCase(useCase);
+                    }}
+                  >
+                    {useCase}
+                  </div>
+                ),
+              )}
             </div>
           </div>
         )}
@@ -154,16 +159,20 @@ export default function Home() {
 
       <main className="flex flex-1 flex-col overflow-hidden">
         {/* Desktop grid layout (50/50 split) - only visible on large screens */}
-        <div className="hidden lg:grid lg:grid-cols-2 lg:gap-8 h-full p-8">
+        <div className="hidden h-full p-8 lg:grid lg:grid-cols-2 lg:gap-8">
           {/* Main content area */}
           <div className="flex flex-col items-center overflow-y-auto">
-            <div className="flex flex-col items-center max-w-xl w-full">
-              <div className="flex flex-col justify-start items-start w-full mb-6">
-                <h1 className="text-2xl text-bytebot-bronze-light-12 mb-1">Got something brewing?</h1>
-                <p className="text-2xl text-bytebot-bronze-light-10">Let&apos;s dive in!</p>
+            <div className="flex w-full max-w-xl flex-col items-center">
+              <div className="mb-6 flex w-full flex-col items-start justify-start">
+                <h1 className="text-bytebot-bronze-light-12 mb-1 text-2xl">
+                  Got something brewing?
+                </h1>
+                <p className="text-bytebot-bronze-light-10 text-2xl">
+                  Let&apos;s dive in!
+                </p>
               </div>
-              
-              <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-5 rounded-2xl border-[0.5px] p-2 w-full shadow-bytebot">
+
+              <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-5 shadow-bytebot w-full rounded-2xl border-[0.5px] p-2">
                 <ChatInput
                   input={input}
                   isLoading={isLoading}
@@ -177,16 +186,18 @@ export default function Home() {
                       <SelectValue placeholder="Select a model" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="sonnet-3.7">Model: Sonnet 3.7</SelectItem>
+                      <SelectItem value="sonnet-3.7">
+                        Model: Sonnet 3.7
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
-              
+
               {renderTopicButtons()}
 
               {/* Task list section */}
-              <div className="w-full mt-8 border-t border-bytebot-bronze-light-5 pt-6">
+              <div className="border-bytebot-bronze-light-5 mt-8 w-full border-t pt-6">
                 <TaskList title="Latest Tasks" />
               </div>
             </div>
@@ -194,22 +205,26 @@ export default function Home() {
 
           {/* Stock photo area - centered in its grid cell */}
           <div className="flex items-center justify-center px-6 pt-6">
-            <div className="w-full h-full max-w-md aspect-square">
+            <div className="aspect-square h-full w-full max-w-md">
               <StockPhoto src="/stock-1.png" alt="Bytebot stock image" />
             </div>
           </div>
         </div>
 
         {/* Mobile layout - only visible on small/medium screens */}
-        <div className="flex flex-col lg:hidden h-full">
-          <div className="flex-1 flex flex-col items-center pt-10 px-4 overflow-y-auto">
-            <div className="flex flex-col items-center max-w-xl w-full">
-              <div className="flex flex-col justify-start items-start w-full mb-6">
-                <h1 className="text-2xl text-bytebot-bronze-light-12 mb-1">Got something brewing?</h1>
-                <p className="text-2xl text-bytebot-bronze-light-10">Let&apos;s dive in!</p>
+        <div className="flex h-full flex-col lg:hidden">
+          <div className="flex flex-1 flex-col items-center overflow-y-auto px-4 pt-10">
+            <div className="flex w-full max-w-xl flex-col items-center">
+              <div className="mb-6 flex w-full flex-col items-start justify-start">
+                <h1 className="text-bytebot-bronze-light-12 mb-1 text-2xl">
+                  Got something brewing?
+                </h1>
+                <p className="text-bytebot-bronze-light-10 text-2xl">
+                  Let&apos;s dive in!
+                </p>
               </div>
-              
-              <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-5 rounded-2xl border-[0.5px] p-2 shadow-bytebot w-full">
+
+              <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-5 shadow-bytebot w-full rounded-2xl border-[0.5px] p-2">
                 <ChatInput
                   input={input}
                   isLoading={isLoading}
@@ -223,16 +238,18 @@ export default function Home() {
                       <SelectValue placeholder="Select a model" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="sonnet-3.7">Model: Sonnet 3.7</SelectItem>
+                      <SelectItem value="sonnet-3.7">
+                        Model: Sonnet 3.7
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
-              
+
               {renderTopicButtons()}
 
               {/* Task list section */}
-              <div className="w-full mt-8 border-t border-bytebot-bronze-light-5 pt-6">
+              <div className="border-bytebot-bronze-light-5 mt-8 w-full border-t pt-6">
                 <TaskList title="Latest Tasks" />
               </div>
             </div>

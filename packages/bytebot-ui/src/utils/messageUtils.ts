@@ -1,4 +1,4 @@
-import { Message } from "@/types";
+import { Message, TaskStatus } from "@/types";
 
 /**
  * Fetches messages for a specific task
@@ -37,6 +37,7 @@ export async function fetchMessages(taskId: string): Promise<Message[]> {
 export async function fetchTaskById(taskId: string): Promise<{
   id: string;
   messages: Message[];
+  status: TaskStatus;
 } | null> {
   try {
     const response = await fetch(
@@ -66,7 +67,7 @@ export async function fetchTaskById(taskId: string): Promise<{
  * @returns The task data or null if there was an error
  */
 
-export async function sendMessage(
+export async function startTask(
   message: string,
 ): Promise<{ id: string } | null> {
   try {
@@ -88,6 +89,33 @@ export async function sendMessage(
     return await response.json();
   } catch (error) {
     console.error("Error sending message:", error);
+    return null;
+  }
+}
+
+export async function guideTask(
+  taskId: string,
+  message: string,
+): Promise<{ id: string } | null> {
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_BYTEBOT_AGENT_BASE_URL}/tasks/${taskId}/guide`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ message }),
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to guide task");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error guiding task:", error);
     return null;
   }
 }

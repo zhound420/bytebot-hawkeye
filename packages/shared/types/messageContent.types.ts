@@ -144,10 +144,10 @@ export type ComputerToolUseContentBlock =
   | TypeTextToolUseBlock
   | CursorPositionToolUseBlock;
 
-export type EndTaskToolUseBlock = ToolUseContentBlock & {
-  name: "end_task";
+export type SetTaskStatusToolUseBlock = ToolUseContentBlock & {
+  name: "set_task_status";
   input: {
-    status: "completed" | "failed";
+    status: "completed" | "failed" | "needs_help";
   };
 };
 

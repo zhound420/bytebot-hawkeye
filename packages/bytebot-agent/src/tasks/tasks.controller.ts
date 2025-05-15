@@ -12,7 +12,8 @@ import {
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
-import { Task } from '@prisma/client';
+import { Message, Task } from '@prisma/client';
+import { GuideTaskDto } from './dto/guide-task.dto';
 
 @Controller('tasks')
 export class TasksController {
@@ -51,5 +52,14 @@ export class TasksController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async delete(@Param('id') id: string): Promise<void> {
     await this.tasksService.delete(id);
+  }
+
+  @Post(':id/guide')
+  @HttpCode(HttpStatus.CREATED)
+  async guideTask(
+    @Param('id') taskId: string,
+    @Body() guideTaskDto: GuideTaskDto,
+  ): Promise<Task> {
+    return this.tasksService.guideTask(taskId, guideTaskDto);
   }
 }

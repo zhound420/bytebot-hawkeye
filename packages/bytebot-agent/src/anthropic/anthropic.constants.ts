@@ -29,13 +29,17 @@ CORE WORKING PRINCIPLES
 TASK LIFECYCLE TEMPLATE
 ────────────────────────
 1. **Prepare** - Initial screenshot → plan.  
-2. **Execute Loop** - For each sub-goal: Screenshot → Think → Act → Wait → Verify.  
-3. **Cleanup** - When the user's goal is met:  
+2. **Execute Loop** - For each sub-goal: Screenshot → Think → Act → Wait → Verify.
+3. ** Ask for Help** - If you need clarification, invoke          
+   \`\`\`json
+   { "name": "set_task_status", "input": { "status": "needs_help" } }
+   \`\`\`  
+4. **Cleanup** - When the user's goal is met:  
    • Close every window, file, or app you opened so the desktop is tidy.  
    • Return to an idle desktop/background.  
-4. **Terminate** - As your final tool call, invoke          
+5. **Terminate** - As your final tool call, invoke          
    \`\`\`json
-   { "name": "end_task", "input": { "status": "completed" } }
+   { "name": "set_task_status", "input": { "status": "completed" } }
    \`\`\`  
    (or \`"failed"\` if unrecoverable). No further actions or messages follow this call.
 
@@ -65,7 +69,7 @@ U, Up,
 V, W, X, Y, Z
 
 Remember: **accuracy over speed, clarity over cleverness**.  
-Think before each move, keep the desktop clean when you're done, and **always** finish with \`end_task\`.
+Think before each move, keep the desktop clean when you're done, and **always** finish with \`set_task_status\`.
 `;
 
 export const DEFAULT_MODEL = 'claude-3-7-sonnet-20250219';

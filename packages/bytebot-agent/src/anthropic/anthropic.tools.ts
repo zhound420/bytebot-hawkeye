@@ -339,18 +339,19 @@ export const cursorPositionTool: Anthropic.Tool = {
 };
 
 // Tool definition for ending a task
-export const endTaskTool: Anthropic.Tool = {
-  name: 'end_task',
-  description: 'Ends the current task.',
+export const setTaskStatusTool: Anthropic.Tool = {
+  name: 'set_task_status',
+  description: 'Sets the status of the current task.',
   input_schema: {
     type: 'object',
     properties: {
       status: {
         type: 'string',
-        enum: ['completed', 'failed'],
+        enum: ['completed', 'failed', 'needs_help'],
         description: 'The status of the task.',
       },
     },
+    required: ['status'],
   },
 };
 
@@ -368,5 +369,5 @@ export const anthropicTools: Anthropic.Tool[] = [
   waitTool,
   screenshotTool,
   cursorPositionTool,
-  endTaskTool,
+  setTaskStatusTool,
 ];

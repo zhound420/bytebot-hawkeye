@@ -18,7 +18,7 @@ import {
   CursorPositionToolUseBlock,
   DragMouseToolUseBlock,
   ScrollToolUseBlock,
-  EndTaskToolUseBlock,
+  SetTaskStatusToolUseBlock,
 } from "../types/messageContent.types";
 
 /**
@@ -359,13 +359,13 @@ export function isScreenshotToolUseBlock(
   return block.name === "computer_screenshot";
 }
 
-export function isEndTaskToolUseBlock(
+export function isSetTaskStatusToolUseBlock(
   obj: unknown
-): obj is EndTaskToolUseBlock {
+): obj is SetTaskStatusToolUseBlock {
   if (!isToolUseContentBlock(obj)) {
     return false;
   }
 
   const block = obj as Record<string, any>;
-  return block.name === "end_task";
+  return block.name === "set_task_status";
 }

@@ -1,10 +1,15 @@
-import React from 'react';
-import { Task, TaskStatus } from '@/types';
-import { format } from 'date-fns';
-import { capitalizeFirstChar } from '@/utils/stringUtils';
-import { HugeiconsIcon } from '@hugeicons/react'
-import { Tick02Icon, Cancel01Icon, Loading03Icon } from '@hugeicons/core-free-icons'
-import Link from 'next/link';
+import React from "react";
+import { Task, TaskStatus } from "@/types";
+import { format } from "date-fns";
+import { capitalizeFirstChar } from "@/utils/stringUtils";
+import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  Tick02Icon,
+  Cancel01Icon,
+  Loading03Icon,
+  MessageQuestionIcon,
+} from "@hugeicons/core-free-icons";
+import Link from "next/link";
 
 interface TaskItemProps {
   task: Task & {
@@ -21,63 +26,90 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const today = new Date();
-    
+
     // Check if the date is today
     if (
       date.getDate() === today.getDate() &&
       date.getMonth() === today.getMonth() &&
       date.getFullYear() === today.getFullYear()
     ) {
-      const todayFormat = `Today ${format(date, 'h:mma').toLowerCase()}`;
+      const todayFormat = `Today ${format(date, "h:mma").toLowerCase()}`;
       return capitalizeFirstChar(todayFormat);
     }
-    
+
     // Otherwise, return the full date
-    const formattedDate = format(date, 'MMMM d, yyyy, h:mma').toLowerCase();
+    const formattedDate = format(date, "MMMM d, yyyy, h:mma").toLowerCase();
     return capitalizeFirstChar(formattedDate);
   };
 
   return (
     <Link href={`/tasks/${task.id}`} className="block">
-      <div className="py-4 px-5 shadow-bytebot bg-bytebot-bronze-light-2 border-[0.5px] rounded-lg border-bytebot-bronze-light-5 flex items-start min-h-24 hover:bg-bytebot-bronze-light-3 transition-colors">
+      <div className="shadow-bytebot bg-bytebot-bronze-light-2 border-bytebot-bronze-light-5 hover:bg-bytebot-bronze-light-3 flex min-h-24 items-start rounded-lg border-[0.5px] px-5 py-4 transition-colors">
         {/* Task icon or image */}
-        <div className="w-20 h-auto mr-4 flex-shrink-0 overflow-hidden rounded">
+        <div className="mr-4 h-auto w-20 flex-shrink-0 overflow-hidden rounded">
           {task.imageData ? (
-            <img 
+            <img
               src={`data:${task.imageData.media_type};${task.imageData.type},${task.imageData.data}`}
               alt="Task result"
-              className="w-full h-full object-cover"
+              className="h-full w-full object-cover"
             />
           ) : (
-            <div className="h-12 bg-bytebot-bronze-light-5 rounded"></div>
+            <div className="bg-bytebot-bronze-light-5 h-12 rounded"></div>
           )}
         </div>
-        
+
         <div className="flex-1 space-y-1">
-          <div className="text-byhtebot-bronze-dark-7 text-sm font-medium">{capitalizeFirstChar(task.description)}</div>
-          <div className="text-byhtebot-bronze-dark-11 text-xs">{formatDate(task.createdAt)}</div>
+          <div className="text-byhtebot-bronze-dark-7 text-sm font-medium">
+            {capitalizeFirstChar(task.description)}
+          </div>
+          <div className="text-byhtebot-bronze-dark-11 text-xs">
+            {formatDate(task.createdAt)}
+          </div>
           {task.status === TaskStatus.COMPLETED && (
-            <div className="py-0.5 px-1.5 space-x-1 inline-flex w-fit items-center bg-bytebot-green-3 border border-bytebot-green-a5 rounded-full">
-              <HugeiconsIcon icon={Tick02Icon} className="h-4 w-4 text-bytebot-green-9 mr-1" />
-              <span className="text-[11px] text-bytebot-green-11">Success</span>
+            <div className="bg-bytebot-green-3 border-bytebot-green-a5 inline-flex w-fit items-center space-x-1 rounded-full border px-1.5 py-0.5">
+              <HugeiconsIcon
+                icon={Tick02Icon}
+                className="text-bytebot-green-9 mr-1 h-4 w-4"
+              />
+              <span className="text-bytebot-green-11 text-[11px]">Success</span>
             </div>
           )}
           {task.status === TaskStatus.IN_PROGRESS && (
-            <div className="py-0.5 px-1.5 space-x-1 inline-flex w-fit items-center bg-orange-100 border border-orange-700 rounded-full">
-              <HugeiconsIcon icon={Loading03Icon} className="h-4 w-4 text-orange-900 mr-1 animate-[spin_3s_linear_infinite]" />
+            <div className="inline-flex w-fit items-center space-x-1 rounded-full border border-orange-700 bg-orange-100 px-1.5 py-0.5">
+              <HugeiconsIcon
+                icon={Loading03Icon}
+                className="mr-1 h-4 w-4 animate-[spin_3s_linear_infinite] text-orange-900"
+              />
               <span className="text-[11px] text-orange-700">In Progress</span>
             </div>
           )}
+          {task.status === TaskStatus.NEEDS_HELP && (
+            <div className="inline-flex w-fit items-center space-x-1 rounded-full border border-blue-700 bg-blue-100 px-1.5 py-0.5">
+              <HugeiconsIcon
+                icon={MessageQuestionIcon}
+                className="mr-1 h-4 w-4 text-blue-900"
+              />
+              <span className="text-[11px] text-blue-700">Needs Guidance</span>
+            </div>
+          )}
           {task.status === TaskStatus.PENDING && (
-            <div className="py-0.5 px-1.5 space-x-1 inline-flex w-fit items-center bg-yellow-100 border border-yellow-700 rounded-full">
-              <HugeiconsIcon icon={Loading03Icon} className="h-4 w-4 text-yellow-900 mr-1 animate-[spin_3s_linear_infinite]" />
+            <div className="inline-flex w-fit items-center space-x-1 rounded-full border border-yellow-700 bg-yellow-100 px-1.5 py-0.5">
+              <HugeiconsIcon
+                icon={Loading03Icon}
+                className="mr-1 h-4 w-4 animate-[spin_3s_linear_infinite] text-yellow-900"
+              />
               <span className="text-[11px] text-yellow-700">Pending</span>
             </div>
           )}
           {task.status === TaskStatus.FAILED && (
-            <div className="py-0.5 px-1.5 space-x-1 inline-flex w-fit items-center bg-bytebot-red-light-3 border border-bytebot-green-a5 rounded-full">
-              <HugeiconsIcon icon={Cancel01Icon} className="h-4 w-4 text-bytebot-red-light-9 mr-1" />
-              <span className="text-[11px] text-bytebot-red-light-9">Failed</span>
+            <div className="bg-bytebot-red-light-3 border-bytebot-green-a5 inline-flex w-fit items-center space-x-1 rounded-full border px-1.5 py-0.5">
+              <HugeiconsIcon
+                icon={Cancel01Icon}
+                className="text-bytebot-red-light-9 mr-1 h-4 w-4"
+              />
+              <span className="text-bytebot-red-light-9 text-[11px]">
+                Failed
+              </span>
             </div>
           )}
         </div>

@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Message, MessageRole } from "@/types";
+import { Message, MessageRole, TaskStatus } from "@/types";
 import {
-  fetchMessages,
-  sendMessage,
+  guideTask,
   fetchLatestTask,
   fetchTaskById,
+  startTask,
 } from "@/utils/messageUtils";
 import { MessageContentType } from "../../shared/types/messageContent.types";
 
@@ -13,6 +13,7 @@ interface UseChatSessionProps {
 }
 
 export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
+  const [taskStatus, setTaskStatus] = useState<TaskStatus>(TaskStatus.PENDING);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(
@@ -43,11 +44,12 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
     if (!taskId) return;
 
     try {
-      const newMessages = await fetchMessages(taskId);
+      const task = await fetchTaskById(taskId);
 
-      if (newMessages && newMessages.length > 0) {
+      if (task && task.messages && task.messages.length > 0) {
+        setTaskStatus(task.status);
         // Filter out messages we've already processed to prevent duplicates
-        const filteredMessages = newMessages.filter(
+        const filteredMessages = task.messages.filter(
           (msg: Message) => !processedMessageIds.current.has(msg.id),
         );
 
@@ -199,26 +201,57 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
     };
   }, []);
 
-  const handleSend = async () => {
+  const handleStartTask = async () => {
     if (!input.trim()) return;
 
     setIsLoading(true);
 
     try {
+      const description = input;
       setInput("");
 
+      startNewConversation();
+
       // Send request to start a new task or continue existing task
-      const task = await sendMessage(input);
+      const task = await startTask(description);
 
       if (task) {
-        // Reset processed message IDs when starting a new task
-        if (currentTaskId !== task.id) {
-          processedMessageIds.current = new Set();
-        }
-
         // Store the task ID for polling
         setCurrentTaskId(task.id);
       } else {
+        // Add error message to chat
+        const errorMessage: Message = {
+          id: Date.now().toString(),
+          content: [
+            {
+              type: MessageContentType.Text,
+              text: "Sorry, there was an error processing your request. Please try again.",
+            },
+          ],
+          role: MessageRole.ASSISTANT,
+        };
+
+        processedMessageIds.current.add(errorMessage.id);
+        setMessages((prev) => [...prev, errorMessage]);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGuideTask = async () => {
+    if (!input.trim()) return;
+
+    setIsLoading(true);
+
+    try {
+      const message = input;
+      setInput("");
+
+      // Send request to start a new task or continue existing task
+      const response = await guideTask(currentTaskId!, message);
+
+      if (!response) {
         // Add error message to chat
         const errorMessage: Message = {
           id: Date.now().toString(),
@@ -255,12 +288,14 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
 
   return {
     messages,
+    taskStatus,
     input,
     setInput,
     currentTaskId,
     isLoading,
     isLoadingSession,
-    handleSend,
+    handleGuideTask,
+    handleStartTask,
     startNewConversation,
   };
 }

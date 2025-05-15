@@ -4,6 +4,7 @@ import {
   OnModuleDestroy,
   OnModuleInit,
   Logger,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTaskDto } from './dto/create-task.dto';
@@ -12,6 +13,7 @@ import { Task, Message, MessageRole, Prisma, TaskStatus } from '@prisma/client';
 import { InjectQueue } from '@nestjs/bullmq';
 import { AGENT_QUEUE_NAME } from '../common/constants';
 import { Queue } from 'bullmq';
+import { GuideTaskDto } from './dto/guide-task.dto';
 
 // Define interfaces for the task response with image
 interface TaskWithImage extends Task {
@@ -118,11 +120,6 @@ export class TasksService implements OnModuleDestroy, OnModuleInit {
       this.logger.log(
         `Found existing task with ID: ${task.id}, and status ${task.status}. Resuming.`,
       );
-
-      await this.prisma.task.update({
-        where: { id: task.id },
-        data: { status: TaskStatus.IN_PROGRESS },
-      });
 
       await this.addTaskToQueue(task.id);
     }
@@ -275,6 +272,39 @@ export class TasksService implements OnModuleDestroy, OnModuleInit {
       );
       throw error;
     }
+  }
+
+  async guideTask(taskId: string, guideTaskDto: GuideTaskDto) {
+    let task = await this.findById(taskId);
+    if (!task) {
+      this.logger.warn(`Task with ID: ${taskId} not found for guiding`);
+      throw new NotFoundException(`Task with ID ${taskId} not found`);
+    }
+
+    if (task.status != TaskStatus.NEEDS_HELP) {
+      this.logger.warn(
+        `Task with ID: ${taskId} is not in NEEDS_HELP status for guiding`,
+      );
+      throw new BadRequestException(
+        `Task with ID ${taskId} is not in NEEDS_HELP status for guiding`,
+      );
+    }
+
+    await this.prisma.message.create({
+      data: {
+        content: [{ type: 'text', text: guideTaskDto.message }],
+        role: MessageRole.USER,
+        taskId,
+      },
+    });
+
+    await this.update(taskId, {
+      status: TaskStatus.IN_PROGRESS,
+    });
+
+    await this.addTaskToQueue(taskId);
+
+    return task;
   }
 
   async addTaskToQueue(taskId: string) {

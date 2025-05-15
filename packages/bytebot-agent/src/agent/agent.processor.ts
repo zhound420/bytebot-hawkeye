@@ -18,8 +18,7 @@ import {
   isTypeKeysToolUseBlock,
   isTypeTextToolUseBlock,
   isPressKeysToolUseBlock,
-  isToolUseContentBlock,
-  isEndTaskToolUseBlock,
+  isSetTaskStatusToolUseBlock,
 } from '../../../shared/utils/messageContent.utils';
 import {
   Button,
@@ -74,6 +73,16 @@ export class AgentProcessor extends WorkerHost {
             `Received ${messageContentBlocks.length} content blocks from LLM`,
           );
 
+          if (messageContentBlocks.length == 0) {
+            this.logger.log(
+              `Task ID: ${taskId} received no content blocks from LLM, setting task status to failed`,
+            );
+            await this.tasksService.update(taskId, {
+              status: TaskStatus.FAILED,
+            });
+            break;
+          }
+
           await this.messagesService.create({
             content: messageContentBlocks,
             role: MessageRole.ASSISTANT,
@@ -100,23 +109,40 @@ export class AgentProcessor extends WorkerHost {
               generatedToolResults.push(toolResult);
             }
 
-            if (isEndTaskToolUseBlock(block)) {
+            if (isSetTaskStatusToolUseBlock(block)) {
               this.logger.log(
-                `Processing end task tool use block: ${block.input.status}`,
+                `Processing set task status tool use block: ${block.input.status}`,
               );
               switch (block.input.status) {
-                case 'completed':
+                case 'completed': {
                   await this.tasksService.update(taskId, {
                     status: TaskStatus.COMPLETED,
                   });
                   break;
-                case 'failed':
+                }
+                case 'failed': {
                   await this.tasksService.update(taskId, {
                     status: TaskStatus.FAILED,
                   });
                   break;
+                }
+                case 'needs_help': {
+                  generatedToolResults.push({
+                    type: MessageContentType.ToolResult,
+                    tool_use_id: block.id,
+                    content: [
+                      {
+                        type: MessageContentType.Text,
+                        text: 'The task has been set to needs help',
+                      },
+                    ],
+                  });
+                  await this.tasksService.update(taskId, {
+                    status: TaskStatus.NEEDS_HELP,
+                  });
+                  break;
+                }
               }
-
               this.logger.log(
                 `Task ID: ${taskId} has been ${block.input.status}`,
               );
