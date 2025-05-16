@@ -92,14 +92,12 @@ export class AgentProcessor extends WorkerHost {
             `Saved assistant response to database for task ID: ${taskId}`,
           );
 
-          let toolUseCount = 0;
           const generatedToolResults: ToolResultContentBlock[] = [];
 
           for (const block of messageContentBlocks) {
             if (isComputerToolUseContentBlock(block)) {
-              toolUseCount++;
               this.logger.log(
-                `Processing tool use block #${toolUseCount}: ${block.input.action} (ID: ${block.id})`,
+                `Processing tool use block: ${block.input.action} (ID: ${block.id})`,
               );
 
               const toolResult = await this.handleComputerToolUse(block);
@@ -189,6 +187,9 @@ export class AgentProcessor extends WorkerHost {
         error.stack,
       );
     }
+
+    // complete job
+    await job.moveToCompleted(null, job.token!);
   }
 
   private async handleComputerToolUse(
