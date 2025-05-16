@@ -1,6 +1,6 @@
 import React from "react";
 import ReactMarkdown from "react-markdown";
-import { Message, MessageRole } from "@/types";
+import { MessageRole } from "@/types";
 import {
   isImageContentBlock,
   isTextContentBlock,
@@ -29,7 +29,11 @@ import {
   MouseRightClick06Icon,
   TimeQuarter02Icon,
 } from "@hugeicons/core-free-icons";
-import { ComputerToolUseContentBlock } from "../../../shared/types/messageContent.types";
+import {
+  ComputerToolUseContentBlock,
+  MessageContentBlock,
+} from "../../../shared/types/messageContent.types";
+import { GroupedMessages } from "./ChatContainer";
 
 // Define the IconType for proper type checking
 type IconType =
@@ -40,8 +44,8 @@ type IconType =
   | typeof MouseRightClick06Icon
   | typeof TimeQuarter02Icon;
 
-interface MessageItemProps {
-  message: Message;
+interface MessageGroupProps {
+  group: GroupedMessages;
 }
 
 function getIcon(block: ComputerToolUseContentBlock): IconType {
@@ -145,25 +149,34 @@ function getLabel(block: ComputerToolUseContentBlock) {
   return "Unknown";
 }
 
-export function MessageItem({ message }: MessageItemProps) {
-  if (
-    message.role === MessageRole.ASSISTANT ||
-    isToolResultContentBlock(message.content[0])
-  ) {
-    return <AssistantMessage message={message} />;
+export function MessageGroup({ group }: MessageGroupProps) {
+  if (group.role === MessageRole.ASSISTANT) {
+    return <AssistantMessage group={group} />;
   }
 
-  return <UserMessage message={message} />;
+  return <UserMessage group={group} />;
 }
 
-function AssistantMessage({ message }: MessageItemProps) {
-  const contentBlocks = message.content;
-  if (
-    contentBlocks.length === 0 ||
-    contentBlocks.every((block) => block.content?.length === 0)
-  ) {
-    return <></>;
-  }
+export function AssistantMessage({ group }: MessageGroupProps) {
+  // flatten the message content
+  const contentBlocks: MessageContentBlock[] = group.messages
+    .flatMap((message) => message.content)
+    .filter((block) => {
+      // If the block is a screenshot tool result, keep it
+      if (
+        isToolResultContentBlock(block) &&
+        isImageContentBlock(block.content?.[0])
+      ) {
+        return true;
+      }
+
+      // If the block is a tool result and it is not an error, remove it
+      if (isToolResultContentBlock(block) && !block.is_error) {
+        return false;
+      }
+
+      return true;
+    });
 
   return (
     <div className="mb-4">
@@ -181,7 +194,7 @@ function AssistantMessage({ message }: MessageItemProps) {
           {contentBlocks.map((block) => (
             <>
               {isTextContentBlock(block) && (
-                <div className="text-bytebot-bronze-dark-8 text-xs">
+                <div className="text-bytebot-bronze-dark-8 text-sm">
                   <ReactMarkdown>{block.text}</ReactMarkdown>
                 </div>
               )}
@@ -274,17 +287,11 @@ function AssistantMessage({ message }: MessageItemProps) {
   );
 }
 
-function UserMessage({ message }: MessageItemProps) {
-  const contentBlocks = message.content.filter(
-    (block) =>
-      (isToolResultContentBlock(block) &&
-        block.content.filter(isImageContentBlock).length > 0) ||
-      !isToolResultContentBlock(block),
+export function UserMessage({ group }: MessageGroupProps) {
+  // flatten the message content
+  const contentBlocks: MessageContentBlock[] = group.messages.flatMap(
+    (message) => message.content,
   );
-
-  if (contentBlocks.length === 0) {
-    return <></>;
-  }
 
   return (
     <div className="mb-4">
