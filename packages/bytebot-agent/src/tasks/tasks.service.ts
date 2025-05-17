@@ -15,15 +15,6 @@ import { AGENT_QUEUE_NAME } from '../common/constants';
 import { Queue } from 'bullmq';
 import { GuideTaskDto } from './dto/guide-task.dto';
 
-// Define interfaces for the task response with image
-interface TaskWithImage extends Task {
-  imageData?: {
-    data: string;
-    type: string;
-    media_type: string;
-  };
-}
-
 @Injectable()
 export class TasksService implements OnModuleDestroy, OnModuleInit {
   private readonly logger = new Logger(TasksService.name);
@@ -127,7 +118,7 @@ export class TasksService implements OnModuleDestroy, OnModuleInit {
     }
   }
 
-  async findAll(): Promise<TaskWithImage[]> {
+  async findAll(): Promise<Task[]> {
     this.logger.log('Retrieving all tasks');
 
     const tasks = await this.prisma.task.findMany({
@@ -145,20 +136,7 @@ export class TasksService implements OnModuleDestroy, OnModuleInit {
 
     this.logger.debug(`Retrieved ${tasks.length} tasks`);
 
-    // Process each task to find and attach image data
-    const tasksWithImages = await Promise.all(
-      tasks.map(async (task) => {
-        const imageData = await this.findLastImageFromMessages(task.id);
-        return {
-          ...task,
-          imageData,
-          // Remove messages from the response to keep it clean
-          messages: undefined,
-        };
-      }),
-    );
-
-    return tasksWithImages;
+    return tasks;
   }
 
   async findInProgress(): Promise<Task | null> {
