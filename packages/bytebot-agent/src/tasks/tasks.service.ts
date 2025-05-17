@@ -44,7 +44,7 @@ export class TasksService implements OnModuleDestroy, OnModuleInit {
       `Creating new task with description: ${createTaskDto.description}`,
     );
 
-    return this.prisma.$transaction(async (prisma) => {
+    const task = await this.prisma.$transaction(async (prisma) => {
       // Create the task first
       this.logger.debug('Creating task record in database');
       const task = await prisma.task.create({
@@ -70,38 +70,40 @@ export class TasksService implements OnModuleDestroy, OnModuleInit {
       });
       this.logger.debug(`Initial message created for task ID: ${task.id}`);
 
-      // Check if there's no in progress tasks
-      this.logger.debug('Checking for in-progress tasks');
-      const inProgressTasks = await prisma.task.findMany({
-        where: {
-          status: TaskStatus.IN_PROGRESS,
-        },
-      });
-
-      if (inProgressTasks.length === 0) {
-        // Add the task to the queue
-        this.logger.log(
-          `No tasks in progress, adding task ID: ${task.id} to agent queue`,
-        );
-
-        // Update task status to IN_PROGRESS
-        await prisma.task.update({
-          where: { id: task.id },
-          data: { status: TaskStatus.IN_PROGRESS },
-        });
-
-        await this.addTaskToQueue(task.id);
-        this.logger.debug(
-          `Task ID: ${task.id} added to agent queue successfully`,
-        );
-      } else {
-        this.logger.log(
-          `Found ${inProgressTasks.length} tasks in progress, new task ID: ${task.id} will wait in queue`,
-        );
-      }
-
       return task;
     });
+
+    // Check if there's no in progress tasks
+    this.logger.debug('Checking for in-progress tasks');
+    const inProgressTasks = await this.prisma.task.findMany({
+      where: {
+        status: TaskStatus.IN_PROGRESS,
+      },
+    });
+
+    if (inProgressTasks.length === 0) {
+      // Add the task to the queue
+      this.logger.log(
+        `No tasks in progress, adding task ID: ${task.id} to agent queue`,
+      );
+
+      // Update task status to IN_PROGRESS
+      await this.prisma.task.update({
+        where: { id: task.id },
+        data: { status: TaskStatus.IN_PROGRESS },
+      });
+
+      await this.addTaskToQueue(task.id);
+      this.logger.debug(
+        `Task ID: ${task.id} added to agent queue successfully`,
+      );
+    } else {
+      this.logger.log(
+        `Found ${inProgressTasks.length} tasks in progress, new task ID: ${task.id} will wait in queue`,
+      );
+    }
+
+    return task;
   }
 
   async resumeOrStartNextTask() {
