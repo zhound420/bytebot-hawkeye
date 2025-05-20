@@ -1,9 +1,11 @@
 import React, { useRef, useEffect } from "react";
-import { Message, MessageRole } from "@/types";
+import { Message, MessageRole, TaskStatus } from "@/types";
 import { MessageGroup } from "./MessageGroup";
 import { isToolResultContentBlock } from "../../../shared/utils/messageContent.utils";
+import { TextShimmer } from "../ui/text-shimmer";
 
 interface ChatContainerProps {
+  taskStatus: TaskStatus;
   messages: Message[];
   isLoadingSession: boolean;
 }
@@ -72,6 +74,7 @@ function filterMessages(messages: Message[]): Message[] {
 }
 
 export function ChatContainer({
+  taskStatus,
   messages,
   isLoadingSession,
 }: ChatContainerProps) {
@@ -96,9 +99,16 @@ export function ChatContainer({
           <div className="border-t-primary h-8 w-8 animate-spin rounded-full border-4 border-gray-300"></div>
         </div>
       ) : messages.length > 0 ? (
-        groupedConversation.map((group, index) => (
-          <MessageGroup key={index} group={group} />
-        ))
+        <>
+          {groupedConversation.map((group, index) => (
+            <MessageGroup key={index} group={group} />
+          ))}
+          {taskStatus === TaskStatus.IN_PROGRESS && (
+            <TextShimmer className="text-sm" duration={2}>
+              Bytebot is working...
+            </TextShimmer>
+          )}
+        </>
       ) : (
         <div className="flex h-full items-center justify-center">
           <p className="">No messages yet...</p>

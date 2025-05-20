@@ -119,6 +119,7 @@ export default function TaskPage() {
             {/* Messages scrollable area */}
             <div className="flex-1 overflow-y-auto px-4 pt-4 pb-2">
               <ChatContainer
+                taskStatus={taskStatus}
                 messages={messages}
                 isLoadingSession={isLoadingSession}
               />
