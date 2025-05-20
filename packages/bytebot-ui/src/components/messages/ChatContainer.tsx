@@ -75,21 +75,22 @@ export function ChatContainer({
   messages,
   isLoadingSession,
 }: ChatContainerProps) {
-  const chatContainerRef = useRef<HTMLDivElement | null>(null);
-
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   // Group back-to-back messages from the same role
   const groupedConversation = groupBackToBackMessages(filterMessages(messages));
 
-  // Scroll to bottom when messages change
+  // This effect runs whenever the messages array changes
   useEffect(() => {
-    if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop =
-        chatContainerRef.current.scrollHeight;
-    }
+    scrollToBottom();
   }, [messages]);
 
+  // Function to scroll to the bottom of the messages
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
   return (
-    <div ref={chatContainerRef} className="flex-1 overflow-auto p-4">
+    <div className="flex-1 overflow-auto p-4">
       {isLoadingSession ? (
         <div className="flex h-full items-center justify-center">
           <div className="border-t-primary h-8 w-8 animate-spin rounded-full border-4 border-gray-300"></div>
@@ -103,6 +104,8 @@ export function ChatContainer({
           <p className="">No messages yet...</p>
         </div>
       )}
+      {/* This empty div is the target for scrolling */}
+      <div ref={messagesEndRef} />
     </div>
   );
 }
