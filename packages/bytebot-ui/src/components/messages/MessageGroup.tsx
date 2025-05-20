@@ -18,7 +18,7 @@ import {
   isTypeKeysToolUseBlock,
   isTypeTextToolUseBlock,
   isPressKeysToolUseBlock,
-} from "../../../shared/utils/messageContent.utils";
+} from "@bytebot/shared";
 import Image from "next/image";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -32,7 +32,7 @@ import {
 import {
   ComputerToolUseContentBlock,
   MessageContentBlock,
-} from "../../../shared/types/messageContent.types";
+} from "@bytebot/shared";
 import { GroupedMessages } from "./ChatContainer";
 
 // Define the IconType for proper type checking

@@ -6,7 +6,7 @@ import {
   fetchTaskById,
   startTask,
 } from "@/utils/messageUtils";
-import { MessageContentType } from "../../shared/types/messageContent.types";
+import { MessageContentType } from "@bytebot/shared";
 
 interface UseChatSessionProps {
   initialTaskId?: string;

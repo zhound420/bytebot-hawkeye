@@ -6,7 +6,7 @@ import {
   MessageContentType,
   TextContentBlock,
   ToolUseContentBlock,
-} from '../../../shared/types/messageContent.types';
+} from '@bytebot/shared';
 import { AGENT_SYSTEM_PROMPT, DEFAULT_MODEL } from './anthropic.constants';
 import { Message, MessageRole } from '@prisma/client';
 import { anthropicTools } from './anthropic.tools';

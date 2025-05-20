@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from "react";
 import { Message, MessageRole, TaskStatus } from "@/types";
 import { MessageGroup } from "./MessageGroup";
-import { isToolResultContentBlock } from "../../../shared/utils/messageContent.utils";
+import { isToolResultContentBlock } from "@bytebot/shared";
 import { TextShimmer } from "../ui/text-shimmer";
 
 interface ChatContainerProps {

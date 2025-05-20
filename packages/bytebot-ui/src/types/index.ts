@@ -1,4 +1,4 @@
-import { MessageContentBlock } from "../../shared/types/messageContent.types";
+import { MessageContentBlock } from "@bytebot/shared";
 
 export enum MessageRole {
   USER = "USER",
@@ -21,14 +21,14 @@ export enum TaskStatus {
   NEEDS_REVIEW = "NEEDS_REVIEW",
   COMPLETED = "COMPLETED",
   CANCELLED = "CANCELLED",
-  FAILED = "FAILED"
+  FAILED = "FAILED",
 }
 
 export enum TaskPriority {
   LOW = "LOW",
   MEDIUM = "MEDIUM",
   HIGH = "HIGH",
-  URGENT = "URGENT"
+  URGENT = "URGENT",
 }
 
 export interface Task {

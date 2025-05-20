@@ -19,7 +19,7 @@ import {
   isTypeTextToolUseBlock,
   isPressKeysToolUseBlock,
   isSetTaskStatusToolUseBlock,
-} from '../../../shared/utils/messageContent.utils';
+} from '@bytebot/shared';
 import {
   Button,
   ComputerToolUseContentBlock,
@@ -28,7 +28,7 @@ import {
   MessageContentType,
   Press,
   ToolResultContentBlock,
-} from '../../../shared/types/messageContent.types';
+} from '@bytebot/shared';
 import { AGENT_QUEUE_NAME } from '../common/constants';
 import { Job } from 'bullmq';
 import { ConfigService } from '@nestjs/config';

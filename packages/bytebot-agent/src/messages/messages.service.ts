@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Message, MessageRole, Prisma } from '@prisma/client';
-import { MessageContentBlock } from '../../../shared/types/messageContent.types';
+import { MessageContentBlock } from '@bytebot/shared';
 
 @Injectable()
 export class MessagesService {
