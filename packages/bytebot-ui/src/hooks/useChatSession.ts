@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Message, MessageRole, TaskStatus } from "@/types";
+import { Message, Role, TaskStatus } from "@/types";
 import {
   guideTask,
   fetchLatestTask,
@@ -228,7 +228,7 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
               text: "Sorry, there was an error processing your request. Please try again.",
             },
           ],
-          role: MessageRole.ASSISTANT,
+          role: Role.ASSISTANT,
         };
 
         processedMessageIds.current.add(errorMessage.id);
@@ -261,7 +261,7 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
               text: "Sorry, there was an error processing your request. Please try again.",
             },
           ],
-          role: MessageRole.ASSISTANT,
+          role: Role.ASSISTANT,
         };
 
         processedMessageIds.current.add(errorMessage.id);

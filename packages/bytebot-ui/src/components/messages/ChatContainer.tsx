@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from "react";
-import { Message, MessageRole, TaskStatus } from "@/types";
+import { Message, Role, TaskStatus } from "@/types";
 import { MessageGroup } from "./MessageGroup";
 import { isToolResultContentBlock } from "@bytebot/shared";
 import { TextShimmer } from "../ui/text-shimmer";
@@ -11,7 +11,7 @@ interface ChatContainerProps {
 }
 
 export interface GroupedMessages {
-  role: MessageRole;
+  role: Role;
   messages: Message[];
 }
 
@@ -62,10 +62,10 @@ function filterMessages(messages: Message[]): Message[] {
 
     // If the role is a user message and all the content blocks are tool result blocks
     if (
-      message.role === MessageRole.USER &&
+      message.role === Role.USER &&
       contentBlocks.every((block) => isToolResultContentBlock(block))
     ) {
-      message.role = MessageRole.ASSISTANT;
+      message.role = Role.ASSISTANT;
     }
 
     filteredMessages.push(message);
@@ -103,7 +103,7 @@ export function ChatContainer({
           {groupedConversation.map((group, index) => (
             <MessageGroup key={index} group={group} />
           ))}
-          {taskStatus === TaskStatus.IN_PROGRESS && (
+          {taskStatus === TaskStatus.RUNNING && (
             <TextShimmer className="text-sm" duration={2}>
               Bytebot is working...
             </TextShimmer>

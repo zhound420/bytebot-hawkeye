@@ -9,7 +9,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
-import { Task, Message, MessageRole, Prisma, TaskStatus } from '@prisma/client';
+import { Task, Message, Role, Prisma, TaskStatus } from '@prisma/client';
 import { InjectQueue } from '@nestjs/bullmq';
 import { AGENT_QUEUE_NAME } from '../common/constants';
 import { Queue } from 'bullmq';
@@ -55,7 +55,7 @@ export class TasksService implements OnModuleDestroy, OnModuleInit {
               text: createTaskDto.description,
             },
           ] as Prisma.InputJsonValue,
-          role: MessageRole.USER,
+          role: Role.USER,
           taskId: task.id,
         },
       });
@@ -68,7 +68,7 @@ export class TasksService implements OnModuleDestroy, OnModuleInit {
     this.logger.debug('Checking for in-progress tasks');
     const inProgressTasks = await this.prisma.task.findMany({
       where: {
-        status: TaskStatus.IN_PROGRESS,
+        status: TaskStatus.RUNNING,
       },
     });
 
@@ -81,7 +81,7 @@ export class TasksService implements OnModuleDestroy, OnModuleInit {
       // Update task status to IN_PROGRESS
       await this.prisma.task.update({
         where: { id: task.id },
-        data: { status: TaskStatus.IN_PROGRESS },
+        data: { status: TaskStatus.RUNNING },
       });
 
       await this.addTaskToQueue(task.id);
@@ -101,7 +101,7 @@ export class TasksService implements OnModuleDestroy, OnModuleInit {
     const task = await this.prisma.task.findFirst({
       where: {
         status: {
-          in: [TaskStatus.IN_PROGRESS, TaskStatus.PENDING],
+          in: [TaskStatus.RUNNING, TaskStatus.PENDING],
         },
       },
       orderBy: {
@@ -143,7 +143,7 @@ export class TasksService implements OnModuleDestroy, OnModuleInit {
     this.logger.log('Searching for in-progress task');
     const task = await this.prisma.task.findFirst({
       where: {
-        status: TaskStatus.IN_PROGRESS,
+        status: TaskStatus.RUNNING,
       },
     });
 
@@ -273,13 +273,13 @@ export class TasksService implements OnModuleDestroy, OnModuleInit {
     await this.prisma.message.create({
       data: {
         content: [{ type: 'text', text: guideTaskDto.message }],
-        role: MessageRole.USER,
+        role: Role.USER,
         taskId,
       },
     });
 
     await this.update(taskId, {
-      status: TaskStatus.IN_PROGRESS,
+      status: TaskStatus.RUNNING,
     });
 
     await this.addTaskToQueue(taskId);
@@ -365,7 +365,7 @@ export class TasksService implements OnModuleDestroy, OnModuleInit {
     this.logger.debug('Updating in-progress tasks to cancelled status');
     const result = await this.prisma.task.updateMany({
       where: {
-        status: TaskStatus.IN_PROGRESS,
+        status: TaskStatus.RUNNING,
       },
       data: {
         status: TaskStatus.CANCELLED,

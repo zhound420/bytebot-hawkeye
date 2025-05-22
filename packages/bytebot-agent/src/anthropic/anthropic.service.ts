@@ -8,7 +8,7 @@ import {
   ToolUseContentBlock,
 } from '@bytebot/shared';
 import { AGENT_SYSTEM_PROMPT, DEFAULT_MODEL } from './anthropic.constants';
-import { Message, MessageRole } from '@prisma/client';
+import { Message, Role } from '@prisma/client';
 import { anthropicTools } from './anthropic.tools';
 
 @Injectable()
@@ -81,7 +81,7 @@ export class AnthropicService {
         (block) => block as Anthropic.ContentBlockParam,
       );
       anthropicMessages.push({
-        role: message.role === MessageRole.USER ? 'user' : 'assistant',
+        role: message.role === Role.USER ? 'user' : 'assistant',
         content: content,
       });
     }

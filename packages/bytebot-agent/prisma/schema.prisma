@@ -15,7 +15,7 @@ datasource db {
 
 enum TaskStatus {
   PENDING
-  IN_PROGRESS
+  RUNNING
   NEEDS_HELP
   NEEDS_REVIEW
   COMPLETED
@@ -30,18 +30,29 @@ enum TaskPriority {
   URGENT
 }
 
-enum MessageRole {
+enum Role {
   USER
   ASSISTANT
+}
+
+enum TaskType {
+  IMMEDIATE
+  SCHEDULED
 }
 
 model Task {
   id          String       @id @default(uuid())
   description String
+  type        TaskType     @default(IMMEDIATE)
   status      TaskStatus   @default(PENDING)
   priority    TaskPriority @default(MEDIUM)
   createdAt   DateTime     @default(now())
+  createdBy   Role         @default(USER)
   updatedAt   DateTime     @updatedAt
+  executedAt  DateTime?
+  completedAt DateTime?
+  error       String?
+  result      Json?
   messages    Message[]
   summaries   Summary[]
 }
@@ -53,7 +64,7 @@ model Summary {
   updatedAt      DateTime   @updatedAt
   messages       Message[]  // One-to-many relationship: one Summary has many Messages
 
-  task      Task        @relation(fields: [taskId], references: [id])
+  task      Task        @relation(fields: [taskId], references: [id], onDelete: Cascade)
   taskId    String
   
   // Self-referential relationship
@@ -71,10 +82,10 @@ model Message {
   //   {"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": "..."}}
   // ]
   content   Json
-  role      MessageRole @default(ASSISTANT)
+  role      Role @default(ASSISTANT)
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
-  task      Task        @relation(fields: [taskId], references: [id])
+  task      Task        @relation(fields: [taskId], references: [id], onDelete: Cascade)
   taskId    String
   summary   Summary?    @relation(fields: [summaryId], references: [id])
   summaryId String?     // Optional foreign key to Summary

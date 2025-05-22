@@ -1,6 +1,6 @@
 import React from "react";
 import ReactMarkdown from "react-markdown";
-import { MessageRole } from "@/types";
+import { Role } from "@/types";
 import {
   isImageContentBlock,
   isTextContentBlock,
@@ -150,7 +150,7 @@ function getLabel(block: ComputerToolUseContentBlock) {
 }
 
 export function MessageGroup({ group }: MessageGroupProps) {
-  if (group.role === MessageRole.ASSISTANT) {
+  if (group.role === Role.ASSISTANT) {
     return <AssistantMessage group={group} />;
   }
 

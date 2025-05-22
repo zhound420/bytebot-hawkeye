@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Message, MessageRole, Prisma } from '@prisma/client';
+import { Message, Role, Prisma } from '@prisma/client';
 import { MessageContentBlock } from '@bytebot/shared';
 
 @Injectable()
@@ -14,7 +14,7 @@ export class MessagesService {
    */
   async create(data: {
     content: MessageContentBlock[];
-    role: MessageRole;
+    role: Role;
     taskId: string;
   }): Promise<Message> {
     // Validate that the task exists

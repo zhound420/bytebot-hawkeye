@@ -1,6 +1,6 @@
 import { MessageContentBlock } from "@bytebot/shared";
 
-export enum MessageRole {
+export enum Role {
   USER = "USER",
   ASSISTANT = "ASSISTANT",
 }
@@ -9,14 +9,14 @@ export enum MessageRole {
 export interface Message {
   id: string;
   content: MessageContentBlock[];
-  role: MessageRole;
+  role: Role;
   createdAt?: string;
 }
 
 // Task related enums and types
 export enum TaskStatus {
   PENDING = "PENDING",
-  IN_PROGRESS = "IN_PROGRESS",
+  RUNNING = "RUNNING",
   NEEDS_HELP = "NEEDS_HELP",
   NEEDS_REVIEW = "NEEDS_REVIEW",
   COMPLETED = "COMPLETED",
@@ -38,9 +38,4 @@ export interface Task {
   priority: TaskPriority;
   createdAt: string;
   updatedAt: string;
-  imageData?: {
-    data: string;
-    type: string;
-    media_type: string;
-  };
 }

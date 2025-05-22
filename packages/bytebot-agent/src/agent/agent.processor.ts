@@ -1,7 +1,7 @@
 import { TasksService } from '../tasks/tasks.service';
 import { MessagesService } from '../messages/messages.service';
 import { Logger } from '@nestjs/common';
-import { MessageRole, TaskStatus } from '@prisma/client';
+import { Role, TaskStatus } from '@prisma/client';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { AnthropicService } from '../anthropic/anthropic.service';
 import {
@@ -57,7 +57,7 @@ export class AgentProcessor extends WorkerHost {
         `Task status: ${task.status}, found ${task.messages.length} messages`,
       );
 
-      while (task.status == TaskStatus.IN_PROGRESS) {
+      while (task.status == TaskStatus.RUNNING) {
         this.logger.log(
           `Processing task loop iteration for task ID: ${taskId}`,
         );
@@ -85,7 +85,7 @@ export class AgentProcessor extends WorkerHost {
 
           await this.messagesService.create({
             content: messageContentBlocks,
-            role: MessageRole.ASSISTANT,
+            role: Role.ASSISTANT,
             taskId: taskId,
           });
           this.logger.debug(
@@ -152,7 +152,7 @@ export class AgentProcessor extends WorkerHost {
           if (generatedToolResults.length > 0) {
             await this.messagesService.create({
               content: generatedToolResults,
-              role: MessageRole.USER,
+              role: Role.USER,
               taskId: taskId,
             });
             this.logger.debug(
