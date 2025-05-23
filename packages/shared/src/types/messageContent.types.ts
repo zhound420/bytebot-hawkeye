@@ -151,6 +151,17 @@ export type SetTaskStatusToolUseBlock = ToolUseContentBlock & {
   };
 };
 
+export type CreateTaskToolUseBlock = ToolUseContentBlock & {
+  name: "create_task";
+  input: {
+    name: string;
+    description: string;
+    type?: "immediate" | "scheduled";
+    scheduledFor?: string;
+    priority: "low" | "medium" | "high" | "urgent";
+  };
+};
+
 export type ToolResultContentBlock = {
   type: MessageContentType.ToolResult;
   tool_use_id: string;

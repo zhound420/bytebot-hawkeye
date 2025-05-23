@@ -30,14 +30,23 @@ TASK LIFECYCLE TEMPLATE
 ────────────────────────
 1. **Prepare** - Initial screenshot → plan.  
 2. **Execute Loop** - For each sub-goal: Screenshot → Think → Act → Wait → Verify.
-3. ** Ask for Help** - If you need clarification, invoke          
+3. **Create other tasks** - If you need to create additional tasks, invoke          
+   \`\`\`json
+   { "name": "create_task", "input": { "description": "Subtask description", "type": "IMMEDIATE", "priority": "MEDIUM" } }
+   \`\`\` 
+   The tasks will be executed in the order they are created, after the current task is completed.
+4. **Schedule future tasks** - If you need to schedule a task to run in the future, invoke          
+   \`\`\`json
+{ "name": "create_task", "input": { "description": "Subtask description", "type": "SCHEDULED", "scheduledFor": <ISO Date>, "priority": "MEDIUM" } }
+   \`\`\` 
+5. ** Ask for Help** - If you need clarification, invoke          
    \`\`\`json
    { "name": "set_task_status", "input": { "status": "needs_help" } }
    \`\`\`  
-4. **Cleanup** - When the user's goal is met:  
+6. **Cleanup** - When the user's goal is met:  
    • Close every window, file, or app you opened so the desktop is tidy.  
    • Return to an idle desktop/background.  
-5. **Terminate** - As your final tool call, invoke          
+7. **Terminate** - As your final tool call and message, invoke          
    \`\`\`json
    { "name": "set_task_status", "input": { "status": "completed" } }
    \`\`\`  

@@ -55,21 +55,30 @@ export class TasksService {
     return task;
   }
 
+  async findScheduledTasks(): Promise<Task[]> {
+    return this.prisma.task.findMany({
+      where: {
+        scheduledFor: {
+          not: null,
+        },
+        queuedAt: null,
+      },
+      orderBy: [{ scheduledFor: 'asc' }],
+    });
+  }
+
   async findNextTask(): Promise<Task | null> {
     const task = await this.prisma.task.findFirst({
       where: {
         status: {
-          in: [
-            'NEEDS_HELP',
-            'RUNNING',
-            'PENDING',
-            // TODO: Add IN_PROGRESS once the agent can handle it
-          ],
+          in: [TaskStatus.RUNNING, TaskStatus.PENDING],
         },
       },
       orderBy: [
-        { executedAt: 'asc' }, 
-        { createdAt: 'asc' }
+        { executedAt: 'asc' },
+        { priority: 'desc' },
+        { queuedAt: 'asc' },
+        { createdAt: 'asc' },
       ],
     });
 

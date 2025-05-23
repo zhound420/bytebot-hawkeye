@@ -9,4 +9,13 @@ export class UpdateTaskDto {
   @IsOptional()
   @IsEnum(TaskPriority)
   priority?: TaskPriority;
+
+  @IsOptional()
+  queuedAt?: Date;
+
+  @IsOptional()
+  executedAt?: Date;
+
+  @IsOptional()
+  completedAt?: Date;
 }

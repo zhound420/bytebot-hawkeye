@@ -19,6 +19,7 @@ import {
   DragMouseToolUseBlock,
   ScrollToolUseBlock,
   SetTaskStatusToolUseBlock,
+  CreateTaskToolUseBlock,
 } from "../types/messageContent.types";
 
 /**
@@ -368,4 +369,15 @@ export function isSetTaskStatusToolUseBlock(
 
   const block = obj as Record<string, any>;
   return block.name === "set_task_status";
+}
+
+export function isCreateTaskToolUseBlock(
+  obj: unknown
+): obj is CreateTaskToolUseBlock {
+  if (!isToolUseContentBlock(obj)) {
+    return false;
+  }
+
+  const block = obj as Record<string, any>;
+  return block.name === "create_task";
 }

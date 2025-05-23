@@ -1,7 +1,7 @@
 import { TasksService } from '../tasks/tasks.service';
 import { MessagesService } from '../messages/messages.service';
 import { Injectable, Logger } from '@nestjs/common';
-import { Role, TaskStatus } from '@prisma/client';
+import { Role, TaskPriority, TaskStatus, TaskType } from '@prisma/client';
 import { AnthropicService } from '../anthropic/anthropic.service';
 import {
   isScrollToolUseBlock,
@@ -18,6 +18,7 @@ import {
   isTypeTextToolUseBlock,
   isPressKeysToolUseBlock,
   isSetTaskStatusToolUseBlock,
+  isCreateTaskToolUseBlock,
 } from '@bytebot/shared';
 import {
   Button,
@@ -64,9 +65,6 @@ export class AgentProcessor {
 
     try {
       let task = await this.tasksService.findById(taskId);
-      await this.tasksService.update(taskId, {
-        status: TaskStatus.RUNNING,
-      });
       this.currentTaskId = taskId;
       this.isProcessing = true;
 
@@ -118,6 +116,41 @@ export class AgentProcessor {
                 `Tool execution completed for tool_use_id: ${block.id}, saving result`,
               );
               generatedToolResults.push(toolResult);
+            }
+
+            if (isCreateTaskToolUseBlock(block)) {
+              this.logger.log(
+                `Processing create task tool use block: ${block.input.name}`,
+              );
+
+              // if the block input type exists, convert it to uppercase and use it as the type
+              const type = block.input.type
+                ? (block.input.type.toUpperCase() as TaskType)
+                : TaskType.IMMEDIATE;
+
+              const priority = block.input.priority
+                ? (block.input.priority.toUpperCase() as TaskPriority)
+                : TaskPriority.MEDIUM;
+
+              await this.tasksService.create({
+                description: block.input.description,
+                type,
+                ...(block.input.scheduledFor && {
+                  scheduledFor: new Date(block.input.scheduledFor),
+                }),
+                priority,
+              });
+
+              generatedToolResults.push({
+                type: MessageContentType.ToolResult,
+                tool_use_id: block.id,
+                content: [
+                  {
+                    type: MessageContentType.Text,
+                    text: 'The task has been created',
+                  },
+                ],
+              });
             }
 
             if (isSetTaskStatusToolUseBlock(block)) {

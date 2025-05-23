@@ -48,9 +48,11 @@ model Task {
   priority    TaskPriority @default(MEDIUM)
   createdAt   DateTime     @default(now())
   createdBy   Role         @default(USER)
+  scheduledFor DateTime?
   updatedAt   DateTime     @updatedAt
   executedAt  DateTime?
   completedAt DateTime?
+  queuedAt    DateTime?
   error       String?
   result      Json?
   messages    Message[]

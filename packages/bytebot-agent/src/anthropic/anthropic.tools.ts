@@ -355,6 +355,37 @@ export const setTaskStatusTool: Anthropic.Tool = {
   },
 };
 
+export const createTaskTool: Anthropic.Tool = {
+  name: 'create_task',
+  description: 'Creates a new task.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      description: {
+        type: 'string',
+        description: 'The description of the task.',
+      },
+      type: {
+        type: 'string',
+        enum: ['immediate', 'scheduled'],
+        description: 'The type of the task. Default is immediate.',
+      },
+      scheduledFor: {
+        type: 'string',
+        format: 'date-time',
+        description:
+          'The scheduled time for the task, as an RFC 3339 / ISO 8601 combined date and time in UTC or with offset. Only used if type is scheduled.',
+      },
+      priority: {
+        type: 'string',
+        enum: ['low', 'medium', 'high', 'urgent'],
+        description: 'The priority of the task. Default is medium.',
+      },
+    },
+    required: ['description'],
+  },
+};
+
 // Array of all tools
 export const anthropicTools: Anthropic.Tool[] = [
   moveMouseTool,
