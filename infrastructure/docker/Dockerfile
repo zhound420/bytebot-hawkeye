@@ -117,6 +117,64 @@ RUN install -m 0755 -d /etc/thunderbird/policies && \
 }
 EOF
 
+# Install 1Password based on architecture
+RUN ARCH=$(dpkg --print-architecture) && \
+    if [ "$ARCH" = "amd64" ]; then \
+        # Install from APT repository for AMD64
+        curl -sS https://downloads.1password.com/linux/keys/1password.asc | \
+        gpg --dearmor --output /usr/share/keyrings/1password-archive-keyring.gpg && \
+        echo "deb [arch=amd64 signed-by=/usr/share/keyrings/1password-archive-keyring.gpg] https://downloads.1password.com/linux/debian/amd64 stable main" | \
+        tee /etc/apt/sources.list.d/1password.list && \
+        mkdir -p /etc/debsig/policies/AC2D62742012EA22/ && \
+        curl -sS https://downloads.1password.com/linux/debian/debsig/1password.pol | \
+        tee /etc/debsig/policies/AC2D62742012EA22/1password.pol && \
+        mkdir -p /usr/share/debsig/keyrings/AC2D62742012EA22 && \
+        curl -sS https://downloads.1password.com/linux/keys/1password.asc | \
+        gpg --dearmor --output /usr/share/debsig/keyrings/AC2D62742012EA22/debsig.gpg && \
+        apt-get update && apt-get install -y 1password && \
+        apt-get clean && rm -rf /var/lib/apt/lists/*; \
+    elif [ "$ARCH" = "arm64" ]; then \
+        # Install from tar.gz for ARM64
+        apt-get update && apt-get install -y \
+            libgtk-3-0 libnotify4 libnss3 libxss1 libxtst6 xdg-utils \
+            libatspi2.0-0 libdrm2 libgbm1 libxcb-dri3-0 libxkbcommon0 \
+            libsecret-1-0 && \
+        apt-get clean && rm -rf /var/lib/apt/lists/* && \
+        curl -sSL https://downloads.1password.com/linux/tar/beta/aarch64/1password-latest.tar.gz -o /tmp/1password.tar.gz && \
+        mkdir -p /opt && \
+        tar -xzf /tmp/1password.tar.gz -C /opt && \
+        rm /tmp/1password.tar.gz && \
+        # Find the actual 1password binary location
+        find /opt -name "1password" -type f -executable | head -1 | xargs -I {} ln -sf {} /usr/local/bin/1password && \
+        # Try to find and copy icon files
+        mkdir -p /usr/share/pixmaps /usr/share/icons/hicolor/512x512/apps /usr/share/icons/hicolor/256x256/apps && \
+        (find /opt -name "*.png" -path "*1password*" -o -name "*.svg" -path "*1password*" | while read icon; do \
+            if [[ "$icon" == *"512"* ]]; then \
+                cp "$icon" /usr/share/icons/hicolor/512x512/apps/1password.png 2>/dev/null || true; \
+            elif [[ "$icon" == *"256"* ]]; then \
+                cp "$icon" /usr/share/icons/hicolor/256x256/apps/1password.png 2>/dev/null || true; \
+            fi; \
+            cp "$icon" /usr/share/pixmaps/1password.png 2>/dev/null || true; \
+        done) && \
+        # Create desktop entry manually for ARM64
+        mkdir -p /usr/share/applications && \
+        echo '[Desktop Entry]' > /usr/share/applications/1password.desktop && \
+        echo 'Version=1.0' >> /usr/share/applications/1password.desktop && \
+        echo 'Type=Application' >> /usr/share/applications/1password.desktop && \
+        echo 'Name=1Password' >> /usr/share/applications/1password.desktop && \
+        echo 'Comment=Password manager and secure wallet' >> /usr/share/applications/1password.desktop && \
+        echo 'Exec=/usr/local/bin/1password %U' >> /usr/share/applications/1password.desktop && \
+        echo 'Icon=1password' >> /usr/share/applications/1password.desktop && \
+        echo 'Terminal=false' >> /usr/share/applications/1password.desktop && \
+        echo 'StartupNotify=true' >> /usr/share/applications/1password.desktop && \
+        echo 'Categories=Utility;Security;' >> /usr/share/applications/1password.desktop && \
+        echo 'MimeType=x-scheme-handler/onepassword;' >> /usr/share/applications/1password.desktop && \
+        # Update icon cache
+        gtk-update-icon-cache -f -t /usr/share/icons/hicolor 2>/dev/null || true; \
+    else \
+        echo "1Password is not available for $ARCH architecture."; \
+    fi
+
 # Install Node.js
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get update \
@@ -269,6 +327,37 @@ RUN echo '[Desktop Entry]' > /usr/share/applications/thunderbird.desktop && \
     mkdir -p /home/bytebot/Desktop && \
     cp -f /usr/share/applications/thunderbird.desktop /home/bytebot/Desktop/ && \
     chown -R bytebot:bytebot /home/bytebot/Desktop
+
+# Add 1Password desktop shortcut
+RUN if [ -f /usr/local/bin/1password ] || [ -f /opt/1Password/1password ] || [ -f /opt/1password/1password ]; then \
+        # Desktop shortcut should already exist from installation, but ensure it's on desktop
+        if [ -f /usr/share/applications/1password.desktop ]; then \
+            mkdir -p /home/bytebot/Desktop && \
+            cp -f /usr/share/applications/1password.desktop /home/bytebot/Desktop/ && \
+            chmod +x /home/bytebot/Desktop/1password.desktop; \
+        else \
+            # Create desktop entry if it doesn't exist
+            echo '[Desktop Entry]' > /usr/share/applications/1password.desktop && \
+            echo 'Version=1.0' >> /usr/share/applications/1password.desktop && \
+            echo 'Type=Application' >> /usr/share/applications/1password.desktop && \
+            echo 'Name=1Password' >> /usr/share/applications/1password.desktop && \
+            echo 'Comment=Password manager and secure wallet' >> /usr/share/applications/1password.desktop && \
+            if [ -f /opt/1password/1password ]; then \
+                echo 'Exec=/opt/1password/1password %U' >> /usr/share/applications/1password.desktop; \
+            else \
+                echo 'Exec=/opt/1Password/1password %U' >> /usr/share/applications/1password.desktop; \
+            fi && \
+            echo 'Icon=1password' >> /usr/share/applications/1password.desktop && \
+            echo 'Terminal=false' >> /usr/share/applications/1password.desktop && \
+            echo 'StartupNotify=true' >> /usr/share/applications/1password.desktop && \
+            echo 'Categories=Utility;Security;' >> /usr/share/applications/1password.desktop && \
+            echo 'MimeType=x-scheme-handler/onepassword;' >> /usr/share/applications/1password.desktop && \
+            chmod +x /usr/share/applications/1password.desktop && \
+            mkdir -p /home/bytebot/Desktop && \
+            cp -f /usr/share/applications/1password.desktop /home/bytebot/Desktop/; \
+        fi && \
+        chown -R bytebot:bytebot /home/bytebot/Desktop; \
+    fi
 
 # Add a desktop shortcut for the Terminal
 RUN echo '[Desktop Entry]' > /usr/share/applications/terminal.desktop && \
