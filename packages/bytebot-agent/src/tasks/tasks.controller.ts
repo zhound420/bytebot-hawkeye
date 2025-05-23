@@ -14,10 +14,14 @@ import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { Message, Task } from '@prisma/client';
 import { GuideTaskDto } from './dto/guide-task.dto';
+import { MessagesService } from 'src/messages/messages.service';
 
 @Controller('tasks')
 export class TasksController {
-  constructor(private readonly tasksService: TasksService) {}
+  constructor(
+    private readonly tasksService: TasksService,
+    private readonly messagesService: MessagesService,
+  ) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -30,14 +34,15 @@ export class TasksController {
     return this.tasksService.findAll();
   }
 
-  @Get('in-progress')
-  async findInProgress(): Promise<Task | null> {
-    return this.tasksService.findInProgress();
-  }
-
   @Get(':id')
   async findById(@Param('id') id: string): Promise<Task> {
     return this.tasksService.findById(id);
+  }
+
+  @Get(':id/messages')
+  async taskMessages(@Param('id') taskId: string): Promise<Message[]> {
+    const messages = await this.messagesService.findAll(taskId);
+    return messages;
   }
 
   @Patch(':id')

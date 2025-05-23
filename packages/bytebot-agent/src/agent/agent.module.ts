@@ -3,21 +3,12 @@ import { TasksModule } from '../tasks/tasks.module';
 import { MessagesModule } from '../messages/messages.module';
 import { AnthropicModule } from '../anthropic/anthropic.module';
 import { AgentProcessor } from './agent.processor';
-import { BullModule } from '@nestjs/bullmq';
-import { AGENT_QUEUE_NAME } from '../common/constants';
 import { ConfigModule } from '@nestjs/config';
+import { AgentScheduler } from './agent.scheduler';
 
 @Module({
-  imports: [
-    BullModule.registerQueue({
-      name: AGENT_QUEUE_NAME,
-    }),
-    ConfigModule,
-    TasksModule,
-    MessagesModule,
-    AnthropicModule,
-  ],
-  providers: [AgentProcessor],
+  imports: [ConfigModule, TasksModule, MessagesModule, AnthropicModule],
+  providers: [AgentProcessor, AgentScheduler],
   exports: [AgentProcessor],
 })
 export class AgentModule {}

@@ -72,4 +72,4 @@ Remember: **accuracy over speed, clarity over cleverness**.
 Think before each move, keep the desktop clean when you're done, and **always** finish with \`set_task_status\`.
 `;
 
-export const DEFAULT_MODEL = 'claude-3-7-sonnet-20250219';
+export const DEFAULT_MODEL = 'claude-sonnet-4-20250514';

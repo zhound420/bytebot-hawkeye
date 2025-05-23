@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { Header } from "@/components/layout/Header";
 import { TaskItem } from "@/components/tasks/TaskItem";
-// import { fetchTasks } from "@/utils/taskUtils";
+import { fetchTasks } from "@/utils/taskUtils";
 import { Task } from "@/types";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -16,9 +16,8 @@ export default function Tasks() {
     const loadTasks = async () => {
       setIsLoading(true);
       try {
-        // const fetchedTasks = await fetchTasks();
-        // setTasks(fetchedTasks);
-        setTasks([]);
+        const fetchedTasks = await fetchTasks();
+        setTasks(fetchedTasks);
       } catch (error) {
         console.error("Failed to load tasks:", error);
       } finally {

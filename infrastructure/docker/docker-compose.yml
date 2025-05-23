@@ -21,18 +21,6 @@ services:
     networks:
       - bytebot-network
 
-  redis:
-    image: redis:7-alpine
-    container_name: bytebot-redis
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
-    command: redis-server --save 20 1 --loglevel warning
-    networks:
-      - bytebot-network
-    volumes:
-      - redis_data:/data
-
   postgres:
     image: postgres:16-alpine
     container_name: bytebot-postgres
@@ -57,12 +45,10 @@ services:
     ports:
       - "9991:9991"
     environment:
-      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
       - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/bytebotdb}
       - BYTEBOT_DESKTOP_BASE_URL=${BYTEBOT_DESKTOP_BASE_URL:-http://bytebot-desktop:9990}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
     depends_on:
-      - redis
       - postgres
     networks:
       - bytebot-network
@@ -91,4 +77,3 @@ networks:
 
 volumes:
   postgres_data:
-  redis_data:

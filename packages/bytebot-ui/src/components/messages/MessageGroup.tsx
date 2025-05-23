@@ -191,8 +191,8 @@ export function AssistantMessage({ group }: MessageGroupProps) {
           />
         </div>
         <div className="w-full space-y-2">
-          {contentBlocks.map((block) => (
-            <>
+          {contentBlocks.map((block, index) => (
+            <div key={index}>
               {isTextContentBlock(block) && (
                 <div className="text-bytebot-bronze-dark-8 text-sm">
                   <ReactMarkdown>{block.text}</ReactMarkdown>
@@ -279,7 +279,7 @@ export function AssistantMessage({ group }: MessageGroupProps) {
                   </div>
                 </div>
               )}
-            </>
+            </div>
           ))}
         </div>
       </div>

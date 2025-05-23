@@ -1,8 +1,7 @@
 import { TasksService } from '../tasks/tasks.service';
 import { MessagesService } from '../messages/messages.service';
-import { Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Role, TaskStatus } from '@prisma/client';
-import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { AnthropicService } from '../anthropic/anthropic.service';
 import {
   isScrollToolUseBlock,
@@ -29,13 +28,13 @@ import {
   Press,
   ToolResultContentBlock,
 } from '@bytebot/shared';
-import { AGENT_QUEUE_NAME } from '../common/constants';
-import { Job } from 'bullmq';
 import { ConfigService } from '@nestjs/config';
 
-@Processor(AGENT_QUEUE_NAME)
-export class AgentProcessor extends WorkerHost {
+@Injectable()
+export class AgentProcessor {
   private readonly logger = new Logger(AgentProcessor.name);
+  private currentTaskId: string | null = null;
+  private isProcessing = false;
 
   constructor(
     private readonly tasksService: TasksService,
@@ -43,25 +42,39 @@ export class AgentProcessor extends WorkerHost {
     private readonly anthropicService: AnthropicService,
     private readonly configService: ConfigService,
   ) {
-    super();
     this.logger.log('AgentProcessor initialized');
   }
 
-  async process(job: Job) {
-    const taskId = job.data.taskId;
+  /**
+   * Check if the processor is currently processing a task
+   */
+  isRunning(): boolean {
+    return this.isProcessing;
+  }
+
+  /**
+   * Get the current task ID being processed
+   */
+  getCurrentTaskId(): string | null {
+    return this.currentTaskId;
+  }
+
+  async processTask(taskId: string) {
     this.logger.log(`Processing job for task ID: ${taskId}`);
 
     try {
       let task = await this.tasksService.findById(taskId);
-      this.logger.debug(
-        `Task status: ${task.status}, found ${task.messages.length} messages`,
-      );
+      await this.tasksService.update(taskId, {
+        status: TaskStatus.RUNNING,
+      });
+      this.currentTaskId = taskId;
+      this.isProcessing = true;
 
       while (task.status == TaskStatus.RUNNING) {
         this.logger.log(
           `Processing task loop iteration for task ID: ${taskId}`,
         );
-        const messages = task.messages;
+        const messages = await this.messagesService.findAll(taskId);
         this.logger.debug(
           `Sending ${messages.length} messages to LLM for processing`,
         );
@@ -186,10 +199,27 @@ export class AgentProcessor extends WorkerHost {
         `Critical error processing job for task ID: ${taskId} - ${error.message}`,
         error.stack,
       );
+    } finally {
+      this.isProcessing = false;
+      this.currentTaskId = null;
+    }
+  }
+
+  async stopProcessing(): Promise<void> {
+    if (!this.isProcessing) {
+      return;
     }
 
-    // complete job
-    await job.moveToCompleted(null, job.token!);
+    this.logger.log(`Stopping execution of task ${this.currentTaskId}`);
+
+    if (this.currentTaskId) {
+      await this.tasksService.update(this.currentTaskId, {
+        status: TaskStatus.CANCELLED,
+      });
+    }
+
+    this.isProcessing = false;
+    this.currentTaskId = null;
   }
 
   private async handleComputerToolUse(

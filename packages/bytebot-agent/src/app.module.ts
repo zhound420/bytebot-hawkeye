@@ -1,28 +1,17 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { BullModule } from '@nestjs/bullmq';
 import { AgentModule } from './agent/agent.module';
 import { TasksModule } from './tasks/tasks.module';
 import { MessagesModule } from './messages/messages.module';
 import { AnthropicModule } from './anthropic/anthropic.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ConfigModule } from '@nestjs/config';
-import { Redis } from 'ioredis';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
-    BullModule.forRootAsync({
-      useFactory: () => ({
-        connection: new Redis({
-          username: process.env.REDIS_USERNAME || undefined,
-          password: process.env.REDIS_PASSWORD || undefined,
-          port: Number(process.env.REDIS_PORT) || 6379,
-          host: process.env.REDIS_HOST || 'redis',
-          maxRetriesPerRequest: null
-        }),
-      }),
-    }),
+    ScheduleModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
     }),

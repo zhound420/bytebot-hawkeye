@@ -23,18 +23,16 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
-    "@nestjs/bullmq": "^11.0.2",
+    "@bytebot/shared": "../shared",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/schedule": "^6.0.0",
     "@prisma/client": "^6.6.0",
-    "bullmq": "^5.48.1",
     "class-validator": "^0.14.1",
-    "ioredis": "^5.6.1",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1",
-    "@bytebot/shared": "../shared"
+    "rxjs": "^7.8.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",

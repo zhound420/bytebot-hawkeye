@@ -12,13 +12,7 @@ import {
 import Link from "next/link";
 
 interface TaskItemProps {
-  task: Task & {
-    imageData?: {
-      data: string;
-      type: string;
-      media_type: string;
-    };
-  };
+  task: Task;
 }
 
 export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
@@ -45,19 +39,6 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
   return (
     <Link href={`/tasks/${task.id}`} className="block">
       <div className="shadow-bytebot bg-bytebot-bronze-light-2 border-bytebot-bronze-light-5 hover:bg-bytebot-bronze-light-3 flex min-h-24 items-start rounded-lg border-[0.5px] px-5 py-4 transition-colors">
-        {/* Task icon or image */}
-        <div className="mr-4 h-auto w-20 flex-shrink-0 overflow-hidden rounded">
-          {task.imageData ? (
-            <img
-              src={`data:${task.imageData.media_type};${task.imageData.type},${task.imageData.data}`}
-              alt="Task result"
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <div className="bg-bytebot-bronze-light-5 h-12 rounded"></div>
-          )}
-        </div>
-
         <div className="flex-1 space-y-1">
           <div className="text-byhtebot-bronze-dark-7 text-sm font-medium">
             {capitalizeFirstChar(task.description)}
@@ -74,13 +55,13 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
               <span className="text-bytebot-green-11 text-[11px]">Success</span>
             </div>
           )}
-          {task.status === TaskStatus.IN_PROGRESS && (
+          {task.status === TaskStatus.RUNNING && (
             <div className="inline-flex w-fit items-center space-x-1 rounded-full border border-orange-700 bg-orange-100 px-1.5 py-0.5">
               <HugeiconsIcon
                 icon={Loading03Icon}
                 className="mr-1 h-4 w-4 animate-[spin_3s_linear_infinite] text-orange-900"
               />
-              <span className="text-[11px] text-orange-700">In Progress</span>
+              <span className="text-[11px] text-orange-700">Running</span>
             </div>
           )}
           {task.status === TaskStatus.NEEDS_HELP && (

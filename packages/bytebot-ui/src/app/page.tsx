@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { startTask } from "@/utils/messageUtils";
+import { startTask } from "@/utils/taskUtils";
 import { TaskList } from "@/components/tasks/TaskList";
 
 // Stock photo component for easy image switching
@@ -181,14 +181,12 @@ export default function Home() {
                   minLines={3}
                 />
                 <div className="mt-2">
-                  <Select defaultValue="sonnet-3.7">
+                  <Select defaultValue="sonnet-4">
                     <SelectTrigger className="w-auto">
                       <SelectValue placeholder="Select a model" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="sonnet-3.7">
-                        Model: Sonnet 3.7
-                      </SelectItem>
+                      <SelectItem value="sonnet-4">Model: Sonnet 4</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -233,14 +231,12 @@ export default function Home() {
                   minLines={3}
                 />
                 <div className="mt-2">
-                  <Select defaultValue="sonnet-3.7">
+                  <Select defaultValue="sonnet-4">
                     <SelectTrigger className="w-auto">
                       <SelectValue placeholder="Select a model" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="sonnet-3.7">
-                        Model: Sonnet 3.7
-                      </SelectItem>
+                      <SelectItem value="sonnet-4">Model: Sonnet 4</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

@@ -2,10 +2,10 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Message, Role, TaskStatus } from "@/types";
 import {
   guideTask,
-  fetchLatestTask,
+  fetchTaskMessages,
   fetchTaskById,
   startTask,
-} from "@/utils/messageUtils";
+} from "@/utils/taskUtils";
 import { MessageContentType } from "@bytebot/shared";
 
 interface UseChatSessionProps {
@@ -45,11 +45,12 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
 
     try {
       const task = await fetchTaskById(taskId);
+      const messages = await fetchTaskMessages(taskId);
 
-      if (task && task.messages && task.messages.length > 0) {
+      if (task && messages && messages.length > 0) {
         setTaskStatus(task.status);
         // Filter out messages we've already processed to prevent duplicates
-        const filteredMessages = task.messages.filter(
+        const filteredMessages = messages.filter(
           (msg: Message) => !processedMessageIds.current.has(msg.id),
         );
 
@@ -110,15 +111,16 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
           // If we have an initial task ID (from URL), fetch that specific task
           console.log(`Fetching specific task: ${initialTaskId}`);
           const task = await fetchTaskById(initialTaskId);
+          const messages = await fetchTaskMessages(initialTaskId);
 
           if (task) {
             console.log(`Found task: ${task.id}`);
             setCurrentTaskId(task.id);
 
             // If the task has messages, add them to the messages state
-            if (task.messages && task.messages.length > 0) {
+            if (messages && messages.length > 0) {
               // Process all messages
-              const formattedMessages = task.messages.map((msg: Message) => ({
+              const formattedMessages = messages.map((msg: Message) => ({
                 id: msg.id,
                 content: msg.content,
                 role: msg.role,
@@ -134,34 +136,6 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
             }
           } else {
             console.log(`Task with ID ${initialTaskId} not found`);
-          }
-        } else {
-          // Otherwise fetch the latest task from the database
-          console.log(
-            "No task ID provided, fetching latest task from database...",
-          );
-          const latestTask = await fetchLatestTask();
-
-          if (latestTask) {
-            console.log(`Found latest task: ${latestTask.id}`);
-            setCurrentTaskId(latestTask.id);
-
-            // If the task has an initial message, add it to the messages
-            if (latestTask.messages && latestTask.messages.length > 0) {
-              const initialMessage = latestTask.messages[0];
-
-              const formattedMessage: Message = {
-                id: initialMessage.id,
-                content: initialMessage.content,
-                role: initialMessage.role,
-                createdAt: initialMessage.createdAt,
-              };
-
-              processedMessageIds.current.add(initialMessage.id);
-              setMessages([formattedMessage]);
-            }
-          } else {
-            console.log("No active tasks found");
           }
         }
       } catch (error) {
