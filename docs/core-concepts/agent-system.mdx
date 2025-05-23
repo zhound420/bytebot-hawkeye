@@ -35,13 +35,23 @@ interface Task {
   description: string;
   status: TaskStatus;
   priority: TaskPriority;
+  type: TaskType;
+  scheduledFor?: Date;
   createdAt: Date;
   updatedAt: Date;
+  executedAt?: Date;
+  completedAt?: Date;
+  queuedAt?: Date;
+}
+
+enum TaskType {
+  IMMEDIATE,
+  SCHEDULED,
 }
 
 enum TaskStatus {
   PENDING,
-  IN_PROGRESS,
+  RUNNING,
   NEEDS_HELP,
   NEEDS_REVIEW,
   COMPLETED,
@@ -59,8 +69,8 @@ enum TaskPriority {
 
 The task lifecycle involves:
 
-1. **Creation**: Tasks are created via the API or UI with a description
-2. **Queuing**: Tasks are queued for processing using BullMQ
+1. **Creation**: Tasks are created via the API, UI, or by the agent itself with a description
+2. **Queuing**: Tasks are queued for processing
 3. **Processing**: The agent processor handles tasks one at a time
 4. **Completion/Cancellation**: Tasks are marked as complete, cancelled, or other terminal states
 
@@ -72,14 +82,14 @@ The agent communicates through a structured message system using Anthropic's con
 interface Message {
   id: string;
   content: MessageContentBlock[];
-  role: MessageRole;
+  role: Role;
   taskId: string;
   summaryId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
-enum MessageRole {
+enum Role {
   USER,
   ASSISTANT,
 }
@@ -113,15 +123,6 @@ The agent system uses PostgreSQL for data persistence with a schema that include
 - **Tasks**: Storing task metadata and status
 - **Messages**: Storing conversation history using a JSON structure for content blocks
 - **Summaries**: Storing context summaries for long-running tasks, with hierarchical relationships
-
-### Queue System
-
-The BullMQ-based queue system manages:
-
-- Task processing jobs
-- Retry logic
-- Job prioritization
-- Concurrency control
 
 ## Agent Processing Loop
 
