@@ -17,9 +17,8 @@ import * as path from 'path';
  * Maps to the same structure as QKeyCode for compatibility.
  */
 
-export const XKeySymToNutKeyMap: Record<string, Key> = {
+const XKeySymToNutKeyMap: Record<string, Key> = {
   // Alphanumeric Keys
-  grave: Key.Grave,
   '1': Key.Num1,
   '2': Key.Num2,
   '3': Key.Num3,
@@ -30,72 +29,17 @@ export const XKeySymToNutKeyMap: Record<string, Key> = {
   '8': Key.Num8,
   '9': Key.Num9,
   '0': Key.Num0,
-  minus: Key.Minus,
-  equal: Key.Equal,
-  q: Key.Q,
-  w: Key.W,
-  e: Key.E,
-  r: Key.R,
-  t: Key.T,
-  y: Key.Y,
-  u: Key.U,
-  i: Key.I,
-  o: Key.O,
-  p: Key.P,
   bracketleft: Key.LeftBracket,
   bracketright: Key.RightBracket,
-  backslash: Key.Backslash,
-  a: Key.A,
-  s: Key.S,
-  d: Key.D,
-  f: Key.F,
-  g: Key.G,
-  h: Key.H,
-  j: Key.J,
-  k: Key.K,
-  l: Key.L,
-  semicolon: Key.Semicolon,
   apostrophe: Key.Quote,
-  z: Key.Z,
-  x: Key.X,
-  c: Key.C,
-  v: Key.V,
-  b: Key.B,
-  n: Key.N,
-  m: Key.M,
-  comma: Key.Comma,
-  period: Key.Period,
-  slash: Key.Slash,
-  space: Key.Space,
-
-  // Function Keys
-  Escape: Key.Escape,
-  F1: Key.F1,
-  F2: Key.F2,
-  F3: Key.F3,
-  F4: Key.F4,
-  F5: Key.F5,
-  F6: Key.F6,
-  F7: Key.F7,
-  F8: Key.F8,
-  F9: Key.F9,
-  F10: Key.F10,
-  F11: Key.F11,
-  F12: Key.F12,
-  F13: Key.F13,
-  F14: Key.F14,
-  F15: Key.F15,
-  F16: Key.F16,
-  F17: Key.F17,
-  F18: Key.F18,
-  F19: Key.F19,
-  F20: Key.F20,
-  F21: Key.F21,
-  F22: Key.F22,
-  F23: Key.F23,
-  F24: Key.F24,
 
   // Modifier Keys
+  Shift: Key.LeftShift,
+  ctrl: Key.LeftControl,
+  Control: Key.LeftControl,
+  Super: Key.LeftSuper,
+  Alt: Key.LeftAlt,
+  Meta: Key.LeftMeta,
   Shift_L: Key.LeftShift,
   Shift_R: Key.RightShift,
   Control_L: Key.LeftControl,
@@ -113,23 +57,8 @@ export const XKeySymToNutKeyMap: Record<string, Key> = {
   Scroll_Lock: Key.ScrollLock,
 
   // Editing Keys
-  BackSpace: Key.Backspace,
-  Tab: Key.Tab,
-  Return: Key.Return,
-  Enter: Key.Enter,
-  Insert: Key.Insert,
-  Delete: Key.Delete,
-  Home: Key.Home,
-  End: Key.End,
   Page_Up: Key.PageUp,
   Page_Down: Key.PageDown,
-  Clear: Key.Clear,
-
-  // Cursor Movement Keys
-  Left: Key.Left,
-  Up: Key.Up,
-  Right: Key.Right,
-  Down: Key.Down,
 
   // Numpad Keys
   KP_0: Key.NumPad0,
@@ -149,25 +78,33 @@ export const XKeySymToNutKeyMap: Record<string, Key> = {
   KP_Decimal: Key.Decimal,
   KP_Equal: Key.NumPadEqual,
 
-  // Special System Keys
-  Print: Key.Print,
-  Pause: Key.Pause,
-  Menu: Key.Menu,
-
   // Multimedia Keys
-  AudioMute: Key.AudioMute,
   AudioLowerVolume: Key.AudioVolDown,
   AudioRaiseVolume: Key.AudioVolUp,
-  AudioPlay: Key.AudioPlay,
-  AudioStop: Key.AudioStop,
-  AudioPause: Key.AudioPause,
-  AudioPrev: Key.AudioPrev,
-  AudioNext: Key.AudioNext,
-  AudioRewind: Key.AudioRewind,
-  AudioForward: Key.AudioForward,
-  AudioRepeat: Key.AudioRepeat,
   AudioRandomPlay: Key.AudioRandom,
 };
+
+const XKeySymToNutKeyMapLowercase: Record<string, Key> = Object.entries(
+  XKeySymToNutKeyMap,
+).reduce(
+  (map, [key, value]) => {
+    map[key.toLowerCase()] = value;
+    return map;
+  },
+  {} as Record<string, Key>,
+);
+
+// Create a map of lowercase keys to nutjs keys
+const NutKeyMapLowercase: Record<string, Key> = Object.entries(Key)
+  // we only want the string→number pairs (filter out the reverse numeric keys)
+  .filter(([name]) => isNaN(Number(name)))
+  .reduce(
+    (map, [name, value]) => {
+      map[name.toLowerCase()] = value as Key;
+      return map;
+    },
+    {} as Record<string, Key>,
+  );
 
 @Injectable()
 export class NutService {
@@ -237,10 +174,29 @@ export class NutService {
    * @returns The corresponding nut-js key.
    */
   private validateKey(key: string): Key {
-    const nutKey = XKeySymToNutKeyMap[key];
-    if (!nutKey) {
-      throw new Error(`Invalid key: ${key}`);
+    // Try exact matches first
+    let nutKey: Key | undefined =
+      XKeySymToNutKeyMap[key] || Key[key as keyof typeof Key];
+
+    // If not found, try case-insensitive matching
+    if (nutKey === undefined) {
+      const lowerKey = key.toLowerCase();
+
+      // Try to find case-insensitive match in XKeySymToNutKeyMapLowercase
+      nutKey = XKeySymToNutKeyMapLowercase[lowerKey];
+
+      // If still not found, try case-insensitive match in NutKeyMapLowercase
+      if (nutKey === undefined) {
+        nutKey = NutKeyMapLowercase[lowerKey];
+      }
     }
+
+    if (nutKey === undefined) {
+      throw new Error(
+        `Invalid key: '${key}'. Key not found in available key mappings.`,
+      );
+    }
+
     return nutKey;
   }
 
