@@ -61,7 +61,7 @@ RUN apt-get update && apt-get install -y \
     fonts-freefont-ttf \
     && add-apt-repository -y ppa:mozillateam/ppa \
     && apt-get update \
-    && apt-get install -y firefox-esr \
+    && apt-get install -y firefox-esr thunderbird \
     && apt-get clean && rm -rf /var/lib/apt/lists/* \
     # Set Firefox as default browser system-wide
     && update-alternatives --install /usr/bin/x-www-browser x-www-browser /usr/bin/firefox-esr 200 \
@@ -95,6 +95,24 @@ RUN install -m 0755 -d /etc/firefox/policies && \
       "UrlbarInterventions": false, "SkipOnboarding": true,
       "MoreFromMozilla": false, "FirefoxLabs": false
     }
+  }
+}
+EOF
+
+# Configure Thunderbird policies
+RUN install -m 0755 -d /etc/thunderbird/policies && \
+    cat > /etc/thunderbird/policies/policies.json <<'EOF'
+{
+  "policies": {
+    "UserMessaging": {
+      "ExtensionRecommendations": false,
+      "FeatureRecommendations": false,
+      "UrlbarInterventions": false,
+      "SkipOnboarding": true,
+      "MoreFromMozilla": false
+    },
+    "OverrideFirstRunPage": "",
+    "OverridePostUpdatePage": ""
   }
 }
 EOF
@@ -232,6 +250,25 @@ RUN mkdir -p /etc/skel/.config/xfce4/panel/launcher-* && \
     mkdir -p /home/bytebot/Desktop && \
     cp -f /usr/share/applications/firefox.desktop /home/bytebot/Desktop/ && \
     chown -R bytebot:bytebot /home/bytebot/.config/xfce4/panel /home/bytebot/Desktop
+
+# Add Thunderbird desktop shortcut
+RUN echo '[Desktop Entry]' > /usr/share/applications/thunderbird.desktop && \
+    echo 'Version=1.0' >> /usr/share/applications/thunderbird.desktop && \
+    echo 'Type=Application' >> /usr/share/applications/thunderbird.desktop && \
+    echo 'Name=Thunderbird Mail' >> /usr/share/applications/thunderbird.desktop && \
+    echo 'Comment=Read and send emails with Thunderbird' >> /usr/share/applications/thunderbird.desktop && \
+    echo 'Exec=/usr/bin/thunderbird %U' >> /usr/share/applications/thunderbird.desktop && \
+    echo 'Icon=thunderbird' >> /usr/share/applications/thunderbird.desktop && \
+    echo 'Path=' >> /usr/share/applications/thunderbird.desktop && \
+    echo 'Terminal=false' >> /usr/share/applications/thunderbird.desktop && \
+    echo 'StartupNotify=true' >> /usr/share/applications/thunderbird.desktop && \
+    echo 'Categories=Network;Email;' >> /usr/share/applications/thunderbird.desktop && \
+    echo 'MimeType=x-scheme-handler/mailto;application/x-xpinstall;message/rfc822;' >> /usr/share/applications/thunderbird.desktop && \
+    chmod +x /usr/share/applications/thunderbird.desktop && \
+    # Also add Thunderbird to desktop
+    mkdir -p /home/bytebot/Desktop && \
+    cp -f /usr/share/applications/thunderbird.desktop /home/bytebot/Desktop/ && \
+    chown -R bytebot:bytebot /home/bytebot/Desktop
 
 # Add a desktop shortcut for the Terminal
 RUN echo '[Desktop Entry]' > /usr/share/applications/terminal.desktop && \

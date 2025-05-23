@@ -5,8 +5,12 @@
 row=2
 col=0
 
-[/home/bytebot/Desktop/xfce4-terminal-emulator.desktop]
+[/home/bytebot/Desktop/thunderbird.desktop]
 row=3
+col=0
+
+[/home/bytebot/Desktop/xfce4-terminal-emulator.desktop]
+row=4
 col=0
 
 [Trash]
