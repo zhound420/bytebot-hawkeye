@@ -56,33 +56,44 @@ export function getScreenshotForScrollPosition(
   const containerScrollTop = scrollContainer.scrollTop;
   const containerHeight = scrollContainer.clientHeight;
 
-  // Find the message that's most visible at the top of the container
+  // Find the message that's most visible at 150px down from the top of the container
+  const targetViewPosition = 150; // 150px down from top
   let bestVisibleMessageIndex = 0;
   let bestVisibility = 0;
-  let minDistanceFromTop = Infinity;
+  let minDistanceFromTarget = Infinity;
 
   messageElements.forEach((element) => {
     const messageIndex = parseInt((element as HTMLElement).dataset.messageIndex || '0');
     const elementTop = (element as HTMLElement).offsetTop;
     const elementHeight = (element as HTMLElement).offsetHeight;
+    const elementBottom = elementTop + elementHeight;
     
     // Distance from top of container (accounting for scroll)
     const distanceFromViewportTop = elementTop - containerScrollTop;
+    const distanceFromViewportBottom = elementBottom - containerScrollTop;
     
     // Check if element is visible in viewport
     const isVisible = distanceFromViewportTop < containerHeight && 
-                     distanceFromViewportTop + elementHeight > 0;
+                     distanceFromViewportBottom > 0;
     
     if (isVisible) {
-      // Prefer elements closer to the top of the viewport
-      const visibility = Math.max(0, Math.min(elementHeight, containerHeight - Math.max(0, distanceFromViewportTop))) / elementHeight;
+      // Calculate how much of this element is visible
+      const visibleTop = Math.max(0, distanceFromViewportTop);
+      const visibleBottom = Math.min(containerHeight, distanceFromViewportBottom);
+      const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+      const visibility = visibleHeight / elementHeight;
       
-      // If this element is more visible, or if equally visible but closer to top
-      if (visibility > bestVisibility || 
-          (visibility === bestVisibility && Math.abs(distanceFromViewportTop) < minDistanceFromTop)) {
+      // Calculate distance from our target position (150px down)
+      const elementCenter = distanceFromViewportTop + (elementHeight / 2);
+      const distanceFromTarget = Math.abs(elementCenter - targetViewPosition);
+      
+      // Prefer elements that are closer to our target position and more visible
+      if (visibility > 0.1 && // Must be at least 10% visible
+          (distanceFromTarget < minDistanceFromTarget || 
+           (distanceFromTarget === minDistanceFromTarget && visibility > bestVisibility))) {
         bestVisibility = visibility;
         bestVisibleMessageIndex = messageIndex;
-        minDistanceFromTop = Math.abs(distanceFromViewportTop);
+        minDistanceFromTarget = distanceFromTarget;
       }
     }
   });
