@@ -77,6 +77,7 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
           if (task) {
             console.log(`Found task: ${task.id}`);
             setCurrentTaskId(task.id);
+            setTaskStatus(task.status); // Set the task status when loading
 
             // If the task has messages, add them to the messages state
             if (messages && messages.length > 0) {
