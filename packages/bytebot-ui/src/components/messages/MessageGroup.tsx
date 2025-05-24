@@ -183,6 +183,27 @@ export function AssistantMessage({ group, messages = [] }: MessageGroupProps) {
     <div className="mb-4">
       {group.messages.map((message) => {
         const messageIndex = messages.findIndex(m => m.id === message.id);
+        
+        // Filter content blocks and check if any visible content remains
+        const visibleBlocks = message.content.filter((block) => {
+          // Filter logic from the original code
+          if (
+            isToolResultContentBlock(block) &&
+            isImageContentBlock(block.content?.[0])
+          ) {
+            return true;
+          }
+          if (isToolResultContentBlock(block) && !block.is_error) {
+            return false;
+          }
+          return true;
+        });
+        
+        // Skip rendering if no visible content
+        if (visibleBlocks.length === 0) {
+          return null;
+        }
+        
         return (
           <div key={message.id} data-message-index={messageIndex} className="flex items-start gap-2 mb-2">
             <div className="border-bytebot-bronze-light-7 flex h-[28px] w-[28px] flex-shrink-0 items-center justify-center rounded-sm border bg-white">
@@ -195,19 +216,7 @@ export function AssistantMessage({ group, messages = [] }: MessageGroupProps) {
               />
             </div>
             <div className="w-full space-y-2">
-              {message.content.filter((block) => {
-                // Filter logic from the original code
-                if (
-                  isToolResultContentBlock(block) &&
-                  isImageContentBlock(block.content?.[0])
-                ) {
-                  return true;
-                }
-                if (isToolResultContentBlock(block) && !block.is_error) {
-                  return false;
-                }
-                return true;
-              }).map((block, index) => (
+              {visibleBlocks.map((block, index) => (
                 <div key={index}>
                   {isTextContentBlock(block) && (
                     <div className="text-bytebot-bronze-dark-8 text-sm">
