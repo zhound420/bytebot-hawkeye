@@ -98,6 +98,7 @@ export class TasksService {
       orderBy: {
         createdAt: 'desc',
       },
+      take: 10,
     });
 
     this.logger.debug(`Retrieved ${tasks.length} tasks`);
