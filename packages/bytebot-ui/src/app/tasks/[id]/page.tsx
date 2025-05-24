@@ -137,7 +137,7 @@ export default function TaskPage() {
                 </div>
 {isTaskInactive && currentScreenshot && (
                   <span className="text-xs text-bytebot-bronze-light-11 bg-bytebot-bronze-light-3 px-2 py-1 rounded">
-                    Screenshot {currentScreenshot.messageIndex + 1} of {allScreenshots.length}
+                    Screenshot {allScreenshots.findIndex(s => s.id === currentScreenshot.id) + 1} of {allScreenshots.length}
                   </span>
                 )}
               </div>
