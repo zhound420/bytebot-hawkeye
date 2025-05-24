@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { Header } from "@/components/layout/Header";
 import { ChatInput } from "@/components/messages/ChatInput";
@@ -41,6 +41,24 @@ export default function Home() {
   const [activePopoverIndex, setActivePopoverIndex] = useState<number | null>(
     null,
   );
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  // Close popover when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (popoverRef.current && !popoverRef.current.contains(event.target as Node)) {
+        setActivePopoverIndex(null);
+      }
+    };
+
+    if (activePopoverIndex !== null) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [activePopoverIndex]);
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -111,7 +129,7 @@ export default function Home() {
     >;
 
     return (
-      <div className="relative mt-6 flex w-full flex-wrap justify-start gap-1">
+      <div className="relative mt-6 flex w-full flex-wrap justify-start gap-1" ref={popoverRef}>
         {/* Container for buttons */}
         <div className="flex w-full flex-wrap gap-1">
           {topicNames.map((topic, index) => (
@@ -212,7 +230,7 @@ export default function Home() {
         {/* Mobile layout - only visible on small/medium screens */}
         <div className="flex h-full flex-col lg:hidden">
           <div className="flex flex-1 flex-col items-center overflow-y-auto px-4 pt-10">
-            <div className="flex w-full max-w-xl flex-col items-center">
+            <div className="flex w-full max-w-xl flex-col items-center pb-10">
               <div className="mb-6 flex w-full flex-col items-start justify-start">
                 <h1 className="text-bytebot-bronze-light-12 mb-1 text-2xl">
                   Got something brewing?
