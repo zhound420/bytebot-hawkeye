@@ -1,6 +1,6 @@
 import React from "react";
 import ReactMarkdown from "react-markdown";
-import { Role } from "@/types";
+import { Message, Role } from "@/types";
 import {
   isImageContentBlock,
   isTextContentBlock,
@@ -31,7 +31,6 @@ import {
 } from "@hugeicons/core-free-icons";
 import {
   ComputerToolUseContentBlock,
-  MessageContentBlock,
 } from "@bytebot/shared";
 import { GroupedMessages } from "./ChatContainer";
 
@@ -46,7 +45,7 @@ type IconType =
 
 interface MessageGroupProps {
   group: GroupedMessages;
-  messages?: any[]; // All messages for finding indices
+  messages?: Message[];
 }
 
 function getIcon(block: ComputerToolUseContentBlock): IconType {
@@ -159,26 +158,6 @@ export function MessageGroup({ group, messages = [] }: MessageGroupProps) {
 }
 
 export function AssistantMessage({ group, messages = [] }: MessageGroupProps) {
-  // flatten the message content
-  const contentBlocks: MessageContentBlock[] = group.messages
-    .flatMap((message) => message.content)
-    .filter((block) => {
-      // If the block is a screenshot tool result, keep it
-      if (
-        isToolResultContentBlock(block) &&
-        isImageContentBlock(block.content?.[0])
-      ) {
-        return true;
-      }
-
-      // If the block is a tool result and it is not an error, remove it
-      if (isToolResultContentBlock(block) && !block.is_error) {
-        return false;
-      }
-
-      return true;
-    });
-
   return (
     <div className="mb-4">
       {group.messages.map((message) => {
