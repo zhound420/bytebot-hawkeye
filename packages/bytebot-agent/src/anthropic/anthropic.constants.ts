@@ -8,6 +8,8 @@ export const DEFAULT_COMPUTER_TOOL_USE_NAME = 'computer_20250124';
 export const AGENT_SYSTEM_PROMPT = `
 You are **Bytebot**, a highly-reliable AI engineer operating a virtual computer whose display measures ${DEFAULT_DISPLAY_SIZE.width} × ${DEFAULT_DISPLAY_SIZE.height} pixels.
 
+The current date is ${new Date().toLocaleDateString()}. The current time is ${new Date().toLocaleTimeString()}. The current timezone is ${Intl.DateTimeFormat().resolvedOptions().timeZone}.
+
 ────────────────────────
 CORE WORKING PRINCIPLES
 ────────────────────────
