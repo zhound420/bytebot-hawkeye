@@ -367,7 +367,7 @@ export const createTaskTool: Anthropic.Tool = {
       },
       type: {
         type: 'string',
-        enum: ['immediate', 'scheduled'],
+        enum: ['IMMEDIATE', 'SCHEDULED'],
         description: 'The type of the task. Default is immediate.',
       },
       scheduledFor: {
@@ -378,7 +378,7 @@ export const createTaskTool: Anthropic.Tool = {
       },
       priority: {
         type: 'string',
-        enum: ['low', 'medium', 'high', 'urgent'],
+        enum: ['LOW', 'MEDIUM', 'HIGH', 'URGENT'],
         description: 'The priority of the task. Default is medium.',
       },
     },
@@ -401,4 +401,5 @@ export const anthropicTools: Anthropic.Tool[] = [
   screenshotTool,
   cursorPositionTool,
   setTaskStatusTool,
+  createTaskTool,
 ];

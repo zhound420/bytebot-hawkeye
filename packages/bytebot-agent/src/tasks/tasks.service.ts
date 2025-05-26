@@ -9,7 +9,15 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
-import { Task, Message, Role, Prisma, TaskStatus } from '@prisma/client';
+import {
+  Task,
+  Message,
+  Role,
+  Prisma,
+  TaskStatus,
+  TaskType,
+  TaskPriority,
+} from '@prisma/client';
 import { GuideTaskDto } from './dto/guide-task.dto';
 import { TasksGateway } from './tasks.gateway';
 
@@ -36,6 +44,13 @@ export class TasksService {
       const task = await prisma.task.create({
         data: {
           description: createTaskDto.description,
+          type: createTaskDto.type || TaskType.IMMEDIATE,
+          priority: createTaskDto.priority || TaskPriority.MEDIUM,
+          status: TaskStatus.PENDING,
+          createdBy: createTaskDto.createdBy || Role.USER,
+          ...(createTaskDto.scheduledFor
+            ? { scheduledFor: createTaskDto.scheduledFor }
+            : {}),
         },
       });
       this.logger.log(`Task created successfully with ID: ${task.id}`);
