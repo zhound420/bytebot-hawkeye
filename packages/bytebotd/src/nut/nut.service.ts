@@ -306,6 +306,7 @@ export class NutService {
         '>': { keyCode: Key.Period, withShift: true },
         '?': { keyCode: Key.Slash, withShift: true },
         '~': { keyCode: Key.Grave, withShift: true },
+        '\n': { keyCode: Key.Enter, withShift: false },
       };
 
     return specialCharMap[char] || null;
