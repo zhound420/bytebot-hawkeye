@@ -296,6 +296,12 @@ export const typeTextTool: Anthropic.Tool = {
           'Optional delay in milliseconds between character presses.',
         nullable: true,
       },
+      isSensitive: {
+        type: 'boolean',
+        description:
+          'Optional flag to indicate if the text contains sensitive information.',
+        nullable: true,
+      },
     },
     required: ['text'],
   },
