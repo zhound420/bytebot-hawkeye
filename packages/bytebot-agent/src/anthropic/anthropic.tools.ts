@@ -209,8 +209,7 @@ export const scrollTool: Anthropic.Tool = {
         },
         required: ['x', 'y'],
         description:
-          'Optional coordinates for where the scroll should occur. Behavior might depend on the OS/application.',
-        nullable: true,
+          'Coordinates for where the scroll should occur. Behavior might depend on the OS/application.',
       },
       direction: {
         type: 'string',
@@ -228,7 +227,7 @@ export const scrollTool: Anthropic.Tool = {
         nullable: true,
       },
     },
-    required: ['direction', 'numScrolls'],
+    required: ['coordinates', 'direction', 'numScrolls'],
   },
 };
 
