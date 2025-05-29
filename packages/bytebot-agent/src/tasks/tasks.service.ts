@@ -269,29 +269,4 @@ export class TasksService {
 
     return updatedTask;
   }
-
-  async resumeControl(taskId: string): Promise<Task> {
-    this.logger.log(`Resuming agent control for task ID: ${taskId}`);
-
-    const task = await this.findById(taskId);
-    if (!task) {
-      throw new NotFoundException(`Task with ID ${taskId} not found`);
-    }
-
-    if (task.takeOverState === TakeOverState.AGENT_CONTROL) {
-      throw new BadRequestException(`Task ${taskId} is already under agent control`);
-    }
-
-    const updatedTask = await this.prisma.task.update({
-      where: { id: taskId },
-      data: { 
-        takeOverState: TakeOverState.AGENT_CONTROL,
-      },
-    });
-
-    this.logger.log(`Task ${taskId} control resumed by agent`);
-    this.tasksGateway.emitTaskUpdate(taskId, updatedTask);
-
-    return updatedTask;
-  }
 }
