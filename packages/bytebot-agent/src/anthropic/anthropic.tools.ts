@@ -316,6 +316,7 @@ export const waitTool: Anthropic.Tool = {
     properties: {
       duration: {
         type: 'number',
+        enum: [500],
         description: 'The duration to wait in milliseconds.',
       },
     },
