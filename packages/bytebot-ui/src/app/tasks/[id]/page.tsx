@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { TakeOverState, TaskStatus } from "@/types";
+import { Role, TaskStatus } from "@/types";
 
 export default function TaskPage() {
   const params = useParams();
@@ -29,7 +29,7 @@ export default function TaskPage() {
   const {
     messages,
     taskStatus,
-    takeOverState,
+    control,
     input,
     setInput,
     isLoading,
@@ -48,11 +48,11 @@ export default function TaskPage() {
     taskStatus === TaskStatus.CANCELLED;
 
   // Determine if user can take control
-  const canTakeOver = takeOverState === TakeOverState.AGENT_CONTROL && 
+  const canTakeOver = control === Role.ASSISTANT && 
   (taskStatus === TaskStatus.RUNNING || taskStatus === TaskStatus.PENDING);
 
   // Determine if user has control or is in takeover mode
-  const hasUserControl = takeOverState === TakeOverState.USER_CONTROL
+  const hasUserControl = control === Role.USER
 
   // Determine VNC mode - interactive when user has control, view-only otherwise
   const vncViewOnly = !hasUserControl;
@@ -201,7 +201,7 @@ export default function TaskPage() {
                 messages={messages}
                 isLoadingSession={isLoadingSession}
                 scrollRef={chatContainerRef}
-                takeOverState={takeOverState}
+                control={control}
               />
             </div>
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Message, Role, TaskStatus, Task, TakeOverState } from "@/types";
+import { Message, Role, TaskStatus, Task } from "@/types";
 import {
   guideTask,
   fetchTaskMessages,
@@ -16,7 +16,7 @@ interface UseChatSessionProps {
 
 export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
   const [taskStatus, setTaskStatus] = useState<TaskStatus>(TaskStatus.PENDING);
-  const [takeOverState, setTakeOverState] = useState<TakeOverState>(TakeOverState.AGENT_CONTROL);
+  const [control, setControl] = useState<Role>(Role.ASSISTANT);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(
@@ -31,7 +31,7 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
   const handleTaskUpdate = useCallback((task: Task) => {
     if (task.id === currentTaskId) {
       setTaskStatus(task.status);
-      setTakeOverState(task.takeOverState);
+      setControl(task.control);
     }
   }, [currentTaskId]);
 
@@ -81,7 +81,7 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
             console.log(`Found task: ${task.id}`);
             setCurrentTaskId(task.id);
             setTaskStatus(task.status); // Set the task status when loading
-            setTakeOverState(task.takeOverState);
+            setControl(task.control);
 
             // If the task has messages, add them to the messages state
             if (messages && messages.length > 0) {
@@ -216,7 +216,7 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
     try {
       const updatedTask = await takeOverTask(currentTaskId);
       if (updatedTask) {
-        setTakeOverState(updatedTask.takeOverState);
+        setControl(updatedTask.control);
       }
     } catch (error) {
       console.error("Error taking over task:", error);
@@ -226,7 +226,7 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
   return {
     messages,
     taskStatus,
-    takeOverState,
+    control,
     input,
     setInput,
     currentTaskId,

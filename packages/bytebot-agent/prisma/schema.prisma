@@ -23,11 +23,6 @@ enum TaskStatus {
   FAILED
 }
 
-enum TakeOverState {
-  AGENT_CONTROL
-  USER_CONTROL
-}
-
 enum TaskPriority {
   LOW
   MEDIUM
@@ -51,7 +46,7 @@ model Task {
   type          TaskType      @default(IMMEDIATE)
   status        TaskStatus    @default(PENDING)
   priority      TaskPriority  @default(MEDIUM)
-  takeOverState TakeOverState @default(AGENT_CONTROL)
+  control       Role          @default(ASSISTANT)
   createdAt     DateTime      @default(now())
   createdBy     Role          @default(USER)
   scheduledFor  DateTime?

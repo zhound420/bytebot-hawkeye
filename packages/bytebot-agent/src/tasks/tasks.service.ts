@@ -17,7 +17,6 @@ import {
   TaskStatus,
   TaskType,
   TaskPriority,
-  TakeOverState,
 } from '@prisma/client';
 import { GuideTaskDto } from './dto/guide-task.dto';
 import { TasksGateway } from './tasks.gateway';
@@ -98,7 +97,7 @@ export class TasksService {
         status: {
           in: [TaskStatus.RUNNING, TaskStatus.PENDING],
         },
-        takeOverState: TakeOverState.AGENT_CONTROL,
+        control: Role.ASSISTANT,
       },
       orderBy: [
         { executedAt: 'asc' },
@@ -208,7 +207,7 @@ export class TasksService {
 
     // Allow guiding for NEEDS_HELP status or during takeover
     const canGuide = task.status === TaskStatus.NEEDS_HELP || 
-                     task.takeOverState !== TakeOverState.AGENT_CONTROL;
+                     task.control !== Role.ASSISTANT;
 
     if (!canGuide) {
       this.logger.warn(
@@ -233,8 +232,8 @@ export class TasksService {
     if (task.status === TaskStatus.NEEDS_HELP) {
       updateData.status = TaskStatus.RUNNING;
     }
-    if (task.takeOverState !== TakeOverState.AGENT_CONTROL) {
-      updateData.takeOverState = TakeOverState.AGENT_CONTROL;
+    if (task.control !== Role.ASSISTANT) {
+      updateData.control = Role.ASSISTANT;
       this.logger.log(`Task ${taskId} control automatically resumed after user message`);
     }
 
@@ -253,14 +252,14 @@ export class TasksService {
       throw new NotFoundException(`Task with ID ${taskId} not found`);
     }
 
-    if (task.takeOverState !== TakeOverState.AGENT_CONTROL) {
+    if (task.control !== Role.ASSISTANT) {
       throw new BadRequestException(`Task ${taskId} is not under agent control`);
     }
 
     const updatedTask = await this.prisma.task.update({
       where: { id: taskId },
       data: { 
-        takeOverState: TakeOverState.USER_CONTROL,
+        control: Role.USER,
       },
     });
 

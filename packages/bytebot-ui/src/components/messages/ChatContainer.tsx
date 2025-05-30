@@ -1,12 +1,12 @@
 import React, { useRef, useEffect } from "react";
-import { Message, Role, TakeOverState, TaskStatus } from "@/types";
+import { Message, Role, TaskStatus } from "@/types";
 import { MessageGroup } from "./MessageGroup";
 import { isToolResultContentBlock } from "@bytebot/shared";
 import { TextShimmer } from "../ui/text-shimmer";
 
 interface ChatContainerProps {
   taskStatus: TaskStatus;
-  takeOverState: TakeOverState;
+  control: Role;
   messages: Message[];
   isLoadingSession: boolean;
   scrollRef?: React.RefObject<HTMLDivElement | null>;
@@ -77,7 +77,7 @@ function filterMessages(messages: Message[]): Message[] {
 
 export function ChatContainer({
   taskStatus,
-  takeOverState,
+  control,
   messages,
   isLoadingSession,
   scrollRef,
@@ -109,7 +109,7 @@ export function ChatContainer({
               <MessageGroup group={group} messages={messages} />
             </div>
           ))}
-          {taskStatus === TaskStatus.RUNNING && takeOverState === TakeOverState.AGENT_CONTROL && (
+          {taskStatus === TaskStatus.RUNNING && control === Role.ASSISTANT && (
             <TextShimmer className="text-sm" duration={2}>
               Bytebot is working...
             </TextShimmer>
