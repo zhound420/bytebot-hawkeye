@@ -88,8 +88,13 @@ export function ChatContainer({
 
   // This effect runs whenever the messages array changes
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (
+      taskStatus === TaskStatus.RUNNING ||
+      taskStatus === TaskStatus.NEEDS_HELP
+    ) {
+      scrollToBottom();
+    }
+  }, [taskStatus, messages]);
 
   // Function to scroll to the bottom of the messages
   const scrollToBottom = () => {
