@@ -10,7 +10,20 @@
 
 ## ✨ Why Bytebot?
 
-Bytebot spins up a containerized Linux desktop you can **drive programmatically** or via VNC—perfect for automation, scraping, CI tasks, and remote work.
+Bytebot spins up a containerized Linux desktop you can prompt, drive programmatically or operate via VNC—perfect for automation, scraping, CI tasks, and remote work.
+
+## Examples
+
+
+
+https://github.com/user-attachments/assets/32a76e83-ea3a-4d5e-b34b-3b57f3604948
+
+
+
+
+https://github.com/user-attachments/assets/5f946df9-9161-4e7e-8262-9eda83ee7d22
+
+
 
 ## 🚀 Features
 
@@ -18,6 +31,7 @@ Bytebot spins up a containerized Linux desktop you can **drive programmatically*
 - 🌍 **Access Anywhere** – VNC & browser‑based **noVNC** built‑in
 - 🛠️ **Unified API** – Script every click & keystroke with a clean REST interface
 - ⚙️ **Ready‑to‑Go Tools** – Firefox & essentials pre‑installed
+- 🤖 **Built-in Agent** - 
 
 ## 📖 Documentation
 
@@ -31,7 +45,23 @@ Dive deeper at [**docs.bytebot.ai**](https://docs.bytebot.ai).
 
 ### 🐳 Run Bytebot
 
-#### Core Container (fastest way)
+#### 🤖 Full Agent Stack (fastest way)
+
+```bash
+echo "ANTHROPIC_API_KEY=your_api_key_here" > infrastructure/docker/.env
+
+docker-compose -f infrastructure/docker/docker-compose.yml \
+  --env-file infrastructure/docker/.env up -d     # 🔥 start everything
+```
+
+Stop:
+
+```bash
+docker-compose -f infrastructure/docker/docker-compose.yml \
+  --env-file infrastructure/docker/.env down
+```
+
+#### Core Container
 
 ```bash
 docker-compose -f infrastructure/docker/docker-compose.core.yml pull # pull latest remote image
@@ -52,32 +82,19 @@ Stop:
 docker-compose -f infrastructure/docker/docker-compose.core.yml down
 ```
 
-#### 🤖 Full Agent Stack (alpha)
-
-```bash
-echo "ANTHROPIC_API_KEY=your_api_key_here" > infrastructure/docker/.env
-
-docker-compose -f infrastructure/docker/docker-compose.yml \
-  --env-file infrastructure/docker/.env up -d     # 🔥 start everything
-```
-
-Stop:
-
-```bash
-docker-compose -f infrastructure/docker/docker-compose.yml \
-  --env-file infrastructure/docker/.env down
-```
-
 More details in the [**Quickstart Guide**](https://docs.bytebot.ai/quickstart).
 
 ### 🔑 Connect
 
 | Interface     | URL / Port                  | Notes                    |
 | ------------- | --------------------------- | ------------------------ |
-| 🖥️ VNC Client | `localhost:5900`            | password‑less by default |
-| 🌐 noVNC      | `http://localhost:9990/vnc` | open in any browser      |
-| 🤖 Agent API  | `http://localhost:9991`     | REST API                 |
 | 💬 Chat UI    | `http://localhost:9992`     | Agent UI                 |
+| 🤖 Agent API  | `http://localhost:9991`     | REST API                 |
+| 🌐 noVNC      | `http://localhost:9990/vnc` | open in any browser      |
+| 🖥️ VNC Client | `localhost:5900`            | password‑less by default |
+
+
+
 
 ## 🤖 Automation API
 
