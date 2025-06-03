@@ -69,6 +69,16 @@ export class AgentProcessor {
       this.isProcessing = true;
 
       while (task.status == TaskStatus.RUNNING) {
+        if (task.control != Role.ASSISTANT) {
+          // wait 2 seconds and loop
+          this.logger.log(
+            `Task ${taskId} is not under agent control, waiting 2 seconds before looping`,
+          );
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          task = await this.tasksService.findById(taskId);
+          continue;
+        }
+
         this.logger.log(
           `Processing task loop iteration for task ID: ${taskId}`,
         );
