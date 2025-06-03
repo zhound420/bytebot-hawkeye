@@ -10,7 +10,7 @@
 
 ## ✨ Why Bytebot?
 
-Bytebot spins up a containerized Linux desktop you can prompt, drive programmatically or operate via VNC—perfect for automation, scraping, CI tasks, and remote work.
+Bytebot spins up a containerized Linux desktop with a task-driven agent ready for automation. Chat with it through the web UI or control it programmatically for scraping, CI tasks and remote work.
 
 ## Examples
 
@@ -31,7 +31,18 @@ https://github.com/user-attachments/assets/5f946df9-9161-4e7e-8262-9eda83ee7d22
 - 🌍 **Access Anywhere** – VNC & browser‑based **noVNC** built‑in
 - 🛠️ **Unified API** – Script every click & keystroke with a clean REST interface
 - ⚙️ **Ready‑to‑Go Tools** – Firefox & essentials pre‑installed
-- 🤖 **Built-in Agent** - 
+- 🤖 **Task-Driven Agent** – Manage tasks via REST or Chat UI and watch them run
+
+## 🧠 Agent System
+
+Bytebot's agent stack is orchestrated with `docker-compose`. It starts:
+
+- `bytebot-desktop` – the Linux desktop and automation daemon
+- `bytebot-agent` – NestJS service processing tasks with Anthropic's Claude
+- `bytebot-ui` – Next.js chat interface
+- `postgres` – stores tasks and conversation history
+
+Open `http://localhost:9992` to give the agent a task and watch it work.
 
 ## 📖 Documentation
 
@@ -51,8 +62,9 @@ Dive deeper at [**docs.bytebot.ai**](https://docs.bytebot.ai).
 echo "ANTHROPIC_API_KEY=your_api_key_here" > infrastructure/docker/.env
 
 docker-compose -f infrastructure/docker/docker-compose.yml \
-  --env-file infrastructure/docker/.env up -d     # 🔥 start everything
+  --env-file infrastructure/docker/.env up -d     # start desktop, agent & UI
 ```
+Once running, open `http://localhost:9992` to chat with the agent.
 
 Stop:
 
