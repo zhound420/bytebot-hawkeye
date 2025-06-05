@@ -203,7 +203,7 @@ RUN git clone https://github.com/novnc/noVNC.git /opt/noVNC \
 # -----------------------------------------------------------------------------
 # Copy package files first to leverage Docker cache
 
-# Install dependencies required to build libnut-core
+# Install dependencies required to build libnut-core and uiohook-napi
 RUN apt-get update && \
     apt-get install -y \
         cmake \
@@ -211,6 +211,7 @@ RUN apt-get update && \
         libxtst-dev \
         libxinerama-dev \
         libxi-dev \
+        libxt-dev \
         libxrandr-dev \
         libxkbcommon-dev \
         libxkbcommon-x11-dev \
