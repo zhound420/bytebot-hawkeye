@@ -1,4 +1,4 @@
-name: Build
+name: Build Desktop
 
 on:
   push:
@@ -20,7 +20,7 @@ jobs:
       # 1. Check out code
       - uses: actions/checkout@v4
 
-      # 2. Enable QEMU so the amd64 runner can cross-build arm64
+      # 2. Enable QEMU so the amd64 runner can cross‑build arm64
       - uses: docker/setup-qemu-action@v3
 
       # 3. Set up Buildx builder
@@ -31,7 +31,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/bytebot-ai/bytebot
+          images: ghcr.io/bytebot-ai/bytebot-desktop
           tags: type=edge
 
       # 5. Log in to GHCR
@@ -42,7 +42,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # 6. Build & push a multi-arch image
+      # 6. Build & push a multi‑arch image
       - name: Build and push
         uses: docker/build-push-action@v6
         env:
