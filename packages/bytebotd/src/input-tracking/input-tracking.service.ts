@@ -1,11 +1,23 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
-import { uIOhook } from 'uiohook-napi';
+import {
+  uIOhook,
+  UiohookKeyboardEvent,
+  UiohookMouseEvent,
+  UiohookWheelEvent,
+  UiohookKey,
+} from 'uiohook-napi';
 import {
   Button,
+  ClickMouseAction,
   ComputerAction,
   Coordinates,
+  PressKeysAction,
+  PressMouseAction,
+  ScrollAction,
+  TypeKeysAction,
 } from '../computer-use/computer-use.service';
 import { InputTrackingGateway } from './input-tracking.gateway';
+import { Key } from '@nut-tree-fork/nut-js';
 
 @Injectable()
 export class InputTrackingService implements OnModuleDestroy {
@@ -50,17 +62,34 @@ export class InputTrackingService implements OnModuleDestroy {
   }
 
   private registerListeners() {
-    uIOhook.on('mousemove', (e: any) => {
+    uIOhook.on('mousemove', (e: UiohookMouseEvent) => {
       this.mouseMovePath.push({ x: e.x, y: e.y });
       if (this.mouseMoveTimeout) {
         clearTimeout(this.mouseMoveTimeout);
       }
-      this.mouseMoveTimeout = setTimeout(() => this.flushMouseMoves(), 100);
+      this.mouseMoveTimeout = setTimeout(() => this.flushMouseMoves(), 300);
     });
 
-    uIOhook.on('mousedown', (e: any) => {
+    uIOhook.on('click', (e: UiohookMouseEvent) => {
       this.flushMouseMoves();
-      const action: ComputerAction = {
+      const action: ClickMouseAction = {
+        action: 'click_mouse',
+        button: this.mapButton(e.button),
+        coordinates: { x: e.x, y: e.y },
+        numClicks: e.clicks,
+        holdKeys: [
+          e.altKey ? 'alt' : undefined,
+          e.ctrlKey ? 'ctrl' : undefined,
+          e.shiftKey ? 'shift' : undefined,
+          e.metaKey ? 'meta' : undefined,
+        ].filter((key) => key !== undefined),
+      };
+      this.logAction(action);
+    });
+
+    uIOhook.on('mousedown', (e: UiohookMouseEvent) => {
+      this.flushMouseMoves();
+      const action: PressMouseAction = {
         action: 'press_mouse',
         button: this.mapButton(e.button),
         press: 'down',
@@ -69,9 +98,9 @@ export class InputTrackingService implements OnModuleDestroy {
       this.logAction(action);
     });
 
-    uIOhook.on('mouseup', (e: any) => {
+    uIOhook.on('mouseup', (e: UiohookMouseEvent) => {
       this.flushMouseMoves();
-      const action: ComputerAction = {
+      const action: PressMouseAction = {
         action: 'press_mouse',
         button: this.mapButton(e.button),
         press: 'up',
@@ -80,10 +109,10 @@ export class InputTrackingService implements OnModuleDestroy {
       this.logAction(action);
     });
 
-    uIOhook.on('wheel', (e: any) => {
+    uIOhook.on('wheel', (e: UiohookWheelEvent) => {
       this.flushMouseMoves();
       const direction = e.rotation > 0 ? 'down' : 'up';
-      const action: ComputerAction = {
+      const action: ScrollAction = {
         action: 'scroll',
         direction: direction as any,
         numScrolls: Math.abs(e.rotation),
@@ -92,36 +121,48 @@ export class InputTrackingService implements OnModuleDestroy {
       this.logAction(action);
     });
 
-    uIOhook.on('keydown', (e: any) => {
-      if (typeof e.keychar === 'number' && e.keychar > 0) {
-        this.keyBuffer.push(this.keyToString(e.keychar, e.keycode));
-        if (this.keyTimeout) {
-          clearTimeout(this.keyTimeout);
-        }
-        this.keyTimeout = setTimeout(() => this.flushTyping(), 200);
-      } else {
+    uIOhook.on('keydown', (e: UiohookKeyboardEvent) => {
+      if (e.altKey || e.ctrlKey || e.shiftKey || e.metaKey) {
         this.flushTyping();
-        const action: ComputerAction = {
+        const action: PressKeysAction = {
           action: 'press_keys',
-          keys: [this.keyToString(e.keychar, e.keycode)],
+          keys: [
+            e.altKey ? 'alt' : undefined,
+            e.ctrlKey ? 'ctrl' : undefined,
+            e.shiftKey ? 'shift' : undefined,
+            e.metaKey ? 'meta' : undefined,
+            this.keyToString(e.keycode),
+          ].filter((key) => key !== undefined),
           press: 'down',
         };
         this.logAction(action);
+      } else {
+        this.keyBuffer.push(this.keyToString(e.keycode));
+        if (this.keyTimeout) {
+          clearTimeout(this.keyTimeout);
+        }
+        this.keyTimeout = setTimeout(() => this.flushTyping(), 300);
       }
     });
 
     uIOhook.on('keyup', (e: any) => {
       this.flushTyping();
-      const action: ComputerAction = {
+      const action: PressKeysAction = {
         action: 'press_keys',
-        keys: [this.keyToString(e.keychar, e.keycode)],
+        keys: [
+          e.altKey ? 'alt' : undefined,
+          e.ctrlKey ? 'ctrl' : undefined,
+          e.shiftKey ? 'shift' : undefined,
+          e.metaKey ? 'meta' : undefined,
+          this.keyToString(e.keycode),
+        ].filter((key) => key !== undefined),
         press: 'up',
       };
       this.logAction(action);
     });
   }
 
-  private mapButton(btn: number): Button {
+  private mapButton(btn: unknown): Button {
     switch (btn) {
       case 1:
         return 'left';
@@ -134,11 +175,131 @@ export class InputTrackingService implements OnModuleDestroy {
     }
   }
 
-  private keyToString(keychar: number, keycode: number): string {
-    if (typeof keychar === 'number' && keychar > 0) {
-      return String.fromCharCode(keychar);
+  private uiohookKeyToStringMap: Record<number, string> = {
+    [UiohookKey.Backspace]: 'Backspace',
+    [UiohookKey.Tab]: 'Tab',
+    [UiohookKey.Enter]: 'Enter',
+    [UiohookKey.CapsLock]: 'CapsLock',
+    [UiohookKey.Escape]: 'Escape',
+    [UiohookKey.Space]: 'Space',
+    [UiohookKey.PageUp]: 'PageUp',
+    [UiohookKey.PageDown]: 'PageDown',
+    [UiohookKey.End]: 'End',
+    [UiohookKey.Home]: 'Home',
+    [UiohookKey.ArrowLeft]: 'Left',
+    [UiohookKey.ArrowUp]: 'Up',
+    [UiohookKey.ArrowRight]: 'Right',
+    [UiohookKey.ArrowDown]: 'Down',
+    [UiohookKey.Insert]: 'Insert',
+    [UiohookKey.Delete]: 'Delete',
+
+    // // Numpad Keys
+    [UiohookKey.Numpad0]: 'NumPad0',
+    [UiohookKey.Numpad1]: 'NumPad1',
+    [UiohookKey.Numpad2]: 'NumPad2',
+    [UiohookKey.Numpad3]: 'NumPad3',
+    [UiohookKey.Numpad4]: 'NumPad4',
+    [UiohookKey.Numpad5]: 'NumPad5',
+    [UiohookKey.Numpad6]: 'NumPad6',
+    [UiohookKey.Numpad7]: 'NumPad7',
+    [UiohookKey.Numpad8]: 'NumPad8',
+    [UiohookKey.Numpad9]: 'NumPad9',
+    [UiohookKey.NumpadMultiply]: 'Multiply',
+    [UiohookKey.NumpadAdd]: 'Add',
+    [UiohookKey.NumpadSubtract]: 'Subtract',
+    [UiohookKey.NumpadDecimal]: 'Decimal',
+    [UiohookKey.NumpadDivide]: 'Divide',
+    [UiohookKey.NumpadEnter]: 'Enter',
+    [UiohookKey.NumpadEnd]: 'End',
+    [UiohookKey.NumpadArrowDown]: 'Down',
+    [UiohookKey.NumpadPageDown]: 'PageDown',
+    [UiohookKey.NumpadArrowLeft]: 'Left',
+    [UiohookKey.NumpadArrowRight]: 'Right',
+    [UiohookKey.NumpadHome]: 'Home',
+    [UiohookKey.NumpadArrowUp]: 'Up',
+    [UiohookKey.NumpadPageUp]: 'PageUp',
+    [UiohookKey.NumpadInsert]: 'Insert',
+    [UiohookKey.NumpadDelete]: 'Delete',
+
+    // Function Keys
+    [UiohookKey.F1]: 'F1',
+    [UiohookKey.F2]: 'F2',
+    [UiohookKey.F3]: 'F3',
+    [UiohookKey.F4]: 'F4',
+    [UiohookKey.F5]: 'F5',
+    [UiohookKey.F6]: 'F6',
+    [UiohookKey.F7]: 'F7',
+    [UiohookKey.F8]: 'F8',
+    [UiohookKey.F9]: 'F9',
+    [UiohookKey.F10]: 'F10',
+    [UiohookKey.F11]: 'F11',
+    [UiohookKey.F12]: 'F12',
+    // UiohookKey might go up to F24, map as needed
+
+    // Modifier Keys
+    [UiohookKey.Shift]: 'LeftShift',
+    [UiohookKey.ShiftRight]: 'RightShift',
+    [UiohookKey.Ctrl]: 'LeftControl',
+    [UiohookKey.CtrlRight]: 'RightControl',
+    [UiohookKey.Alt]: 'LeftAlt',
+    [UiohookKey.AltRight]: 'RightAlt',
+    [UiohookKey.Meta]: 'LeftMeta',
+    [UiohookKey.MetaRight]: 'RightMeta',
+
+    [UiohookKey.A]: 'A',
+    [UiohookKey.B]: 'B',
+    [UiohookKey.C]: 'C',
+    [UiohookKey.D]: 'D',
+    [UiohookKey.E]: 'E',
+    [UiohookKey.F]: 'F',
+    [UiohookKey.G]: 'G',
+    [UiohookKey.H]: 'H',
+    [UiohookKey.I]: 'I',
+    [UiohookKey.J]: 'J',
+    [UiohookKey.K]: 'K',
+    [UiohookKey.L]: 'L',
+    [UiohookKey.M]: 'M',
+    [UiohookKey.N]: 'N',
+    [UiohookKey.O]: 'O',
+    [UiohookKey.P]: 'P',
+    [UiohookKey.Q]: 'Q',
+    [UiohookKey.R]: 'R',
+    [UiohookKey.S]: 'S',
+    [UiohookKey.T]: 'T',
+    [UiohookKey.U]: 'U',
+    [UiohookKey.V]: 'V',
+    [UiohookKey.W]: 'W',
+    [UiohookKey.X]: 'X',
+    [UiohookKey.Y]: 'Y',
+    [UiohookKey.Z]: 'Z',
+  };
+
+  private keyToString(keycode: number): string {
+    switch (keycode) {
+      case UiohookKey[0]:
+        return '0';
+      case UiohookKey[1]:
+        return '1';
+      case UiohookKey[2]:
+        return '2';
+      case UiohookKey[3]:
+        return '3';
+      case UiohookKey[4]:
+        return '4';
+      case UiohookKey[5]:
+        return '5';
+      case UiohookKey[6]:
+        return '6';
+      case UiohookKey[7]:
+        return '7';
+      case UiohookKey[8]:
+        return '8';
+      case UiohookKey[9]:
+        return '9';
+
+      default:
+        return this.uiohookKeyToStringMap[keycode] || 'undefined';
     }
-    return String(keycode);
   }
 
   private flushMouseMoves() {
@@ -161,7 +322,7 @@ export class InputTrackingService implements OnModuleDestroy {
     if (!this.keyBuffer.length) {
       return;
     }
-    const action: ComputerAction = {
+    const action: TypeKeysAction = {
       action: 'type_keys',
       keys: [...this.keyBuffer],
     };

@@ -19,7 +19,20 @@ import {
   isPressKeysToolUseBlock,
   isSetTaskStatusToolUseBlock,
   isCreateTaskToolUseBlock,
+  isMoveMouseAction,
+  convertMoveMouseActionToToolUseBlock,
+  isTraceMouseAction,
+  isClickMouseAction,
+  isPressMouseAction,
+  isTypeKeysAction,
+  isTypeTextAction,
+  convertTraceMouseActionToToolUseBlock,
+  convertClickMouseActionToToolUseBlock,
+  convertPressMouseActionToToolUseBlock,
+  convertTypeKeysActionToToolUseBlock,
+  convertTypeTextActionToToolUseBlock,
 } from '@bytebot/shared';
+
 import {
   Button,
   ComputerToolUseContentBlock,
@@ -70,28 +83,20 @@ export class AgentProcessor {
       let task = await this.tasksService.findById(taskId);
       this.currentTaskId = taskId;
       this.isProcessing = true;
-      let userControl = task.control !== Role.ASSISTANT;
-      if (userControl) {
-        this.startInputCapture();
-      }
 
       while (task.status == TaskStatus.RUNNING) {
         if (task.control != Role.ASSISTANT) {
-          if (!userControl) {
-            this.startInputCapture();
-            userControl = true;
-          }
+          this.startInputCapture();
+
           // wait 2 seconds and loop
           this.logger.log(
-            `Task ${taskId} is not under agent control, waiting 2 seconds before looping`,
+            `Task ${taskId} is not under agent control, waiting 5 seconds before looping`,
           );
-          await new Promise((resolve) => setTimeout(resolve, 2000));
+          await new Promise((resolve) => setTimeout(resolve, 5000));
           task = await this.tasksService.findById(taskId);
           continue;
-        } else if (userControl) {
-          await this.stopInputCapture();
-          userControl = false;
         }
+        await this.stopInputCapture();
 
         this.logger.log(
           `Processing task loop iteration for task ID: ${taskId}`,
@@ -104,6 +109,11 @@ export class AgentProcessor {
         try {
           const messageContentBlocks: MessageContentBlock[] =
             await this.anthropicService.sendMessage(messages);
+
+          if (this.capturingInput) {
+            continue;
+          }
+
           this.logger.debug(
             `Received ${messageContentBlocks.length} content blocks from LLM`,
           );
@@ -762,39 +772,194 @@ export class AgentProcessor {
     }
   }
 
+  // Method to start input capture
   private startInputCapture() {
-    if (this.capturingInput) {
+    if (this.inputSocket?.connected && this.capturingInput) {
+      this.logger.log('Input capture is already active and socket connected.');
       return;
     }
 
-    const baseUrl = this.configService.get<string>('BYTEBOT_DESKTOP_BASE_URL');
-    this.inputSocket = io(baseUrl, {
-      transports: ['websocket'],
-    });
-    this.capturingInput = true;
-    this.inputSocket.on('input_action', async (action: any) => {
-      if (!this.currentTaskId) {
+    // If socket exists but is not connected, try to reconnect it.
+    if (this.inputSocket && !this.inputSocket.connected) {
+      this.logger.log(
+        'Socket exists but not connected, attempting to reconnect...',
+      );
+      this.inputSocket.connect();
+      // State (capturingInput) will be managed by 'connect'/'disconnect' event handlers
+      return;
+    }
+
+    // Only create a new socket if one doesn't exist or previous one was cleaned up
+    if (!this.inputSocket) {
+      this.logger.log('Initializing new input socket connection...');
+      const baseUrl = this.configService.get<string>(
+        'BYTEBOT_DESKTOP_BASE_URL',
+      );
+      if (!baseUrl) {
+        this.logger.error(
+          'BYTEBOT_DESKTOP_BASE_URL is not configured. Cannot start input capture.',
+        );
         return;
       }
-      await this.messagesService.create({
-        content: [
-          { type: MessageContentType.Text, text: JSON.stringify(action) },
-        ],
-        role: Role.USER,
-        taskId: this.currentTaskId,
+
+      const newSocket = io(baseUrl, {
+        transports: ['websocket'],
+        // Consider adding reconnection options if needed by the application
+        // reconnectionAttempts: 5,
+        // reconnectionDelay: 1000,
       });
-    });
+      this.inputSocket = newSocket; // Assign new socket instance
+
+      newSocket.on('connect', () => {
+        this.logger.log('Input socket connected successfully.');
+        this.capturingInput = true; // Set capturingInput to true only on successful connection
+      });
+
+      newSocket.on('input_action', async (action: any) => {
+        if (!this.currentTaskId || !this.capturingInput) {
+          if (!this.capturingInput) {
+            this.logger.warn(
+              'Received input_action while not actively capturing or no current task.',
+            );
+          }
+          return;
+        }
+
+        this.logger.log(`Received input action: ${action.action}`);
+        const content: MessageContentBlock[] = [];
+        const toolUseId = ''; // Generate a unique ID for this tool interaction
+
+        switch (action.action) {
+          case 'move_mouse':
+            content.push(
+              convertMoveMouseActionToToolUseBlock(action, toolUseId),
+            );
+            break;
+          case 'trace_mouse':
+            content.push(
+              convertTraceMouseActionToToolUseBlock(action, toolUseId),
+            );
+            break;
+          case 'click_mouse':
+            content.push(
+              convertClickMouseActionToToolUseBlock(action, toolUseId),
+            );
+            break;
+          case 'press_mouse':
+            this.logger.log(`Pressing mouse: ${action.button}`);
+            content.push(
+              convertPressMouseActionToToolUseBlock(action, toolUseId),
+            );
+            break;
+          case 'type_keys':
+            content.push(
+              convertTypeKeysActionToToolUseBlock(action, toolUseId),
+            );
+            break;
+          case 'type_text':
+            content.push(
+              convertTypeTextActionToToolUseBlock(action, toolUseId),
+            );
+            break;
+          default:
+            this.logger.warn(`Unknown input action received: ${action.action}`);
+            break;
+        }
+
+        this.logger.debug(
+          `Tool use content generated: ${JSON.stringify(content)}`,
+        );
+
+        if (content.length === 0 && action.action !== 'unknown') {
+          // Only return if no content AND not an unknown action we logged
+          this.logger.log(
+            `No content generated for action: ${action.action}. Not sending message.`,
+          );
+          return;
+        }
+
+        // If content was generated, or if it was an unknown action (which we might want to record)
+        // This part might need more nuanced logic depending on whether all actions should result in a message.
+        // For now, assuming any processed action (even if just logged as unknown) might result in a message.
+
+        // The original code always added a "ToolResult" block.
+        // This behavior is preserved but with a more specific message.
+        // Consider if this is always appropriate.
+        content.push({
+          type: MessageContentType.ToolResult,
+          tool_use_id: toolUseId,
+          content: [
+            {
+              type: MessageContentType.Text,
+              text: `Input action '${action.action}' processed.`,
+            },
+          ],
+        });
+
+        await this.messagesService.create({
+          content,
+          role: Role.USER, // This implies the message is "from" the user via input.
+          taskId: this.currentTaskId,
+        });
+        this.logger.log(`Message created for input action: ${action.action}`);
+      });
+
+      newSocket.on('connect_error', (err) => {
+        this.logger.error(
+          `Input socket connection error: ${err.message}`,
+          err.stack,
+        );
+        this.capturingInput = false; // Ensure capturing is false if connection fails
+        // The socket might attempt to reconnect automatically depending on its configuration.
+      });
+
+      newSocket.on('disconnect', (reason) => {
+        this.logger.log(`Input socket disconnected: ${reason}`);
+        this.capturingInput = false;
+        // If the disconnect was not initiated by stopInputCapture (e.g., server-side or network issue),
+        // the socket might attempt to reconnect based on its config.
+        // If reason is 'io server disconnect' or 'io client disconnect' (manual), it won't auto-reconnect.
+        if (reason === 'io server disconnect') {
+          this.logger.warn(
+            'Input socket disconnected by server. It will not automatically reconnect.',
+          );
+          // Consider nullifying this.inputSocket here if it's permanently unusable
+          // this.inputSocket = null; // Or handle in stopInputCapture
+        }
+      });
+    }
+    // The io() call and event listener setup are non-blocking.
+    // startInputCapture will return quickly.
   }
 
+  // Method to stop input capture
   private async stopInputCapture() {
-    if (!this.capturingInput) {
-      return;
+    // Marked async if any internal ops become async, currently not.
+    this.logger.log('Attempting to stop input capture...');
+    if (this.inputSocket) {
+      if (this.inputSocket.connected) {
+        this.logger.log('Disconnecting active input socket.');
+        this.inputSocket.disconnect(); // This is a client-initiated disconnect.
+      } else {
+        this.logger.log(
+          'Input socket exists but is not connected. Removing listeners and reference.',
+        );
+        this.inputSocket.removeAllListeners(); // Clean up listeners if not connected
+      }
+      // Nullify the socket reference after ensuring it's disconnected or listeners are removed.
+      // The 'disconnect' event handler will also set capturingInput = false.
+      this.inputSocket = null;
+    } else {
+      this.logger.log('No input socket instance to stop.');
     }
 
-    if (this.inputSocket) {
-      this.inputSocket.disconnect();
-      this.inputSocket = null;
+    // Explicitly set capturingInput to false, as a safeguard.
+    if (this.capturingInput) {
+      this.logger.log('Setting capturingInput to false.');
+      this.capturingInput = false;
+    } else {
+      // This log might be noisy if stopInputCapture is called multiple times or when not capturing.
+      // this.logger.log('capturingInput is already false or was never true.');
     }
-    this.capturingInput = false;
   }
 }

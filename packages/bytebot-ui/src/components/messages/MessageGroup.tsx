@@ -338,6 +338,84 @@ export function UserMessage({ group, messages = [] }: MessageGroupProps) {
                   {isTextContentBlock(block) && (
                     <ReactMarkdown>{block.text}</ReactMarkdown>
                   )}
+                  {isComputerToolUseContentBlock(block) && (
+                    <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-7 shadow-bytebot max-w-4/5 rounded-md border px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <HugeiconsIcon
+                          icon={getIcon(block)}
+                          className="text-bytebot-bronze-dark-9 h-4 w-4"
+                        />
+                        <p className="text-bytebot-bronze-light-11 text-xs">
+                          {getLabel(block)}
+                        </p>
+                        {/* Text for type and key actions */}
+                        {(isTypeKeysToolUseBlock(block) ||
+                          isPressKeysToolUseBlock(block)) && (
+                          <p className="bg-bytebot-bronze-light-1 border-bytebot-bronze-light-7 text-bytebot-bronze-light-11 rounded-md border px-1 py-0.5 text-xs">
+                            {String(block.input.keys.join("+"))}
+                          </p>
+                        )}
+                        {isTypeTextToolUseBlock(block) && (
+                          <p className="bg-bytebot-bronze-light-1 border-bytebot-bronze-light-7 text-bytebot-bronze-light-11 rounded-md border px-1 py-0.5 text-xs">
+                            {String(
+                              block.input.isSensitive
+                                ? "●".repeat(block.input.text.length)
+                                : block.input.text,
+                            )}
+                          </p>
+                        )}
+                        {/* Duration for wait and hold_key actions */}
+                        {isWaitToolUseBlock(block) && (
+                          <p className="bg-bytebot-bronze-light-1 border-bytebot-bronze-light-7 text-bytebot-bronze-light-11 rounded-md border px-1 py-0.5 text-xs">
+                            {`${block.input.duration}ms`}
+                          </p>
+                        )}
+                        {/* Coordinates for click/mouse actions */}
+                        {block.input.coordinates && (
+                          <p className="bg-bytebot-bronze-light-1 border-bytebot-bronze-light-7 text-bytebot-bronze-light-11 rounded-md border px-1 py-0.5 text-xs">
+                            {
+                              (
+                                block.input.coordinates as {
+                                  x: number;
+                                  y: number;
+                                }
+                              ).x
+                            }
+                            ,{" "}
+                            {
+                              (
+                                block.input.coordinates as {
+                                  x: number;
+                                  y: number;
+                                }
+                              ).y
+                            }
+                          </p>
+                        )}
+                        {/* Start and end coordinates for path actions */}
+                        {"path" in block.input &&
+                          Array.isArray(block.input.path) &&
+                          block.input.path.every(
+                            (point) =>
+                              point.x !== undefined && point.y !== undefined,
+                          ) && (
+                            <p className="bg-bytebot-bronze-light-1 border-bytebot-bronze-light-7 text-bytebot-bronze-light-11 rounded-md border px-1 py-0.5 text-xs">
+                              From: {block.input.path[0].x},{" "}
+                              {block.input.path[0].y} → To:{" "}
+                              {block.input.path[block.input.path.length - 1].x},{" "}
+                              {block.input.path[block.input.path.length - 1].y}
+                            </p>
+                          )}
+                        {/* Scroll information */}
+                        {isScrollToolUseBlock(block) && (
+                          <p className="bg-bytebot-bronze-light-1 border-bytebot-bronze-light-7 text-bytebot-bronze-light-11 rounded-md border px-1 py-0.5 text-xs">
+                            {String(block.input.direction)}{" "}
+                            {Number(block.input.numScrolls)}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

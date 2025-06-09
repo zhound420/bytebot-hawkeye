@@ -99,7 +99,6 @@ export class TasksService {
         status: {
           in: [TaskStatus.RUNNING, TaskStatus.PENDING],
         },
-        control: Role.ASSISTANT,
       },
       orderBy: [
         { executedAt: 'asc' },
