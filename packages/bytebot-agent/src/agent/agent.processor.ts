@@ -19,21 +19,16 @@ import {
   isPressKeysToolUseBlock,
   isSetTaskStatusToolUseBlock,
   isCreateTaskToolUseBlock,
-  isMoveMouseAction,
   convertMoveMouseActionToToolUseBlock,
-  isTraceMouseAction,
-  isClickMouseAction,
-  isPressMouseAction,
-  isTypeKeysAction,
-  isTypeTextAction,
   convertTraceMouseActionToToolUseBlock,
   convertClickMouseActionToToolUseBlock,
   convertPressMouseActionToToolUseBlock,
-  convertTypeKeysActionToToolUseBlock,
   convertTypeTextActionToToolUseBlock,
   convertDragMouseActionToToolUseBlock,
   convertScrollActionToToolUseBlock,
   ScreenshotToolUseBlock,
+  convertPressKeysActionToToolUseBlock,
+  convertTypeKeysActionToToolUseBlock,
 } from '@bytebot/shared';
 
 import {
@@ -885,19 +880,6 @@ export class AgentProcessor {
         };
 
         switch (action.action) {
-          case 'move_mouse':
-            content.push(
-              convertMoveMouseActionToToolUseBlock(action, toolUseId),
-              toolResult,
-            );
-
-            break;
-          case 'trace_mouse':
-            content.push(
-              convertTraceMouseActionToToolUseBlock(action, toolUseId),
-              toolResult,
-            );
-            break;
           case 'drag_mouse':
             content.push(
               convertDragMouseActionToToolUseBlock(action, toolUseId),
@@ -920,6 +902,12 @@ export class AgentProcessor {
           case 'type_keys':
             content.push(
               convertTypeKeysActionToToolUseBlock(action, toolUseId),
+              toolResult,
+            );
+            break;
+          case 'press_keys':
+            content.push(
+              convertPressKeysActionToToolUseBlock(action, toolUseId),
               toolResult,
             );
             break;

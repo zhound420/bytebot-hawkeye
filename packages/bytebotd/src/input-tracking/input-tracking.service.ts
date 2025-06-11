@@ -4,7 +4,6 @@ import {
   UiohookKeyboardEvent,
   UiohookMouseEvent,
   UiohookWheelEvent,
-  UiohookKey,
   WheelDirection,
 } from 'uiohook-napi';
 import {
@@ -13,11 +12,12 @@ import {
   ComputerAction,
   ComputerUseService,
   DragMouseAction,
-  PressKeysAction,
   ScrollAction,
   TypeKeysAction,
+  TypeTextAction,
 } from '../computer-use/computer-use.service';
 import { InputTrackingGateway } from './input-tracking.gateway';
+import { keyInfoMap } from './input-tracking.helpers';
 
 @Injectable()
 export class InputTrackingService implements OnModuleDestroy {
@@ -33,12 +33,16 @@ export class InputTrackingService implements OnModuleDestroy {
 
   private clickMouseActionBuffer: ClickMouseAction[] = [];
   private clickMouseActionTimeout: NodeJS.Timeout | null = null;
+  private readonly CLICK_DEBOUNCE_MS = 250;
 
   private screenshot: { image: string } | null = null;
   private screenshotTimeout: NodeJS.Timeout | null = null;
+  private readonly SCREENSHOT_DEBOUNCE_MS = 250;
 
-  private: string[] = [];
-  private keyTimeout: NodeJS.Timeout | null = null;
+  private readonly pressedKeys = new Set<number>(); // suppress repeats
+  private readonly typingBuffer: string[] = []; // pending chars
+  private typingTimer: NodeJS.Timeout | null = null; // debounce
+  private readonly TYPING_DEBOUNCE_MS = 500;
 
   constructor(
     private readonly gateway: InputTrackingGateway,
@@ -71,6 +75,30 @@ export class InputTrackingService implements OnModuleDestroy {
     this.isTracking = false;
   }
 
+  /** Adds a printable char to buffer and restarts debounce timer. */
+  private bufferChar(char: string) {
+    this.typingBuffer.push(char);
+    if (this.typingTimer) clearTimeout(this.typingTimer);
+    this.typingTimer = setTimeout(
+      () => this.flushTypingBuffer(),
+      this.TYPING_DEBOUNCE_MS,
+    );
+  }
+  /** Convert buffered chars → action, then clear buffer. */
+  private async flushTypingBuffer() {
+    if (!this.typingBuffer.length) return;
+    const action: TypeTextAction = {
+      action: 'type_text',
+      text: this.typingBuffer.join(''),
+    };
+    this.typingBuffer.length = 0;
+    await this.logAction(action);
+  }
+
+  private isModifierKey(key: UiohookKeyboardEvent) {
+    return key.altKey || key.ctrlKey || key.metaKey;
+  }
+
   private registerListeners() {
     uIOhook.on('mousemove', (e: UiohookMouseEvent) => {
       if (this.isDragging && this.dragMouseAction) {
@@ -81,7 +109,7 @@ export class InputTrackingService implements OnModuleDestroy {
         }
         this.screenshotTimeout = setTimeout(async () => {
           this.screenshot = await this.computerUseService.screenshot();
-        }, 25);
+        }, this.SCREENSHOT_DEBOUNCE_MS);
       }
     });
 
@@ -102,22 +130,22 @@ export class InputTrackingService implements OnModuleDestroy {
       if (this.clickMouseActionTimeout) {
         clearTimeout(this.clickMouseActionTimeout);
       }
-      this.clickMouseActionTimeout = setTimeout(() => {
+      this.clickMouseActionTimeout = setTimeout(async () => {
         if (this.clickMouseActionBuffer.length === 1) {
-          this.logAction(this.clickMouseActionBuffer[0]);
+          await this.logAction(this.clickMouseActionBuffer[0]);
         }
 
         if (this.clickMouseActionBuffer.length > 1) {
-          this.clickMouseActionBuffer.forEach((action) => {
+          this.clickMouseActionBuffer.forEach(async (action) => {
             // Skip single click actions
             if (action.numClicks > 1) {
-              this.logAction(action);
+              await this.logAction(action);
             }
           });
         }
         this.clickMouseActionTimeout = null;
         this.clickMouseActionBuffer = [];
-      }, 100);
+      }, this.CLICK_DEBOUNCE_MS);
     });
 
     uIOhook.on('mousedown', (e: UiohookMouseEvent) => {
@@ -135,18 +163,18 @@ export class InputTrackingService implements OnModuleDestroy {
       };
     });
 
-    uIOhook.on('mouseup', (e: UiohookMouseEvent) => {
+    uIOhook.on('mouseup', async (e: UiohookMouseEvent) => {
       if (this.isDragging && this.dragMouseAction) {
         this.dragMouseAction.path.push({ x: e.x, y: e.y });
         if (this.dragMouseAction.path.length > 3) {
-          this.logAction(this.dragMouseAction);
+          await this.logAction(this.dragMouseAction);
         }
         this.dragMouseAction = null;
       }
       this.isDragging = false;
     });
 
-    uIOhook.on('wheel', (e: UiohookWheelEvent) => {
+    uIOhook.on('wheel', async (e: UiohookWheelEvent) => {
       const direction =
         e.direction === WheelDirection.VERTICAL
           ? e.rotation > 0
@@ -168,7 +196,7 @@ export class InputTrackingService implements OnModuleDestroy {
       ) {
         this.scrollCount++;
         if (this.scrollCount >= 4) {
-          this.logAction(this.scrollAction);
+          await this.logAction(this.scrollAction);
           this.scrollAction = null;
           this.scrollCount = 0;
         }
@@ -178,36 +206,62 @@ export class InputTrackingService implements OnModuleDestroy {
       }
     });
 
-    uIOhook.on('keydown', (e: UiohookKeyboardEvent) => {
-      if (e.altKey || e.ctrlKey || e.shiftKey || e.metaKey) {
-        const action: PressKeysAction = {
-          action: 'press_keys',
-          keys: [
-            e.altKey ? 'alt' : undefined,
-            e.ctrlKey ? 'ctrl' : undefined,
-            e.shiftKey ? 'shift' : undefined,
-            e.metaKey ? 'meta' : undefined,
-            this.keyToString(e.keycode),
-          ].filter((key) => key !== undefined),
-          press: 'down',
-        };
-        this.logAction(action);
+    uIOhook.on('keydown', async (e: UiohookKeyboardEvent) => {
+      if (!keyInfoMap[e.keycode]) {
+        this.logger.warn(`Unknown key: ${e.keycode}`);
+        return;
       }
+
+      /* Printable char with no active modifier → buffer for TypeTextAction. */
+      if (!this.isModifierKey(e) && keyInfoMap[e.keycode].isPrintable) {
+        this.bufferChar(
+          e.shiftKey
+            ? keyInfoMap[e.keycode].shiftString!
+            : keyInfoMap[e.keycode].string!,
+        );
+        return;
+      }
+
+      /* Anything with modifiers _or_ a non‑printable key: 
+      first flush buffered text so ordering is preserved. */
+      await this.flushTypingBuffer();
+
+      /* Ignore auto‑repeat for pressed keys. */
+      if (this.pressedKeys.has(e.keycode)) {
+        return;
+      }
+      this.pressedKeys.add(e.keycode);
     });
 
-    uIOhook.on('keyup', (e: any) => {
-      const action: PressKeysAction = {
-        action: 'press_keys',
+    uIOhook.on('keyup', async (e: UiohookKeyboardEvent) => {
+      if (!keyInfoMap[e.keycode]) {
+        this.logger.warn(`Unknown key: ${e.keycode}`);
+        return;
+      }
+      /* If key belongs to typing buffer we don't emit anything on keyup. *
+       * (Up‑event is irrelevant for a pure “typed character”.) */
+      if (!this.isModifierKey(e) && keyInfoMap[e.keycode].isPrintable) {
+        return;
+      }
+
+      await this.flushTypingBuffer();
+
+      if (this.pressedKeys.size === 0) {
+        return;
+      }
+
+      const action: TypeKeysAction = {
+        action: 'type_keys',
         keys: [
-          e.altKey ? 'alt' : undefined,
-          e.ctrlKey ? 'ctrl' : undefined,
-          e.shiftKey ? 'shift' : undefined,
-          e.metaKey ? 'meta' : undefined,
-          this.keyToString(e.keycode),
+          // take the pressed keys and map them to their names
+          ...Array.from(this.pressedKeys.values()).map(
+            (key) => keyInfoMap[key].name,
+          ),
         ].filter((key) => key !== undefined),
-        press: 'up',
       };
-      this.logAction(action);
+
+      this.pressedKeys.clear();
+      await this.logAction(action);
     });
   }
 
@@ -224,165 +278,14 @@ export class InputTrackingService implements OnModuleDestroy {
     }
   }
 
-  private uiohookKeyToStringMap: Record<number, string> = {
-    [UiohookKey.Backspace]: 'Backspace',
-    [UiohookKey.Tab]: 'Tab',
-    [UiohookKey.Enter]: 'Enter',
-    [UiohookKey.CapsLock]: 'CapsLock',
-    [UiohookKey.Escape]: 'Escape',
-    [UiohookKey.Space]: 'Space',
-    [UiohookKey.PageUp]: 'PageUp',
-    [UiohookKey.PageDown]: 'PageDown',
-    [UiohookKey.End]: 'End',
-    [UiohookKey.Home]: 'Home',
-    [UiohookKey.ArrowLeft]: 'Left',
-    [UiohookKey.ArrowUp]: 'Up',
-    [UiohookKey.ArrowRight]: 'Right',
-    [UiohookKey.ArrowDown]: 'Down',
-    [UiohookKey.Insert]: 'Insert',
-    [UiohookKey.Delete]: 'Delete',
-
-    // // Numpad Keys
-    [UiohookKey.Numpad0]: 'NumPad0',
-    [UiohookKey.Numpad1]: 'NumPad1',
-    [UiohookKey.Numpad2]: 'NumPad2',
-    [UiohookKey.Numpad3]: 'NumPad3',
-    [UiohookKey.Numpad4]: 'NumPad4',
-    [UiohookKey.Numpad5]: 'NumPad5',
-    [UiohookKey.Numpad6]: 'NumPad6',
-    [UiohookKey.Numpad7]: 'NumPad7',
-    [UiohookKey.Numpad8]: 'NumPad8',
-    [UiohookKey.Numpad9]: 'NumPad9',
-
-    [UiohookKey.NumpadMultiply]: 'Multiply',
-    [UiohookKey.NumpadAdd]: 'Add',
-    [UiohookKey.NumpadSubtract]: 'Subtract',
-    [UiohookKey.NumpadDecimal]: 'Decimal',
-    [UiohookKey.NumpadDivide]: 'Divide',
-    [UiohookKey.NumpadEnter]: 'Enter',
-    [UiohookKey.NumpadEnd]: 'End',
-    [UiohookKey.NumpadArrowDown]: 'Down',
-    [UiohookKey.NumpadPageDown]: 'PageDown',
-    [UiohookKey.NumpadArrowLeft]: 'Left',
-    [UiohookKey.NumpadArrowRight]: 'Right',
-    [UiohookKey.NumpadHome]: 'Home',
-    [UiohookKey.NumpadArrowUp]: 'Up',
-    [UiohookKey.NumpadPageUp]: 'PageUp',
-    [UiohookKey.NumpadInsert]: 'Insert',
-    [UiohookKey.NumpadDelete]: 'Delete',
-
-    // Function Keys
-    [UiohookKey.F1]: 'F1',
-    [UiohookKey.F2]: 'F2',
-    [UiohookKey.F3]: 'F3',
-    [UiohookKey.F4]: 'F4',
-    [UiohookKey.F5]: 'F5',
-    [UiohookKey.F6]: 'F6',
-    [UiohookKey.F7]: 'F7',
-    [UiohookKey.F8]: 'F8',
-    [UiohookKey.F9]: 'F9',
-    [UiohookKey.F10]: 'F10',
-    [UiohookKey.F11]: 'F11',
-    [UiohookKey.F12]: 'F12',
-    [UiohookKey.F13]: 'F13',
-    [UiohookKey.F14]: 'F14',
-    [UiohookKey.F15]: 'F15',
-    [UiohookKey.F16]: 'F16',
-    [UiohookKey.F17]: 'F17',
-    [UiohookKey.F18]: 'F18',
-    [UiohookKey.F19]: 'F19',
-    [UiohookKey.F20]: 'F20',
-    [UiohookKey.F21]: 'F21',
-    [UiohookKey.F22]: 'F22',
-    [UiohookKey.F23]: 'F23',
-    [UiohookKey.F24]: 'F24',
-
-    [UiohookKey.Semicolon]: 'Semicolon',
-    [UiohookKey.Equal]: 'Equal',
-    [UiohookKey.Comma]: 'Comma',
-    [UiohookKey.Minus]: 'Minus',
-    [UiohookKey.Period]: 'Period',
-    [UiohookKey.Slash]: 'Slash',
-    [UiohookKey.Backquote]: 'Grave',
-    [UiohookKey.BracketLeft]: 'LeftBracket',
-    [UiohookKey.Backslash]: 'Backslash',
-    [UiohookKey.BracketRight]: 'RightBracket',
-    [UiohookKey.Quote]: 'Quote',
-    [UiohookKey.Ctrl]: 'LeftControl',
-    [UiohookKey.CtrlRight]: 'RightControl',
-    [UiohookKey.Alt]: 'LeftAlt',
-    [UiohookKey.AltRight]: 'RightAlt',
-    [UiohookKey.Meta]: 'LeftMeta',
-    [UiohookKey.MetaRight]: 'RightMeta',
-    [UiohookKey.NumLock]: 'NumLock',
-    [UiohookKey.ScrollLock]: 'ScrollLock',
-    [UiohookKey.PrintScreen]: 'Print',
-
-    [UiohookKey.A]: 'A',
-    [UiohookKey.B]: 'B',
-    [UiohookKey.C]: 'C',
-    [UiohookKey.D]: 'D',
-    [UiohookKey.E]: 'E',
-    [UiohookKey.F]: 'F',
-    [UiohookKey.G]: 'G',
-    [UiohookKey.H]: 'H',
-    [UiohookKey.I]: 'I',
-    [UiohookKey.J]: 'J',
-    [UiohookKey.K]: 'K',
-    [UiohookKey.L]: 'L',
-    [UiohookKey.M]: 'M',
-    [UiohookKey.N]: 'N',
-    [UiohookKey.O]: 'O',
-    [UiohookKey.P]: 'P',
-    [UiohookKey.Q]: 'Q',
-    [UiohookKey.R]: 'R',
-    [UiohookKey.S]: 'S',
-    [UiohookKey.T]: 'T',
-    [UiohookKey.U]: 'U',
-    [UiohookKey.V]: 'V',
-    [UiohookKey.W]: 'W',
-    [UiohookKey.X]: 'X',
-    [UiohookKey.Y]: 'Y',
-    [UiohookKey.Z]: 'Z',
-  };
-
-  private keyToString(keycode: number): string {
-    switch (keycode) {
-      case UiohookKey[0]:
-        return '0';
-      case UiohookKey[1]:
-        return '1';
-      case UiohookKey[2]:
-        return '2';
-      case UiohookKey[3]:
-        return '3';
-      case UiohookKey[4]:
-        return '4';
-      case UiohookKey[5]:
-        return '5';
-      case UiohookKey[6]:
-        return '6';
-      case UiohookKey[7]:
-        return '7';
-      case UiohookKey[8]:
-        return '8';
-      case UiohookKey[9]:
-        return '9';
-
-      default:
-        return this.uiohookKeyToStringMap[keycode] || 'undefined';
-    }
-  }
-
-  private logAction(action: ComputerAction) {
+  private async logAction(action: ComputerAction) {
     this.logger.log(`Detected action: ${JSON.stringify(action)}`);
 
     if (this.screenshot) {
       this.gateway.emitScreenshot(this.screenshot);
     }
-    // wait for 50ms
-    setTimeout(() => {
-      this.gateway.emitAction(action);
-    }, 50);
+    // wait for 100ms
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    this.gateway.emitAction(action);
   }
 }
