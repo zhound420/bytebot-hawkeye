@@ -5,19 +5,19 @@ import {
   UiohookMouseEvent,
   UiohookWheelEvent,
   UiohookKey,
+  WheelDirection,
 } from 'uiohook-napi';
 import {
   Button,
   ClickMouseAction,
   ComputerAction,
-  Coordinates,
+  ComputerUseService,
+  DragMouseAction,
   PressKeysAction,
-  PressMouseAction,
   ScrollAction,
   TypeKeysAction,
 } from '../computer-use/computer-use.service';
 import { InputTrackingGateway } from './input-tracking.gateway';
-import { Key } from '@nut-tree-fork/nut-js';
 
 @Injectable()
 export class InputTrackingService implements OnModuleDestroy {
@@ -25,13 +25,25 @@ export class InputTrackingService implements OnModuleDestroy {
 
   private isTracking = false;
 
-  private mouseMovePath: Coordinates[] = [];
-  private mouseMoveTimeout: NodeJS.Timeout | null = null;
+  private isDragging = false;
+  private dragMouseAction: DragMouseAction | null = null;
 
-  private keyBuffer: string[] = [];
+  private scrollAction: ScrollAction | null = null;
+  private scrollCount = 0;
+
+  private clickMouseActionBuffer: ClickMouseAction[] = [];
+  private clickMouseActionTimeout: NodeJS.Timeout | null = null;
+
+  private screenshot: { image: string } | null = null;
+  private screenshotTimeout: NodeJS.Timeout | null = null;
+
+  private: string[] = [];
   private keyTimeout: NodeJS.Timeout | null = null;
 
-  constructor(private readonly gateway: InputTrackingGateway) {}
+  constructor(
+    private readonly gateway: InputTrackingGateway,
+    private readonly computerUseService: ComputerUseService,
+  ) {}
 
   // Tracking is started manually via startTracking
 
@@ -54,8 +66,6 @@ export class InputTrackingService implements OnModuleDestroy {
       return;
     }
     this.logger.log('Stopping input tracking');
-    this.flushMouseMoves();
-    this.flushTyping();
     uIOhook.stop();
     uIOhook.removeAllListeners();
     this.isTracking = false;
@@ -63,15 +73,19 @@ export class InputTrackingService implements OnModuleDestroy {
 
   private registerListeners() {
     uIOhook.on('mousemove', (e: UiohookMouseEvent) => {
-      this.mouseMovePath.push({ x: e.x, y: e.y });
-      if (this.mouseMoveTimeout) {
-        clearTimeout(this.mouseMoveTimeout);
+      if (this.isDragging && this.dragMouseAction) {
+        this.dragMouseAction.path.push({ x: e.x, y: e.y });
+      } else {
+        if (this.screenshotTimeout) {
+          clearTimeout(this.screenshotTimeout);
+        }
+        this.screenshotTimeout = setTimeout(async () => {
+          this.screenshot = await this.computerUseService.screenshot();
+        }, 25);
       }
-      this.mouseMoveTimeout = setTimeout(() => this.flushMouseMoves(), 300);
     });
 
     uIOhook.on('click', (e: UiohookMouseEvent) => {
-      this.flushMouseMoves();
       const action: ClickMouseAction = {
         action: 'click_mouse',
         button: this.mapButton(e.button),
@@ -84,46 +98,88 @@ export class InputTrackingService implements OnModuleDestroy {
           e.metaKey ? 'meta' : undefined,
         ].filter((key) => key !== undefined),
       };
-      this.logAction(action);
+      this.clickMouseActionBuffer.push(action);
+      if (this.clickMouseActionTimeout) {
+        clearTimeout(this.clickMouseActionTimeout);
+      }
+      this.clickMouseActionTimeout = setTimeout(() => {
+        if (this.clickMouseActionBuffer.length === 1) {
+          this.logAction(this.clickMouseActionBuffer[0]);
+        }
+
+        if (this.clickMouseActionBuffer.length > 1) {
+          this.clickMouseActionBuffer.forEach((action) => {
+            // Skip single click actions
+            if (action.numClicks > 1) {
+              this.logAction(action);
+            }
+          });
+        }
+        this.clickMouseActionTimeout = null;
+        this.clickMouseActionBuffer = [];
+      }, 100);
     });
 
     uIOhook.on('mousedown', (e: UiohookMouseEvent) => {
-      this.flushMouseMoves();
-      const action: PressMouseAction = {
-        action: 'press_mouse',
+      this.isDragging = true;
+      this.dragMouseAction = {
+        action: 'drag_mouse',
         button: this.mapButton(e.button),
-        press: 'down',
-        coordinates: { x: e.x, y: e.y },
+        path: [{ x: e.x, y: e.y }],
+        holdKeys: [
+          e.altKey ? 'alt' : undefined,
+          e.ctrlKey ? 'ctrl' : undefined,
+          e.shiftKey ? 'shift' : undefined,
+          e.metaKey ? 'meta' : undefined,
+        ].filter((key) => key !== undefined),
       };
-      this.logAction(action);
     });
 
     uIOhook.on('mouseup', (e: UiohookMouseEvent) => {
-      this.flushMouseMoves();
-      const action: PressMouseAction = {
-        action: 'press_mouse',
-        button: this.mapButton(e.button),
-        press: 'up',
-        coordinates: { x: e.x, y: e.y },
-      };
-      this.logAction(action);
+      if (this.isDragging && this.dragMouseAction) {
+        this.dragMouseAction.path.push({ x: e.x, y: e.y });
+        if (this.dragMouseAction.path.length > 3) {
+          this.logAction(this.dragMouseAction);
+        }
+        this.dragMouseAction = null;
+      }
+      this.isDragging = false;
     });
 
     uIOhook.on('wheel', (e: UiohookWheelEvent) => {
-      this.flushMouseMoves();
-      const direction = e.rotation > 0 ? 'down' : 'up';
+      const direction =
+        e.direction === WheelDirection.VERTICAL
+          ? e.rotation > 0
+            ? 'down'
+            : 'up'
+          : e.rotation > 0
+            ? 'right'
+            : 'left';
       const action: ScrollAction = {
         action: 'scroll',
         direction: direction as any,
         numScrolls: Math.abs(e.rotation),
         coordinates: { x: e.x, y: e.y },
       };
-      this.logAction(action);
+
+      if (
+        this.scrollAction &&
+        action.direction === this.scrollAction.direction
+      ) {
+        this.scrollCount++;
+        if (this.scrollCount >= 4) {
+          this.logAction(this.scrollAction);
+          this.scrollAction = null;
+          this.scrollCount = 0;
+        }
+      } else {
+        this.scrollAction = action;
+        this.scrollCount = 1;
+      }
     });
 
     uIOhook.on('keydown', (e: UiohookKeyboardEvent) => {
       if (e.altKey || e.ctrlKey || e.shiftKey || e.metaKey) {
-        this.flushTyping();
         const action: PressKeysAction = {
           action: 'press_keys',
           keys: [
@@ -136,17 +192,10 @@ export class InputTrackingService implements OnModuleDestroy {
           press: 'down',
         };
         this.logAction(action);
-      } else {
-        this.keyBuffer.push(this.keyToString(e.keycode));
-        if (this.keyTimeout) {
-          clearTimeout(this.keyTimeout);
-        }
-        this.keyTimeout = setTimeout(() => this.flushTyping(), 300);
       }
     });
 
     uIOhook.on('keyup', (e: any) => {
-      this.flushTyping();
       const action: PressKeysAction = {
         action: 'press_keys',
         keys: [
@@ -204,6 +253,7 @@ export class InputTrackingService implements OnModuleDestroy {
     [UiohookKey.Numpad7]: 'NumPad7',
     [UiohookKey.Numpad8]: 'NumPad8',
     [UiohookKey.Numpad9]: 'NumPad9',
+
     [UiohookKey.NumpadMultiply]: 'Multiply',
     [UiohookKey.NumpadAdd]: 'Add',
     [UiohookKey.NumpadSubtract]: 'Subtract',
@@ -234,17 +284,39 @@ export class InputTrackingService implements OnModuleDestroy {
     [UiohookKey.F10]: 'F10',
     [UiohookKey.F11]: 'F11',
     [UiohookKey.F12]: 'F12',
-    // UiohookKey might go up to F24, map as needed
+    [UiohookKey.F13]: 'F13',
+    [UiohookKey.F14]: 'F14',
+    [UiohookKey.F15]: 'F15',
+    [UiohookKey.F16]: 'F16',
+    [UiohookKey.F17]: 'F17',
+    [UiohookKey.F18]: 'F18',
+    [UiohookKey.F19]: 'F19',
+    [UiohookKey.F20]: 'F20',
+    [UiohookKey.F21]: 'F21',
+    [UiohookKey.F22]: 'F22',
+    [UiohookKey.F23]: 'F23',
+    [UiohookKey.F24]: 'F24',
 
-    // Modifier Keys
-    [UiohookKey.Shift]: 'LeftShift',
-    [UiohookKey.ShiftRight]: 'RightShift',
+    [UiohookKey.Semicolon]: 'Semicolon',
+    [UiohookKey.Equal]: 'Equal',
+    [UiohookKey.Comma]: 'Comma',
+    [UiohookKey.Minus]: 'Minus',
+    [UiohookKey.Period]: 'Period',
+    [UiohookKey.Slash]: 'Slash',
+    [UiohookKey.Backquote]: 'Grave',
+    [UiohookKey.BracketLeft]: 'LeftBracket',
+    [UiohookKey.Backslash]: 'Backslash',
+    [UiohookKey.BracketRight]: 'RightBracket',
+    [UiohookKey.Quote]: 'Quote',
     [UiohookKey.Ctrl]: 'LeftControl',
     [UiohookKey.CtrlRight]: 'RightControl',
     [UiohookKey.Alt]: 'LeftAlt',
     [UiohookKey.AltRight]: 'RightAlt',
     [UiohookKey.Meta]: 'LeftMeta',
     [UiohookKey.MetaRight]: 'RightMeta',
+    [UiohookKey.NumLock]: 'NumLock',
+    [UiohookKey.ScrollLock]: 'ScrollLock',
+    [UiohookKey.PrintScreen]: 'Print',
 
     [UiohookKey.A]: 'A',
     [UiohookKey.B]: 'B',
@@ -302,40 +374,15 @@ export class InputTrackingService implements OnModuleDestroy {
     }
   }
 
-  private flushMouseMoves() {
-    if (!this.mouseMovePath.length) {
-      return;
-    }
-    const action: ComputerAction =
-      this.mouseMovePath.length === 1
-        ? { action: 'move_mouse', coordinates: this.mouseMovePath[0] }
-        : { action: 'trace_mouse', path: [...this.mouseMovePath] };
-    this.mouseMovePath = [];
-    if (this.mouseMoveTimeout) {
-      clearTimeout(this.mouseMoveTimeout);
-      this.mouseMoveTimeout = null;
-    }
-    this.logAction(action);
-  }
-
-  private flushTyping() {
-    if (!this.keyBuffer.length) {
-      return;
-    }
-    const action: TypeKeysAction = {
-      action: 'type_keys',
-      keys: [...this.keyBuffer],
-    };
-    this.keyBuffer = [];
-    if (this.keyTimeout) {
-      clearTimeout(this.keyTimeout);
-      this.keyTimeout = null;
-    }
-    this.logAction(action);
-  }
-
   private logAction(action: ComputerAction) {
     this.logger.log(`Detected action: ${JSON.stringify(action)}`);
-    this.gateway.emitAction(action);
+
+    if (this.screenshot) {
+      this.gateway.emitScreenshot(this.screenshot);
+    }
+    // wait for 50ms
+    setTimeout(() => {
+      this.gateway.emitAction(action);
+    }, 50);
   }
 }

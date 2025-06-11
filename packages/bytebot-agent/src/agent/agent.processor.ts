@@ -31,6 +31,9 @@ import {
   convertPressMouseActionToToolUseBlock,
   convertTypeKeysActionToToolUseBlock,
   convertTypeTextActionToToolUseBlock,
+  convertDragMouseActionToToolUseBlock,
+  convertScrollActionToToolUseBlock,
+  ScreenshotToolUseBlock,
 } from '@bytebot/shared';
 
 import {
@@ -815,6 +818,48 @@ export class AgentProcessor {
         this.capturingInput = true; // Set capturingInput to true only on successful connection
       });
 
+      newSocket.on('screenshot', async (screenshot: { image: string }) => {
+        if (!this.currentTaskId || !this.capturingInput) {
+          if (!this.capturingInput) {
+            this.logger.warn(
+              'Received screenshot while not actively capturing or no current task.',
+            );
+          }
+          return;
+        }
+
+        this.logger.log(`Received screenshot`);
+        const toolUseId = ''; // Generate a unique ID for this tool interaction
+
+        const screenshotBlock: ScreenshotToolUseBlock = {
+          type: MessageContentType.ToolUse,
+          name: 'computer_screenshot',
+          id: toolUseId,
+          input: {},
+        };
+
+        const toolResult: ToolResultContentBlock = {
+          type: MessageContentType.ToolResult,
+          tool_use_id: toolUseId,
+          content: [
+            {
+              type: MessageContentType.Image,
+              source: {
+                data: screenshot.image,
+                media_type: 'image/png',
+                type: 'base64',
+              },
+            },
+          ],
+        };
+        await this.messagesService.create({
+          content: [screenshotBlock, toolResult],
+          role: Role.USER,
+          taskId: this.currentTaskId,
+        });
+        this.logger.log(`Message created for screenshot`);
+      });
+
       newSocket.on('input_action', async (action: any) => {
         if (!this.currentTaskId || !this.capturingInput) {
           if (!this.capturingInput) {
@@ -828,37 +873,66 @@ export class AgentProcessor {
         this.logger.log(`Received input action: ${action.action}`);
         const content: MessageContentBlock[] = [];
         const toolUseId = ''; // Generate a unique ID for this tool interaction
+        const toolResult: ToolResultContentBlock = {
+          type: MessageContentType.ToolResult,
+          tool_use_id: toolUseId,
+          content: [
+            {
+              type: MessageContentType.Text,
+              text: `Input action '${action.action}' processed.`,
+            },
+          ],
+        };
 
         switch (action.action) {
           case 'move_mouse':
             content.push(
               convertMoveMouseActionToToolUseBlock(action, toolUseId),
+              toolResult,
             );
+
             break;
           case 'trace_mouse':
             content.push(
               convertTraceMouseActionToToolUseBlock(action, toolUseId),
+              toolResult,
+            );
+            break;
+          case 'drag_mouse':
+            content.push(
+              convertDragMouseActionToToolUseBlock(action, toolUseId),
+              toolResult,
             );
             break;
           case 'click_mouse':
             content.push(
               convertClickMouseActionToToolUseBlock(action, toolUseId),
+              toolResult,
             );
             break;
           case 'press_mouse':
             this.logger.log(`Pressing mouse: ${action.button}`);
             content.push(
               convertPressMouseActionToToolUseBlock(action, toolUseId),
+              toolResult,
             );
             break;
           case 'type_keys':
             content.push(
               convertTypeKeysActionToToolUseBlock(action, toolUseId),
+              toolResult,
             );
             break;
           case 'type_text':
             content.push(
               convertTypeTextActionToToolUseBlock(action, toolUseId),
+              toolResult,
+            );
+            break;
+          case 'scroll':
+            content.push(
+              convertScrollActionToToolUseBlock(action, toolUseId),
+              toolResult,
             );
             break;
           default:
@@ -878,27 +952,9 @@ export class AgentProcessor {
           return;
         }
 
-        // If content was generated, or if it was an unknown action (which we might want to record)
-        // This part might need more nuanced logic depending on whether all actions should result in a message.
-        // For now, assuming any processed action (even if just logged as unknown) might result in a message.
-
-        // The original code always added a "ToolResult" block.
-        // This behavior is preserved but with a more specific message.
-        // Consider if this is always appropriate.
-        content.push({
-          type: MessageContentType.ToolResult,
-          tool_use_id: toolUseId,
-          content: [
-            {
-              type: MessageContentType.Text,
-              text: `Input action '${action.action}' processed.`,
-            },
-          ],
-        });
-
         await this.messagesService.create({
           content,
-          role: Role.USER, // This implies the message is "from" the user via input.
+          role: Role.USER,
           taskId: this.currentTaskId,
         });
         this.logger.log(`Message created for input action: ${action.action}`);

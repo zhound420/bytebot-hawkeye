@@ -57,10 +57,9 @@ export class ClickMouseActionDto {
   @IsString({ each: true })
   holdKeys?: string[];
 
-  @IsOptional()
   @IsNumber()
   @Min(1)
-  numClicks?: number;
+  numClicks: number;
 }
 
 export class PressMouseActionDto {
