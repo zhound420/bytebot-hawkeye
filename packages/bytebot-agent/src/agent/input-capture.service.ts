@@ -69,7 +69,11 @@ export class InputCaptureService {
         content: [
           {
             type: MessageContentType.Image,
-            source: { data: shot.image, media_type: 'image/png', type: 'base64' },
+            source: {
+              data: shot.image,
+              media_type: 'image/png',
+              type: 'base64',
+            },
           },
         ],
       };
@@ -80,7 +84,83 @@ export class InputCaptureService {
       });
     });
 
-    this.socket.on('input_action', async (action: any) => {
+    this.socket.on(
+      'screenshotAndAction',
+      async (shot: { image: string }, action: any) => {
+        if (!this.capturing || !taskId) return;
+        // The gateway only sends a click_mouse or drag_mouse action together with screenshots for now.
+        if (action.action !== 'click_mouse' && action.action !== 'drag_mouse')
+          return;
+
+        // Create separate tool-use IDs for the screenshot and the mouse click.
+        const screenshotToolUseId = randomUUID();
+        const actionToolUseId = randomUUID();
+
+        const actionResult: ToolResultContentBlock = {
+          type: MessageContentType.ToolResult,
+          tool_use_id: actionToolUseId,
+          content: [
+            {
+              type: MessageContentType.Text,
+              text: `Input action '${action.action}' processed.`,
+            },
+          ],
+        };
+
+        // Screenshot tool-use and result blocks
+        const screenshotBlock: ScreenshotToolUseBlock = {
+          type: MessageContentType.ToolUse,
+          name: 'computer_screenshot',
+          id: screenshotToolUseId,
+          input: {},
+        };
+        const screenshotResult: ToolResultContentBlock = {
+          type: MessageContentType.ToolResult,
+          tool_use_id: screenshotToolUseId,
+          content: [
+            {
+              type: MessageContentType.Image,
+              source: {
+                data: shot.image,
+                media_type: 'image/png',
+                type: 'base64',
+              },
+            },
+          ],
+        };
+
+        const actionBlocks: MessageContentBlock[] = [];
+
+        switch (action.action) {
+          case 'drag_mouse':
+            actionBlocks.push(
+              convertDragMouseActionToToolUseBlock(action, actionToolUseId),
+              actionResult,
+            );
+            break;
+          case 'click_mouse':
+            actionBlocks.push(
+              convertClickMouseActionToToolUseBlock(action, actionToolUseId),
+              actionResult,
+            );
+            break;
+        }
+
+        await this.messagesService.create({
+          content: [screenshotBlock, screenshotResult],
+          role: Role.USER,
+          taskId,
+        });
+
+        await this.messagesService.create({
+          content: actionBlocks,
+          role: Role.USER,
+          taskId,
+        });
+      },
+    );
+
+    this.socket.on('action', async (action: any) => {
       if (!this.capturing || !taskId) return;
       const toolUseId = randomUUID();
       const blocks: MessageContentBlock[] = [];
@@ -97,32 +177,51 @@ export class InputCaptureService {
 
       switch (action.action) {
         case 'drag_mouse':
-          blocks.push(convertDragMouseActionToToolUseBlock(action, toolUseId), toolResult);
-          break;
-        case 'click_mouse':
-          blocks.push(convertClickMouseActionToToolUseBlock(action, toolUseId), toolResult);
+          blocks.push(
+            convertDragMouseActionToToolUseBlock(action, toolUseId),
+            toolResult,
+          );
           break;
         case 'press_mouse':
-          blocks.push(convertPressMouseActionToToolUseBlock(action, toolUseId), toolResult);
+          blocks.push(
+            convertPressMouseActionToToolUseBlock(action, toolUseId),
+            toolResult,
+          );
           break;
         case 'type_keys':
-          blocks.push(convertTypeKeysActionToToolUseBlock(action, toolUseId), toolResult);
+          blocks.push(
+            convertTypeKeysActionToToolUseBlock(action, toolUseId),
+            toolResult,
+          );
           break;
         case 'press_keys':
-          blocks.push(convertPressKeysActionToToolUseBlock(action, toolUseId), toolResult);
+          blocks.push(
+            convertPressKeysActionToToolUseBlock(action, toolUseId),
+            toolResult,
+          );
           break;
         case 'type_text':
-          blocks.push(convertTypeTextActionToToolUseBlock(action, toolUseId), toolResult);
+          blocks.push(
+            convertTypeTextActionToToolUseBlock(action, toolUseId),
+            toolResult,
+          );
           break;
         case 'scroll':
-          blocks.push(convertScrollActionToToolUseBlock(action, toolUseId), toolResult);
+          blocks.push(
+            convertScrollActionToToolUseBlock(action, toolUseId),
+            toolResult,
+          );
           break;
         default:
           this.logger.warn(`Unknown action ${action.action}`);
       }
 
       if (blocks.length) {
-        await this.messagesService.create({ content: blocks, role: Role.USER, taskId });
+        await this.messagesService.create({
+          content: blocks,
+          role: Role.USER,
+          taskId,
+        });
       }
     });
 

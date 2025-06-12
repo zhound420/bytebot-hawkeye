@@ -32,10 +32,13 @@ export class InputTrackingGateway
   }
 
   emitAction(action: ComputerAction) {
-    this.server.emit('input_action', action);
+    this.server.emit('action', action);
   }
 
-  emitScreenshot(screenshot: { image: string }) {
-    this.server.emit('screenshot', screenshot);
+  emitScreenshotAndAction(
+    screenshot: { image: string },
+    action: ComputerAction,
+  ) {
+    this.server.emit('screenshotAndAction', screenshot, action);
   }
 }
