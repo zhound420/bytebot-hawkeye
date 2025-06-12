@@ -56,7 +56,7 @@ export type ClickMouseToolUseBlock = ToolUseContentBlock & {
     coordinates?: Coordinates;
     button: Button;
     holdKeys?: string[];
-    numClicks?: number;
+    numClicks: number;
   };
 };
 

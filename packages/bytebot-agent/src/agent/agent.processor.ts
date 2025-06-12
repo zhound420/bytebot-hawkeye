@@ -475,7 +475,7 @@ export class AgentProcessor {
     coordinates?: Coordinates;
     button: Button;
     holdKeys?: string[];
-    numClicks?: number;
+    numClicks: number;
   }): Promise<void> {
     const { coordinates, button, holdKeys, numClicks } = input;
     console.log(

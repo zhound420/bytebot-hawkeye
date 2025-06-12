@@ -19,7 +19,7 @@ export type ClickMouseAction = {
   coordinates?: Coordinates;
   button: Button;
   holdKeys?: string[];
-  numClicks?: number;
+  numClicks: number;
 };
 
 export type PressMouseAction = {

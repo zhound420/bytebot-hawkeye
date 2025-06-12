@@ -92,12 +92,10 @@ export const _clickMouseTool = {
       },
       numClicks: {
         type: 'integer',
-        description:
-          'Optional number of clicks to perform (e.g., 2 for double-click). Defaults to 1.',
-        nullable: true,
+        description: 'Number of clicks to perform (e.g., 2 for double-click).',
       },
     },
-    required: ['button'],
+    required: ['button', 'numClicks'],
   },
 };
 
