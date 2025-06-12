@@ -5,10 +5,11 @@ import { AnthropicModule } from '../anthropic/anthropic.module';
 import { AgentProcessor } from './agent.processor';
 import { ConfigModule } from '@nestjs/config';
 import { AgentScheduler } from './agent.scheduler';
+import { InputCaptureService } from './input-capture.service';
 
 @Module({
   imports: [ConfigModule, TasksModule, MessagesModule, AnthropicModule],
-  providers: [AgentProcessor, AgentScheduler],
+  providers: [AgentProcessor, AgentScheduler, InputCaptureService],
   exports: [AgentProcessor],
 })
 export class AgentModule {}

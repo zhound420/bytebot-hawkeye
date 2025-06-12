@@ -160,3 +160,26 @@ export async function takeOverTask(taskId: string): Promise<Task | null> {
     return null;
   }
 }
+
+export async function resumeTask(taskId: string): Promise<Task | null> {
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_BYTEBOT_AGENT_BASE_URL}/tasks/${taskId}/resume`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to resume task");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error resuming task:", error);
+    return null;
+  }
+}

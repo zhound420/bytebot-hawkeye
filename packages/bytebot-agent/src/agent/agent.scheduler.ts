@@ -44,7 +44,7 @@ export class AgentScheduler implements OnModuleInit {
         executedAt: new Date(),
       });
       this.logger.debug(`Processing task ID: ${task.id}`);
-      await this.agentProcessor.processTask(task.id);
+      this.agentProcessor.processTask(task.id);
     }
   }
 }

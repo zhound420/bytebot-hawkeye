@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import Anthropic from '@anthropic-ai/sdk';
+import Anthropic, { APIUserAbortError } from '@anthropic-ai/sdk';
 import {
   MessageContentBlock,
   MessageContentType,
@@ -37,7 +37,10 @@ export class AnthropicService {
    * @param options Additional options for the API call
    * @returns The AI response as an array of message content blocks
    */
-  async sendMessage(messages: Message[]): Promise<MessageContentBlock[]> {
+  async sendMessage(
+    messages: Message[],
+    signal?: AbortSignal,
+  ): Promise<MessageContentBlock[]> {
     try {
       const model = DEFAULT_MODEL;
       const maxTokens = 8192;
@@ -47,17 +50,28 @@ export class AnthropicService {
       const anthropicMessages = this.formatMessagesForAnthropic(messages);
 
       // Make the API call
-      const response = await this.anthropic.beta.messages.create({
-        model,
-        max_tokens: maxTokens,
-        system,
-        messages: anthropicMessages,
-        tools: anthropicTools,
-      });
+      const response = await this.anthropic.beta.messages.create(
+        {
+          model,
+          max_tokens: maxTokens,
+          system,
+          messages: anthropicMessages,
+          tools: anthropicTools,
+        },
+        { signal },
+      );
 
       // Convert Anthropic's response to our message content blocks format
       return this.formatAnthropicResponse(response.content);
     } catch (error) {
+      this.logger.log(error);
+
+      if (error instanceof APIUserAbortError) {
+        this.logger.log('Anthropic API call aborted');
+        const error = new Error('Anthropic API call aborted');
+        error.name = 'AbortError';
+        throw error;
+      }
       this.logger.error(
         `Error sending message to Anthropic: ${error.message}`,
         error.stack,
@@ -77,6 +91,17 @@ export class AnthropicService {
     // Process each message content block
     for (const message of messages) {
       const messageContentBlocks = message.content as MessageContentBlock[];
+
+      // Don't include user messages that have tool use
+      if (
+        message.role === Role.USER &&
+        messageContentBlocks.some(
+          (block) => block.type === MessageContentType.ToolUse,
+        )
+      ) {
+        continue;
+      }
+
       const content: Anthropic.ContentBlockParam[] = messageContentBlocks.map(
         (block) => block as Anthropic.ContentBlockParam,
       );

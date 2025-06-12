@@ -1,3 +1,5 @@
+import { Button, Coordinates, Press } from "./computerAction.types";
+
 // Content block types
 export enum MessageContentType {
   Text = "text",
@@ -32,10 +34,6 @@ export type ToolUseContentBlock = {
   id: string;
   input: Record<string, any>;
 } & MessageContentBlockBase;
-
-export type Coordinates = { x: number; y: number };
-export type Button = "left" | "right" | "middle";
-export type Press = "up" | "down";
 
 export type MoveMouseToolUseBlock = ToolUseContentBlock & {
   name: "computer_move_mouse";
