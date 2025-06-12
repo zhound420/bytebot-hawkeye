@@ -6,6 +6,7 @@ import {
   fetchTaskById,
   startTask,
   takeOverTask,
+  resumeTask,
 } from "@/utils/taskUtils";
 import { MessageContentType } from "@bytebot/shared";
 import { useWebSocket } from "./useWebSocket";
@@ -28,35 +29,46 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
   const processedMessageIds = useRef<Set<string>>(new Set());
 
   // WebSocket event handlers
-  const handleTaskUpdate = useCallback((task: Task) => {
-    if (task.id === currentTaskId) {
-      setTaskStatus(task.status);
-      setControl(task.control);
-    }
-  }, [currentTaskId]);
+  const handleTaskUpdate = useCallback(
+    (task: Task) => {
+      if (task.id === currentTaskId) {
+        setTaskStatus(task.status);
+        setControl(task.control);
+      }
+    },
+    [currentTaskId],
+  );
 
-  const handleNewMessage = useCallback((message: Message) => {
-    // Only add message if it's not already processed and belongs to current task
-    if (!processedMessageIds.current.has(message.id) && 
-        message.taskId === currentTaskId) {
-      console.log('Adding new message from WebSocket:', message);
-      processedMessageIds.current.add(message.id);
-      setMessages((prev) => [...prev, message]);
-    }
-  }, [currentTaskId]);
+  const handleNewMessage = useCallback(
+    (message: Message) => {
+      // Only add message if it's not already processed and belongs to current task
+      if (
+        !processedMessageIds.current.has(message.id) &&
+        message.taskId === currentTaskId
+      ) {
+        console.log("Adding new message from WebSocket:", message);
+        processedMessageIds.current.add(message.id);
+        setMessages((prev) => [...prev, message]);
+      }
+    },
+    [currentTaskId],
+  );
 
   const handleTaskCreated = useCallback((task: Task) => {
-    console.log('New task created:', task);
+    console.log("New task created:", task);
   }, []);
 
-  const handleTaskDeleted = useCallback((taskId: string) => {
-    if (taskId === currentTaskId) {
-      console.log('Current task was deleted');
-      setCurrentTaskId(null);
-      setMessages([]);
-      processedMessageIds.current = new Set();
-    }
-  }, [currentTaskId]);
+  const handleTaskDeleted = useCallback(
+    (taskId: string) => {
+      if (taskId === currentTaskId) {
+        console.log("Current task was deleted");
+        setCurrentTaskId(null);
+        setMessages([]);
+        processedMessageIds.current = new Set();
+      }
+    },
+    [currentTaskId],
+  );
 
   // Initialize WebSocket connection
   const { joinTask, leaveTask } = useWebSocket({
@@ -120,7 +132,7 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
       console.log(`Joining WebSocket room for task: ${currentTaskId}`);
       joinTask(currentTaskId);
     } else {
-      console.log('Leaving WebSocket task room');
+      console.log("Leaving WebSocket task room");
       leaveTask();
     }
   }, [currentTaskId, joinTask, leaveTask]);
@@ -210,7 +222,7 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
     console.log("Started new conversation");
   };
 
-  const handleTakeOver = async () => {
+  const handleTakeOverTask = async () => {
     if (!currentTaskId) return;
 
     try {
@@ -220,6 +232,19 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
       }
     } catch (error) {
       console.error("Error taking over task:", error);
+    }
+  };
+
+  const handleResumeTask = async () => {
+    if (!currentTaskId) return;
+
+    try {
+      const updatedTask = await resumeTask(currentTaskId);
+      if (updatedTask) {
+        setControl(updatedTask.control);
+      }
+    } catch (error) {
+      console.error("Error resuming task:", error);
     }
   };
 
@@ -235,6 +260,7 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
     handleGuideTask,
     handleStartTask,
     startNewConversation,
-    handleTakeOver,
+    handleTakeOverTask,
+    handleResumeTask,
   };
 }

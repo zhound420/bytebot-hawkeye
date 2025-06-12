@@ -19,16 +19,6 @@ import {
   isPressKeysToolUseBlock,
   isSetTaskStatusToolUseBlock,
   isCreateTaskToolUseBlock,
-  convertMoveMouseActionToToolUseBlock,
-  convertTraceMouseActionToToolUseBlock,
-  convertClickMouseActionToToolUseBlock,
-  convertPressMouseActionToToolUseBlock,
-  convertTypeTextActionToToolUseBlock,
-  convertDragMouseActionToToolUseBlock,
-  convertScrollActionToToolUseBlock,
-  ScreenshotToolUseBlock,
-  convertPressKeysActionToToolUseBlock,
-  convertTypeKeysActionToToolUseBlock,
 } from '@bytebot/shared';
 
 import {
@@ -41,21 +31,22 @@ import {
   ToolResultContentBlock,
 } from '@bytebot/shared';
 import { ConfigService } from '@nestjs/config';
-import { io, Socket } from 'socket.io-client';
+import { InputCaptureService } from './input-capture.service';
+import { OnEvent } from '@nestjs/event-emitter';
 
 @Injectable()
 export class AgentProcessor {
   private readonly logger = new Logger(AgentProcessor.name);
   private currentTaskId: string | null = null;
   private isProcessing = false;
-  private inputSocket: Socket | null = null;
-  private capturingInput = false;
+  private abortController: AbortController | null = null;
 
   constructor(
     private readonly tasksService: TasksService,
     private readonly messagesService: MessagesService,
     private readonly anthropicService: AnthropicService,
     private readonly configService: ConfigService,
+    private readonly inputCaptureService: InputCaptureService,
   ) {
     this.logger.log('AgentProcessor initialized');
   }
@@ -74,200 +65,192 @@ export class AgentProcessor {
     return this.currentTaskId;
   }
 
-  async processTask(taskId: string) {
-    this.logger.log(`Processing job for task ID: ${taskId}`);
+  @OnEvent('task.takeover')
+  handleTaskTakeover({ taskId }: { taskId: string }) {
+    if (this.currentTaskId === taskId && this.isProcessing) {
+      this.logger.log(`Task takeover event received for task ID: ${taskId}`);
+
+      // Signal any in-flight async operations to abort
+      this.abortController?.abort();
+
+      this.inputCaptureService.start(taskId);
+    }
+  }
+
+  @OnEvent('task.resume')
+  handleTaskResume({ taskId }: { taskId: string }) {
+    if (this.currentTaskId === taskId && this.isProcessing) {
+      this.logger.log(`Task resume event received for task ID: ${taskId}`);
+      this.abortController = new AbortController();
+
+      void this.runIteration(taskId);
+    }
+  }
+
+  processTask(taskId: string) {
+    this.logger.log(`Starting processing for task ID: ${taskId}`);
+
+    if (this.isProcessing) {
+      this.logger.warn('AgentProcessor is already processing another task');
+      return;
+    }
+
+    this.isProcessing = true;
+    this.currentTaskId = taskId;
+    this.abortController = new AbortController();
+
+    // Kick off the first iteration without blocking the caller
+    void this.runIteration(taskId);
+  }
+
+  /**
+   * Runs a single iteration of task processing and schedules the next
+   * iteration via setImmediate while the task remains RUNNING.
+   */
+  private async runIteration(taskId: string): Promise<void> {
+    if (!this.isProcessing) {
+      return;
+    }
 
     try {
-      let task = await this.tasksService.findById(taskId);
-      this.currentTaskId = taskId;
-      this.isProcessing = true;
+      const task = await this.tasksService.findById(taskId);
 
-      while (task.status == TaskStatus.RUNNING) {
-        if (task.control != Role.ASSISTANT) {
-          this.startInputCapture();
-
-          // wait 2 seconds and loop
-          this.logger.log(
-            `Task ${taskId} is not under agent control, waiting 5 seconds before looping`,
-          );
-          await new Promise((resolve) => setTimeout(resolve, 5000));
-          task = await this.tasksService.findById(taskId);
-          continue;
-        }
-        await this.stopInputCapture();
-
+      if (task.status !== TaskStatus.RUNNING) {
         this.logger.log(
-          `Processing task loop iteration for task ID: ${taskId}`,
+          `Task processing completed for task ID: ${taskId} with status: ${task.status}`,
         );
-        const messages = await this.messagesService.findAll(taskId);
-        this.logger.debug(
-          `Sending ${messages.length} messages to LLM for processing`,
+        this.isProcessing = false;
+        this.currentTaskId = null;
+        return;
+      }
+
+      this.logger.log(`Processing iteration for task ID: ${taskId}`);
+
+      const messages = await this.messagesService.findAll(taskId);
+      this.logger.debug(
+        `Sending ${messages.length} messages to LLM for processing`,
+      );
+
+      const messageContentBlocks: MessageContentBlock[] =
+        await this.anthropicService.sendMessage(
+          messages,
+          this.abortController?.signal,
         );
 
-        try {
-          const messageContentBlocks: MessageContentBlock[] =
-            await this.anthropicService.sendMessage(messages);
+      this.logger.debug(
+        `Received ${messageContentBlocks.length} content blocks from LLM`,
+      );
 
-          if (this.capturingInput) {
-            continue;
-          }
+      if (messageContentBlocks.length === 0) {
+        this.logger.warn(
+          `Task ID: ${taskId} received no content blocks from LLM, marking as failed`,
+        );
+        await this.tasksService.update(taskId, {
+          status: TaskStatus.FAILED,
+        });
+        this.isProcessing = false;
+        this.currentTaskId = null;
+        return;
+      }
 
-          this.logger.debug(
-            `Received ${messageContentBlocks.length} content blocks from LLM`,
-          );
+      await this.messagesService.create({
+        content: messageContentBlocks,
+        role: Role.ASSISTANT,
+        taskId,
+      });
 
-          if (messageContentBlocks.length == 0) {
-            this.logger.log(
-              `Task ID: ${taskId} received no content blocks from LLM, setting task status to failed`,
-            );
-            await this.tasksService.update(taskId, {
-              status: TaskStatus.FAILED,
-            });
-            break;
-          }
+      const generatedToolResults: ToolResultContentBlock[] = [];
 
-          await this.messagesService.create({
-            content: messageContentBlocks,
-            role: Role.ASSISTANT,
-            taskId: taskId,
+      for (const block of messageContentBlocks) {
+        if (isComputerToolUseContentBlock(block)) {
+          const result = await this.handleComputerToolUse(block);
+          generatedToolResults.push(result);
+        }
+
+        if (isCreateTaskToolUseBlock(block)) {
+          const type = block.input.type?.toUpperCase() as TaskType;
+          const priority = block.input.priority?.toUpperCase() as TaskPriority;
+
+          await this.tasksService.create({
+            description: block.input.description,
+            type,
+            createdBy: Role.ASSISTANT,
+            ...(block.input.scheduledFor && {
+              scheduledFor: new Date(block.input.scheduledFor),
+            }),
+            priority,
           });
-          this.logger.debug(
-            `Saved assistant response to database for task ID: ${taskId}`,
-          );
 
-          const generatedToolResults: ToolResultContentBlock[] = [];
+          generatedToolResults.push({
+            type: MessageContentType.ToolResult,
+            tool_use_id: block.id,
+            content: [
+              {
+                type: MessageContentType.Text,
+                text: 'The task has been created',
+              },
+            ],
+          });
+        }
 
-          for (const block of messageContentBlocks) {
-            if (isComputerToolUseContentBlock(block)) {
-              this.logger.log(
-                `Processing tool use block: ${block.input.action} (ID: ${block.id})`,
-              );
-
-              const toolResult = await this.handleComputerToolUse(block);
-              this.logger.debug(
-                `Tool execution completed for tool_use_id: ${block.id}, saving result`,
-              );
-              generatedToolResults.push(toolResult);
-            }
-
-            if (isCreateTaskToolUseBlock(block)) {
-              this.logger.log(
-                `Processing create task tool use block: ${block.input.name}`,
-              );
-
-              // if the block input type exists, convert it to uppercase and use it as the type
-              const type = block.input.type?.toUpperCase() as TaskType;
-              const priority =
-                block.input.priority?.toUpperCase() as TaskPriority;
-
-              await this.tasksService.create({
-                description: block.input.description,
-                type,
-                createdBy: Role.ASSISTANT,
-                ...(block.input.scheduledFor && {
-                  scheduledFor: new Date(block.input.scheduledFor),
-                }),
-                priority,
+        if (isSetTaskStatusToolUseBlock(block)) {
+          switch (block.input.status) {
+            case 'completed':
+              await this.tasksService.update(taskId, {
+                status: TaskStatus.COMPLETED,
+                completedAt: new Date(),
               });
-
+              break;
+            case 'failed':
+              await this.tasksService.update(taskId, {
+                status: TaskStatus.FAILED,
+              });
+              break;
+            case 'needs_help':
               generatedToolResults.push({
                 type: MessageContentType.ToolResult,
                 tool_use_id: block.id,
                 content: [
                   {
                     type: MessageContentType.Text,
-                    text: 'The task has been created',
+                    text: 'The task has been set to needs help',
                   },
                 ],
               });
-            }
-
-            if (isSetTaskStatusToolUseBlock(block)) {
-              this.logger.log(
-                `Processing set task status tool use block: ${block.input.status}`,
-              );
-              switch (block.input.status) {
-                case 'completed': {
-                  await this.tasksService.update(taskId, {
-                    status: TaskStatus.COMPLETED,
-                    completedAt: new Date(),
-                  });
-                  break;
-                }
-                case 'failed': {
-                  await this.tasksService.update(taskId, {
-                    status: TaskStatus.FAILED,
-                  });
-                  break;
-                }
-                case 'needs_help': {
-                  generatedToolResults.push({
-                    type: MessageContentType.ToolResult,
-                    tool_use_id: block.id,
-                    content: [
-                      {
-                        type: MessageContentType.Text,
-                        text: 'The task has been set to needs help',
-                      },
-                    ],
-                  });
-                  await this.tasksService.update(taskId, {
-                    status: TaskStatus.NEEDS_HELP,
-                  });
-                  break;
-                }
-              }
-              this.logger.log(
-                `Task ID: ${taskId} has been ${block.input.status}`,
-              );
-
+              await this.tasksService.update(taskId, {
+                status: TaskStatus.NEEDS_HELP,
+              });
               break;
-            }
           }
-
-          if (generatedToolResults.length > 0) {
-            await this.messagesService.create({
-              content: generatedToolResults,
-              role: Role.USER,
-              taskId: taskId,
-            });
-            this.logger.debug(
-              `Saved ${generatedToolResults.length} tool result(s) to database for task ID: ${taskId}`,
-            );
-          }
-
-          this.logger.debug(`Refreshing task data for task ID: ${taskId}`);
-          task = await this.tasksService.findById(taskId);
-          this.logger.debug(
-            `Task refreshed, status: ${task.status}, messages count: ${task.messages.length}`,
-          );
-        } catch (error) {
-          this.logger.error(
-            `Error during task processing loop for task ID: ${taskId} - ${error.message}`,
-            error.stack,
-          );
-
-          await this.tasksService.update(taskId, {
-            status: TaskStatus.FAILED,
-          });
-          break;
         }
       }
 
-      this.logger.log(
-        `Task processing completed for task ID: ${taskId} with status: ${task.status}`,
-      );
-    } catch (error) {
-      this.logger.error(
-        `Critical error processing job for task ID: ${taskId} - ${error.message}`,
-        error.stack,
-      );
-    } finally {
-      if (this.inputSocket) {
-        await this.stopInputCapture();
+      if (generatedToolResults.length > 0) {
+        await this.messagesService.create({
+          content: generatedToolResults,
+          role: Role.USER,
+          taskId,
+        });
       }
-      this.isProcessing = false;
-      this.currentTaskId = null;
+
+      // Schedule the next iteration without blocking
+      if (this.isProcessing) {
+        setImmediate(() => this.runIteration(taskId));
+      }
+    } catch (error: any) {
+      if (error?.name === 'AbortError') {
+        this.logger.warn(`Processing aborted for task ID: ${taskId}`);
+      } else {
+        this.logger.error(
+          `Error during task processing iteration for task ID: ${taskId} - ${error.message}`,
+          error.stack,
+        );
+        await this.tasksService.update(taskId, {
+          status: TaskStatus.FAILED,
+        });
+        this.isProcessing = false;
+        this.currentTaskId = null;
+      }
     }
   }
 
@@ -278,14 +261,13 @@ export class AgentProcessor {
 
     this.logger.log(`Stopping execution of task ${this.currentTaskId}`);
 
+    // Signal any in-flight async operations to abort
+    this.abortController?.abort();
+
     if (this.currentTaskId) {
       await this.tasksService.update(this.currentTaskId, {
         status: TaskStatus.CANCELLED,
       });
-    }
-
-    if (this.currentTaskId) {
-      await this.stopInputCapture();
     }
 
     this.isProcessing = false;
@@ -767,243 +749,6 @@ export class AgentProcessor {
     } catch (error) {
       console.error('Error in screenshot action:', error);
       throw error;
-    }
-  }
-
-  // Method to start input capture
-  private startInputCapture() {
-    if (this.inputSocket?.connected && this.capturingInput) {
-      this.logger.log('Input capture is already active and socket connected.');
-      return;
-    }
-
-    // If socket exists but is not connected, try to reconnect it.
-    if (this.inputSocket && !this.inputSocket.connected) {
-      this.logger.log(
-        'Socket exists but not connected, attempting to reconnect...',
-      );
-      this.inputSocket.connect();
-      // State (capturingInput) will be managed by 'connect'/'disconnect' event handlers
-      return;
-    }
-
-    // Only create a new socket if one doesn't exist or previous one was cleaned up
-    if (!this.inputSocket) {
-      this.logger.log('Initializing new input socket connection...');
-      const baseUrl = this.configService.get<string>(
-        'BYTEBOT_DESKTOP_BASE_URL',
-      );
-      if (!baseUrl) {
-        this.logger.error(
-          'BYTEBOT_DESKTOP_BASE_URL is not configured. Cannot start input capture.',
-        );
-        return;
-      }
-
-      const newSocket = io(baseUrl, {
-        transports: ['websocket'],
-        // Consider adding reconnection options if needed by the application
-        // reconnectionAttempts: 5,
-        // reconnectionDelay: 1000,
-      });
-      this.inputSocket = newSocket; // Assign new socket instance
-
-      newSocket.on('connect', () => {
-        this.logger.log('Input socket connected successfully.');
-        this.capturingInput = true; // Set capturingInput to true only on successful connection
-      });
-
-      newSocket.on('screenshot', async (screenshot: { image: string }) => {
-        if (!this.currentTaskId || !this.capturingInput) {
-          if (!this.capturingInput) {
-            this.logger.warn(
-              'Received screenshot while not actively capturing or no current task.',
-            );
-          }
-          return;
-        }
-
-        this.logger.log(`Received screenshot`);
-        const toolUseId = ''; // Generate a unique ID for this tool interaction
-
-        const screenshotBlock: ScreenshotToolUseBlock = {
-          type: MessageContentType.ToolUse,
-          name: 'computer_screenshot',
-          id: toolUseId,
-          input: {},
-        };
-
-        const toolResult: ToolResultContentBlock = {
-          type: MessageContentType.ToolResult,
-          tool_use_id: toolUseId,
-          content: [
-            {
-              type: MessageContentType.Image,
-              source: {
-                data: screenshot.image,
-                media_type: 'image/png',
-                type: 'base64',
-              },
-            },
-          ],
-        };
-        await this.messagesService.create({
-          content: [screenshotBlock, toolResult],
-          role: Role.USER,
-          taskId: this.currentTaskId,
-        });
-        this.logger.log(`Message created for screenshot`);
-      });
-
-      newSocket.on('input_action', async (action: any) => {
-        if (!this.currentTaskId || !this.capturingInput) {
-          if (!this.capturingInput) {
-            this.logger.warn(
-              'Received input_action while not actively capturing or no current task.',
-            );
-          }
-          return;
-        }
-
-        this.logger.log(`Received input action: ${action.action}`);
-        const content: MessageContentBlock[] = [];
-        const toolUseId = ''; // Generate a unique ID for this tool interaction
-        const toolResult: ToolResultContentBlock = {
-          type: MessageContentType.ToolResult,
-          tool_use_id: toolUseId,
-          content: [
-            {
-              type: MessageContentType.Text,
-              text: `Input action '${action.action}' processed.`,
-            },
-          ],
-        };
-
-        switch (action.action) {
-          case 'drag_mouse':
-            content.push(
-              convertDragMouseActionToToolUseBlock(action, toolUseId),
-              toolResult,
-            );
-            break;
-          case 'click_mouse':
-            content.push(
-              convertClickMouseActionToToolUseBlock(action, toolUseId),
-              toolResult,
-            );
-            break;
-          case 'press_mouse':
-            this.logger.log(`Pressing mouse: ${action.button}`);
-            content.push(
-              convertPressMouseActionToToolUseBlock(action, toolUseId),
-              toolResult,
-            );
-            break;
-          case 'type_keys':
-            content.push(
-              convertTypeKeysActionToToolUseBlock(action, toolUseId),
-              toolResult,
-            );
-            break;
-          case 'press_keys':
-            content.push(
-              convertPressKeysActionToToolUseBlock(action, toolUseId),
-              toolResult,
-            );
-            break;
-          case 'type_text':
-            content.push(
-              convertTypeTextActionToToolUseBlock(action, toolUseId),
-              toolResult,
-            );
-            break;
-          case 'scroll':
-            content.push(
-              convertScrollActionToToolUseBlock(action, toolUseId),
-              toolResult,
-            );
-            break;
-          default:
-            this.logger.warn(`Unknown input action received: ${action.action}`);
-            break;
-        }
-
-        this.logger.debug(
-          `Tool use content generated: ${JSON.stringify(content)}`,
-        );
-
-        if (content.length === 0 && action.action !== 'unknown') {
-          // Only return if no content AND not an unknown action we logged
-          this.logger.log(
-            `No content generated for action: ${action.action}. Not sending message.`,
-          );
-          return;
-        }
-
-        await this.messagesService.create({
-          content,
-          role: Role.USER,
-          taskId: this.currentTaskId,
-        });
-        this.logger.log(`Message created for input action: ${action.action}`);
-      });
-
-      newSocket.on('connect_error', (err) => {
-        this.logger.error(
-          `Input socket connection error: ${err.message}`,
-          err.stack,
-        );
-        this.capturingInput = false; // Ensure capturing is false if connection fails
-        // The socket might attempt to reconnect automatically depending on its configuration.
-      });
-
-      newSocket.on('disconnect', (reason) => {
-        this.logger.log(`Input socket disconnected: ${reason}`);
-        this.capturingInput = false;
-        // If the disconnect was not initiated by stopInputCapture (e.g., server-side or network issue),
-        // the socket might attempt to reconnect based on its config.
-        // If reason is 'io server disconnect' or 'io client disconnect' (manual), it won't auto-reconnect.
-        if (reason === 'io server disconnect') {
-          this.logger.warn(
-            'Input socket disconnected by server. It will not automatically reconnect.',
-          );
-          // Consider nullifying this.inputSocket here if it's permanently unusable
-          // this.inputSocket = null; // Or handle in stopInputCapture
-        }
-      });
-    }
-    // The io() call and event listener setup are non-blocking.
-    // startInputCapture will return quickly.
-  }
-
-  // Method to stop input capture
-  private async stopInputCapture() {
-    // Marked async if any internal ops become async, currently not.
-    this.logger.log('Attempting to stop input capture...');
-    if (this.inputSocket) {
-      if (this.inputSocket.connected) {
-        this.logger.log('Disconnecting active input socket.');
-        this.inputSocket.disconnect(); // This is a client-initiated disconnect.
-      } else {
-        this.logger.log(
-          'Input socket exists but is not connected. Removing listeners and reference.',
-        );
-        this.inputSocket.removeAllListeners(); // Clean up listeners if not connected
-      }
-      // Nullify the socket reference after ensuring it's disconnected or listeners are removed.
-      // The 'disconnect' event handler will also set capturingInput = false.
-      this.inputSocket = null;
-    } else {
-      this.logger.log('No input socket instance to stop.');
-    }
-
-    // Explicitly set capturingInput to false, as a safeguard.
-    if (this.capturingInput) {
-      this.logger.log('Setting capturingInput to false.');
-      this.capturingInput = false;
-    } else {
-      // This log might be noisy if stopInputCapture is called multiple times or when not capturing.
-      // this.logger.log('capturingInput is already false or was never true.');
     }
   }
 }

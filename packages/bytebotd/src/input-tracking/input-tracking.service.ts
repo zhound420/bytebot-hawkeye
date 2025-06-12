@@ -281,11 +281,11 @@ export class InputTrackingService implements OnModuleDestroy {
   private async logAction(action: ComputerAction) {
     this.logger.log(`Detected action: ${JSON.stringify(action)}`);
 
-    if (this.screenshot) {
+    if (this.screenshot && action.action === 'click_mouse') {
       this.gateway.emitScreenshot(this.screenshot);
     }
     // wait for 100ms
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 300));
     this.gateway.emitAction(action);
   }
 }
