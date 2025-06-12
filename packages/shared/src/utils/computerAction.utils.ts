@@ -82,9 +82,7 @@ export function convertClickMouseActionToToolUseBlock(
       ...(action.coordinates && { coordinates: action.coordinates }),
       button: action.button,
       ...(action.holdKeys && { holdKeys: action.holdKeys }),
-      ...(typeof action.numClicks === "number" && {
-        numClicks: action.numClicks,
-      }),
+      numClicks: action.numClicks,
     },
   };
 }
