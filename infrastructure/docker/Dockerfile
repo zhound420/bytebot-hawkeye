@@ -399,8 +399,7 @@ WORKDIR /home/bytebot
 # 8. Port configuration and runtime
 # -----------------------------------------------------------------------------
 # - Port 9990: bytebotd and external noVNC websocket
-# - Port 6080: internal websockify service
-EXPOSE 9990 6080
+EXPOSE 9990
 
 # Start supervisor to manage all services
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf", "-n"]
