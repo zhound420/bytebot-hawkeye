@@ -26,11 +26,8 @@ Getting started with Bytebot is simple and straightforward. You can run it as a 
         docker-compose -f infrastructure/docker/docker-compose.core.yml up -d --no-build # start container
         ```
 
-        This will start Bytebot with default settings. The container exposes several ports:
+        This will start Bytebot with default settings. The container exposes one port:
         - `9990`: REST API and noVNC web access
-        - `5900`: VNC server
-        - `6080`: noVNC direct
-        - `6081`: noVNC HTTP proxy
       </Accordion>
 
       <Accordion icon="cube" title="Building the Docker Image (Alternative)">
@@ -52,10 +49,6 @@ Getting started with Bytebot is simple and straightforward. You can run it as a 
       <Accordion icon="display" title="Accessing the Desktop">
         You can access the Bytebot desktop environment in two ways:
 
-        **Using a VNC Client**:
-        Connect to `localhost:5900` with any VNC client.
-
-        **Using a Web Browser**:
         Navigate to `http://localhost:9990/vnc` in your web browser for noVNC access.
       </Accordion>
     </AccordionGroup>

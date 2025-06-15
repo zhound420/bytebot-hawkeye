@@ -398,11 +398,8 @@ WORKDIR /home/bytebot
 # -----------------------------------------------------------------------------
 # 8. Port configuration and runtime
 # -----------------------------------------------------------------------------
-# - Port 9990: bytebotd
-# - Port 5900: VNC display for the Ubuntu VM
-# - Port 6080: noVNC client
-# - Port 6081: noVNC HTTP proxy
-EXPOSE 9990 5900 6080 6081
+# - Port 9990: bytebotd and external noVNC websocket
+EXPOSE 9990
 
 # Start supervisor to manage all services
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf", "-n"]
