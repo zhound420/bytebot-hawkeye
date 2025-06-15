@@ -47,14 +47,6 @@ The desktop environment is configured with automation in mind:
 
 ## Remote Access
 
-### VNC Server
-
-The container runs a VNC server that allows direct access to the desktop:
-
-- Accessible on port 5900 (default VNC port)
-- Compatible with standard VNC clients (RealVNC, TightVNC, etc.)
-- Supports standard VNC authentication
-
 ### noVNC
 
 For browser-based access, noVNC is included:
@@ -76,10 +68,9 @@ Bytebot uses Xvfb (X Virtual Framebuffer) as its display server:
 
 ### Manual Interaction
 
-You can directly interact with the desktop environment using:
+You can interact with the desktop environment using your web browser:
 
-1. **VNC client** connected to `localhost:5900`
-2. **Web browser** navigated to `http://localhost:9990/vnc`
+1. Navigate to `http://localhost:9990/vnc`
 
 ### Programmatic Interaction
 
