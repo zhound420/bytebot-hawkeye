@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 9992",
+    "dev": "tsx server.ts",
     "build": "npm run build --prefix ../shared && next build",
-    "start": "next start -p 9992",
+    "start": "tsx server.ts",
     "lint": "next lint"
   },
   "dependencies": {
