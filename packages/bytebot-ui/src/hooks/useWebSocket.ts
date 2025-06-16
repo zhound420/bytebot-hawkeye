@@ -1,6 +1,6 @@
-import { useEffect, useRef, useCallback } from 'react';
-import { io, Socket } from 'socket.io-client';
-import { Message, Task } from '@/types';
+import { useEffect, useRef, useCallback } from "react";
+import { io, Socket } from "socket.io-client";
+import { Message, Task } from "@/types";
 
 interface UseWebSocketProps {
   onTaskUpdate?: (task: Task) => void;
@@ -25,38 +25,39 @@ export function useWebSocket({
 
     // Connect to the WebSocket server
     const socket = io({
-      path: '/socket.io',
+      path: "/api/proxy/tasks",
+      transports: ["websocket"],
       autoConnect: true,
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
     });
 
-    socket.on('connect', () => {
-      console.log('Connected to WebSocket server');
+    socket.on("connect", () => {
+      console.log("Connected to WebSocket server");
     });
 
-    socket.on('disconnect', () => {
-      console.log('Disconnected from WebSocket server');
+    socket.on("disconnect", () => {
+      console.log("Disconnected from WebSocket server");
     });
 
-    socket.on('task_updated', (task: Task) => {
-      console.log('Task updated:', task);
+    socket.on("task_updated", (task: Task) => {
+      console.log("Task updated:", task);
       onTaskUpdate?.(task);
     });
 
-    socket.on('new_message', (message: Message) => {
-      console.log('New message:', message);
+    socket.on("new_message", (message: Message) => {
+      console.log("New message:", message);
       onNewMessage?.(message);
     });
 
-    socket.on('task_created', (task: Task) => {
-      console.log('Task created:', task);
+    socket.on("task_created", (task: Task) => {
+      console.log("Task created:", task);
       onTaskCreated?.(task);
     });
 
-    socket.on('task_deleted', (taskId: string) => {
-      console.log('Task deleted:', taskId);
+    socket.on("task_deleted", (taskId: string) => {
+      console.log("Task deleted:", taskId);
       onTaskDeleted?.(taskId);
     });
 
@@ -64,20 +65,23 @@ export function useWebSocket({
     return socket;
   }, [onTaskUpdate, onNewMessage, onTaskCreated, onTaskDeleted]);
 
-  const joinTask = useCallback((taskId: string) => {
-    const socket = socketRef.current || connect();
-    if (currentTaskIdRef.current) {
-      socket.emit('leave_task', currentTaskIdRef.current);
-    }
-    socket.emit('join_task', taskId);
-    currentTaskIdRef.current = taskId;
-    console.log(`Joined task room: ${taskId}`);
-  }, [connect]);
+  const joinTask = useCallback(
+    (taskId: string) => {
+      const socket = socketRef.current || connect();
+      if (currentTaskIdRef.current) {
+        socket.emit("leave_task", currentTaskIdRef.current);
+      }
+      socket.emit("join_task", taskId);
+      currentTaskIdRef.current = taskId;
+      console.log(`Joined task room: ${taskId}`);
+    },
+    [connect],
+  );
 
   const leaveTask = useCallback(() => {
     const socket = socketRef.current;
     if (socket && currentTaskIdRef.current) {
-      socket.emit('leave_task', currentTaskIdRef.current);
+      socket.emit("leave_task", currentTaskIdRef.current);
       console.log(`Left task room: ${currentTaskIdRef.current}`);
       currentTaskIdRef.current = null;
     }

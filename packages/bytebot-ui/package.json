@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node server.js",
+    "dev": "tsx server.ts",
     "build": "npm run build --prefix ../shared && next build",
-    "start": "NODE_ENV=production node server.js",
+    "start": "tsx server.ts",
     "lint": "next lint"
   },
   "dependencies": {
