@@ -44,17 +44,27 @@ export class AnthropicService {
     try {
       const model = DEFAULT_MODEL;
       const maxTokens = 8192;
-      const system = AGENT_SYSTEM_PROMPT;
 
       // Convert our message content blocks to Anthropic's expected format
       const anthropicMessages = this.formatMessagesForAnthropic(messages);
+
+      // add cache_control to last tool
+      anthropicTools[anthropicTools.length - 1].cache_control = {
+        type: 'ephemeral',
+      };
 
       // Make the API call
       const response = await this.anthropic.beta.messages.create(
         {
           model,
           max_tokens: maxTokens,
-          system,
+          system: [
+            {
+              type: 'text',
+              text: AGENT_SYSTEM_PROMPT,
+              cache_control: { type: 'ephemeral' },
+            },
+          ],
           messages: anthropicMessages,
           tools: anthropicTools,
         },
@@ -89,7 +99,7 @@ export class AnthropicService {
     const anthropicMessages: Anthropic.MessageParam[] = [];
 
     // Process each message content block
-    for (const message of messages) {
+    for (const [index, message] of messages.entries()) {
       const messageContentBlocks = message.content as MessageContentBlock[];
 
       // Don't include user messages that have tool use
@@ -105,6 +115,12 @@ export class AnthropicService {
       const content: Anthropic.ContentBlockParam[] = messageContentBlocks.map(
         (block) => block as Anthropic.ContentBlockParam,
       );
+
+      if (index === messages.length - 1) {
+        content[content.length - 1]['cache_control'] = {
+          type: 'ephemeral',
+        };
+      }
       anthropicMessages.push({
         role: message.role === Role.USER ? 'user' : 'assistant',
         content: content,
