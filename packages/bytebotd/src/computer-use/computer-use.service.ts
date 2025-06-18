@@ -22,7 +22,7 @@ export type ClickMouseAction = {
   coordinates?: Coordinates;
   button: Button;
   holdKeys?: string[];
-  numClicks?: number;
+  numClicks: number;
 };
 
 export type PressMouseAction = {
@@ -198,7 +198,7 @@ export class ComputerUseService {
     }
 
     // Perform clicks
-    if (numClicks && numClicks > 1) {
+    if (numClicks > 1) {
       // Perform multiple clicks
       for (let i = 0; i < numClicks; i++) {
         await this.nutService.mouseClickEvent(button);
@@ -299,7 +299,7 @@ export class ComputerUseService {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  private async screenshot(): Promise<{ image: string }> {
+  async screenshot(): Promise<{ image: string }> {
     this.logger.log(`Taking screenshot`);
     const buffer = await this.nutService.screendump();
     return { image: `${buffer.toString('base64')}` };

@@ -35,7 +35,8 @@ export default function TaskPage() {
     isLoading,
     isLoadingSession,
     handleGuideTask,
-    handleTakeOver,
+    handleTakeOverTask,
+    handleResumeTask,
     currentTaskId,
   } = useChatSession({ initialTaskId: taskId });
 
@@ -48,11 +49,12 @@ export default function TaskPage() {
     taskStatus === TaskStatus.CANCELLED;
 
   // Determine if user can take control
-  const canTakeOver = control === Role.ASSISTANT && 
-  (taskStatus === TaskStatus.RUNNING || taskStatus === TaskStatus.PENDING);
+  const canTakeOver =
+    control === Role.ASSISTANT && taskStatus === TaskStatus.RUNNING;
 
   // Determine if user has control or is in takeover mode
-  const hasUserControl = control === Role.USER
+  const hasUserControl =
+    control === Role.USER && taskStatus === TaskStatus.RUNNING;
 
   // Determine VNC mode - interactive when user has control, view-only otherwise
   const vncViewOnly = !hasUserControl;
@@ -147,25 +149,36 @@ export default function TaskPage() {
                     {isTaskInactive
                       ? `Task ${taskStatus.toLowerCase()} - Screenshot View`
                       : hasUserControl
-                        ? 'User Control - Interactive'
-                        : taskStatus === TaskStatus.RUNNING 
-                          ? 'Agent Control - Live View' 
-                          : `Task ${taskStatus.toLowerCase()} - Live View`
-                    }
+                        ? "User Control - Interactive"
+                        : taskStatus === TaskStatus.RUNNING
+                          ? "Agent Control - Live View"
+                          : `Task ${taskStatus.toLowerCase()} - Live View`}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   {canTakeOver && (
                     <button
-                      onClick={handleTakeOver}
-                      className="px-3 py-1 text-xs font-medium text-white bg-gray-500 rounded hover:bg-gray-600 transition-colors cursor-pointer"
+                      onClick={handleTakeOverTask}
+                      className="cursor-pointer rounded bg-gray-500 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-gray-600"
                     >
                       Take Over
                     </button>
                   )}
+                  {hasUserControl && (
+                    <button
+                      onClick={handleResumeTask}
+                      className="cursor-pointer rounded bg-gray-500 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-gray-600"
+                    >
+                      Resume
+                    </button>
+                  )}
                   {isTaskInactive && currentScreenshot && (
-                    <span className="text-xs text-bytebot-bronze-light-11 bg-bytebot-bronze-light-3 px-2 py-1 rounded">
-                      Screenshot {allScreenshots.findIndex(s => s.id === currentScreenshot.id) + 1} of {allScreenshots.length}
+                    <span className="text-bytebot-bronze-light-11 bg-bytebot-bronze-light-3 rounded px-2 py-1 text-xs">
+                      Screenshot{" "}
+                      {allScreenshots.findIndex(
+                        (s) => s.id === currentScreenshot.id,
+                      ) + 1}{" "}
+                      of {allScreenshots.length}
                     </span>
                   )}
                 </div>
@@ -206,7 +219,7 @@ export default function TaskPage() {
             </div>
 
             {/* Fixed chat input */}
-            {(taskStatus === TaskStatus.NEEDS_HELP || hasUserControl) && (
+            {taskStatus === TaskStatus.NEEDS_HELP && (
               <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-5 shadow-bytebot rounded-2xl border-[0.5px] p-2">
                 <ChatInput
                   input={input}
@@ -214,7 +227,6 @@ export default function TaskPage() {
                   onInputChange={setInput}
                   onSend={handleGuideTask}
                   minLines={1}
-                  placeholder={hasUserControl ? "Send a message to resume agent control..." : ""}
                 />
                 <div className="mt-2">
                   <Select value="sonnet-4">

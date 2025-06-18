@@ -103,7 +103,6 @@ More details in the [**Quickstart Guide**](https://docs.bytebot.ai/quickstart).
 | 💬 Chat UI    | `http://localhost:9992`     | Agent UI                 |
 | 🤖 Agent API  | `http://localhost:9991`     | REST API                 |
 | 🌐 noVNC      | `http://localhost:9990/vnc` | open in any browser      |
-| 🖥️ VNC Client | `localhost:5900`            | password‑less by default |
 
 
 

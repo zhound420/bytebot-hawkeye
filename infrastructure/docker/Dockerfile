@@ -203,17 +203,28 @@ RUN git clone https://github.com/novnc/noVNC.git /opt/noVNC \
 # -----------------------------------------------------------------------------
 # Copy package files first to leverage Docker cache
 
-# Install dependencies required to build libnut-core
+# Install dependencies required to build libnut-core and uiohook-napi
 RUN apt-get update && \
-    apt-get install -y cmake libx11-dev libxtst-dev libxinerama-dev libxi-dev libxrandr-dev git build-essential && \
+    apt-get install -y \
+        cmake \
+        libx11-dev \
+        libxtst-dev \
+        libxinerama-dev \
+        libxi-dev \
+        libxt-dev \
+        libxrandr-dev \
+        libxkbcommon-dev \
+        libxkbcommon-x11-dev \
+        git build-essential && \
     rm -rf /var/lib/apt/lists/*
 
 
 COPY ./packages/bytebotd/ /bytebotd/
 WORKDIR /bytebotd
 RUN npm install --build-from-source
+RUN npm rebuild uiohook-napi --build-from-source
 
-RUN npm run build 
+RUN npm run build
 
 WORKDIR /compile
 
@@ -387,11 +398,8 @@ WORKDIR /home/bytebot
 # -----------------------------------------------------------------------------
 # 8. Port configuration and runtime
 # -----------------------------------------------------------------------------
-# - Port 9990: bytebotd
-# - Port 5900: VNC display for the Ubuntu VM
-# - Port 6080: noVNC client
-# - Port 6081: noVNC HTTP proxy
-EXPOSE 9990 5900 6080 6081
+# - Port 9990: bytebotd and external noVNC websocket
+EXPOSE 9990
 
 # Start supervisor to manage all services
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf", "-n"]

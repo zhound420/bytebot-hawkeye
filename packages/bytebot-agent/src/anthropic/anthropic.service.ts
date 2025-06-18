@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import Anthropic from '@anthropic-ai/sdk';
+import Anthropic, { APIUserAbortError } from '@anthropic-ai/sdk';
 import {
   MessageContentBlock,
   MessageContentType,
@@ -37,27 +37,51 @@ export class AnthropicService {
    * @param options Additional options for the API call
    * @returns The AI response as an array of message content blocks
    */
-  async sendMessage(messages: Message[]): Promise<MessageContentBlock[]> {
+  async sendMessage(
+    messages: Message[],
+    signal?: AbortSignal,
+  ): Promise<MessageContentBlock[]> {
     try {
       const model = DEFAULT_MODEL;
       const maxTokens = 8192;
-      const system = AGENT_SYSTEM_PROMPT;
 
       // Convert our message content blocks to Anthropic's expected format
       const anthropicMessages = this.formatMessagesForAnthropic(messages);
 
+      // add cache_control to last tool
+      anthropicTools[anthropicTools.length - 1].cache_control = {
+        type: 'ephemeral',
+      };
+
       // Make the API call
-      const response = await this.anthropic.beta.messages.create({
-        model,
-        max_tokens: maxTokens,
-        system,
-        messages: anthropicMessages,
-        tools: anthropicTools,
-      });
+      const response = await this.anthropic.beta.messages.create(
+        {
+          model,
+          max_tokens: maxTokens,
+          system: [
+            {
+              type: 'text',
+              text: AGENT_SYSTEM_PROMPT,
+              cache_control: { type: 'ephemeral' },
+            },
+          ],
+          messages: anthropicMessages,
+          tools: anthropicTools,
+        },
+        { signal },
+      );
 
       // Convert Anthropic's response to our message content blocks format
       return this.formatAnthropicResponse(response.content);
     } catch (error) {
+      this.logger.log(error);
+
+      if (error instanceof APIUserAbortError) {
+        this.logger.log('Anthropic API call aborted');
+        const error = new Error('Anthropic API call aborted');
+        error.name = 'AbortError';
+        throw error;
+      }
       this.logger.error(
         `Error sending message to Anthropic: ${error.message}`,
         error.stack,
@@ -75,11 +99,28 @@ export class AnthropicService {
     const anthropicMessages: Anthropic.MessageParam[] = [];
 
     // Process each message content block
-    for (const message of messages) {
+    for (const [index, message] of messages.entries()) {
       const messageContentBlocks = message.content as MessageContentBlock[];
+
+      // Don't include user messages that have tool use
+      if (
+        message.role === Role.USER &&
+        messageContentBlocks.some(
+          (block) => block.type === MessageContentType.ToolUse,
+        )
+      ) {
+        continue;
+      }
+
       const content: Anthropic.ContentBlockParam[] = messageContentBlocks.map(
         (block) => block as Anthropic.ContentBlockParam,
       );
+
+      if (index === messages.length - 1) {
+        content[content.length - 1]['cache_control'] = {
+          type: 'ephemeral',
+        };
+      }
       anthropicMessages.push({
         role: message.role === Role.USER ? 'user' : 'assistant',
         content: content,

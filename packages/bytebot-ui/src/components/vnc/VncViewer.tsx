@@ -2,14 +2,15 @@
 
 import React, { useRef, useEffect, useState } from "react";
 
-  interface VncViewerProps {
-    viewOnly?: boolean;
-  }
-  
+interface VncViewerProps {
+  viewOnly?: boolean;
+}
+
 export function VncViewer({ viewOnly = true }: VncViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [VncComponent, setVncComponent] = useState<any>(null);
+  const [wsUrl, setWsUrl] = useState<string | null>(null);
 
   useEffect(() => {
     // Dynamically import the VncScreen component only on the client side
@@ -18,12 +19,23 @@ export function VncViewer({ viewOnly = true }: VncViewerProps) {
     });
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return; // SSR safety‑net
+    setWsUrl(`ws://${window.location.host}/api/proxy/websockify`);
+  }, []);
+
   return (
     <div ref={containerRef} className="h-full w-full">
-      {VncComponent && (
+      {VncComponent && wsUrl && (
         <VncComponent
-          key={viewOnly ? 'view-only' : 'interactive'}
-          url={process.env.NEXT_PUBLIC_BYTEBOT_DESKTOP_VNC_URL}
+          rfbOptions={{
+            secure: false,
+            shared: true,
+            wsProtocols: ["binary"],
+          }}
+          // autoConnect={true}
+          key={viewOnly ? "view-only" : "interactive"}
+          url={wsUrl}
           scaleViewport
           viewOnly={viewOnly}
           style={{ width: "100%", height: "100%" }}

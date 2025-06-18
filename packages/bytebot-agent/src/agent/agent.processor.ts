@@ -20,6 +20,7 @@ import {
   isSetTaskStatusToolUseBlock,
   isCreateTaskToolUseBlock,
 } from '@bytebot/shared';
+
 import {
   Button,
   ComputerToolUseContentBlock,
@@ -30,18 +31,22 @@ import {
   ToolResultContentBlock,
 } from '@bytebot/shared';
 import { ConfigService } from '@nestjs/config';
+import { InputCaptureService } from './input-capture.service';
+import { OnEvent } from '@nestjs/event-emitter';
 
 @Injectable()
 export class AgentProcessor {
   private readonly logger = new Logger(AgentProcessor.name);
   private currentTaskId: string | null = null;
   private isProcessing = false;
+  private abortController: AbortController | null = null;
 
   constructor(
     private readonly tasksService: TasksService,
     private readonly messagesService: MessagesService,
     private readonly anthropicService: AnthropicService,
     private readonly configService: ConfigService,
+    private readonly inputCaptureService: InputCaptureService,
   ) {
     this.logger.log('AgentProcessor initialized');
   }
@@ -60,189 +65,196 @@ export class AgentProcessor {
     return this.currentTaskId;
   }
 
-  async processTask(taskId: string) {
-    this.logger.log(`Processing job for task ID: ${taskId}`);
+  @OnEvent('task.takeover')
+  handleTaskTakeover({ taskId }: { taskId: string }) {
+    if (this.currentTaskId === taskId && this.isProcessing) {
+      this.logger.log(`Task takeover event received for task ID: ${taskId}`);
+
+      // Signal any in-flight async operations to abort
+      this.abortController?.abort();
+
+      this.inputCaptureService.start(taskId);
+    }
+  }
+
+  @OnEvent('task.resume')
+  handleTaskResume({ taskId }: { taskId: string }) {
+    if (this.currentTaskId === taskId && this.isProcessing) {
+      this.logger.log(`Task resume event received for task ID: ${taskId}`);
+      this.abortController = new AbortController();
+
+      void this.runIteration(taskId);
+    }
+  }
+
+  processTask(taskId: string) {
+    this.logger.log(`Starting processing for task ID: ${taskId}`);
+
+    if (this.isProcessing) {
+      this.logger.warn('AgentProcessor is already processing another task');
+      return;
+    }
+
+    this.isProcessing = true;
+    this.currentTaskId = taskId;
+    this.abortController = new AbortController();
+
+    // Kick off the first iteration without blocking the caller
+    void this.runIteration(taskId);
+  }
+
+  /**
+   * Runs a single iteration of task processing and schedules the next
+   * iteration via setImmediate while the task remains RUNNING.
+   */
+  private async runIteration(taskId: string): Promise<void> {
+    if (!this.isProcessing) {
+      return;
+    }
 
     try {
-      let task = await this.tasksService.findById(taskId);
-      this.currentTaskId = taskId;
-      this.isProcessing = true;
+      const task = await this.tasksService.findById(taskId);
 
-      while (task.status == TaskStatus.RUNNING) {
-        if (task.control != Role.ASSISTANT) {
-          // wait 2 seconds and loop
-          this.logger.log(
-            `Task ${taskId} is not under agent control, waiting 2 seconds before looping`,
-          );
-          await new Promise((resolve) => setTimeout(resolve, 2000));
-          task = await this.tasksService.findById(taskId);
-          continue;
+      if (task.status !== TaskStatus.RUNNING) {
+        this.logger.log(
+          `Task processing completed for task ID: ${taskId} with status: ${task.status}`,
+        );
+        this.isProcessing = false;
+        this.currentTaskId = null;
+        return;
+      }
+
+      this.logger.log(`Processing iteration for task ID: ${taskId}`);
+
+      // Refresh abort controller for this iteration to avoid accumulating
+      // "abort" listeners on a single AbortSignal across iterations.
+      this.abortController = new AbortController();
+
+      const messages = await this.messagesService.findAll(taskId);
+      this.logger.debug(
+        `Sending ${messages.length} messages to LLM for processing`,
+      );
+
+      const messageContentBlocks: MessageContentBlock[] =
+        await this.anthropicService.sendMessage(
+          messages,
+          this.abortController.signal,
+        );
+
+      this.logger.debug(
+        `Received ${messageContentBlocks.length} content blocks from LLM`,
+      );
+
+      if (messageContentBlocks.length === 0) {
+        this.logger.warn(
+          `Task ID: ${taskId} received no content blocks from LLM, marking as failed`,
+        );
+        await this.tasksService.update(taskId, {
+          status: TaskStatus.FAILED,
+        });
+        this.isProcessing = false;
+        this.currentTaskId = null;
+        return;
+      }
+
+      await this.messagesService.create({
+        content: messageContentBlocks,
+        role: Role.ASSISTANT,
+        taskId,
+      });
+
+      const generatedToolResults: ToolResultContentBlock[] = [];
+
+      for (const block of messageContentBlocks) {
+        if (isComputerToolUseContentBlock(block)) {
+          const result = await this.handleComputerToolUse(block);
+          generatedToolResults.push(result);
         }
 
-        this.logger.log(
-          `Processing task loop iteration for task ID: ${taskId}`,
-        );
-        const messages = await this.messagesService.findAll(taskId);
-        this.logger.debug(
-          `Sending ${messages.length} messages to LLM for processing`,
-        );
+        if (isCreateTaskToolUseBlock(block)) {
+          const type = block.input.type?.toUpperCase() as TaskType;
+          const priority = block.input.priority?.toUpperCase() as TaskPriority;
 
-        try {
-          const messageContentBlocks: MessageContentBlock[] =
-            await this.anthropicService.sendMessage(messages);
-          this.logger.debug(
-            `Received ${messageContentBlocks.length} content blocks from LLM`,
-          );
-
-          if (messageContentBlocks.length == 0) {
-            this.logger.log(
-              `Task ID: ${taskId} received no content blocks from LLM, setting task status to failed`,
-            );
-            await this.tasksService.update(taskId, {
-              status: TaskStatus.FAILED,
-            });
-            break;
-          }
-
-          await this.messagesService.create({
-            content: messageContentBlocks,
-            role: Role.ASSISTANT,
-            taskId: taskId,
+          await this.tasksService.create({
+            description: block.input.description,
+            type,
+            createdBy: Role.ASSISTANT,
+            ...(block.input.scheduledFor && {
+              scheduledFor: new Date(block.input.scheduledFor),
+            }),
+            priority,
           });
-          this.logger.debug(
-            `Saved assistant response to database for task ID: ${taskId}`,
-          );
 
-          const generatedToolResults: ToolResultContentBlock[] = [];
+          generatedToolResults.push({
+            type: MessageContentType.ToolResult,
+            tool_use_id: block.id,
+            content: [
+              {
+                type: MessageContentType.Text,
+                text: 'The task has been created',
+              },
+            ],
+          });
+        }
 
-          for (const block of messageContentBlocks) {
-            if (isComputerToolUseContentBlock(block)) {
-              this.logger.log(
-                `Processing tool use block: ${block.input.action} (ID: ${block.id})`,
-              );
-
-              const toolResult = await this.handleComputerToolUse(block);
-              this.logger.debug(
-                `Tool execution completed for tool_use_id: ${block.id}, saving result`,
-              );
-              generatedToolResults.push(toolResult);
-            }
-
-            if (isCreateTaskToolUseBlock(block)) {
-              this.logger.log(
-                `Processing create task tool use block: ${block.input.name}`,
-              );
-
-              // if the block input type exists, convert it to uppercase and use it as the type
-              const type = block.input.type?.toUpperCase() as TaskType;
-              const priority =
-                block.input.priority?.toUpperCase() as TaskPriority;
-
-              await this.tasksService.create({
-                description: block.input.description,
-                type,
-                createdBy: Role.ASSISTANT,
-                ...(block.input.scheduledFor && {
-                  scheduledFor: new Date(block.input.scheduledFor),
-                }),
-                priority,
+        if (isSetTaskStatusToolUseBlock(block)) {
+          switch (block.input.status) {
+            case 'completed':
+              await this.tasksService.update(taskId, {
+                status: TaskStatus.COMPLETED,
+                completedAt: new Date(),
               });
-
+              break;
+            case 'failed':
+              await this.tasksService.update(taskId, {
+                status: TaskStatus.FAILED,
+              });
+              break;
+            case 'needs_help':
               generatedToolResults.push({
                 type: MessageContentType.ToolResult,
                 tool_use_id: block.id,
                 content: [
                   {
                     type: MessageContentType.Text,
-                    text: 'The task has been created',
+                    text: 'The task has been set to needs help',
                   },
                 ],
               });
-            }
-
-            if (isSetTaskStatusToolUseBlock(block)) {
-              this.logger.log(
-                `Processing set task status tool use block: ${block.input.status}`,
-              );
-              switch (block.input.status) {
-                case 'completed': {
-                  await this.tasksService.update(taskId, {
-                    status: TaskStatus.COMPLETED,
-                    completedAt: new Date(),
-                  });
-                  break;
-                }
-                case 'failed': {
-                  await this.tasksService.update(taskId, {
-                    status: TaskStatus.FAILED,
-                  });
-                  break;
-                }
-                case 'needs_help': {
-                  generatedToolResults.push({
-                    type: MessageContentType.ToolResult,
-                    tool_use_id: block.id,
-                    content: [
-                      {
-                        type: MessageContentType.Text,
-                        text: 'The task has been set to needs help',
-                      },
-                    ],
-                  });
-                  await this.tasksService.update(taskId, {
-                    status: TaskStatus.NEEDS_HELP,
-                  });
-                  break;
-                }
-              }
-              this.logger.log(
-                `Task ID: ${taskId} has been ${block.input.status}`,
-              );
-
+              await this.tasksService.update(taskId, {
+                status: TaskStatus.NEEDS_HELP,
+              });
               break;
-            }
           }
-
-          if (generatedToolResults.length > 0) {
-            await this.messagesService.create({
-              content: generatedToolResults,
-              role: Role.USER,
-              taskId: taskId,
-            });
-            this.logger.debug(
-              `Saved ${generatedToolResults.length} tool result(s) to database for task ID: ${taskId}`,
-            );
-          }
-
-          this.logger.debug(`Refreshing task data for task ID: ${taskId}`);
-          task = await this.tasksService.findById(taskId);
-          this.logger.debug(
-            `Task refreshed, status: ${task.status}, messages count: ${task.messages.length}`,
-          );
-        } catch (error) {
-          this.logger.error(
-            `Error during task processing loop for task ID: ${taskId} - ${error.message}`,
-            error.stack,
-          );
-
-          await this.tasksService.update(taskId, {
-            status: TaskStatus.FAILED,
-          });
-          break;
         }
       }
 
-      this.logger.log(
-        `Task processing completed for task ID: ${taskId} with status: ${task.status}`,
-      );
-    } catch (error) {
-      this.logger.error(
-        `Critical error processing job for task ID: ${taskId} - ${error.message}`,
-        error.stack,
-      );
-    } finally {
-      this.isProcessing = false;
-      this.currentTaskId = null;
+      if (generatedToolResults.length > 0) {
+        await this.messagesService.create({
+          content: generatedToolResults,
+          role: Role.USER,
+          taskId,
+        });
+      }
+
+      // Schedule the next iteration without blocking
+      if (this.isProcessing) {
+        setImmediate(() => this.runIteration(taskId));
+      }
+    } catch (error: any) {
+      if (error?.name === 'AbortError') {
+        this.logger.warn(`Processing aborted for task ID: ${taskId}`);
+      } else {
+        this.logger.error(
+          `Error during task processing iteration for task ID: ${taskId} - ${error.message}`,
+          error.stack,
+        );
+        await this.tasksService.update(taskId, {
+          status: TaskStatus.FAILED,
+        });
+        this.isProcessing = false;
+        this.currentTaskId = null;
+      }
     }
   }
 
@@ -252,6 +264,9 @@ export class AgentProcessor {
     }
 
     this.logger.log(`Stopping execution of task ${this.currentTaskId}`);
+
+    // Signal any in-flight async operations to abort
+    this.abortController?.abort();
 
     if (this.currentTaskId) {
       await this.tasksService.update(this.currentTaskId, {
@@ -464,7 +479,7 @@ export class AgentProcessor {
     coordinates?: Coordinates;
     button: Button;
     holdKeys?: string[];
-    numClicks?: number;
+    numClicks: number;
   }): Promise<void> {
     const { coordinates, button, holdKeys, numClicks } = input;
     console.log(

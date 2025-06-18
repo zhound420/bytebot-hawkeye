@@ -14,10 +14,7 @@ services:
     hostname: computer
     privileged: true
     ports:
-      - "9990:9990" # bytebotd service
-      - "5900:5900" # VNC display
-      - "6080:6080" # noVNC client
-      - "6081:6081" # noVNC HTTP proxy
+      - "9990:9990" # bytebotd service & noVNC
     environment:
       - DISPLAY=:0
     networks:
@@ -60,14 +57,16 @@ services:
       context: ../../packages/
       dockerfile: bytebot-ui/Dockerfile
       args:
-        - NEXT_PUBLIC_BYTEBOT_AGENT_BASE_URL=${BYTEBOT_AGENT_BASE_URL:-http://localhost:9991}
-        - NEXT_PUBLIC_BYTEBOT_DESKTOP_VNC_URL=${BYTEBOT_DESKTOP_VNC_URL:-ws://localhost:6080}
+        - BYTEBOT_AGENT_BASE_URL=${BYTEBOT_AGENT_BASE_URL:-http://bytebot-agent:9991}
+        - BYTEBOT_DESKTOP_VNC_URL=${BYTEBOT_DESKTOP_VNC_URL:-http://bytebot-desktop:9990/websockify}
     container_name: bytebot-ui
     restart: unless-stopped
     ports:
       - "9992:9992"
     environment:
       - NODE_ENV=production
+      - BYTEBOT_AGENT_BASE_URL=${BYTEBOT_AGENT_BASE_URL:-http://bytebot-agent:9991}
+      - BYTEBOT_DESKTOP_VNC_URL=${BYTEBOT_DESKTOP_VNC_URL:-http://bytebot-desktop:9990/websockify}
     depends_on:
       - bytebot-agent
     networks:
