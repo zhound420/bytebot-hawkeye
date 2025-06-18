@@ -126,6 +126,10 @@ export class AgentProcessor {
 
       this.logger.log(`Processing iteration for task ID: ${taskId}`);
 
+      // Refresh abort controller for this iteration to avoid accumulating
+      // "abort" listeners on a single AbortSignal across iterations.
+      this.abortController = new AbortController();
+
       const messages = await this.messagesService.findAll(taskId);
       this.logger.debug(
         `Sending ${messages.length} messages to LLM for processing`,
@@ -134,7 +138,7 @@ export class AgentProcessor {
       const messageContentBlocks: MessageContentBlock[] =
         await this.anthropicService.sendMessage(
           messages,
-          this.abortController?.signal,
+          this.abortController.signal,
         );
 
       this.logger.debug(
