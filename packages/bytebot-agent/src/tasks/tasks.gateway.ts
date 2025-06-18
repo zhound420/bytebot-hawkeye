@@ -11,7 +11,7 @@ import { Injectable } from '@nestjs/common';
 @Injectable()
 @WebSocketGateway({
   cors: {
-    origin: 'http://localhost:9992',
+    origin: '*',
     methods: ['GET', 'POST'],
   },
 })

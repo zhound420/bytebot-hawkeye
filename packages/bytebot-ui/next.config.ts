@@ -1,4 +1,7 @@
 import type { NextConfig } from "next";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const nextConfig: NextConfig = {
   /* config options here */
@@ -7,7 +10,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/proxy/websockify",
-        destination: "http://localhost:9990/websockify",
+        destination: process.env.BYTEBOT_DESKTOP_VNC_URL!,
       },
     ];
   },

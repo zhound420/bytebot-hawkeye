@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { createProxyMiddleware } from 'http-proxy-middleware';
+import * as express from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -10,8 +11,15 @@ async function bootstrap() {
     changeOrigin: true,
     pathRewrite: { '^/websockify': '/' },
   });
-  app.use('/websockify', wsProxy);
+  app.use('/websockify', express.raw({ type: '*/*' }), wsProxy);
   const server = await app.listen(9990);
-  server.on('upgrade', wsProxy.upgrade);
+
+  // Selective upgrade routing
+  server.on('upgrade', (req, socket, head) => {
+    if (req.url?.startsWith('/websockify')) {
+      wsProxy.upgrade(req, socket, head);
+    }
+    // else let Socket.IO/Nest handle it by not hijacking the socket
+  });
 }
 bootstrap();

@@ -13,7 +13,6 @@ const port = parseInt(process.env.PORT || "9992", 10);
 
 // Backend URLs
 const BYTEBOT_AGENT_BASE_URL = process.env.BYTEBOT_AGENT_BASE_URL;
-const BYTEBOT_DESKTOP_VNC_URL = process.env.BYTEBOT_DESKTOP_VNC_URL;
 
 const app = next({ dev, hostname, port });
 
@@ -33,17 +32,8 @@ app
       pathRewrite: { "^/api/proxy/tasks": "/socket.io" },
     });
 
-    // WebSocket proxy for VNC websockify
-    // const vncProxy = createProxyMiddleware({
-    //   target: BYTEBOT_DESKTOP_VNC_URL,
-    //   ws: true,
-    //   pathRewrite: (path) =>
-    //     path.replace(/^\/api\/proxy\/websockify/, "/websockify"),
-    // });
-
     // Apply HTTP proxies
     expressApp.use("/api/proxy/tasks", tasksProxy);
-    // expressApp.use("/api/proxy/websockify", vncProxy);
 
     // Handle all other requests with Next.js
     expressApp.all("*", (req, res) => handle(req, res));
@@ -59,17 +49,11 @@ app
         return tasksProxy.upgrade(request, socket as any, head);
       }
 
-      // if (pathname.startsWith("/api/proxy/websockify")) {
-      //   console.log(`[UPGRADE] ${pathname}`);
-      //   return vncProxy.upgrade(request, socket as any, head);
-      // }
       nextUpgradeHandler(request, socket, head);
     });
 
     server.listen(port, hostname, () => {
       console.log(`> Ready on http://${hostname}:${port}`);
-      console.log(`> Proxying tasks to: ${BYTEBOT_AGENT_BASE_URL}`);
-      console.log(`> Proxying VNC to: ${BYTEBOT_DESKTOP_VNC_URL}`);
     });
   })
   .catch((err) => {
