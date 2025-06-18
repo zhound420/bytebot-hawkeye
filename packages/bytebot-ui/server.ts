@@ -39,6 +39,7 @@ app
     // Apply HTTP proxies
     expressApp.use("/api/proxy/tasks", tasksProxy);
     expressApp.use("/api/proxy/websockify", (req, res) => {
+      console.log("Proxying websockify request");
       // Rewrite path
       const targetUrl = new URL(BYTEBOT_DESKTOP_VNC_URL!);
       req.url =
@@ -68,6 +69,7 @@ app
         request.url =
           targetUrl.pathname +
           (request.url?.replace(/^\/api\/proxy\/websockify/, "") || "");
+        console.log("Proxying websockify upgrade request: ", request.url);
         return vncProxy.ws(request, socket as any, head, {
           target: `${targetUrl.protocol}//${targetUrl.host}`,
         });
