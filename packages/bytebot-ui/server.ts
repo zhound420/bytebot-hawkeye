@@ -1,5 +1,6 @@
 import express from "express";
 import { createProxyMiddleware } from "http-proxy-middleware";
+import { createProxyServer } from "http-proxy";
 import next from "next";
 import { createServer } from "http";
 import dotenv from "dotenv";
@@ -13,6 +14,7 @@ const port = parseInt(process.env.PORT || "9992", 10);
 
 // Backend URLs
 const BYTEBOT_AGENT_BASE_URL = process.env.BYTEBOT_AGENT_BASE_URL;
+const BYTEBOT_DESKTOP_VNC_URL = process.env.BYTEBOT_DESKTOP_VNC_URL;
 
 const app = next({ dev, hostname, port });
 
@@ -21,6 +23,8 @@ app
   .then(() => {
     const handle = app.getRequestHandler();
     const nextUpgradeHandler = app.getUpgradeHandler();
+
+    const vncProxy = createProxyServer({ changeOrigin: true, ws: true });
 
     const expressApp = express();
     const server = createServer(expressApp);
@@ -34,6 +38,16 @@ app
 
     // Apply HTTP proxies
     expressApp.use("/api/proxy/tasks", tasksProxy);
+    expressApp.use("/api/proxy/websockify", (req, res) => {
+      // Rewrite path
+      const targetUrl = new URL(BYTEBOT_DESKTOP_VNC_URL!);
+      req.url =
+        targetUrl.pathname +
+        (req.url?.replace(/^\/api\/proxy\/websockify/, "") || "");
+      vncProxy.web(req, res, {
+        target: `${targetUrl.protocol}//${targetUrl.host}`,
+      });
+    });
 
     // Handle all other requests with Next.js
     expressApp.all("*", (req, res) => handle(req, res));
@@ -47,6 +61,16 @@ app
 
       if (pathname.startsWith("/api/proxy/tasks")) {
         return tasksProxy.upgrade(request, socket as any, head);
+      }
+
+      if (pathname.startsWith("/api/proxy/websockify")) {
+        const targetUrl = new URL(BYTEBOT_DESKTOP_VNC_URL!);
+        request.url =
+          targetUrl.pathname +
+          (request.url?.replace(/^\/api\/proxy\/websockify/, "") || "");
+        return vncProxy.ws(request, socket as any, head, {
+          target: `${targetUrl.protocol}//${targetUrl.host}`,
+        });
       }
 
       nextUpgradeHandler(request, socket, head);
