@@ -21,7 +21,8 @@ export function VncViewer({ viewOnly = true }: VncViewerProps) {
 
   useEffect(() => {
     if (typeof window === "undefined") return; // SSR safety‑net
-    setWsUrl(`ws://${window.location.host}/api/proxy/websockify`);
+    const proto = window.location.protocol === "https:" ? "wss" : "ws";
+    setWsUrl(`${proto}://${window.location.host}/api/proxy/websockify`);
   }, []);
 
   return (
