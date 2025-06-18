@@ -6,14 +6,6 @@ dotenv.config();
 const nextConfig: NextConfig = {
   /* config options here */
   transpilePackages: ["@bytebot/shared"],
-  async rewrites() {
-    return [
-      {
-        source: "/api/proxy/websockify",
-        destination: process.env.BYTEBOT_DESKTOP_VNC_URL!,
-      },
-    ];
-  },
 };
 
 export default nextConfig;
