@@ -47,7 +47,8 @@ export class InputCaptureService {
       return;
     }
 
-    this.socket = io(baseUrl, { transports: ['websocket'] });
+    const secure = baseUrl.startsWith('https://');
+    this.socket = io(baseUrl, { transports: ['websocket'], secure });
 
     this.socket.on('connect', () => {
       this.logger.log('Input socket connected');
