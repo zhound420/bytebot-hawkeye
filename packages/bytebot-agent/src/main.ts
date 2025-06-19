@@ -18,12 +18,11 @@ async function bootstrap() {
 
     // Enable CORS
     app.enableCors({
-      origin: ['http://localhost:9992', 'http://localhost:3000'],
+      origin: '*',
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
       allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With', 'Set-Cookie'],
       exposedHeaders: ['Set-Cookie'],
       credentials: true,
-      preflightContinue: false,
       optionsSuccessStatus: 204,
     });
 
