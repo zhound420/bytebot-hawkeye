@@ -1,7 +1,7 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Bytebot Documentation",
+  "name": "Bytebot - Self-Hosted AI Desktop Agent",
   "colors": {
     "primary": "#000000",
     "light": "#fbfaf9",
@@ -11,32 +11,42 @@
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Documentation",
         "groups": [
           {
-            "group": "Get Started",
+            "group": "Getting Started",
             "pages": ["introduction", "quickstart"]
           },
           {
             "group": "Core Concepts",
             "pages": [
               "core-concepts/architecture",
-              "core-concepts/desktop-environment",
-              "core-concepts/agent-system"
+              "core-concepts/agent-system",
+              "core-concepts/desktop-environment"
             ]
           }
         ]
       },
       {
-        "tab": "REST API",
+        "tab": "API Reference",
         "groups": [
           {
             "group": "Overview",
-            "pages": ["rest-api/introduction"]
+            "pages": ["api-reference/introduction"]
           },
           {
-            "group": "Endpoints",
-            "pages": ["rest-api/computer-use", "rest-api/examples"]
+            "group": "Agent API",
+            "pages": [
+              "api-reference/agent/tasks",
+              "api-reference/agent/ui"
+            ]
+          },
+          {
+            "group": "Computer Control API",
+            "pages": [
+              "api-reference/computer-use/unified-endpoint",
+              "api-reference/computer-use/examples"
+            ]
           }
         ]
       }
@@ -50,7 +60,7 @@
         },
         {
           "anchor": "Discord",
-          "href": "https://discord.gg/6nxuF6cs",
+          "href": "https://discord.gg/zcb5wA2t4u",
           "icon": "discord"
         },
         {
@@ -79,14 +89,21 @@
     ],
     "primary": {
       "type": "button",
-      "label": "GitHub",
+      "label": "Get Started",
       "href": "https://github.com/bytebot-ai/bytebot"
     }
   },
   "footer": {
     "socials": {
       "github": "https://github.com/bytebot-ai/bytebot",
-      "twitter": "https://twitter.com/bytebotai"
+      "twitter": "https://twitter.com/bytebotai",
+      "discord": "https://discord.gg/zcb5wA2t4u"
     }
+  },
+  "metadata": {
+    "og:title": "Bytebot - Self-Hosted AI Desktop Agent",
+    "og:description": "Automate any computer task with natural language using your own AI desktop agent",
+    "og:image": "/images/agent-architecture.png",
+    "twitter:card": "summary_large_image"
   }
 }

@@ -1,210 +1,232 @@
 ---
-title: "Quickstart"
-description: "Get Bytebot up and running in minutes"
+title: "Quick Start"
+description: "Get your AI desktop agent running in 2 minutes"
 ---
 
 ## Prerequisites
 
-Before getting started with Bytebot, make sure you have:
+- Docker ≥ 20.10
+- Docker Compose
+- 4GB+ RAM available
+- Anthropic API key ([get one here](https://console.anthropic.com))
 
-- Docker installed on your system
-- Sufficient system resources (recommended: 2+ CPU cores, 4GB+ RAM)
-- For the agent system: Docker Compose and an Anthropic API key
+## 🚀 2-Minute Setup
 
-## Running Bytebot
+Get your self-hosted AI desktop agent running with just three commands:
 
-Getting started with Bytebot is simple and straightforward. You can run it as a standalone desktop container or as a full agent system with a chat UI.
+<Steps>
+  <Step title="Clone and Configure">
+    ```bash 
+    git clone https://github.com/bytebot-ai/bytebot.git cd bytebot echo "ANTHROPIC_API_KEY=your_api_key_here" > infrastructure/docker/.env 
+    ```
+  </Step>
+
+<Step title="Start the Agent Stack">
+  ```bash 
+  docker-compose -f infrastructure/docker/docker-compose.yml up -d 
+  ```
+
+This starts all four services:
+
+- **Bytebot Desktop**: Containerized Linux environment
+- **AI Agent**: Claude-powered task processor
+- **Chat UI**: Web interface for interaction
+- **Database**: PostgreSQL for persistence
+
+</Step>
+
+<Step title="Open the Chat Interface">
+Navigate to [http://localhost:9992](http://localhost:9992) and start chatting!
+
+Try asking:
+
+- "Open Firefox and search for the weather forecast"
+- "Take a screenshot of the desktop"
+- "Create a text file with today's date"
+
+</Step>
+</Steps>
+
+<Note>
+  **First time?** The initial startup may take 2-3 minutes as Docker downloads
+  the images. Subsequent starts will be much faster.
+</Note>
+
+## What Just Happened?
+
+You now have a fully functional AI agent that can:
+
+- 🖱️ Control mouse and keyboard
+- 🌐 Browse the web
+- 📄 Create and edit documents
+- 📧 Manage emails
+- 🔄 Automate any desktop task
+
+Watch it work in real-time through the embedded VNC viewer in the tasks interface!
+
+## Try These Example Tasks
+
+<CardGroup cols={2}>
+  <Card title="Web Research" icon="magnifying-glass">
+    "Find the top 5 news stories about AI today and summarize them"
+  </Card>
+  <Card title="Data Collection" icon="table">
+    "Go to example.com and extract all email addresses into a list"
+  </Card>
+  <Card title="File Management" icon="folder">
+    "Create a folder called 'reports' and organize files by date"
+  </Card>
+  <Card title="Testing" icon="vial">
+    "Test the login flow on our staging site"
+  </Card>
+</CardGroup>
+
+## Accessing Your Services
+
+| Service          | URL                                                                      | Purpose                                       |
+| ---------------- | ------------------------------------------------------------------------ | --------------------------------------------- |
+| **Tasks UI**     | [http://localhost:9992](http://localhost:9992)                           | Main interface for interacting with the agent |
+| **Agent API**    | [http://localhost:9991/tasks](http://localhost:9991/tasks)               | REST API for programmatic task creation       |
+| **Computer API** | [http://localhost:9990/computer-use](http://localhost:9990/computer-use) | Low-level desktop control API                 |
+
+## Alternative Deployment Options
+
+<Tabs>
+  <Tab title="Desktop Container Only">
+    If you just want the containerized desktop without the AI agent:
+
+    ```bash
+    #Using pre-built image (recommended)
+    docker-compose -f infrastructure/docker/docker-compose.core.yml pull
+    docker-compose -f infrastructure/docker/docker-compose.core.yml up -d
+    ```
+
+    Or build locally:
+    ```bash
+    docker-compose -f infrastructure/docker/docker-compose.core.yml up -d --build
+    ```
+
+    Access the desktop at
+    [http://localhost:9990/vnc](http://localhost:9990/vnc)
+
+  </Tab>
+</Tabs>
+
+## Managing Your Agent
+
+### View Logs
+
+Monitor what your agent is doing:
+
+```bash
+# All services
+docker-compose -f infrastructure/docker/docker-compose.yml logs -f
+
+# Just the agent
+docker-compose -f infrastructure/docker/docker-compose.yml logs -f bytebot-agent
+```
+
+### Stop Services
+
+```bash
+docker-compose -f infrastructure/docker/docker-compose.yml down
+```
+
+### Update to Latest
+
+```bash
+docker-compose -f infrastructure/docker/docker-compose.yml pull
+docker-compose -f infrastructure/docker/docker-compose.yml up -d
+```
+
+### Reset Everything
+
+Remove all data and start fresh:
+
+```bash
+docker-compose -f infrastructure/docker/docker-compose.yml down -v
+```
+
+## Quick API Examples
+
+### Create a Task via API
+
+```bash
+curl -X POST http://localhost:9991/tasks \
+  -H "Content-Type: application/json" \
+  -d '{
+    "description": "Search for flights from NYC to London next month",
+    "type": "browser_task"
+  }'
+```
+
+### Direct Desktop Control
+
+```bash
+# Take a screenshot
+curl -X POST http://localhost:9990/api/computer \
+  -H "Content-Type: application/json" \
+  -d '{"action": "screenshot"}'
+
+# Type text
+curl -X POST http://localhost:9990/api/computer \
+  -H "Content-Type: application/json" \
+  -d '{"action": "type_text", "text": "Hello, Bytebot!"}'
+```
+
+## Troubleshooting
 
 <AccordionGroup>
-  <Accordion icon="cube" title="Running the Standalone Desktop Container">
-    <AccordionGroup>
-      <Accordion icon="play" title="Using the Pre-built Image">
-        The easiest way to get started is to use the pre-built Bytebot image:
-
-        ```bash
-        docker-compose -f infrastructure/docker/docker-compose.core.yml pull # pull latest remote image
-        docker-compose -f infrastructure/docker/docker-compose.core.yml up -d --no-build # start container
-        ```
-
-        This will start Bytebot with default settings. The container exposes one port:
-        - `9990`: REST API and noVNC web access
-      </Accordion>
-
-      <Accordion icon="cube" title="Building the Docker Image (Alternative)">
-        Alternatively, you can build the Bytebot Docker image locally:
-
-        ```bash
-        docker-compose -f infrastructure/docker/docker-compose.core.yml up -d --build # build image and start container
-        ```
-      </Accordion>
-
-      <Accordion icon="stop" title="Stopping the Container">
-        To shut down the container:
-
-        ```bash
-        docker-compose -f infrastructure/docker/docker-compose.core.yml down
-        ```
-      </Accordion>
-
-      <Accordion icon="display" title="Accessing the Desktop">
-        You can access the Bytebot desktop environment in two ways:
-
-        Navigate to `http://localhost:9990/vnc` in your web browser for noVNC access.
-      </Accordion>
-    </AccordionGroup>
-
+  <Accordion title="Container won't start">
+    Check Docker is running and you have enough resources: 
+    ```bash 
+    docker info
+    docker-compose -f infrastructure/docker/docker-compose.yml logs 
+    ```
   </Accordion>
-
-  <Accordion icon="robot" title="Running the Full Agent System (Alpha)">
-    <AccordionGroup>
-      <Accordion icon="key" title="Setting Up Environment Variables">
-        Create a `.env` file with your Anthropic API key:
-
-        ```bash
-        echo "ANTHROPIC_API_KEY=your_api_key_here" > infrastructure/docker/.env
-        ```
-
-        Replace `your_api_key_here` with your actual Anthropic API key.
-      </Accordion>
-
-      <Accordion icon="play" title="Starting the Services">
-        Run the full Bytebot system using Docker Compose:
-
-        ```bash
-        docker-compose -f infrastructure/docker/docker-compose.yml --env-file infrastructure/docker/.env up -d
-        ```
-
-        This will start the following services using the pre-built image:
-        - Bytebot desktop container
-        - PostgreSQL database
-        - Bytebot agent service
-        - Bytebot chat UI
-      </Accordion>
-
-      <Accordion icon="stop" title="Stopping the Services">
-        To shut down all services:
-
-        ```bash
-        docker-compose -f infrastructure/docker/docker-compose.yml --env-file infrastructure/docker/.env down
-        ```
-      </Accordion>
-
-      <Accordion icon="display" title="Accessing the System">
-        Once all services are running, you can access Bytebot through:
-
-        - **Bytebot Desktop (noVNC)**: `http://localhost:9990/vnc`
-        - **Bytebot Agent API**: `http://localhost:9991`
-        - **Bytebot Chat UI**: `http://localhost:9992`
-      </Accordion>
-    </AccordionGroup>
-
+  <Accordion title="Can't connect to tasks UI">
+    Ensure all services are running: 
+    ```bash 
+    docker-compose -f infrastructure/docker/docker-compose.yml ps 
+    ``` 
+    All services should show as "Up".
+  </Accordion>
+  <Accordion title="Agent errors or no response">
+    Check your API key is set correctly: 
+    ```bash 
+    cat infrastructure/docker/.env
+    docker-compose -f infrastructure/docker/docker-compose.yml logs bytebot-agent 
+    ```
   </Accordion>
 </AccordionGroup>
 
-## Using the Computer Use API
-
-The core functionality of Bytebot is programmatic control of the desktop environment through its API.
-
-<CodeGroup>
-```bash Terminal
-# Example: Move the mouse to coordinates (100, 200)
-curl -X POST http://localhost:9990/computer-use \
-  -H "Content-Type: application/json" \
-  -d '{"action": "move_mouse", "coordinates": {"x": 100, "y": 200}}'
-
-# Example: Take a screenshot
-
-curl -X POST http://localhost:9990/computer-use \
- -H "Content-Type: application/json" \
- -d '{"action": "screenshot"}'
-
-````
-
-```python Python
-import requests
-
-def control_computer(action, **params):
-    url = "http://localhost:9990/computer-use"
-    data = {"action": action, **params}
-    response = requests.post(url, json=data)
-    return response.json()
-
-# Move the mouse
-control_computer("move_mouse", coordinates={"x": 100, "y": 100})
-
-# Take a screenshot
-screenshot = control_computer("screenshot")
-````
-
-```javascript JavaScript
-const axios = require("axios");
-
-async function controlComputer(action, params = {}) {
-  const url = "http://localhost:9990/computer-use";
-  const data = { action, ...params };
-  const response = await axios.post(url, data);
-  return response.data;
-}
-
-// Example usage
-async function runExample() {
-  // Move mouse
-  await controlComputer("move_mouse", { coordinates: { x: 100, y: 100 } });
-
-  // Take screenshot
-  const screenshot = await controlComputer("screenshot");
-  console.log("Screenshot taken:", screenshot);
-}
-```
-
-</CodeGroup>
-
-<Card
-  title="API Reference"
-  icon="code"
-  href="/api-reference/computer-use/unified-endpoint"
->
-  View the complete Computer Use API documentation
-</Card>
-
-## Using the Agent Chat UI
-
-When running the full agent system, you can interact with Bytebot through a chat interface that allows you to:
-
-1. Create and manage tasks
-2. Chat with the AI assistant
-3. View the desktop in real-time as the agent performs actions
-4. Monitor task progress and results
-
-<img
-  src="/static/chat-ui-example.png"
-  alt="Bytebot Chat UI"
-  className="w-full max-w-4xl"
-/>
-
 ## Next Steps
-
-Now that you have Bytebot up and running, here are some next steps:
 
 <CardGroup cols={2}>
   <Card
-    title="Explore the Architecture"
-    icon="diagram-project"
+    title="Architecture Overview"
+    icon="sitemap"
     href="/core-concepts/architecture"
   >
-    Learn more about Bytebot's architecture and components
-  </Card>
-  <Card
-    title="Desktop Environment"
-    icon="desktop"
-    href="/core-concepts/desktop-environment"
-  >
-    Discover details about the containerized desktop environment
+    Understand how all the components work together
   </Card>
   <Card title="Agent System" icon="robot" href="/core-concepts/agent-system">
-    Learn about the agent task management system
+    Deep dive into the AI agent capabilities
   </Card>
-  <Card title="API Reference" icon="code" href="/api-reference/agent/tasks">
-    Explore the Agent API for task management
+  <Card title="API Reference" icon="code" href="/api-reference/introduction">
+    Build integrations with the REST APIs
+  </Card>
+  <Card
+    title="Use Cases"
+    icon="lightbulb"
+    href="/core-concepts/agent-system#use-cases"
+  >
+    Explore what others are building
   </Card>
 </CardGroup>
+
+<Note>
+  **Need help?** Join our [Discord
+  community](https://discord.com/invite/zcb5wA2t4u) for support and to share
+  what you're building!
+</Note>
