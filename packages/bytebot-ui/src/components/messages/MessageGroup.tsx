@@ -31,6 +31,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { ComputerToolUseContentBlock } from "@bytebot/shared";
 import { GroupedMessages } from "./ChatContainer";
+import { CopyButton } from "../ui/copy-button";
 
 // Define the IconType for proper type checking
 type IconType =
@@ -200,8 +201,13 @@ export function AssistantMessage({ group, messages = [] }: MessageGroupProps) {
               {visibleBlocks.map((block, index) => (
                 <div key={index}>
                   {isTextContentBlock(block) && (
-                    <div className="text-bytebot-bronze-dark-8 text-sm">
-                      <ReactMarkdown>{block.text}</ReactMarkdown>
+                    <div className="space-y-2">
+                      <div className="text-bytebot-bronze-dark-8 text-sm">
+                        <ReactMarkdown>{block.text}</ReactMarkdown>
+                      </div>
+                      <div className="flex justify-end">
+                        <CopyButton text={block.text} />
+                      </div>
                     </div>
                   )}
 
