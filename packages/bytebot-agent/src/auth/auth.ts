@@ -10,17 +10,15 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
+    autoSignIn: false,
   },
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
     updateAge: 60 * 60 * 24, // 24 hours (update session if it's older than this)
-    cookieCache: {
-      enabled: true,
-      maxAge: 60 * 5, // 5 minutes
-    },
+    cookieName: 'better-auth.session', // Match frontend cookie name
   },
   secret: process.env.BETTER_AUTH_SECRET || 'fallback-secret-change-in-production',
-  baseURL: process.env.BETTER_AUTH_URL || 'http://localhost:9991',
+  baseURL: process.env.BETTER_AUTH_URL || 'http://localhost:9991/api/auth',
   trustedOrigins: [
     'http://localhost:9992', // Frontend URL
     'http://localhost:9991', // Backend URL
