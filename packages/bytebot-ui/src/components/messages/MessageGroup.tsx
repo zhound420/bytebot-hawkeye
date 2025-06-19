@@ -202,8 +202,105 @@ export function AssistantMessage({ group, messages = [] }: MessageGroupProps) {
                 <div key={index}>
                   {isTextContentBlock(block) && (
                     <div className="space-y-2">
-                      <div className="text-bytebot-bronze-dark-8 text-sm">
-                        <ReactMarkdown>{block.text}</ReactMarkdown>
+                      <div className="text-bytebot-bronze-dark-8 text-sm prose prose-sm max-w-none">
+                        <ReactMarkdown
+                          components={{
+                            h1: ({ children }) => (
+                              <h1 className="text-base font-semibold mt-4 mb-2 text-bytebot-bronze-dark-9">
+                                {children}
+                              </h1>
+                            ),
+                            h2: ({ children }) => (
+                              <h2 className="text-sm font-semibold mt-3 mb-2 text-bytebot-bronze-dark-9">
+                                {children}
+                              </h2>
+                            ),
+                            h3: ({ children }) => (
+                              <h3 className="text-sm font-medium mt-3 mb-1 text-bytebot-bronze-dark-9">
+                                {children}
+                              </h3>
+                            ),
+                            h4: ({ children }) => (
+                              <h4 className="text-sm font-medium mt-2 mb-1 text-bytebot-bronze-dark-8">
+                                {children}
+                              </h4>
+                            ),
+                            h5: ({ children }) => (
+                              <h5 className="text-xs font-medium mt-2 mb-1 text-bytebot-bronze-dark-8">
+                                {children}
+                              </h5>
+                            ),
+                            h6: ({ children }) => (
+                              <h6 className="text-xs font-medium mt-2 mb-1 text-bytebot-bronze-dark-8">
+                                {children}
+                              </h6>
+                            ),
+                            p: ({ children }) => (
+                              <p className="mb-2 leading-relaxed">
+                                {children}
+                              </p>
+                            ),
+                            ul: ({ children }) => (
+                              <ul className="list-disc ml-4 mb-2">
+                                {children}
+                              </ul>
+                            ),
+                            ol: ({ children }) => (
+                              <ol className="list-decimal ml-4 mb-2">
+                                {children}
+                              </ol>
+                            ),
+                            li: ({ children }) => (
+                              <li className="text-sm mb-1 leading-relaxed">
+                                {children}
+                              </li>
+                            ),
+                            blockquote: ({ children }) => (
+                              <blockquote className="border-l-4 border-bytebot-bronze-light-7 pl-4 italic text-bytebot-bronze-dark-7 mb-2">
+                                {children}
+                              </blockquote>
+                            ),
+                            code: ({ children, className }) => {
+                              const isInline = !className;
+                              return isInline ? (
+                                <code className="bg-bytebot-bronze-light-2 text-bytebot-bronze-dark-9 px-1 py-0.5 rounded text-xs font-mono">
+                                  {children}
+                                </code>
+                              ) : (
+                                <code className="block bg-bytebot-bronze-light-2 text-bytebot-bronze-dark-9 p-3 rounded text-xs font-mono whitespace-pre-wrap overflow-x-auto">
+                                  {children}
+                                </code>
+                              );
+                            },
+                            pre: ({ children }) => (
+                              <pre className="bg-bytebot-bronze-light-2 border border-bytebot-bronze-light-7 rounded p-3 mb-2 overflow-x-auto">
+                                {children}
+                              </pre>
+                            ),
+                            strong: ({ children }) => (
+                              <strong className="font-semibold text-bytebot-bronze-dark-9">
+                                {children}
+                              </strong>
+                            ),
+                            em: ({ children }) => (
+                              <em className="italic text-bytebot-bronze-dark-8">
+                                {children}
+                              </em>
+                            ),
+                            a: ({ children, href }) => (
+                              <a 
+                                href={href} 
+                                className="text-blue-600 hover:text-blue-800 underline"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                {children}
+                              </a>
+                            ),
+                          }}
+                        >
+                          {block.text}
+                        </ReactMarkdown>
                       </div>
                       <div className="flex justify-end">
                         <CopyButton text={block.text} />
