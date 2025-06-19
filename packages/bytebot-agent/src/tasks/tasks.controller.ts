@@ -8,6 +8,7 @@ import {
   Delete,
   HttpStatus,
   HttpCode,
+  Query,
 } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
@@ -40,8 +41,17 @@ export class TasksController {
   }
 
   @Get(':id/messages')
-  async taskMessages(@Param('id') taskId: string): Promise<Message[]> {
-    const messages = await this.messagesService.findAll(taskId);
+  async taskMessages(
+    @Param('id') taskId: string,
+    @Query('limit') limit?: string,
+    @Query('page') page?: string,
+  ): Promise<Message[]> {
+    const options = {
+      limit: limit ? parseInt(limit, 10) : undefined,
+      page: page ? parseInt(page, 10) : undefined,
+    };
+    
+    const messages = await this.messagesService.findAll(taskId, options);
     return messages;
   }
 

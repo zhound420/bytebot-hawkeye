@@ -1,6 +1,6 @@
 ---
 title: Introduction
-description: "A containerized computer use environment with an integrated XFCE4 desktop and automation daemon"
+description: "Self-hosted AI desktop agent that automates any computer task through natural language"
 ---
 
 <p align="center">
@@ -20,54 +20,152 @@ description: "A containerized computer use environment with an integrated XFCE4 
 
 ## What is Bytebot?
 
-Bytebot provides a complete, self-contained environment for computer use automation. It encapsulates a lightweight XFCE4 desktop environment inside a Docker container with the bytebotd daemon for programmatic control, making it easy to deploy across different platforms.
+Bytebot is a self-hosted AI desktop agent that transforms how you interact with computers. By combining powerful AI with a containerized Linux desktop, Bytebot performs complex computer tasks. Think of it as your virtual employee that can actually use a computer – clicking, typing, browsing, and completing workflows just like a human would.
 
-## Key Features
+## Why Self-Host Bytebot?
 
 <CardGroup cols={2}>
-  <Card
-    title="Containerized Desktop"
-    icon="desktop"
-    href="/core-concepts/desktop-environment"
-  >
-    Runs a lightweight XFCE4 desktop on Ubuntu 22.04 with pre-installed tools
+  <Card title="Complete Privacy" icon="shield">
+    Your tasks and data never leave your infrastructure. Everything runs locally
+    on your servers.
   </Card>
-  <Card
-    title="Computer Use API"
-    icon="code"
-    href="/api-reference/computer-use/unified-endpoint"
-  >
-    Control the desktop environment programmatically through a unified REST API
+  <Card title="Full Control" icon="sliders">
+    Customize the desktop environment, install any applications, and configure
+    to your exact needs.
   </Card>
-  <Card title="Cross-Platform" icon="globe" href="/quickstart">
-    Works on any system that supports Docker with simple setup
+  <Card title="No Usage Limits" icon="infinity">
+    Use your own LLM API keys without platform restrictions or additional fees.
   </Card>
-  <Card title="VNC Access" icon="eye" href="/quickstart">
-    View and interact with the desktop through VNC or browser-based noVNC
+  <Card title="Secure Isolation" icon="lock">
+    Each desktop runs in its own container, completely isolated from your host
+    system.
   </Card>
 </CardGroup>
 
+## Example Tasks You Can Delegate
+
+- **Data Processing**: "Fill out this web form with the data from my CSV file"
+- **Email Management**: "Check my email and summarize important messages"
+- **Web Automation**: "Download all PDFs from this website and organize them by date"
+- **Testing**: "Test our checkout flow and take screenshots of each step"
+- **Invoice Processing**: "Download invoices from email, extract data, and update the accounting spreadsheet"
+- **Data Entry**: "Transfer customer information from PDF forms into our CRM system"
+- **Report Generation**: "Collect weekly metrics from different dashboards and compile the team report"
+- **Account Management**: "Update user permissions across our various SaaS tools"
+- **Document Processing**: "Download attachments from emails, rename them according to our convention, and file them"
+- **Compliance Tasks**: "Verify all employee records are updated in both HR systems"
+
+## How It Works
+
+<Steps>
+  <Step title="Describe Your Task">
+    Simply tell Bytebot what you want done in natural language through the tasks
+    interface
+  </Step>
+  <Step title="AI Plans the Actions">
+    Bytebot understands your request and breaks it down into specific computer
+    actions
+  </Step>
+  <Step title="Executes Actions">
+    Bytebot executes the task on the containerized desktop using the keyboard
+    and mouse
+  </Step>
+  <Step title="Watch or Walk Away">
+    Monitor it working in real-time through the desktop viewer, or let it
+    complete tasks independently.
+  </Step>
+  <Step title="Get Results">
+    Receive the completed task output, screenshots, or confirmation of
+    completion
+  </Step>
+</Steps>
+
 ## Architecture Overview
 
-Bytebot is designed as a single, integrated container that provides both a desktop environment and the tools to control it:
+Bytebot consists of four integrated components working together:
 
-<img src="/images/core-container.png" alt="Bytebot Core Container" />
+<img src="/images/agent-architecture.png" alt="Bytebot Agent Architecture" />
+
+<CardGroup cols={2}>
+  <Card
+    title="Bytebot Desktop"
+    icon="desktop"
+    href="/core-concepts/desktop-environment"
+  >
+    Ubuntu 22.04 with XFCE4, pre-installed apps, and the automation daemon
+  </Card>
+  <Card title="AI Agent" icon="brain" href="/core-concepts/agent-system">
+    NestJS service that uses Claude AI to plan and execute tasks
+  </Card>
+  <Card
+    title="Task Interface"
+    icon="comments"
+    href="/core-concepts/agent-system#task-ui"
+  >
+    Next.js web app for creating and managing tasks
+  </Card>
+  <Card title="REST API" icon="code" href="/api-reference/introduction">
+    Programmatic access to both task management and direct desktop control
+  </Card>
+</CardGroup>
 
 ## Getting Started
 
-Get up and running with Bytebot in minutes:
-
-<CardGroup cols={2}>
-  <Card title="Quick Start Guide" icon="rocket" href="/quickstart">
-    Set up and run Bytebot on your system
+<CardGroup cols={3}>
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Get Bytebot running in 2 minutes
+  </Card>
+  <Card title="Architecture" icon="sitemap" href="/core-concepts/architecture">
+    Understand how it all fits together
   </Card>
   <Card title="API Reference" icon="book" href="/api-reference/introduction">
-    Learn how to programmatically control the Bytebot environment
+    Integrate with your applications
+  </Card>
+</CardGroup>
+
+## Use Cases
+
+### Personal Productivity
+
+- Automate repetitive tasks
+- Manage emails and calendars
+- Organize documents and files
+- Conduct web research
+
+### Business Automation
+
+- Data entry and form filling
+- Report generation
+- Competitive analysis
+- Customer support workflows
+
+### Development & Testing
+
+- UI test automation
+- Cross-browser testing
+- Documentation generation
+- API integration testing
+
+## Community & Support
+
+<CardGroup cols={2}>
+  <Card
+    title="Discord Community"
+    icon="discord"
+    href="https://discord.com/invite/zcb5wA2t4u"
+  >
+    Join our community for help, tips, and discussions
+  </Card>
+  <Card
+    title="GitHub"
+    icon="github"
+    href="https://github.com/bytebot-ai/bytebot"
+  >
+    Report issues, contribute, or star the project
   </Card>
 </CardGroup>
 
 <Note>
-  The default container configuration is intended for development and testing
-  purposes only. It should **not** be used in production environments without
-  security hardening.
+  **Ready to give your AI its own computer?** Start with our [Quick Start
+  Guide](/quickstart) to have your own AI desktop agent running in minutes.
 </Note>
