@@ -64,10 +64,10 @@ export default function LoginPage() {
               alt="Bytebot"
               width={64}
               height={64}
-              className="h-16 w-16"
+              className="h-12 w-12"
             />
           </div>
-          <h2 className="text-3xl font-bold text-gray-900">
+          <h2 className="text-2xl font-bold text-gray-900">
             {isSignUp ? "Create your account" : "Sign in to Bytebot"}
           </h2>
           <p className="mt-2 text-sm text-gray-600">
