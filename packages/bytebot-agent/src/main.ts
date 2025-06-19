@@ -13,11 +13,17 @@ async function bootstrap() {
   try {
     const app = await NestFactory.create(AppModule);
 
+    // Set global prefix for all routes
+    app.setGlobalPrefix('api');
+
     // Enable CORS
     app.enableCors({
-      origin: '*',
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      origin: ['http://localhost:9992', 'http://localhost:3000'],
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With'],
       credentials: true,
+      preflightContinue: false,
+      optionsSuccessStatus: 204,
     });
 
     await app.listen(process.env.PORT ?? 9991);
