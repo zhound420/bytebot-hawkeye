@@ -134,19 +134,12 @@ export class TasksService {
     return tasks;
   }
 
-  async findById(id: string): Promise<Task & { messages: Message[] }> {
+  async findById(id: string): Promise<Task> {
     this.logger.log(`Retrieving task by ID: ${id}`);
 
     try {
       const task = await this.prisma.task.findUnique({
         where: { id },
-        include: {
-          messages: {
-            orderBy: {
-              createdAt: 'asc',
-            },
-          },
-        },
       });
 
       if (!task) {

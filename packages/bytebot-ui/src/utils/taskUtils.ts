@@ -3,19 +3,31 @@ import { Message, Task } from "@/types";
 /**
  * Fetches messages for a specific task
  * @param taskId The ID of the task to fetch messages for
- * @returns Array of new messages
+ * @param options Optional pagination parameters
+ * @returns Array of messages
  */
-export async function fetchTaskMessages(taskId: string): Promise<Message[]> {
+export async function fetchTaskMessages(
+  taskId: string,
+  options?: {
+    limit?: number;
+    page?: number;
+  }
+): Promise<Message[]> {
   try {
-    const response = await fetch(
-      `/api/tasks/${taskId}/messages`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
+    const { limit, page } = options || {};
+    const params = new URLSearchParams();
+    
+    if (limit) params.append('limit', limit.toString());
+    if (page) params.append('page', page.toString());
+
+    const url = `/api/tasks/${taskId}/messages${params.toString() ? `?${params.toString()}` : ''}`;
+    
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
       },
-    );
+    });
 
     if (!response.ok) {
       throw new Error("Failed to fetch messages");

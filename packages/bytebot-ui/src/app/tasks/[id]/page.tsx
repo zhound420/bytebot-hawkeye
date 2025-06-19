@@ -34,6 +34,9 @@ export default function TaskPage() {
     setInput,
     isLoading,
     isLoadingSession,
+    isLoadingMoreMessages,
+    hasMoreMessages,
+    loadMoreMessages,
     handleGuideTask,
     handleTakeOverTask,
     handleResumeTask,
@@ -206,13 +209,16 @@ export default function TaskPage() {
           </div>
 
           {/* Chat Area */}
-          <div className="col-span-3 flex h-full flex-col overflow-scroll">
+          <div ref={chatContainerRef} className="col-span-3 flex h-full flex-col overflow-scroll">
             {/* Messages scrollable area */}
             <div className="flex-1 px-4 pt-4 pb-2">
               <ChatContainer
                 taskStatus={taskStatus}
                 messages={messages}
                 isLoadingSession={isLoadingSession}
+                isLoadingMoreMessages={isLoadingMoreMessages}
+                hasMoreMessages={hasMoreMessages}
+                loadMoreMessages={loadMoreMessages}
                 scrollRef={chatContainerRef}
                 control={control}
               />

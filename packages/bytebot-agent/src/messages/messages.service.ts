@@ -30,7 +30,18 @@ export class MessagesService {
     return message;
   }
 
-  async findAll(taskId: string): Promise<Message[]> {
+  async findAll(
+    taskId: string,
+    options?: {
+      limit?: number;
+      page?: number;
+    }
+  ): Promise<Message[]> {
+    const { limit = 10, page = 1 } = options || {};
+    
+    // Calculate offset based on page and limit
+    const offset = (page - 1) * limit;
+
     return this.prisma.message.findMany({
       where: {
         taskId,
@@ -38,6 +49,8 @@ export class MessagesService {
       orderBy: {
         createdAt: 'asc',
       },
+      take: limit,
+      skip: offset,
     });
   }
 }
