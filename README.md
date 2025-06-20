@@ -36,7 +36,7 @@ https://github.com/user-attachments/assets/5f946df9-9161-4e7e-8262-9eda83ee7d22
 3. Press **Deploy**. Railway will spin up the Desktop, Agent, UI and Postgres services using pre-built container images, connect them via [private networking](https://docs.railway.com/guides/private-networking) and expose only the UI publicly.
 4. In about two minutes your agent will be live at your project's public URL.
 
-_For an in-depth guide see [`docs/deployment/railway`](docs/deployment/railway)._
+_For an in-depth guide see [here](https://docs.bytebot.ai/deployment/railway)._
 
 ---
 
