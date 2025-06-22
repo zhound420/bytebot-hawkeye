@@ -8,9 +8,15 @@ async function proxy(req: NextRequest, path: string[]): Promise<Response> {
   const subPath = path.length ? `/${path.join("/")}` : "";
   const url = `${BASE_URL}/api${subPath}${req.nextUrl.search}`;
 
+  // Extract cookies from the incoming request
+  const cookies = req.headers.get('cookie');
+
   const init: RequestInit = {
     method: req.method,
-    headers: { "Content-Type": "application/json" },
+    headers: { 
+      "Content-Type": "application/json",
+      ...(cookies && { "Cookie": cookies })
+    },
     body:
       req.method === "GET" || req.method === "HEAD"
         ? undefined
