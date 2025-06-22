@@ -17,5 +17,7 @@ export const auth = process.env.AUTH_ENABLED === 'true' ? betterAuth({
   ],
 }) : null;
 
+// @ts-ignore
 export type Session = typeof auth extends null ? null : typeof auth.$Infer.Session;
+// @ts-ignore
 export type User = typeof auth extends null ? null : typeof auth.$Infer.Session.user;
