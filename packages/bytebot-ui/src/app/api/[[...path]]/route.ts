@@ -26,9 +26,22 @@ async function proxy(req: NextRequest, path: string[]): Promise<Response> {
   const res = await fetch(url, init);
   const body = await res.text();
 
+  // Extract Set-Cookie headers from the backend response
+  const setCookieHeaders = res.headers.getSetCookie?.() || [];
+
+  // Create response headers
+  const responseHeaders = new Headers({
+    "Content-Type": "application/json"
+  });
+
+  // Add Set-Cookie headers if they exist
+  setCookieHeaders.forEach(cookie => {
+    responseHeaders.append("Set-Cookie", cookie);
+  });
+
   return new Response(body, {
     status: res.status,
-    headers: { "Content-Type": "application/json" },
+    headers: responseHeaders,
   });
 }
 
