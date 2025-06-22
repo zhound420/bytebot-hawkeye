@@ -4,23 +4,18 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-export const auth = betterAuth({
+export const auth = process.env.AUTH_ENABLED === 'true' ? betterAuth({
   database: prismaAdapter(prisma, {
     provider: 'postgresql',
   }),
   emailAndPassword: {
     enabled: true,
-    autoSignIn: false,
-  },
-  session: {
-    expiresIn: 60 * 60 * 24 * 7, // 7 days
-    updateAge: 60 * 60 * 24, // 24 hours (update session if it's older than this)
   },
   trustedOrigins: [
     'http://localhost:9992',
     'http://localhost:9991',
   ],
-});
+}) : null;
 
-export type Session = typeof auth.$Infer.Session;
-export type User = typeof auth.$Infer.Session.user;
+export type Session = typeof auth extends null ? null : typeof auth.$Infer.Session;
+export type User = typeof auth extends null ? null : typeof auth.$Infer.Session.user;

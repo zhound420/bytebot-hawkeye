@@ -12,12 +12,13 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { AuthModule } from '@thallesp/nestjs-better-auth';
 import { auth } from './auth';
 
+const authEnabled = process.env.AUTH_ENABLED === 'true';
 
 @Module({
   imports: [
-    AuthModule.forRoot(auth, {
+    ...(authEnabled ? [AuthModule.forRoot(auth, {
       disableTrustedOriginsCors: false,
-    }),
+    })] : []),
     ScheduleModule.forRoot(),
     EventEmitterModule.forRoot(),
     ConfigModule.forRoot({

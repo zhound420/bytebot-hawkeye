@@ -19,8 +19,10 @@ import { GuideTaskDto } from './dto/guide-task.dto';
 import { MessagesService } from 'src/messages/messages.service';
 import { AuthGuard } from '@thallesp/nestjs-better-auth';
 
+const authEnabled = process.env.AUTH_ENABLED === 'true';
+
 @Controller('tasks')
-@UseGuards(AuthGuard)
+@UseGuards(...(authEnabled ? [AuthGuard] : []))
 export class TasksController {
   constructor(
     private readonly tasksService: TasksService,

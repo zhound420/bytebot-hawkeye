@@ -1,6 +1,8 @@
 import { createAuthClient } from 'better-auth/react';
 
-export const authClient = createAuthClient();
+const authEnabled = process.env.NEXT_PUBLIC_AUTH_ENABLED === 'true';
+
+export const authClient = authEnabled ? createAuthClient() : null;
 
 export const {
   signIn,
@@ -8,4 +10,10 @@ export const {
   signOut,
   useSession,
   getSession,
-} = authClient;
+} = authClient || {
+  signIn: () => Promise.resolve(null),
+  signUp: () => Promise.resolve(null),
+  signOut: () => Promise.resolve(null),
+  useSession: () => ({ data: null, isPending: false, error: null }),
+  getSession: () => Promise.resolve(null),
+};
