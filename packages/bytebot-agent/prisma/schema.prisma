@@ -58,6 +58,8 @@ model Task {
   result        Json?
   messages      Message[]
   summaries     Summary[]
+  user          User?         @relation(fields: [userId], references: [id])
+  userId        String?       // Optional foreign key to User for task ownership
 }
 
 model Summary {
@@ -110,6 +112,7 @@ model User {
   sessions      Session[]
   accounts      Account[]
   messages      Message[]
+  tasks         Task[]
 }
 
 model Session {
