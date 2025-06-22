@@ -11,7 +11,9 @@ async function bootstrap() {
   console.log('Starting bytebot-agent application...');
 
   try {
-    const app = await NestFactory.create(AppModule);
+    const app = await NestFactory.create(AppModule, {
+      bodyParser: false,
+    });
 
     // Set global prefix for all routes
     app.setGlobalPrefix('api');
@@ -20,10 +22,6 @@ async function bootstrap() {
     app.enableCors({
       origin: '*',
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With', 'Set-Cookie'],
-      exposedHeaders: ['Set-Cookie'],
-      credentials: true,
-      optionsSuccessStatus: 204,
     });
 
     await app.listen(process.env.PORT ?? 9991);

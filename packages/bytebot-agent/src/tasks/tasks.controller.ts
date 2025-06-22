@@ -17,9 +17,7 @@ import { UpdateTaskDto } from './dto/update-task.dto';
 import { Message, Task } from '@prisma/client';
 import { GuideTaskDto } from './dto/guide-task.dto';
 import { MessagesService } from 'src/messages/messages.service';
-import { AuthGuard } from '../auth/auth.guard';
-import { CurrentUser } from '../auth/current-user.decorator';
-import { User } from '../auth/auth';
+import { AuthGuard } from '@thallesp/nestjs-better-auth';
 
 @Controller('tasks')
 @UseGuards(AuthGuard)
@@ -33,7 +31,6 @@ export class TasksController {
   @HttpCode(HttpStatus.CREATED)
   async create(
     @Body() createTaskDto: CreateTaskDto,
-    @CurrentUser() user: User
   ): Promise<Task> {
     return this.tasksService.create(createTaskDto);
   }
