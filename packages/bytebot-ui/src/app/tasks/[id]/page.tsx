@@ -34,6 +34,9 @@ export default function TaskPage() {
     setInput,
     isLoading,
     isLoadingSession,
+    isLoadingMoreMessages,
+    hasMoreMessages,
+    loadMoreMessages,
     handleGuideTask,
     handleTakeOverTask,
     handleResumeTask,
@@ -206,13 +209,19 @@ export default function TaskPage() {
           </div>
 
           {/* Chat Area */}
-          <div className="col-span-3 flex h-full flex-col overflow-scroll">
+          <div
+            ref={chatContainerRef}
+            className="col-span-3 flex h-full flex-col overflow-scroll"
+          >
             {/* Messages scrollable area */}
             <div className="flex-1 px-4 pt-4 pb-2">
               <ChatContainer
                 taskStatus={taskStatus}
                 messages={messages}
                 isLoadingSession={isLoadingSession}
+                isLoadingMoreMessages={isLoadingMoreMessages}
+                hasMoreMessages={hasMoreMessages}
+                loadMoreMessages={loadMoreMessages}
                 scrollRef={chatContainerRef}
                 control={control}
               />
@@ -229,12 +238,12 @@ export default function TaskPage() {
                   minLines={1}
                 />
                 <div className="mt-2">
-                  <Select value="sonnet-4">
+                  <Select value="opus-4">
                     <SelectTrigger className="w-auto">
                       <SelectValue placeholder="Select an model" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="sonnet-4">Sonnet 4</SelectItem>
+                      <SelectItem value="opus-4">Opus 4</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

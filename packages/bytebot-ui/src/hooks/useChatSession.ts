@@ -25,6 +25,9 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
   );
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingSession, setIsLoadingSession] = useState(true);
+  const [isLoadingMoreMessages, setIsLoadingMoreMessages] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
 
   const processedMessageIds = useRef<Set<string>>(new Set());
 
@@ -78,6 +81,69 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
     onTaskDeleted: handleTaskDeleted,
   });
 
+  // Load more messages function for infinite scroll
+  const loadMoreMessages = useCallback(async () => {
+    console.log('loadMoreMessages called with state:', {
+      currentTaskId,
+      isLoadingMoreMessages,
+      hasMoreMessages,
+      currentPage
+    });
+
+    if (!currentTaskId || isLoadingMoreMessages || !hasMoreMessages) {
+      console.log('loadMoreMessages early return');
+      return;
+    }
+
+    console.log('Starting to load more messages');
+    setIsLoadingMoreMessages(true);
+    try {
+      const nextPage = currentPage + 1;
+      console.log('Fetching page:', nextPage);
+      const newMessages = await fetchTaskMessages(currentTaskId, {
+        limit: 10,
+        page: nextPage,
+      });
+      console.log('Received messages:', newMessages.length);
+
+      if (newMessages.length === 0) {
+        setHasMoreMessages(false);
+      } else {
+        // Append new messages to the end of the list (newer messages)
+        const formattedMessages = newMessages.map((msg: Message) => ({
+          id: msg.id,
+          content: msg.content,
+          role: msg.role,
+          createdAt: msg.createdAt,
+        }));
+
+        // Filter out any messages we already have
+        const uniqueMessages = formattedMessages.filter(
+          (msg) => !processedMessageIds.current.has(msg.id)
+        );
+
+        if (uniqueMessages.length > 0) {
+          // Add message IDs to processed set
+          uniqueMessages.forEach((msg: Message) => {
+            processedMessageIds.current.add(msg.id);
+          });
+
+          setMessages((prev) => [...prev, ...uniqueMessages]);
+          setCurrentPage(nextPage);
+        }
+
+        // If we got fewer messages than requested, we've reached the end
+        if (newMessages.length < 10) {
+          setHasMoreMessages(false);
+        }
+      }
+    } catch (error) {
+      console.error("Error loading more messages:", error);
+    } finally {
+      setIsLoadingMoreMessages(false);
+    }
+  }, [currentTaskId, currentPage, isLoadingMoreMessages, hasMoreMessages]);
+
   // Load task ID from URL parameter or fetch the latest task on initial render
   useEffect(() => {
     const loadSession = async () => {
@@ -87,7 +153,11 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
           // If we have an initial task ID (from URL), fetch that specific task
           console.log(`Fetching specific task: ${initialTaskId}`);
           const task = await fetchTaskById(initialTaskId);
-          const messages = await fetchTaskMessages(initialTaskId);
+          // Load only the first page of messages (most recent 10)
+          const messages = await fetchTaskMessages(initialTaskId, {
+            limit: 10,
+            page: 1,
+          });
 
           if (task) {
             console.log(`Found task: ${task.id}`);
@@ -111,6 +181,17 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
               });
 
               setMessages(formattedMessages);
+              setCurrentPage(1);
+              
+              // If we got fewer messages than requested, we've reached the end
+              if (messages.length < 10) {
+                setHasMoreMessages(false);
+              } else {
+                setHasMoreMessages(true);
+              }
+            } else {
+              setCurrentPage(1);
+              setHasMoreMessages(false);
             }
           } else {
             console.log(`Task with ID ${initialTaskId} not found`);
@@ -219,6 +300,10 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
     // Clear processed message IDs
     processedMessageIds.current = new Set();
 
+    // Reset pagination state
+    setCurrentPage(1);
+    setHasMoreMessages(true);
+
     console.log("Started new conversation");
   };
 
@@ -257,6 +342,9 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
     currentTaskId,
     isLoading,
     isLoadingSession,
+    isLoadingMoreMessages,
+    hasMoreMessages,
+    loadMoreMessages,
     handleGuideTask,
     handleStartTask,
     startNewConversation,

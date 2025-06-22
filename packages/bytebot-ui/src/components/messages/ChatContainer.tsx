@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useCallback } from "react";
 import { Message, Role, TaskStatus } from "@/types";
 import { MessageGroup } from "./MessageGroup";
 import { isToolResultContentBlock } from "@bytebot/shared";
@@ -9,6 +9,9 @@ interface ChatContainerProps {
   control: Role;
   messages: Message[];
   isLoadingSession: boolean;
+  isLoadingMoreMessages?: boolean;
+  hasMoreMessages?: boolean;
+  loadMoreMessages?: () => void;
   scrollRef?: React.RefObject<HTMLDivElement | null>;
 }
 
@@ -80,11 +83,56 @@ export function ChatContainer({
   control,
   messages,
   isLoadingSession,
+  isLoadingMoreMessages = false,
+  hasMoreMessages = false,
+  loadMoreMessages,
   scrollRef,
 }: ChatContainerProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
   // Group back-to-back messages from the same role
   const groupedConversation = groupBackToBackMessages(filterMessages(messages));
+
+  // Infinite scroll handler
+  const handleScroll = useCallback(() => {
+    if (!scrollRef?.current || !loadMoreMessages) {
+      console.log("Scroll handler early return:", {
+        hasScrollRef: !!scrollRef?.current,
+        hasLoadMoreMessages: !!loadMoreMessages,
+        hasMoreMessages,
+        isLoadingMoreMessages,
+      });
+      return;
+    }
+
+    const container = scrollRef.current;
+    // Check if user scrolled to the bottom (within 20px - much more sensitive)
+    const { scrollTop, scrollHeight, clientHeight } = container;
+    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+
+    console.log("Scroll metrics:", {
+      scrollTop,
+      scrollHeight,
+      clientHeight,
+      distanceFromBottom,
+      hasMoreMessages,
+      isLoadingMoreMessages,
+    });
+
+    if (distanceFromBottom <= 20 && hasMoreMessages && !isLoadingMoreMessages) {
+      console.log("Triggering loadMoreMessages");
+      loadMoreMessages();
+    }
+  }, [scrollRef, loadMoreMessages, hasMoreMessages, isLoadingMoreMessages]);
+
+  // Add scroll event listener
+  useEffect(() => {
+    const container = scrollRef?.current;
+    if (container) {
+      container.addEventListener("scroll", handleScroll);
+      return () => container.removeEventListener("scroll", handleScroll);
+    }
+  }, [handleScroll, scrollRef]);
 
   // This effect runs whenever the messages array changes
   useEffect(() => {
@@ -102,7 +150,7 @@ export function ChatContainer({
   };
 
   return (
-    <div ref={scrollRef} className="flex-1 overflow-auto p-4">
+    <div className="flex-1 p-4">
       {isLoadingSession ? (
         <div className="flex h-full items-center justify-center">
           <div className="border-t-primary h-8 w-8 animate-spin rounded-full border-4 border-gray-300"></div>
@@ -114,10 +162,18 @@ export function ChatContainer({
               <MessageGroup group={group} messages={messages} />
             </div>
           ))}
+
           {taskStatus === TaskStatus.RUNNING && control === Role.ASSISTANT && (
             <TextShimmer className="text-sm" duration={2}>
               Bytebot is working...
             </TextShimmer>
+          )}
+
+          {/* Loading indicator for infinite scroll at bottom */}
+          {isLoadingMoreMessages && (
+            <div className="flex justify-center py-4">
+              <div className="border-t-primary h-6 w-6 animate-spin rounded-full border-2 border-gray-300"></div>
+            </div>
           )}
         </>
       ) : (

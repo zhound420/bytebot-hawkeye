@@ -1,11 +1,11 @@
 ---
 title: "Agent System"
-description: "Understanding the Bytebot agent architecture and task management system"
+description: "The AI brain that powers your self-hosted desktop automation"
 ---
 
-## Agent System Overview
+## Overview
 
-The Bytebot agent system extends the core desktop container with AI-driven automation capabilities. It's designed to execute tasks autonomously using a structured task management system, message-based interactions, and database persistence.
+The Bytebot Agent System transforms a simple desktop container into an intelligent, autonomous computer user. By combining Claude AI with structured task management, it can understand natural language requests and execute complex workflows just like a human would.
 
 <img
   src="/images/agent-architecture.png"
@@ -13,171 +13,337 @@ The Bytebot agent system extends the core desktop container with AI-driven autom
   className="w-full max-w-4xl"
 />
 
-## Core Components
+## How the AI Agent Works
 
-### Agent Service
+### The Brain: Claude AI Integration
 
-The agent service is the central processing unit of the Bytebot agent system. Built with NestJS, it:
+At the heart of Bytebot is Claude, Anthropic's advanced AI assistant. The agent:
 
-- Processes tasks in a structured loop
-- Integrates with Anthropic's Claude for AI capabilities
-- Manages the task state and messages
-- Dispatches computer actions to the bytebotd service
-- Provides a REST API for task management
+1. **Understands Context**: Processes your natural language requests with full conversation history
+2. **Plans Actions**: Breaks down complex tasks into executable computer actions
+3. **Adapts in Real-time**: Adjusts its approach based on what it sees on screen
+4. **Learns from Feedback**: Improves task execution through conversation
+
+### Conversation Flow
+
+<Steps>
+  <Step title="You Describe a Task">
+    "Research competitors for my SaaS product and create a comparison table"
+  </Step>
+  <Step title="AI Plans the Approach">
+    Claude understands the request and plans: open browser → search → visit sites → extract data → create document
+  </Step>
+  <Step title="Executes Actions">
+    The agent controls the desktop: clicking, typing, taking screenshots, reading content
+  </Step>
+  <Step title="Provides Updates">
+    Real-time status updates and asks for clarification when needed
+  </Step>
+  <Step title="Delivers Results">
+    Completes the task and provides the output (files, screenshots, summaries)
+  </Step>
+</Steps>
+
+## Task Management System
+
+### Task Lifecycle
+
+Tasks move through a structured lifecycle:
+
+```mermaid
+graph LR
+    A[Created] --> B[Queued]
+    B --> C[Running]
+    C --> D[Needs Help]
+    C --> E[Completed]
+    C --> F[Failed]
+    D --> C
+```
+
+### Task Properties
+
+Each task contains:
+
+- **Description**: What needs to be done
+- **Priority**: Urgent, High, Medium, or Low
+- **Status**: Current state in the lifecycle
+- **Type**: Immediate or Scheduled
+- **History**: All messages and actions taken
+
+### Smart Task Processing
+
+The agent processes tasks intelligently:
+
+1. **Priority Queue**: Urgent tasks run first
+2. **Error Recovery**: Automatically retries failed actions
+3. **Human in the Loop**: Asks for help when stuck
+4. **Context Preservation**: Maintains conversation history across sessions
+
+## Real-world Capabilities
+
+### What the Agent Can Do
+
+<CardGroup cols={2}>
+  <Card title="Web Automation" icon="globe">
+    - Browse websites
+    - Fill out forms
+    - Extract data
+    - Download files
+    - Monitor changes
+  </Card>
+  <Card title="Document Work" icon="file">
+    - Create documents
+    - Edit spreadsheets
+    - Generate reports
+    - Organize files
+    - Convert formats
+  </Card>
+  <Card title="Email & Communication" icon="envelope">
+    - Read emails
+    - Draft responses
+    - Manage calendar
+    - Schedule meetings
+    - Send notifications
+  </Card>
+  <Card title="Data Processing" icon="database">
+    - Extract from PDFs
+    - Process CSV files
+    - Create visualizations
+    - Generate summaries
+    - Transform data
+  </Card>
+</CardGroup>
+
+### Example Use Cases
+
+#### Research Assistant
+```
+User: "Find the top 5 project management tools and compare their pricing"
+
+Agent Actions:
+1. Opens browser
+2. Searches for project management tools
+3. Visits each tool's website
+4. Extracts pricing information
+5. Creates comparison spreadsheet
+6. Takes screenshots of each pricing page
+```
+
+#### Form Automation
+```
+User: "Fill out the vendor application form with data from our company profile"
+
+Agent Actions:
+1. Opens the form URL
+2. Reads company profile document
+3. Maps data to form fields
+4. Fills out each section
+5. Uploads required documents
+6. Submits and saves confirmation
+```
+
+#### Email Management
+```
+User: "Check my emails and create a summary of action items"
+
+Agent Actions:
+1. Opens email client
+2. Reads unread messages
+3. Identifies action items
+4. Creates organized task list
+5. Drafts response templates
+6. Flags important messages
+```
+
+## Technical Architecture
+
+### Core Components
+
+1. **NestJS Agent Service**
+   - Manages task queue with BullMQ
+   - Integrates with Anthropic API
+   - Handles WebSocket connections
+   - Coordinates with desktop API
+
+2. **Message System**
+   - Structured conversation format
+   - Supports text and images
+   - Maintains full context
+   - Enables rich interactions
+
+3. **Database Schema**
+   ```sql
+   Tasks: id, description, status, priority, timestamps
+   Messages: id, task_id, role, content, timestamps
+   Summaries: id, task_id, content, parent_id
+   ```
+
+4. **Computer Action Bridge**
+   - Translates AI decisions to desktop actions
+   - Handles screenshots and feedback
+   - Manages action timing
+   - Provides error handling
+
+### API Endpoints
+
+Key endpoints for programmatic control:
+
+```typescript
+// Create a new task
+POST /tasks
+{
+  "description": "Your task description",
+  "priority": "HIGH",
+  "type": "IMMEDIATE"
+}
+
+// Get task status
+GET /tasks/:id
+
+// Send a message
+POST /tasks/:id/messages
+{
+  "content": "Additional instructions"
+}
+
+// Get task history
+GET /tasks/:id/messages
+```
+
+## Chat UI Features
+
+The web interface provides:
+
+### Real-time Interaction
+- Live chat with the AI agent
+- Instant status updates
+- Progress indicators
+- Error notifications
+
+### Visual Feedback
+- Embedded desktop viewer
+- Screenshot history
+- Action replay
+- Task timeline
 
 ### Task Management
+- Create and prioritize tasks
+- View active and completed tasks
+- Export conversation logs
+- Manage task queues
 
-Tasks are the primary unit of work in the Bytebot agent system:
+## Security & Privacy
 
-```typescript
-interface Task {
-  id: string;
-  description: string;
-  status: TaskStatus;
-  priority: TaskPriority;
-  type: TaskType;
-  scheduledFor?: Date;
-  createdAt: Date;
-  updatedAt: Date;
-  executedAt?: Date;
-  completedAt?: Date;
-  queuedAt?: Date;
-}
+### Data Isolation
+- All processing happens in your infrastructure
+- No data sent to external services (except Claude API)
+- Conversations stored locally
+- Complete audit trail
 
-enum TaskType {
-  IMMEDIATE,
-  SCHEDULED,
-}
+### Access Control
+- Configurable authentication
+- API key management
+- Network isolation options
+- Role-based permissions (coming soon)
 
-enum TaskStatus {
-  PENDING,
-  RUNNING,
-  NEEDS_HELP,
-  NEEDS_REVIEW,
-  COMPLETED,
-  CANCELLED,
-  FAILED,
-}
+## Extending the Agent
 
-enum TaskPriority {
-  LOW,
-  MEDIUM,
-  HIGH,
-  URGENT,
-}
+### Custom Tools
+Add specialized capabilities:
+```javascript
+// Register a custom tool
+agent.registerTool({
+  name: 'database_query',
+  description: 'Query internal database',
+  execute: async (params) => {
+    // Your implementation
+  }
+});
 ```
 
-The task lifecycle involves:
-
-1. **Creation**: Tasks are created via the API, UI, or by the agent itself with a description
-2. **Queuing**: Tasks are queued for processing
-3. **Processing**: The agent processor handles tasks one at a time
-4. **Completion/Cancellation**: Tasks are marked as complete, cancelled, or other terminal states
-
-### Message System
-
-The agent communicates through a structured message system using Anthropic's content block format:
-
-```typescript
-interface Message {
-  id: string;
-  content: MessageContentBlock[];
-  role: Role;
-  taskId: string;
-  summaryId?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-enum Role {
-  USER,
-  ASSISTANT,
-}
-
-interface MessageContentBlock {
-  type: string;
-  [key: string]: any;
-}
-
-interface TextContentBlock extends MessageContentBlock {
-  type: "text";
-  text: string;
-}
-
-interface ImageContentBlock extends MessageContentBlock {
-  type: "image";
-  source: {
-    type: "base64";
-    media_type: string;
-    data: string;
-  };
-}
+### Workflow Templates
+Create reusable task templates:
+```yaml
+name: "Daily Report"
+steps:
+  - action: "screenshot"
+    target: "dashboard"
+  - action: "extract_data"
+    format: "table"
+  - action: "create_document"
+    template: "daily_report"
 ```
 
-Messages are stored with their associated tasks and can be included in summaries for context retention.
+### Integration Points
+- Webhook notifications
+- External API calls
+- Custom AI prompts
+- Plugin system (coming soon)
 
-### Database Structure
+## Performance Tuning
 
-The agent system uses PostgreSQL for data persistence with a schema that includes:
+### Optimization Settings
 
-- **Tasks**: Storing task metadata and status
-- **Messages**: Storing conversation history using a JSON structure for content blocks
-- **Summaries**: Storing context summaries for long-running tasks, with hierarchical relationships
+```env
+# Concurrent task limit
+MAX_CONCURRENT_TASKS=1
 
-## Agent Processing Loop
+# Task timeout (ms)
+TASK_TIMEOUT=300000
 
-The agent processing loop follows these steps:
+# Screenshot quality (0-100)
+SCREENSHOT_QUALITY=80
 
-1. **Fetch Task**: Retrieve the task and its associated messages
-2. **Update Status**: Mark the task as in-progress
-3. **Process Messages**: Send messages to the AI for processing
-4. **Execute Actions**: Perform computer actions through the bytebotd API
-5. **Store Results**: Save responses and action results
-6. **Create Summaries**: Periodically summarize conversation context
-7. **Complete Task**: Mark task as complete when finished
+# Message history limit
+MAX_CONTEXT_MESSAGES=50
+```
 
-## Computer Action Integration
+### Best Practices
 
-The agent leverages the unified computer action API to perform actions on the desktop:
-
-1. The AI identifies required actions based on the task and conversation
-2. The agent service sends computer action requests to the bytebotd daemon
-3. The bytebotd daemon executes actions on the desktop
-4. Results (including screenshots) are returned to the agent service
-5. The agent integrates these results into the conversation
-
-## Web UI Integration
-
-The NextJS-based web UI provides:
-
-- A chat interface for user-agent interaction
-- Task management controls
-- Real-time desktop view via embedded noVNC
-- Task history and status views
-
-## Security Considerations
-
-When using the agent system, consider these security aspects:
-
-- The agent has access to your desktop environment
-- API keys (like ANTHROPIC_API_KEY) are required and should be secured
-- Database persistence stores conversation history
-- Network security for the additional exposed ports (9991, 9992)
-
-## Customization and Extension
-
-The agent system can be extended in several ways:
-
-- Custom tools integration via the NestJS API
-- UI customization through the NextJS frontend
-- Additional AI model integration
-- Workflow automation through the task system
+1. **Clear Instructions**: Be specific about desired outcomes
+2. **Break Down Complex Tasks**: Use multiple smaller tasks for better results
+3. **Provide Context**: Include relevant files or URLs
+4. **Monitor Progress**: Watch the desktop view for real-time feedback
+5. **Review Results**: Verify outputs meet requirements
 
 ## Troubleshooting
 
-Common issues and solutions:
+<AccordionGroup>
+  <Accordion title="Agent not responding">
+    - Check Anthropic API key is valid
+    - Verify agent service is running
+    - Review logs for errors
+    - Ensure sufficient API credits
+  </Accordion>
+  
+  <Accordion title="Tasks failing frequently">
+    - Increase task timeout
+    - Check desktop responsiveness
+    - Verify network connectivity
+    - Review action timing
+  </Accordion>
+  
+  <Accordion title="Slow task execution">
+    - Monitor system resources
+    - Check network latency
+    - Reduce screenshot frequency
+    - Optimize Claude prompts
+  </Accordion>
+</AccordionGroup>
 
-- **Agent not starting**: Check environment variables and database connection
-- **Task processing errors**: Check the agent logs for error messages
-- **UI connection issues**: Ensure all services are running and ports are accessible
-- **Computer action failures**: Verify the bytebotd service is running and accessible
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Get your agent running
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference/agent/tasks">
+    Integrate with your apps
+  </Card>
+  <Card title="Use Cases" icon="lightbulb" href="#example-use-cases">
+    See what's possible
+  </Card>
+  <Card title="Best Practices" icon="star" href="#best-practices">
+    Optimize your workflows
+  </Card>
+</CardGroup>
