@@ -7,7 +7,7 @@ services:
       context: ../../
       dockerfile: infrastructure/docker/Dockerfile
     # Use pre-built image
-    image: ghcr.io/bytebot-ai/bytebot:edge
+    image: ghcr.io/bytebot-ai/bytebot-desktop:edge
 
     container_name: bytebot-desktop
     restart: unless-stopped
