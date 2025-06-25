@@ -130,7 +130,7 @@ export class AgentProcessor {
       // "abort" listeners on a single AbortSignal across iterations.
       this.abortController = new AbortController();
 
-      const messages = await this.messagesService.findAll(taskId);
+      const messages = await this.messagesService.findEvery(taskId);
       this.logger.debug(
         `Sending ${messages.length} messages to LLM for processing`,
       );
