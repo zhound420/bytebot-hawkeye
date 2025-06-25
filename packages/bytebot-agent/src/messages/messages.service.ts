@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Message, Role, Prisma } from '@prisma/client';
 import { MessageContentBlock } from '@bytebot/shared';
@@ -30,15 +35,26 @@ export class MessagesService {
     return message;
   }
 
+  async findEvery(taskId: string): Promise<Message[]> {
+    return this.prisma.message.findMany({
+      where: {
+        taskId,
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+  }
+
   async findAll(
     taskId: string,
     options?: {
       limit?: number;
       page?: number;
-    }
+    },
   ): Promise<Message[]> {
     const { limit = 10, page = 1 } = options || {};
-    
+
     // Calculate offset based on page and limit
     const offset = (page - 1) * limit;
 
