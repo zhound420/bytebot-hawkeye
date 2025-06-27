@@ -18,6 +18,10 @@
             "pages": ["introduction", "quickstart"]
           },
           {
+            "group": "Deployment",
+            "pages": ["deployment/railway"]
+          },
+          {
             "group": "Core Concepts",
             "pages": [
               "core-concepts/architecture",

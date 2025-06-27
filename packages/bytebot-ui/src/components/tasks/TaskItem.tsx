@@ -39,12 +39,24 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
   return (
     <Link href={`/tasks/${task.id}`} className="block">
       <div className="shadow-bytebot bg-bytebot-bronze-light-2 border-bytebot-bronze-light-5 hover:bg-bytebot-bronze-light-3 flex min-h-24 items-start rounded-lg border-[0.5px] px-5 py-4 transition-colors">
-        <div className="flex-1 space-y-1">
+        <div className="flex-1 space-y-2">
           <div className="text-byhtebot-bronze-dark-7 text-sm font-medium">
             {capitalizeFirstChar(task.description)}
           </div>
-          <div className="text-byhtebot-bronze-dark-11 text-xs">
-            {formatDate(task.createdAt)}
+          <div className="text-byhtebot-bronze-dark-11 text-xs flex items-center justify-start space-x-1.5">
+            <span className="text-byhtebot-bronze-dark-9">
+              {formatDate(task.createdAt)}
+            </span>
+            {task.user && (
+              <>
+                <span className="text-byhtebot-bronze-dark-9">
+                  •
+                </span>
+                <span className="text-byhtebot-bronze-dark-9">
+                  {task.user.name || task.user.email}
+                </span>
+              </>
+            )}
           </div>
           {task.status === TaskStatus.COMPLETED && (
             <div className="bg-bytebot-green-3 border-bytebot-green-a5 inline-flex w-fit items-center space-x-1 rounded-full border px-1.5 py-0.5">

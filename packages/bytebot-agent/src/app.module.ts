@@ -9,9 +9,16 @@ import { PrismaModule } from './prisma/prisma.module';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { AuthModule } from '@thallesp/nestjs-better-auth';
+import { auth } from './auth';
+
+const authEnabled = process.env.AUTH_ENABLED === 'true';
 
 @Module({
   imports: [
+    ...(authEnabled ? [AuthModule.forRoot(auth, {
+      disableTrustedOriginsCors: false,
+    })] : []),
     ScheduleModule.forRoot(),
     EventEmitterModule.forRoot(),
     ConfigModule.forRoot({

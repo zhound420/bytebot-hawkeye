@@ -49,7 +49,7 @@ export default function Home() {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
-        popoverRef.current && 
+        popoverRef.current &&
         !popoverRef.current.contains(event.target as Node) &&
         buttonsRef.current &&
         !buttonsRef.current.contains(event.target as Node)
@@ -144,7 +144,10 @@ export default function Home() {
     >;
 
     return (
-      <div className="relative mt-6 flex w-full flex-wrap justify-start gap-1" ref={popoverRef}>
+      <div
+        className="relative mt-6 flex w-full flex-wrap justify-start gap-1"
+        ref={popoverRef}
+      >
         {/* Container for buttons */}
         <div className="flex w-full flex-wrap gap-1" ref={buttonsRef}>
           {topicNames.map((topic, index) => (
@@ -168,9 +171,9 @@ export default function Home() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ 
-                duration: 0.3, 
-                ease: [0.4, 0.0, 0.2, 1] 
+              transition={{
+                duration: 0.3,
+                ease: [0.4, 0.0, 0.2, 1],
               }}
               className="bg-bytebot-bronze-light-3 shadow-bytebot border-bytebot-bronze-light-7 absolute top-full left-0 z-40 mt-1 w-[500px] overflow-hidden rounded-xl border p-1.5"
             >
@@ -181,10 +184,10 @@ export default function Home() {
                       key={idx}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      transition={{ 
-                        duration: 0.2, 
+                      transition={{
+                        duration: 0.2,
                         delay: idx * 0.03,
-                        ease: [0.4, 0.0, 0.2, 1] 
+                        ease: [0.4, 0.0, 0.2, 1],
                       }}
                       className="text-bytebot-bronze-light-12 hover:bg-bytebot-bronze-light-2 cursor-pointer rounded-md px-3 py-1.5 text-sm transition-colors"
                       onClick={() => {
@@ -232,12 +235,12 @@ export default function Home() {
                   minLines={3}
                 />
                 <div className="mt-2">
-                  <Select defaultValue="sonnet-4">
+                  <Select defaultValue="opus-4">
                     <SelectTrigger className="w-auto">
                       <SelectValue placeholder="Select a model" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="sonnet-4">Model: Sonnet 4</SelectItem>
+                      <SelectItem value="opus-4">Model: Opus 4</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -282,12 +285,12 @@ export default function Home() {
                   minLines={3}
                 />
                 <div className="mt-2">
-                  <Select defaultValue="sonnet-4">
+                  <Select defaultValue="opus-4">
                     <SelectTrigger className="w-auto">
                       <SelectValue placeholder="Select a model" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="sonnet-4">Model: Sonnet 4</SelectItem>
+                      <SelectItem value="opus-4">Model: Opus 4</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

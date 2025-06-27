@@ -27,6 +27,19 @@ https://github.com/user-attachments/assets/32a76e83-ea3a-4d5e-b34b-3b57f3604948
 
 https://github.com/user-attachments/assets/5f946df9-9161-4e7e-8262-9eda83ee7d22
 
+## ☁️ Deploy on Railway (1-Click)
+
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/bytebot?referralCode=L9lKXQ)
+
+1. Click the Deploy Now button in the Bytebot Railway template.
+2. Paste your `ANTHROPIC_API_KEY` in the single required environment variable.
+3. Press **Deploy**. Railway will spin up the Desktop, Agent, UI and Postgres services using pre-built container images, connect them via [private networking](https://docs.railway.com/guides/private-networking) and expose only the UI publicly.
+4. In about two minutes your agent will be live at your project's public URL.
+
+_For an in-depth guide see [here](https://docs.bytebot.ai/deployment/railway)._
+
+---
+
 ## 🚀 Quick Start
 
 ### Prerequisites
