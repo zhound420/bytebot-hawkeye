@@ -68,7 +68,6 @@ export const anthropicTools: Anthropic.Tool[] = [
   typeKeysTool,
   pressKeysTool,
   typeTextTool,
-  waitTool,
   screenshotTool,
   cursorPositionTool,
   setTaskStatusTool,
