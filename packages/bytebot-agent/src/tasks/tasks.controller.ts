@@ -8,7 +8,9 @@ import {
   Delete,
   HttpStatus,
   HttpCode,
+  UseGuards,
   Query,
+  Req,
 } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
@@ -16,8 +18,13 @@ import { UpdateTaskDto } from './dto/update-task.dto';
 import { Message, Task } from '@prisma/client';
 import { GuideTaskDto } from './dto/guide-task.dto';
 import { MessagesService } from 'src/messages/messages.service';
+import { AuthGuard } from '@thallesp/nestjs-better-auth';
+import { Request } from 'express';
+
+const authEnabled = process.env.AUTH_ENABLED === 'true';
 
 @Controller('tasks')
+@UseGuards(...(authEnabled ? [AuthGuard] : []))
 export class TasksController {
   constructor(
     private readonly tasksService: TasksService,
@@ -26,7 +33,14 @@ export class TasksController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body() createTaskDto: CreateTaskDto): Promise<Task> {
+  async create(
+    @Body() createTaskDto: CreateTaskDto,
+    @Req() req: Request,
+  ): Promise<Task> {
+    // Add user ID if auth is enabled and user is authenticated
+    if (authEnabled && (req as any).user?.id) {
+      createTaskDto.userId = (req as any).user.id;
+    }
     return this.tasksService.create(createTaskDto);
   }
 

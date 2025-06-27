@@ -16,7 +16,7 @@ ENV DISPLAY=:0
 # -----------------------------------------------------------------------------
 # 2. System dependencies installation
 # -----------------------------------------------------------------------------
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get install -y \
     # X11 / VNC
     xvfb x11vnc xauth x11-xserver-utils \
     x11-apps sudo software-properties-common \
@@ -45,7 +45,7 @@ RUN mkdir -p /run/dbus && \
 # 3. Additional software installation
 # -----------------------------------------------------------------------------
 # Install Firefox
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get install -y \
     # Install necessary for adding PPA
     software-properties-common apt-transport-https wget gnupg \
     # Install Additional Graphics Libraries
@@ -61,7 +61,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     fonts-freefont-ttf \
     && add-apt-repository -y ppa:mozillateam/ppa \
     && apt-get update \
-    && apt-get install -y --no-install-recommends firefox-esr thunderbird \
+    && apt-get install -y firefox-esr thunderbird \
     && apt-get clean && rm -rf /var/lib/apt/lists/* \
     # Set Firefox as default browser system-wide
     && update-alternatives --install /usr/bin/x-www-browser x-www-browser /usr/bin/firefox-esr 200 \
@@ -136,11 +136,11 @@ RUN ARCH=$(dpkg --print-architecture) && \
         mkdir -p /usr/share/debsig/keyrings/AC2D62742012EA22 && \
         curl -sS https://downloads.1password.com/linux/keys/1password.asc | \
         gpg --dearmor --output /usr/share/debsig/keyrings/AC2D62742012EA22/debsig.gpg && \
-        apt-get update && apt-get install -y --no-install-recommends 1password && \
+        apt-get update && apt-get install -y 1password && \
         apt-get clean && rm -rf /var/lib/apt/lists/*; \
     elif [ "$ARCH" = "arm64" ]; then \
         # Install from tar.gz for ARM64
-        apt-get update && apt-get install -y --no-install-recommends \
+        apt-get update && apt-get install -y \
             libgtk-3-0 libnotify4 libnss3 libxss1 libxtst6 xdg-utils \
             libatspi2.0-0 libdrm2 libgbm1 libxcb-dri3-0 libxkbcommon0 \
             libsecret-1-0 && \
@@ -183,7 +183,7 @@ RUN ARCH=$(dpkg --print-architecture) && \
 # Install Node.js
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get update \
-    && apt-get install -y --no-install-recommends nodejs \
+    && apt-get install -y nodejs \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Upgrade pip
@@ -205,7 +205,7 @@ RUN git clone https://github.com/novnc/noVNC.git /opt/noVNC \
 
 # Install dependencies required to build libnut-core and uiohook-napi
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
+    apt-get install -y \
         cmake \
         libx11-dev \
         libxtst-dev \

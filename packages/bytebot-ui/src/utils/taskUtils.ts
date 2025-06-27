@@ -27,6 +27,7 @@ export async function fetchTaskMessages(
       headers: {
         "Content-Type": "application/json",
       },
+      credentials: 'include', // Include cookies for auth
     });
 
     if (!response.ok) {
@@ -55,6 +56,7 @@ export async function fetchTaskById(taskId: string): Promise<Task | null> {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: 'include',
       },
     );
 
@@ -85,6 +87,7 @@ export async function startTask(message: string): Promise<Task | null> {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ description: message }),
+        credentials: 'include',
       },
     );
 
@@ -112,6 +115,7 @@ export async function guideTask(
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ message }),
+        credentials: 'include',
       },
     );
 
@@ -135,6 +139,7 @@ export async function fetchTasks(): Promise<Task[]> {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: 'include',
       },
     );
 
@@ -159,6 +164,7 @@ export async function takeOverTask(taskId: string): Promise<Task | null> {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: 'include',
       },
     );
 
@@ -182,6 +188,7 @@ export async function resumeTask(taskId: string): Promise<Task | null> {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: 'include',
       },
     );
 

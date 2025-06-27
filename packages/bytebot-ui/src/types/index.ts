@@ -32,12 +32,33 @@ export enum TaskPriority {
   URGENT = "URGENT",
 }
 
+export enum TaskType {
+  IMMEDIATE = "IMMEDIATE",
+  SCHEDULED = "SCHEDULED",
+}
+
+export interface User {
+  id: string;
+  name?: string;
+  email: string;
+}
+
 export interface Task {
   id: string;
   description: string;
+  type: TaskType;
   status: TaskStatus;
   priority: TaskPriority;
   control: Role;
+  createdBy: Role;
   createdAt: string;
   updatedAt: string;
+  scheduledFor?: string;
+  executedAt?: string;
+  completedAt?: string;
+  queuedAt?: string;
+  error?: string;
+  result?: any;
+  userId?: string;
+  user?: User;
 }

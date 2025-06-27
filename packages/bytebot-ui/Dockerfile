@@ -1,5 +1,5 @@
 # Base image
-FROM node:20.18.2-alpine3.21
+FROM node:20-alpine
 
 # Declare build arguments
 ARG BYTEBOT_AGENT_BASE_URL

@@ -52,6 +52,7 @@ export class TasksService {
           priority: createTaskDto.priority || TaskPriority.MEDIUM,
           status: TaskStatus.PENDING,
           createdBy: createTaskDto.createdBy || Role.USER,
+          ...(createTaskDto.userId ? { userId: createTaskDto.userId } : {}),
           ...(createTaskDto.scheduledFor
             ? { scheduledFor: createTaskDto.scheduledFor }
             : {}),
@@ -123,6 +124,15 @@ export class TasksService {
     this.logger.log('Retrieving all tasks');
 
     const tasks = await this.prisma.task.findMany({
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
       orderBy: {
         createdAt: 'desc',
       },
@@ -140,6 +150,15 @@ export class TasksService {
     try {
       const task = await this.prisma.task.findUnique({
         where: { id },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
       });
 
       if (!task) {
