@@ -114,53 +114,11 @@ The agent processes tasks intelligently:
   </Card>
 </CardGroup>
 
-### Example Use Cases
-
-#### Research Assistant
-```
-User: "Find the top 5 project management tools and compare their pricing"
-
-Agent Actions:
-1. Opens browser
-2. Searches for project management tools
-3. Visits each tool's website
-4. Extracts pricing information
-5. Creates comparison spreadsheet
-6. Takes screenshots of each pricing page
-```
-
-#### Form Automation
-```
-User: "Fill out the vendor application form with data from our company profile"
-
-Agent Actions:
-1. Opens the form URL
-2. Reads company profile document
-3. Maps data to form fields
-4. Fills out each section
-5. Uploads required documents
-6. Submits and saves confirmation
-```
-
-#### Email Management
-```
-User: "Check my emails and create a summary of action items"
-
-Agent Actions:
-1. Opens email client
-2. Reads unread messages
-3. Identifies action items
-4. Creates organized task list
-5. Drafts response templates
-6. Flags important messages
-```
-
 ## Technical Architecture
 
 ### Core Components
 
 1. **NestJS Agent Service**
-   - Manages task queue with BullMQ
    - Integrates with Anthropic API
    - Handles WebSocket connections
    - Coordinates with desktop API
@@ -244,59 +202,14 @@ The web interface provides:
 - Configurable authentication
 - API key management
 - Network isolation options
-- Role-based permissions (coming soon)
 
 ## Extending the Agent
-
-### Custom Tools
-Add specialized capabilities:
-```javascript
-// Register a custom tool
-agent.registerTool({
-  name: 'database_query',
-  description: 'Query internal database',
-  execute: async (params) => {
-    // Your implementation
-  }
-});
-```
-
-### Workflow Templates
-Create reusable task templates:
-```yaml
-name: "Daily Report"
-steps:
-  - action: "screenshot"
-    target: "dashboard"
-  - action: "extract_data"
-    format: "table"
-  - action: "create_document"
-    template: "daily_report"
-```
 
 ### Integration Points
 - Webhook notifications
 - External API calls
 - Custom AI prompts
-- Plugin system (coming soon)
 
-## Performance Tuning
-
-### Optimization Settings
-
-```env
-# Concurrent task limit
-MAX_CONCURRENT_TASKS=1
-
-# Task timeout (ms)
-TASK_TIMEOUT=300000
-
-# Screenshot quality (0-100)
-SCREENSHOT_QUALITY=80
-
-# Message history limit
-MAX_CONTEXT_MESSAGES=50
-```
 
 ### Best Practices
 
@@ -314,13 +227,6 @@ MAX_CONTEXT_MESSAGES=50
     - Verify agent service is running
     - Review logs for errors
     - Ensure sufficient API credits
-  </Accordion>
-  
-  <Accordion title="Tasks failing frequently">
-    - Increase task timeout
-    - Check desktop responsiveness
-    - Verify network connectivity
-    - Review action timing
   </Accordion>
   
   <Accordion title="Slow task execution">
