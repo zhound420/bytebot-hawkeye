@@ -265,6 +265,22 @@ Use the computer control API for precise automation:
 The core container also exposes an [MCP](https://github.com/rekog-labs/MCP-Nest) endpoint.
 Connect your MCP client to `http://localhost:9990/sse` to invoke these tools over SSE.
 
+```json
+{
+  "mcpServers": {
+    "bytebot": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "http://127.0.0.1:9990/sse",
+        "--transport",
+        "http-first"
+      ]
+    }
+  }
+}
+```
+
 ```javascript
 // Take screenshot
 POST http://localhost:9990/computer-use
