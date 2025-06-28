@@ -40,7 +40,8 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "socket.io": "^4.8.1",
-    "uiohook-napi": "^1.5.4"
+    "uiohook-napi": "^1.5.4",
+    "@rekog/mcp-nest": "^1.6.2"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",

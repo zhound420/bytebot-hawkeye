@@ -262,6 +262,9 @@ print(status.json())
 
 Use the computer control API for precise automation:
 
+The core container also exposes an [MCP](https://github.com/rekog-labs/MCP-Nest) endpoint.
+Connect your MCP client to `http://localhost:9990/sse` to invoke these tools over SSE.
+
 ```javascript
 // Take screenshot
 POST http://localhost:9990/computer-use
