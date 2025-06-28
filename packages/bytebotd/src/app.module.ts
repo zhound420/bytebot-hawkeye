@@ -5,6 +5,7 @@ import { ConfigModule } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { BytebotMcpModule } from './mcp';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { AppService } from './app.service';
     }),
     ComputerUseModule,
     InputTrackingModule,
+    BytebotMcpModule,
   ],
   controllers: [AppController],
   providers: [AppService],

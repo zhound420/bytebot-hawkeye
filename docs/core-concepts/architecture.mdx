@@ -31,6 +31,7 @@ The foundation of the system - a containerized Linux desktop that provides:
 - Consistent environment across different platforms
 - Can be customized with additional software
 - Accessible via REST API on port 9990
+- MCP SSE endpoint available at `/sse`
 
 ### 2. AI Agent Service
 The brain of the system - orchestrates tasks using an LLM:
@@ -82,7 +83,7 @@ Persistent storage for the agent system:
     Claude AI analyzes the task and generates a plan of computer actions
   </Step>
   <Step title="Action Execution">
-    Agent sends computer actions to bytebotd daemon via REST API
+    Agent sends computer actions to bytebotd via REST API or MCP
   </Step>
   <Step title="Desktop Automation">
     bytebotd executes actions (mouse, keyboard, screenshots) on the desktop
@@ -101,7 +102,7 @@ Persistent storage for the agent system:
 graph LR
     A[Tasks UI] -->|WebSocket| B[Agent Service]
     A -->|HTTP Proxy| C[Desktop VNC]
-    B -->|REST API| D[Desktop API]
+    B -->|REST/MCP| D[Desktop API]
     B -->|SQL| E[PostgreSQL]
     B -->|HTTPS| F[Claude AI]
     D -->|IPC| G[bytebotd]
@@ -128,7 +129,7 @@ graph LR
 
 ### API Security
 
-- **Desktop API**: No authentication by default (localhost only)
+ - **Desktop API**: No authentication by default (localhost only). Supports REST and MCP.
 - **Agent API**: Can be secured with API keys
 - **Database**: Password protected, not exposed externally
 - **VNC Access**: Optional password protection
