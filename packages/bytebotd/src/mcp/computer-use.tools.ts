@@ -316,8 +316,32 @@ export class ComputerUseTools {
 
   @Tool({
     name: 'computer_type_keys',
-    description:
-      'Simulates typing a sequence of keys, often used for shortcuts involving modifier keys (e.g., Ctrl+C). Presses and releases each key in order.',
+    description: `Simulates typing a sequence of keys, often used for shortcuts involving modifier keys (e.g., Ctrl+C). Presses and releases each key in order.
+    
+────────────────────────
+VALID KEYS
+────────────────────────
+A, Add, AudioForward, AudioMute, AudioNext, AudioPause, AudioPlay, AudioPrev, AudioRandom, AudioRepeat, AudioRewind, AudioStop, AudioVolDown, AudioVolUp,  
+B, Backslash, Backspace,  
+C, CapsLock, Clear, Comma,  
+D, Decimal, Delete, Divide, Down,  
+E, End, Enter, Equal, Escape, F,  
+F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, F17, F18, F19, F20, F21, F22, F23, F24,  
+Fn,  
+G, Grave,  
+H, Home,  
+I, Insert,  
+J, K, L, Left, LeftAlt, LeftBracket, LeftCmd, LeftControl, LeftShift, LeftSuper, LeftWin,  
+M, Menu, Minus, Multiply,  
+N, Num0, Num1, Num2, Num3, Num4, Num5, Num6, Num7, Num8, Num9, NumLock,  
+NumPad0, NumPad1, NumPad2, NumPad3, NumPad4, NumPad5, NumPad6, NumPad7, NumPad8, NumPad9,  
+O, P, PageDown, PageUp, Pause, Period, Print,  
+Q, Quote,  
+R, Return, Right, RightAlt, RightBracket, RightCmd, RightControl, RightShift, RightSuper, RightWin,  
+S, ScrollLock, Semicolon, Slash, Space, Subtract,  
+T, Tab,  
+U, Up,  
+V, W, X, Y, Z`,
     parameters: z.object({
       keys: z
         .array(z.string())
@@ -348,8 +372,32 @@ export class ComputerUseTools {
 
   @Tool({
     name: 'computer_press_keys',
-    description:
-      'Simulates pressing down or releasing specific keys. Useful for holding modifier keys.',
+    description: `Simulates pressing down or releasing specific keys. Useful for holding modifier keys.     
+────────────────────────
+VALID KEYS
+────────────────────────
+A, Add, AudioForward, AudioMute, AudioNext, AudioPause, AudioPlay, AudioPrev, AudioRandom, AudioRepeat, AudioRewind, AudioStop, AudioVolDown, AudioVolUp,  
+B, Backslash, Backspace,  
+C, CapsLock, Clear, Comma,  
+D, Decimal, Delete, Divide, Down,  
+E, End, Enter, Equal, Escape, F,  
+F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, F17, F18, F19, F20, F21, F22, F23, F24,  
+Fn,  
+G, Grave,  
+H, Home,  
+I, Insert,  
+J, K, L, Left, LeftAlt, LeftBracket, LeftCmd, LeftControl, LeftShift, LeftSuper, LeftWin,  
+M, Menu, Minus, Multiply,  
+N, Num0, Num1, Num2, Num3, Num4, Num5, Num6, Num7, Num8, Num9, NumLock,  
+NumPad0, NumPad1, NumPad2, NumPad3, NumPad4, NumPad5, NumPad6, NumPad7, NumPad8, NumPad9,  
+O, P, PageDown, PageUp, Pause, Period, Print,  
+Q, Quote,  
+R, Return, Right, RightAlt, RightBracket, RightCmd, RightControl, RightShift, RightSuper, RightWin,  
+S, ScrollLock, Semicolon, Slash, Space, Subtract,  
+T, Tab,  
+U, Up,  
+V, W, X, Y, Z  
+      `,
     parameters: z.object({
       keys: z
         .array(z.string())
