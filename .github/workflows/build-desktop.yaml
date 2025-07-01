@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - "infrastructure/docker/**"
+      - "docker/**"
       - "packages/bytebotd/**"
 
 permissions:
@@ -50,8 +50,8 @@ jobs:
           DOCKER_BUILD_SUMMARY: false # keep logs concise
           DOCKER_BUILD_RECORD_UPLOAD: false
         with:
-          context: .
-          file: ./infrastructure/docker/Dockerfile
+          context: ./packages/
+          file: ./packages/bytebotd/Dockerfile
           platforms: linux/amd64,linux/arm64 # build both archs in one go
           push: true
           cache-from: type=gha
