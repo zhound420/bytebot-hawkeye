@@ -4,8 +4,8 @@ services:
   bytebot-desktop:
     # Build from source
     build:
-      context: ../../
-      dockerfile: infrastructure/docker/Dockerfile
+      context: ../packages/
+      dockerfile: bytebotd/Dockerfile
     # Use pre-built image
     image: ghcr.io/bytebot-ai/bytebot-desktop:edge
 
