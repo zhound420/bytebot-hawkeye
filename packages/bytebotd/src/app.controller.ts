@@ -8,7 +8,10 @@ export class AppController {
   // When a client makes a GET request to /vnc,
   // this method will automatically redirect them to the noVNC URL.
   @Get('vnc')
-  @Redirect('/novnc/vnc.html?path=websockify&resize=scale', 302)
+  @Redirect(
+    '/novnc/vnc.html?host=localhost&port=9990&path=websockify&resize=scale',
+    302,
+  )
   redirectToVnc(): void {
     // This method is intentionally left empty.
     // The @Redirect decorator will automatically redirect the client.
