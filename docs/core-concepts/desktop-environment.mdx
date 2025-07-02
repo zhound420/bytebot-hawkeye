@@ -108,14 +108,14 @@ DISPLAY_DEPTH=24
 ```
 
 ### User Environment
-- **Username**: `bytebot`
-- **Home Directory**: `/home/bytebot`
+- **Username**: `user`
+- **Home Directory**: `/home/user`
 - **Sudo Access**: Yes (passwordless)
 - **Desktop Session**: Auto-login enabled
 
 ### File System
 ```
-/home/bytebot/
+/home/user/
 ├── Desktop/          # Desktop shortcuts
 ├── Documents/        # User documents
 ├── Downloads/        # Browser downloads
@@ -182,7 +182,7 @@ RUN apt-get update && apt-get install -y \
     your-custom-app
 
 # Copy configuration files
-COPY configs/ /home/bytebot/.config/
+COPY configs/ /home/user/.config/
 ```
 
 ### Environment Variables

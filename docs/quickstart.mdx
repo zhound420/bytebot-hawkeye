@@ -43,13 +43,13 @@ Get your self-hosted AI desktop agent running with just three commands:
 <Steps>
   <Step title="Clone and Configure">
     ```bash 
-    git clone https://github.com/bytebot-ai/bytebot.git cd bytebot echo "ANTHROPIC_API_KEY=your_api_key_here" > infrastructure/docker/.env 
+    git clone https://github.com/bytebot-ai/bytebot.git cd bytebot echo "ANTHROPIC_API_KEY=your_api_key_here" > docker/.env 
     ```
   </Step>
 
 <Step title="Start the Agent Stack">
   ```bash 
-  docker-compose -f infrastructure/docker/docker-compose.yml up -d 
+  docker-compose -f docker/docker-compose.yml up -d 
   ```
 
 This starts all four services:
@@ -124,13 +124,13 @@ Watch it work in real-time through the embedded VNC viewer in the tasks interfac
 
     ```bash
     #Using pre-built image (recommended)
-    docker-compose -f infrastructure/docker/docker-compose.core.yml pull
-    docker-compose -f infrastructure/docker/docker-compose.core.yml up -d
+    docker-compose -f docker/docker-compose.core.yml pull
+    docker-compose -f docker/docker-compose.core.yml up -d
     ```
 
     Or build locally:
     ```bash
-    docker-compose -f infrastructure/docker/docker-compose.core.yml up -d --build
+    docker-compose -f docker/docker-compose.core.yml up -d --build
     ```
 
     Access the desktop at
@@ -147,23 +147,23 @@ Monitor what your agent is doing:
 
 ```bash
 # All services
-docker-compose -f infrastructure/docker/docker-compose.yml logs -f
+docker-compose -f docker/docker-compose.yml logs -f
 
 # Just the agent
-docker-compose -f infrastructure/docker/docker-compose.yml logs -f bytebot-agent
+docker-compose -f docker/docker-compose.yml logs -f bytebot-agent
 ```
 
 ### Stop Services
 
 ```bash
-docker-compose -f infrastructure/docker/docker-compose.yml down
+docker-compose -f docker/docker-compose.yml down
 ```
 
 ### Update to Latest
 
 ```bash
-docker-compose -f infrastructure/docker/docker-compose.yml pull
-docker-compose -f infrastructure/docker/docker-compose.yml up -d
+docker-compose -f docker/docker-compose.yml pull
+docker-compose -f docker/docker-compose.yml up -d
 ```
 
 ### Reset Everything
@@ -171,7 +171,7 @@ docker-compose -f infrastructure/docker/docker-compose.yml up -d
 Remove all data and start fresh:
 
 ```bash
-docker-compose -f infrastructure/docker/docker-compose.yml down -v
+docker-compose -f docker/docker-compose.yml down -v
 ```
 
 ## Quick API Examples
@@ -208,21 +208,21 @@ curl -X POST http://localhost:9990/api/computer \
     Check Docker is running and you have enough resources: 
     ```bash 
     docker info
-    docker-compose -f infrastructure/docker/docker-compose.yml logs 
+    docker-compose -f docker/docker-compose.yml logs 
     ```
   </Accordion>
   <Accordion title="Can't connect to tasks UI">
     Ensure all services are running: 
     ```bash 
-    docker-compose -f infrastructure/docker/docker-compose.yml ps 
+    docker-compose -f docker/docker-compose.yml ps 
     ``` 
     All services should show as "Up".
   </Accordion>
   <Accordion title="Agent errors or no response">
     Check your API key is set correctly: 
     ```bash 
-    cat infrastructure/docker/.env
-    docker-compose -f infrastructure/docker/docker-compose.yml logs bytebot-agent 
+    cat docker/.env
+    docker-compose -f docker/docker-compose.yml logs bytebot-agent 
     ```
   </Accordion>
 </AccordionGroup>

@@ -55,13 +55,13 @@ _For an in-depth guide see [here](https://docs.bytebot.ai/deployment/railway)._
 ```bash
 git clone https://github.com/bytebot-ai/bytebot.git
 cd bytebot
-echo "ANTHROPIC_API_KEY=your_api_key_here" > infrastructure/docker/.env
+echo "ANTHROPIC_API_KEY=your_api_key_here" > docker/.env
 ```
 
 2. **Start the agent stack:**
 
 ```bash
-docker-compose -f infrastructure/docker/docker-compose.yml up -d
+docker-compose -f docker/docker-compose.yml up -d
 ```
 
 3. **Open the chat interface:**
@@ -155,7 +155,7 @@ Bytebot consists of four main components working together:
 
 ### Environment Variables
 
-Create `infrastructure/docker/.env`:
+Create `docker/.env`:
 
 ```bash
 # Required
@@ -167,7 +167,7 @@ ANTHROPIC_API_KEY=sk-ant-...
 Add applications or configurations by extending the Dockerfile:
 
 ```dockerfile
-# infrastructure/docker/desktop/Dockerfile.custom
+# docker/desktop/Dockerfile.custom
 FROM bytebot/desktop:latest
 
 # Install additional software
@@ -177,7 +177,7 @@ RUN apt-get update && apt-get install -y \
     your-custom-app
 
 # Copy custom configs
-COPY configs/.config /home/bytebot/.config
+COPY configs/.config /home/user/.config
 ```
 
 ## 🔒 Security Considerations
@@ -215,26 +215,26 @@ COPY configs/.config /home/bytebot/.config
 ### View Logs
 
 ```bash
-docker-compose -f infrastructure/docker/docker-compose.yml logs -f
+docker-compose -f docker/docker-compose.yml logs -f
 ```
 
 ### Stop Services
 
 ```bash
-docker-compose -f infrastructure/docker/docker-compose.yml down
+docker-compose -f docker/docker-compose.yml down
 ```
 
 ### Update to Latest Version
 
 ```bash
-docker-compose -f infrastructure/docker/docker-compose.yml pull
-docker-compose -f infrastructure/docker/docker-compose.yml up -d
+docker-compose -f docker/docker-compose.yml pull
+docker-compose -f docker/docker-compose.yml up -d
 ```
 
 ### Reset Everything
 
 ```bash
-docker-compose -f infrastructure/docker/docker-compose.yml down -v
+docker-compose -f docker/docker-compose.yml down -v
 ```
 
 ## 📚 Advanced Usage
