@@ -93,14 +93,15 @@ RUN ARCH=$(dpkg --print-architecture) && \
             libsecret-1-0 && \
         apt-get clean && rm -rf /var/lib/apt/lists/* && \
         curl -sSL https://downloads.1password.com/linux/tar/beta/aarch64/1password-latest.tar.gz -o /tmp/1password.tar.gz && \
-        mkdir -p /tmp/1password-extract && \
-        tar -xzf /tmp/1password.tar.gz -C /tmp/1password-extract && \
-        # Find the actual 1password binary and copy it directly to /usr/bin/1password
-        find /tmp/1password-extract -name "1password" -type f -executable | head -1 | xargs -I {} cp {} /usr/bin/1password && \
-        chmod +x /usr/bin/1password && \
-        # Try to find and copy icon files from the same extracted archive
+        # Extract the full 1Password bundle so libraries like libffmpeg.so remain in their expected relative paths
+        mkdir -p /opt/1password && \
+        tar -xzf /tmp/1password.tar.gz -C /opt/1password --strip-components=1 && \
+        # Link the main executable into the global PATH
+        ln -sf /opt/1password/1password /usr/bin/1password && \
+        chmod +x /opt/1password/1password && \
+        # Copy icons to standard locations
         mkdir -p /usr/share/pixmaps /usr/share/icons/hicolor/512x512/apps /usr/share/icons/hicolor/256x256/apps && \
-        find /tmp/1password-extract -name "*.png" -path "*1password*" -o -name "*.svg" -path "*1password*" | while read icon; do \
+        find /opt/1password -name "*1password*.png" -o -name "*1password*.svg" | while read icon; do \
             if [[ "$icon" == *"512"* ]]; then \
                 cp "$icon" /usr/share/icons/hicolor/512x512/apps/1password.png 2>/dev/null || true; \
             elif [[ "$icon" == *"256"* ]]; then \
@@ -109,7 +110,7 @@ RUN ARCH=$(dpkg --print-architecture) && \
             cp "$icon" /usr/share/pixmaps/1password.png 2>/dev/null || true; \
         done && \
         # Clean up temporary files
-        rm -rf /tmp/1password.tar.gz /tmp/1password-extract && \
+        rm -rf /tmp/1password.tar.gz && \
         # Update icon cache
         gtk-update-icon-cache -f -t /usr/share/icons/hicolor 2>/dev/null || true; \
     else \
