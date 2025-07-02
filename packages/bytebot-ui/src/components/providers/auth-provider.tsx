@@ -14,8 +14,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const pathname = usePathname();
 
   const isPublicRoute = pathname === "/login";
+  const isAuthEnabled = process.env.NEXT_PUBLIC_AUTH_ENABLED === "true";
 
   useEffect(() => {
+    if (!isAuthEnabled) {
+      return;
+    }
     if (!isPending) {
       if (!session && !isPublicRoute) {
         // No session and not on a public route, redirect to login
@@ -30,14 +34,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Show loading spinner while checking auth
   if (isPending) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center">
         <div className="border-t-primary h-8 w-8 animate-spin rounded-full border-4 border-gray-300"></div>
       </div>
     );
   }
 
   // Show login page for unauthenticated users
-  if (!session && !isPublicRoute) {
+  if (!session && !isPublicRoute && isAuthEnabled) {
     return null; // Router will handle redirect
   }
 

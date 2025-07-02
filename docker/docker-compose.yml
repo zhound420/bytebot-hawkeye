@@ -4,8 +4,8 @@ services:
   bytebot-desktop:
     # Build from source
     build:
-      context: ../../
-      dockerfile: infrastructure/docker/Dockerfile
+      context: ../packages/
+      dockerfile: bytebotd/Dockerfile
     # Use pre-built image
     image: ghcr.io/bytebot-ai/bytebot-desktop:edge
     shm_size: "2g"
@@ -37,7 +37,7 @@ services:
 
   bytebot-agent:
     build:
-      context: ../../packages/
+      context: ../packages/
       dockerfile: bytebot-agent/Dockerfile
     # Use pre-built image
     image: ghcr.io/bytebot-ai/bytebot-agent:edge
@@ -56,7 +56,7 @@ services:
 
   bytebot-ui:
     build:
-      context: ../../packages/
+      context: ../packages/
       dockerfile: bytebot-ui/Dockerfile
       args:
         - BYTEBOT_AGENT_BASE_URL=${BYTEBOT_AGENT_BASE_URL:-http://bytebot-agent:9991}

@@ -58,7 +58,7 @@ export interface Task {
   completedAt?: string;
   queuedAt?: string;
   error?: string;
-  result?: any;
+  result?: unknown;
   userId?: string;
   user?: User;
 }
