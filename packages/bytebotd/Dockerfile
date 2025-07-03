@@ -187,6 +187,9 @@ RUN mkdir -p /var/run/dbus && \
     chmod 755 /var/run/dbus && \
     chown user:user /var/run/dbus
 
+RUN mkdir -p /tmp/bytebot-screenshots && \
+    chown -R user:user /tmp/bytebot-screenshots
+
 # -----------------------------------------------------------------------------
 #  Copy staged system files and keep sane permissions
 # -----------------------------------------------------------------------------
@@ -211,7 +214,9 @@ RUN mkdir -p /home/user/Desktop && \
     chmod +x /home/user/Desktop/*.desktop && \
     chown user:user /home/user/Desktop/*.desktop
 
-USER user
+RUN mkdir -p /home/user/.config /home/user/.local/share /home/user/.cache \
+    && chown -R user:user /home/user/.config /home/user/.local /home/user/.cache
+
 WORKDIR /home/user
 
 # -----------------------------------------------------------------------------
