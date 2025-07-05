@@ -16,7 +16,14 @@ import {
   ScrollDirection,
 } from './base.dto';
 
-export class MoveMouseActionDto {
+/**
+ * Base class for action DTOs with common validation decorator
+ */
+abstract class BaseActionDto {
+  abstract action: string;
+}
+
+export class MoveMouseActionDto extends BaseActionDto {
   @IsIn(['move_mouse'])
   action: 'move_mouse';
 
@@ -25,7 +32,7 @@ export class MoveMouseActionDto {
   coordinates: CoordinatesDto;
 }
 
-export class TraceMouseActionDto {
+export class TraceMouseActionDto extends BaseActionDto {
   @IsIn(['trace_mouse'])
   action: 'trace_mouse';
 
@@ -40,7 +47,7 @@ export class TraceMouseActionDto {
   holdKeys?: string[];
 }
 
-export class ClickMouseActionDto {
+export class ClickMouseActionDto extends BaseActionDto {
   @IsIn(['click_mouse'])
   action: 'click_mouse';
 
@@ -59,10 +66,10 @@ export class ClickMouseActionDto {
 
   @IsNumber()
   @Min(1)
-  numClicks: number;
+  clickCount: number;
 }
 
-export class PressMouseActionDto {
+export class PressMouseActionDto extends BaseActionDto {
   @IsIn(['press_mouse'])
   action: 'press_mouse';
 
@@ -78,7 +85,7 @@ export class PressMouseActionDto {
   press: PressType;
 }
 
-export class DragMouseActionDto {
+export class DragMouseActionDto extends BaseActionDto {
   @IsIn(['drag_mouse'])
   action: 'drag_mouse';
 
@@ -96,7 +103,7 @@ export class DragMouseActionDto {
   holdKeys?: string[];
 }
 
-export class ScrollActionDto {
+export class ScrollActionDto extends BaseActionDto {
   @IsIn(['scroll'])
   action: 'scroll';
 
@@ -110,7 +117,7 @@ export class ScrollActionDto {
 
   @IsNumber()
   @Min(1)
-  numScrolls: number;
+  scrollCount: number;
 
   @IsOptional()
   @IsArray()
@@ -118,7 +125,7 @@ export class ScrollActionDto {
   holdKeys?: string[];
 }
 
-export class TypeKeysActionDto {
+export class TypeKeysActionDto extends BaseActionDto {
   @IsIn(['type_keys'])
   action: 'type_keys';
 
@@ -132,7 +139,7 @@ export class TypeKeysActionDto {
   delay?: number;
 }
 
-export class PressKeysActionDto {
+export class PressKeysActionDto extends BaseActionDto {
   @IsIn(['press_keys'])
   action: 'press_keys';
 
@@ -144,7 +151,7 @@ export class PressKeysActionDto {
   press: PressType;
 }
 
-export class TypeTextActionDto {
+export class TypeTextActionDto extends BaseActionDto {
   @IsIn(['type_text'])
   action: 'type_text';
 
@@ -157,7 +164,7 @@ export class TypeTextActionDto {
   delay?: number;
 }
 
-export class WaitActionDto {
+export class WaitActionDto extends BaseActionDto {
   @IsIn(['wait'])
   action: 'wait';
 
@@ -166,12 +173,12 @@ export class WaitActionDto {
   duration: number;
 }
 
-export class ScreenshotActionDto {
+export class ScreenshotActionDto extends BaseActionDto {
   @IsIn(['screenshot'])
   action: 'screenshot';
 }
 
-export class CursorPositionActionDto {
+export class CursorPositionActionDto extends BaseActionDto {
   @IsIn(['cursor_position'])
   action: 'cursor_position';
 }

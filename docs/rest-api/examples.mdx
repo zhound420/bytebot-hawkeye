@@ -18,7 +18,7 @@ curl -X POST http://localhost:9990/computer-use \
 
 curl -X POST http://localhost:9990/computer-use \
  -H "Content-Type: application/json" \
- -d '{"action": "click_mouse", "button": "left", "numClicks": 2}'
+ -d '{"action": "click_mouse", "button": "left", "clickCount": 2}'
 
 # Wait for application to open
 
@@ -59,7 +59,7 @@ curl -X POST http://localhost:9990/computer-use \
 
 curl -X POST http://localhost:9990/computer-use \
   -H "Content-Type: application/json" \
-  -d '{"action": "click_mouse", "button": "left", "numClicks": 3}'
+  -d '{"action": "click_mouse", "button": "left", "clickCount": 3}'
 
 # Copy with Ctrl+C
 curl -X POST http://localhost:9990/computer-use \

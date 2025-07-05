@@ -479,11 +479,11 @@ export class AgentProcessor {
     coordinates?: Coordinates;
     button: Button;
     holdKeys?: string[];
-    numClicks: number;
+    clickCount: number;
   }): Promise<void> {
-    const { coordinates, button, holdKeys, numClicks } = input;
+    const { coordinates, button, holdKeys, clickCount } = input;
     console.log(
-      `Clicking mouse ${button} ${numClicks} times ${coordinates ? `at coordinates: [${coordinates.x}, ${coordinates.y}] ` : ''} ${holdKeys ? `with holdKeys: ${holdKeys}` : ''}`,
+      `Clicking mouse ${button} ${clickCount} times ${coordinates ? `at coordinates: [${coordinates.x}, ${coordinates.y}] ` : ''} ${holdKeys ? `with holdKeys: ${holdKeys}` : ''}`,
     );
 
     try {
@@ -497,7 +497,7 @@ export class AgentProcessor {
             coordinates,
             button,
             holdKeys,
-            numClicks,
+            clickCount,
           }),
         },
       );
@@ -570,12 +570,12 @@ export class AgentProcessor {
   private async scroll(input: {
     coordinates?: Coordinates;
     direction: 'up' | 'down' | 'left' | 'right';
-    numScrolls: number;
+    scrollCount: number;
     holdKeys?: string[];
   }): Promise<void> {
-    const { coordinates, direction, numScrolls, holdKeys } = input;
+    const { coordinates, direction, scrollCount, holdKeys } = input;
     console.log(
-      `Scrolling ${direction} ${numScrolls} times ${coordinates ? `at coordinates: [${coordinates.x}, ${coordinates.y}]` : ''}`,
+      `Scrolling ${direction} ${scrollCount} times ${coordinates ? `at coordinates: [${coordinates.x}, ${coordinates.y}]` : ''}`,
     );
 
     try {
@@ -588,7 +588,7 @@ export class AgentProcessor {
             action: 'scroll',
             coordinates,
             direction,
-            numScrolls,
+            scrollCount,
             holdKeys,
           }),
         },

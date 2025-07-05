@@ -15,25 +15,104 @@ interface TaskItemProps {
   task: Task;
 }
 
+interface StatusBadgeConfig {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  icon: any; // HugeIcons IconSvgObject type
+  text: string;
+  containerClasses: string;
+  iconClasses: string;
+  textClasses: string;
+  animate?: boolean;
+}
+
+const STATUS_CONFIGS: Record<TaskStatus, StatusBadgeConfig> = {
+  [TaskStatus.COMPLETED]: {
+    icon: Tick02Icon,
+    text: "Success",
+    containerClasses: "bg-bytebot-green-3 border-bytebot-green-a5",
+    iconClasses: "text-bytebot-green-9",
+    textClasses: "text-bytebot-green-11",
+  },
+  [TaskStatus.RUNNING]: {
+    icon: Loading03Icon,
+    text: "Running",
+    containerClasses: "border-orange-700 bg-orange-100",
+    iconClasses: "text-orange-900",
+    textClasses: "text-orange-700",
+    animate: true,
+  },
+  [TaskStatus.NEEDS_HELP]: {
+    icon: MessageQuestionIcon,
+    text: "Needs Guidance",
+    containerClasses: "border-blue-700 bg-blue-100",
+    iconClasses: "text-blue-900",
+    textClasses: "text-blue-700",
+  },
+  [TaskStatus.PENDING]: {
+    icon: Loading03Icon,
+    text: "Pending",
+    containerClasses: "border-yellow-700 bg-yellow-100",
+    iconClasses: "text-yellow-900",
+    textClasses: "text-yellow-700",
+    animate: true,
+  },
+  [TaskStatus.FAILED]: {
+    icon: Cancel01Icon,
+    text: "Failed",
+    containerClasses: "bg-bytebot-red-light-3 border-bytebot-red-light-7",
+    iconClasses: "text-bytebot-red-light-9",
+    textClasses: "text-bytebot-red-light-9",
+  },
+  [TaskStatus.NEEDS_REVIEW]: {
+    icon: MessageQuestionIcon,
+    text: "Needs Review",
+    containerClasses: "border-purple-700 bg-purple-100",
+    iconClasses: "text-purple-900",
+    textClasses: "text-purple-700",
+  },
+  [TaskStatus.CANCELLED]: {
+    icon: Cancel01Icon,
+    text: "Cancelled",
+    containerClasses: "border-gray-700 bg-gray-100",
+    iconClasses: "text-gray-900",
+    textClasses: "text-gray-700",
+  },
+};
+
 export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
   // Format date to match the screenshot (e.g., "Today 9:13am" or "April 13, 2025, 12:01pm")
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const today = new Date();
 
-    // Check if the date is today
-    if (
+    const isToday = 
       date.getDate() === today.getDate() &&
       date.getMonth() === today.getMonth() &&
-      date.getFullYear() === today.getFullYear()
-    ) {
-      const todayFormat = `Today ${format(date, "h:mma").toLowerCase()}`;
-      return capitalizeFirstChar(todayFormat);
-    }
+      date.getFullYear() === today.getFullYear();
 
-    // Otherwise, return the full date
-    const formattedDate = format(date, "MMMM d, yyyy, h:mma").toLowerCase();
-    return capitalizeFirstChar(formattedDate);
+    const formatString = isToday 
+      ? `'Today' h:mma`
+      : "MMMM d, yyyy, h:mma";
+
+    const formatted = format(date, formatString).toLowerCase();
+    return capitalizeFirstChar(formatted);
+  };
+
+  const StatusBadge = ({ status }: { status: TaskStatus }) => {
+    const config = STATUS_CONFIGS[status];
+    if (!config) return null;
+
+    const { icon, text, containerClasses, iconClasses, textClasses, animate } = config;
+
+    return (
+      <div className={`inline-flex w-fit items-center space-x-1 rounded-full border px-1.5 py-0.5 ${containerClasses}`}>
+        <HugeiconsIcon
+          icon={icon}
+          className={`mr-1 h-4 w-4 ${iconClasses} ${animate ? 'animate-[spin_3s_linear_infinite]' : ''}`}
+        />
+        <span className={`text-[11px] ${textClasses}`}>{text}</span>
+      </div>
+    );
   };
 
   return (
@@ -58,53 +137,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
               </>
             )}
           </div>
-          {task.status === TaskStatus.COMPLETED && (
-            <div className="bg-bytebot-green-3 border-bytebot-green-a5 inline-flex w-fit items-center space-x-1 rounded-full border px-1.5 py-0.5">
-              <HugeiconsIcon
-                icon={Tick02Icon}
-                className="text-bytebot-green-9 mr-1 h-4 w-4"
-              />
-              <span className="text-bytebot-green-11 text-[11px]">Success</span>
-            </div>
-          )}
-          {task.status === TaskStatus.RUNNING && (
-            <div className="inline-flex w-fit items-center space-x-1 rounded-full border border-orange-700 bg-orange-100 px-1.5 py-0.5">
-              <HugeiconsIcon
-                icon={Loading03Icon}
-                className="mr-1 h-4 w-4 animate-[spin_3s_linear_infinite] text-orange-900"
-              />
-              <span className="text-[11px] text-orange-700">Running</span>
-            </div>
-          )}
-          {task.status === TaskStatus.NEEDS_HELP && (
-            <div className="inline-flex w-fit items-center space-x-1 rounded-full border border-blue-700 bg-blue-100 px-1.5 py-0.5">
-              <HugeiconsIcon
-                icon={MessageQuestionIcon}
-                className="mr-1 h-4 w-4 text-blue-900"
-              />
-              <span className="text-[11px] text-blue-700">Needs Guidance</span>
-            </div>
-          )}
-          {task.status === TaskStatus.PENDING && (
-            <div className="inline-flex w-fit items-center space-x-1 rounded-full border border-yellow-700 bg-yellow-100 px-1.5 py-0.5">
-              <HugeiconsIcon
-                icon={Loading03Icon}
-                className="mr-1 h-4 w-4 animate-[spin_3s_linear_infinite] text-yellow-900"
-              />
-              <span className="text-[11px] text-yellow-700">Pending</span>
-            </div>
-          )}
-          {task.status === TaskStatus.FAILED && (
-            <div className="bg-bytebot-red-light-3 border-bytebot-red-light-7 inline-flex w-fit items-center space-x-1 rounded-full border px-1.5 py-0.5">
-              <HugeiconsIcon
-                icon={Cancel01Icon}
-                className="text-bytebot-red-light-9 mr-1 h-4 w-4"
-              />
-              <span className="text-bytebot-red-light-9 text-[11px]">
-                Failed
-              </span>
-            </div>
-          )}
+          <StatusBadge status={task.status} />
         </div>
       </div>
     </Link>

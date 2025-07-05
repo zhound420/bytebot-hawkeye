@@ -10,12 +10,12 @@ import {
   Button,
   ClickMouseAction,
   ComputerAction,
-  ComputerUseService,
   DragMouseAction,
   ScrollAction,
   TypeKeysAction,
   TypeTextAction,
-} from '../computer-use/computer-use.service';
+} from '@bytebot/shared';
+import { ComputerUseService } from '../computer-use/computer-use.service';
 import { InputTrackingGateway } from './input-tracking.gateway';
 import { keyInfoMap } from './input-tracking.helpers';
 
@@ -118,7 +118,7 @@ export class InputTrackingService implements OnModuleDestroy {
         action: 'click_mouse',
         button: this.mapButton(e.button),
         coordinates: { x: e.x, y: e.y },
-        numClicks: e.clicks,
+        clickCount: e.clicks,
         holdKeys: [
           e.altKey ? 'alt' : undefined,
           e.ctrlKey ? 'ctrl' : undefined,
@@ -138,7 +138,7 @@ export class InputTrackingService implements OnModuleDestroy {
         if (this.clickMouseActionBuffer.length > 1) {
           this.clickMouseActionBuffer.forEach(async (action) => {
             // Skip single click actions
-            if (action.numClicks > 1) {
+            if (action.clickCount > 1) {
               await this.logAction(action);
             }
           });
@@ -186,7 +186,7 @@ export class InputTrackingService implements OnModuleDestroy {
       const action: ScrollAction = {
         action: 'scroll',
         direction: direction as any,
-        numScrolls: Math.abs(e.rotation),
+        scrollCount: 1,
         coordinates: { x: e.x, y: e.y },
       };
 

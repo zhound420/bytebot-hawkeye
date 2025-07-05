@@ -12,12 +12,12 @@
   "license": "UNLICENSED",
   "scripts": {
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "start": "nest start",
-    "build": "nest build",
+    "build": "npm run build --prefix ../shared && nest build",
     "compile": "tsc",
-    "start:dev": "nest start --watch",
-    "start:debug": "nest start --debug --watch",
-    "start:prod": "node dist/main",
+    "start": "npm run build --prefix ../shared && nest start",
+    "start:dev": "npm run build --prefix ../shared && nest start --watch",
+    "start:debug": "npm run build --prefix ../shared && nest start --debug --watch",
+    "start:prod": "npm run build --prefix ../shared && node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -26,6 +26,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@bytebot/shared": "file:../shared",
     "@nestjs/common": "^11.1.2",
     "@nestjs/config": "^4.0.1",
     "@nestjs/core": "^11.0.1",

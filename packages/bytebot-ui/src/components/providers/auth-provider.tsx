@@ -29,7 +29,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         router.push("/");
       }
     }
-  }, [session, isPending, isPublicRoute, router]);
+  }, [session, isPending, isPublicRoute, router, isAuthEnabled]);
 
   // Show loading spinner while checking auth
   if (isPending) {
