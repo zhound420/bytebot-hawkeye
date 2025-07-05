@@ -67,14 +67,15 @@ export class AgentProcessor {
 
   @OnEvent('task.takeover')
   handleTaskTakeover({ taskId }: { taskId: string }) {
+    this.logger.log(`Task takeover event received for task ID: ${taskId}`);
+
+    // If the agent is still processing this task, abort any in-flight operations
     if (this.currentTaskId === taskId && this.isProcessing) {
-      this.logger.log(`Task takeover event received for task ID: ${taskId}`);
-
-      // Signal any in-flight async operations to abort
       this.abortController?.abort();
-
-      this.inputCaptureService.start(taskId);
     }
+
+    // Always start capturing user input so that emitted actions are received
+    this.inputCaptureService.start(taskId);
   }
 
   @OnEvent('task.resume')
