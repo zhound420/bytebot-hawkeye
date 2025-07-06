@@ -33,6 +33,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { InputCaptureService } from './input-capture.service';
 import { OnEvent } from '@nestjs/event-emitter';
+import { OpenAIService } from '../openai/openai.service';
 
 @Injectable()
 export class AgentProcessor {
@@ -45,6 +46,7 @@ export class AgentProcessor {
     private readonly tasksService: TasksService,
     private readonly messagesService: MessagesService,
     private readonly anthropicService: AnthropicService,
+    private readonly openaiService: OpenAIService,
     private readonly configService: ConfigService,
     private readonly inputCaptureService: InputCaptureService,
   ) {
@@ -243,7 +245,7 @@ export class AgentProcessor {
         setImmediate(() => this.runIteration(taskId));
       }
     } catch (error: any) {
-      if (error?.name === 'AbortError') {
+      if (error?.name === 'BytebotAgentInterrupt') {
         this.logger.warn(`Processing aborted for task ID: ${taskId}`);
       } else {
         this.logger.error(

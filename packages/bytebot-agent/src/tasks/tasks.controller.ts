@@ -17,7 +17,7 @@ import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { Message, Task } from '@prisma/client';
 import { GuideTaskDto } from './dto/guide-task.dto';
-import { MessagesService } from 'src/messages/messages.service';
+import { MessagesService } from '../messages/messages.service';
 import { AuthGuard } from '@thallesp/nestjs-better-auth';
 import { Request } from 'express';
 
@@ -64,7 +64,7 @@ export class TasksController {
       limit: limit ? parseInt(limit, 10) : undefined,
       page: page ? parseInt(page, 10) : undefined,
     };
-    
+
     const messages = await this.messagesService.findAll(taskId, options);
     return messages;
   }
