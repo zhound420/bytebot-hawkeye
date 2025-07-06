@@ -56,7 +56,7 @@ export type ClickMouseToolUseBlock = ToolUseContentBlock & {
     coordinates?: Coordinates;
     button: Button;
     holdKeys?: string[];
-    numClicks: number;
+    clickCount: number;
   };
 };
 
@@ -83,7 +83,7 @@ export type ScrollToolUseBlock = ToolUseContentBlock & {
   input: {
     coordinates?: Coordinates;
     direction: "up" | "down" | "left" | "right";
-    numScrolls: number;
+    scrollCount: number;
     holdKeys?: string[];
   };
 };

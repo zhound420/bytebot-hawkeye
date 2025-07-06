@@ -119,11 +119,11 @@ function getLabel(block: ComputerToolUseContentBlock) {
   if (isClickMouseToolUseBlock(block)) {
     const button = block.input.button;
     if (button === "left") {
-      if (block.input.numClicks === 2) {
+      if (block.input.clickCount === 2) {
         return "Double Click";
       }
 
-      if (block.input.numClicks === 3) {
+      if (block.input.clickCount === 3) {
         return "Triple Click";
       }
 
@@ -202,95 +202,93 @@ export function AssistantMessage({ group, messages = [] }: MessageGroupProps) {
                 <div key={index}>
                   {isTextContentBlock(block) && (
                     <div className="space-y-2">
-                      <div className="text-bytebot-bronze-dark-8 text-sm prose prose-sm max-w-none">
+                      <div className="text-bytebot-bronze-dark-8 prose prose-sm max-w-none text-sm">
                         <ReactMarkdown
                           components={{
                             h1: ({ children }) => (
-                              <h1 className="text-base font-semibold mt-4 mb-2 text-bytebot-bronze-dark-9">
+                              <h1 className="text-bytebot-bronze-dark-9 mt-4 mb-2 text-base font-semibold">
                                 {children}
                               </h1>
                             ),
                             h2: ({ children }) => (
-                              <h2 className="text-sm font-semibold mt-3 mb-2 text-bytebot-bronze-dark-9">
+                              <h2 className="text-bytebot-bronze-dark-9 mt-3 mb-2 text-sm font-semibold">
                                 {children}
                               </h2>
                             ),
                             h3: ({ children }) => (
-                              <h3 className="text-sm font-medium mt-3 mb-1 text-bytebot-bronze-dark-9">
+                              <h3 className="text-bytebot-bronze-dark-9 mt-3 mb-1 text-sm font-medium">
                                 {children}
                               </h3>
                             ),
                             h4: ({ children }) => (
-                              <h4 className="text-sm font-medium mt-2 mb-1 text-bytebot-bronze-dark-8">
+                              <h4 className="text-bytebot-bronze-dark-8 mt-2 mb-1 text-sm font-medium">
                                 {children}
                               </h4>
                             ),
                             h5: ({ children }) => (
-                              <h5 className="text-xs font-medium mt-2 mb-1 text-bytebot-bronze-dark-8">
+                              <h5 className="text-bytebot-bronze-dark-8 mt-2 mb-1 text-xs font-medium">
                                 {children}
                               </h5>
                             ),
                             h6: ({ children }) => (
-                              <h6 className="text-xs font-medium mt-2 mb-1 text-bytebot-bronze-dark-8">
+                              <h6 className="text-bytebot-bronze-dark-8 mt-2 mb-1 text-xs font-medium">
                                 {children}
                               </h6>
                             ),
                             p: ({ children }) => (
-                              <p className="mb-2 leading-relaxed">
-                                {children}
-                              </p>
+                              <p className="mb-2 leading-relaxed">{children}</p>
                             ),
                             ul: ({ children }) => (
-                              <ul className="list-disc ml-4 mb-2">
+                              <ul className="mb-2 ml-4 list-disc">
                                 {children}
                               </ul>
                             ),
                             ol: ({ children }) => (
-                              <ol className="list-decimal ml-4 mb-2">
+                              <ol className="mb-2 ml-4 list-decimal">
                                 {children}
                               </ol>
                             ),
                             li: ({ children }) => (
-                              <li className="text-sm mb-1 leading-relaxed">
+                              <li className="mb-1 text-sm leading-relaxed">
                                 {children}
                               </li>
                             ),
                             blockquote: ({ children }) => (
-                              <blockquote className="border-l-4 border-bytebot-bronze-light-7 pl-4 italic text-bytebot-bronze-dark-7 mb-2">
+                              <blockquote className="border-bytebot-bronze-light-7 text-bytebot-bronze-dark-7 mb-2 border-l-4 pl-4 italic">
                                 {children}
                               </blockquote>
                             ),
                             code: ({ children, className }) => {
                               const isInline = !className;
                               return isInline ? (
-                                <code className="bg-bytebot-bronze-light-2 text-bytebot-bronze-dark-9 px-1 py-0.5 rounded text-xs font-mono">
+                                <code className="bg-bytebot-bronze-light-2 text-bytebot-bronze-dark-9 rounded px-1 py-0.5 font-mono text-xs">
                                   {children}
                                 </code>
                               ) : (
-                                <code className="block bg-bytebot-bronze-light-2 text-bytebot-bronze-dark-9 p-3 rounded text-xs font-mono whitespace-pre-wrap overflow-x-auto">
+                                <code className="bg-bytebot-bronze-light-2 text-bytebot-bronze-dark-9 block overflow-x-auto rounded p-3 font-mono text-xs whitespace-pre-wrap">
                                   {children}
                                 </code>
                               );
                             },
                             pre: ({ children }) => (
-                              <pre className="bg-bytebot-bronze-light-2 border border-bytebot-bronze-light-7 rounded p-3 mb-2 overflow-x-auto">
+                              <pre className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-7 mb-2 overflow-x-auto rounded border p-3">
                                 {children}
                               </pre>
                             ),
                             strong: ({ children }) => (
-                              <strong className="font-semibold text-bytebot-bronze-dark-9">
+                              <strong className="text-bytebot-bronze-dark-9 font-semibold">
                                 {children}
                               </strong>
                             ),
                             em: ({ children }) => (
-                              <em className="italic text-bytebot-bronze-dark-8">
+                              <em className="text-bytebot-bronze-dark-8 italic">
                                 {children}
                               </em>
                             ),
                             a: ({ children, href }) => (
-                              <a 
-                                href={href} 
-                                className="text-blue-600 hover:text-blue-800 underline"
+                              <a
+                                href={href}
+                                className="text-blue-600 underline hover:text-blue-800"
                                 target="_blank"
                                 rel="noopener noreferrer"
                               >
@@ -402,7 +400,7 @@ export function AssistantMessage({ group, messages = [] }: MessageGroupProps) {
                         {isScrollToolUseBlock(block) && (
                           <p className="bg-bytebot-bronze-light-1 border-bytebot-bronze-light-7 text-bytebot-bronze-light-11 rounded-md border px-1 py-0.5 text-xs">
                             {String(block.input.direction)}{" "}
-                            {Number(block.input.numScrolls)}
+                            {Number(block.input.scrollCount)}
                           </p>
                         )}
                       </div>
@@ -512,7 +510,7 @@ export function UserMessage({ group, messages = [] }: MessageGroupProps) {
                       {isScrollToolUseBlock(block) && (
                         <p className="bg-bytebot-bronze-light-1 rounded-md border border-fuchsia-600 px-1 py-0.5 text-xs text-fuchsia-600">
                           {String(block.input.direction)}{" "}
-                          {Number(block.input.numScrolls)}
+                          {Number(block.input.scrollCount)}
                         </p>
                       )}
                     </div>

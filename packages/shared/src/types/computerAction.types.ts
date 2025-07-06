@@ -19,7 +19,7 @@ export type ClickMouseAction = {
   coordinates?: Coordinates;
   button: Button;
   holdKeys?: string[];
-  numClicks: number;
+  clickCount: number;
 };
 
 export type PressMouseAction = {
@@ -40,7 +40,7 @@ export type ScrollAction = {
   action: "scroll";
   coordinates?: Coordinates;
   direction: "up" | "down" | "left" | "right";
-  numScrolls: number;
+  scrollCount: number;
   holdKeys?: string[];
 };
 
@@ -60,7 +60,7 @@ export type TypeTextAction = {
   action: "type_text";
   text: string;
   delay?: number;
-  isSensitive?: boolean;
+  sensitive?: boolean;
 };
 
 export type WaitAction = {

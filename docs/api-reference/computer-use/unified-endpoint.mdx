@@ -91,7 +91,7 @@ Perform a mouse click at the current or specified position.
 | `coordinates.x` | Number | Yes*     | X coordinate                                          |
 | `coordinates.y` | Number | Yes*     | Y coordinate                                          |
 | `button`        | String | Yes      | Mouse button: 'left', 'right', or 'middle'            |
-| `numClicks`     | Number | No       | Number of clicks (default: 1)                         |
+| `clickCount`    | Number | Yes      | Number of clicks to perform                            |
 | `holdKeys`      | Array  | No       | Keys to hold while clicking (e.g., ['ctrl', 'shift']) |
 
 **Example:**
@@ -104,7 +104,7 @@ Perform a mouse click at the current or specified position.
     "y": 250
   },
   "button": "left",
-  "numClicks": 2
+  "clickCount": 2
 }
 ```
 
@@ -175,7 +175,7 @@ Scroll up, down, left, or right.
 | `coordinates.x` | Number | Yes*     | X coordinate                                           |
 | `coordinates.y` | Number | Yes*     | Y coordinate                                           |
 | `direction`     | String | Yes      | Scroll direction: 'up', 'down', 'left', 'right'        |
-| `amount`        | Number | Yes      | Scroll amount (pixels)                                 |
+| `scrollCount`   | Number | Yes      | Number of scroll steps                                 |
 | `holdKeys`      | Array  | No       | Keys to hold while scrolling                           |
 
 **Example:**
@@ -184,7 +184,7 @@ Scroll up, down, left, or right.
 {
   "action": "scroll",
   "direction": "down",
-  "amount": 100
+  "scrollCount": 5
 }
 ```
 

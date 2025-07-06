@@ -5,6 +5,7 @@ import { AgentModule } from './agent/agent.module';
 import { TasksModule } from './tasks/tasks.module';
 import { MessagesModule } from './messages/messages.module';
 import { AnthropicModule } from './anthropic/anthropic.module';
+import { OpenAIModule } from './openai/openai.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -16,9 +17,13 @@ const authEnabled = process.env.AUTH_ENABLED === 'true';
 
 @Module({
   imports: [
-    ...(authEnabled ? [AuthModule.forRoot(auth, {
-      disableTrustedOriginsCors: false,
-    })] : []),
+    ...(authEnabled
+      ? [
+          AuthModule.forRoot(auth, {
+            disableTrustedOriginsCors: false,
+          }),
+        ]
+      : []),
     ScheduleModule.forRoot(),
     EventEmitterModule.forRoot(),
     ConfigModule.forRoot({
@@ -28,6 +33,7 @@ const authEnabled = process.env.AUTH_ENABLED === 'true';
     TasksModule,
     MessagesModule,
     AnthropicModule,
+    OpenAIModule,
     PrismaModule,
   ],
   controllers: [AppController],

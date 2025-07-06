@@ -106,8 +106,8 @@ Execute actions like mouse movements, clicks, keyboard input, and screenshots in
 
 {" "}
 
-<ParamField body="numClicks" type="number">
-  Number of clicks to perform. Default: `1`
+<ParamField body="clickCount" type="number" required>
+  Number of clicks to perform.
 </ParamField>
 
 {" "}
@@ -131,7 +131,7 @@ Execute actions like mouse movements, clicks, keyboard input, and screenshots in
     "y": 250
   },
   "button": "left",
-  "numClicks": 2
+  "clickCount": 2
 }
 ```
 
@@ -246,8 +246,8 @@ Execute actions like mouse movements, clicks, keyboard input, and screenshots in
 
 {" "}
 
-<ParamField body="amount" type="number" required>
-  Scroll amount in pixels.
+<ParamField body="scrollCount" type="number" required>
+  Number of scroll steps to perform.
 </ParamField>
 
 {" "}
@@ -262,7 +262,7 @@ Execute actions like mouse movements, clicks, keyboard input, and screenshots in
 {
   "action": "scroll",
   "direction": "down",
-  "amount": 100
+  "scrollCount": 5
 }
 ```
 

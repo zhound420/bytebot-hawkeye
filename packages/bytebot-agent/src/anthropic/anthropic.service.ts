@@ -7,9 +7,13 @@ import {
   TextContentBlock,
   ToolUseContentBlock,
 } from '@bytebot/shared';
-import { AGENT_SYSTEM_PROMPT, DEFAULT_MODEL } from './anthropic.constants';
+import { DEFAULT_MODEL } from './anthropic.constants';
 import { Message, Role } from '@prisma/client';
 import { anthropicTools } from './anthropic.tools';
+import {
+  AGENT_SYSTEM_PROMPT,
+  BytebotAgentInterrupt,
+} from '../agent/agent.constants';
 
 @Injectable()
 export class AnthropicService {
@@ -78,9 +82,7 @@ export class AnthropicService {
 
       if (error instanceof APIUserAbortError) {
         this.logger.log('Anthropic API call aborted');
-        const error = new Error('Anthropic API call aborted');
-        error.name = 'AbortError';
-        throw error;
+        throw new BytebotAgentInterrupt();
       }
       this.logger.error(
         `Error sending message to Anthropic: ${error.message}`,

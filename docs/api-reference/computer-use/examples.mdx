@@ -18,7 +18,7 @@ curl -X POST http://localhost:9990/computer-use \
 
 curl -X POST http://localhost:9990/computer-use \
  -H "Content-Type: application/json" \
- -d '{"action": "click_mouse", "button": "left", "numClicks": 1}'
+ -d '{"action": "click_mouse", "button": "left", "clickCount": 1}'
 
 ````
 
@@ -290,7 +290,7 @@ def automate_browser():
     time.sleep(2)
 
     # Scroll down
-    control_computer("scroll", direction="down", amount=500)
+    control_computer("scroll", direction="down", scrollCount=5)
 
 automate_browser()
 ```

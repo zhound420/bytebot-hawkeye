@@ -32,34 +32,41 @@ The foundation of the system - a containerized Linux desktop that provides:
 - Can be customized with additional software
 - Accessible via REST API on port 9990
 - MCP SSE endpoint available at `/sse`
+- Uses shared types from `@bytebot/shared` package
 
 ### 2. AI Agent Service
 The brain of the system - orchestrates tasks using an LLM:
 
 - **NestJS Framework** for robust, scalable backend
-- **LLM Integration** via OpenAI API for understanding and planning
+- **LLM Integration** via Anthropic Claude API for understanding and planning
 - **WebSocket Support** for real-time updates
 - **Computer Use API Client** to control the desktop
+- **Prisma ORM** for database operations
+- **Tool definitions** for computer actions (mouse, keyboard, screenshots)
 
 **Responsibilities:**
 - Interprets natural language requests
 - Plans sequences of computer actions
 - Manages task state and progress
 - Handles errors and retries
+- Provides real-time task updates via WebSocket
 
 ### 3. Web Task Interface
 The user interface for interacting with your AI agent:
 
-- **Next.js Application** with TypeScript for type safety
+- **Next.js 15 Application** with TypeScript for type safety
 - **Embedded VNC Viewer** to watch the desktop in action
-- **Task Management** UI for tracking progress
+- **Task Management** UI with status badges
 - **WebSocket Connections** for live updates
+- **Reusable components** for consistent UI
+- **API utilities** for streamlined server communication
 
 **Features:**
-- Intuitive task interface
+- Intuitive chat interface
 - Visual feedback of desktop actions
-- Task history and status
-- Export conversation logs
+- Task history with filtering
+- Real-time status updates
+- Responsive design
 
 ### 4. PostgreSQL Database
 Persistent storage for the agent system:

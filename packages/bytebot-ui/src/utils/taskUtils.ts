@@ -1,10 +1,60 @@
 import { Message, Task, Model } from "@/types";
 
 /**
+ * Base configuration for API requests
+ */
+const API_CONFIG = {
+  baseUrl: '/api',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  credentials: 'include' as RequestCredentials,
+};
+
+/**
+ * Generic API request handler
+ */
+async function apiRequest<T>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<T | null> {
+  try {
+    const response = await fetch(`${API_CONFIG.baseUrl}${endpoint}`, {
+      ...options,
+      headers: {
+        ...API_CONFIG.headers,
+        ...options.headers,
+      },
+      credentials: API_CONFIG.credentials,
+    });
+
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error(`Error in API request to ${endpoint}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Build query string from parameters
+ */
+function buildQueryString(params: Record<string, string | number | boolean>): string {
+  const searchParams = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      searchParams.append(key, value.toString());
+    }
+  });
+  const queryString = searchParams.toString();
+  return queryString ? `?${queryString}` : '';
+}
+
+/**
  * Fetches messages for a specific task
- * @param taskId The ID of the task to fetch messages for
- * @param options Optional pagination parameters
- * @returns Array of messages
  */
 export async function fetchTaskMessages(
   taskId: string,
@@ -13,69 +63,20 @@ export async function fetchTaskMessages(
     page?: number;
   }
 ): Promise<Message[]> {
-  try {
-    const { limit, page } = options || {};
-    const params = new URLSearchParams();
-    
-    if (limit) params.append('limit', limit.toString());
-    if (page) params.append('page', page.toString());
-
-    const url = `/api/tasks/${taskId}/messages${params.toString() ? `?${params.toString()}` : ''}`;
-    
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      credentials: 'include', // Include cookies for auth
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch messages");
-    }
-
-    const messages = await response.json();
-    return messages || [];
-  } catch (error) {
-    console.error("Error fetching messages:", error);
-    return [];
-  }
+  const queryString = options ? buildQueryString(options) : '';
+  const result = await apiRequest<Message[]>(
+    `/tasks/${taskId}/messages${queryString}`,
+    { method: 'GET' }
+  );
+  return result || [];
 }
 
 /**
  * Fetches a specific task by ID
- * @param taskId The ID of the task to fetch
- * @returns The task data or null if not found
  */
 export async function fetchTaskById(taskId: string): Promise<Task | null> {
-  try {
-    const response = await fetch(
-      `/api/tasks/${taskId}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: 'include',
-      },
-    );
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch task with ID ${taskId}`);
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error(`Error fetching task ${taskId}:`, error);
-    return null;
-  }
+  return apiRequest<Task>(`/tasks/${taskId}`, { method: 'GET' });
 }
-
-/**
- * Sends a message to start a new task or continue an existing one
- * @param message The message content to send
- * @returns The task data or null if there was an error
- */
 
 export async function startTask(data: {
   description: string;
@@ -105,57 +106,35 @@ export async function startTask(data: {
   }
 }
 
-export async function guideTask(
-  taskId: string,
-  message: string,
-): Promise<Task | null> {
-  try {
-    const response = await fetch(
-      `/api/tasks/${taskId}/guide`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ message }),
-        credentials: 'include',
-      },
-    );
-
-    if (!response.ok) {
-      throw new Error("Failed to guide task");
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error("Error guiding task:", error);
-    return null;
-  }
+/**
+ * Sends a message to start a new task
+ */
+export async function startTask(message: string): Promise<Task | null> {
+  return apiRequest<Task>('/tasks', {
+    method: 'POST',
+    body: JSON.stringify({ description: message }),
+  });
 }
 
+/**
+ * Guides an existing task with a message
+ */
+export async function guideTask(
+  taskId: string,
+  message: string
+): Promise<Task | null> {
+  return apiRequest<Task>(`/tasks/${taskId}/guide`, {
+    method: 'POST',
+    body: JSON.stringify({ message }),
+  });
+}
+
+/**
+ * Fetches all tasks
+ */
 export async function fetchTasks(): Promise<Task[]> {
-  try {
-    const response = await fetch(
-      `/api/tasks`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: 'include',
-      },
-    );
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch tasks");
-    }
-
-    const tasks = await response.json();
-    return tasks || [];
-  } catch (error) {
-    console.error("Error fetching tasks:", error);
-    return [];
-  }
+  const result = await apiRequest<Task[]>('/tasks', { method: 'GET' });
+  return result || [];
 }
 
 export async function fetchModels(): Promise<Model[]> {
@@ -175,50 +154,16 @@ export async function fetchModels(): Promise<Model[]> {
   }
 }
 
+/**
+ * Takes over control of a task
+ */
 export async function takeOverTask(taskId: string): Promise<Task | null> {
-  try {
-    const response = await fetch(
-      `/api/tasks/${taskId}/takeover`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: 'include',
-      },
-    );
-
-    if (!response.ok) {
-      throw new Error("Failed to take over task");
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error("Error taking over task:", error);
-    return null;
-  }
+  return apiRequest<Task>(`/tasks/${taskId}/takeover`, { method: 'POST' });
 }
 
+/**
+ * Resumes a paused or stopped task
+ */
 export async function resumeTask(taskId: string): Promise<Task | null> {
-  try {
-    const response = await fetch(
-      `/api/tasks/${taskId}/resume`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: 'include',
-      },
-    );
-
-    if (!response.ok) {
-      throw new Error("Failed to resume task");
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error("Error resuming task:", error);
-    return null;
-  }
+  return apiRequest<Task>(`/tasks/${taskId}/resume`, { method: 'POST' });
 }

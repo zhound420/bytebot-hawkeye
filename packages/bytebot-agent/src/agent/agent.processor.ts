@@ -34,6 +34,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { InputCaptureService } from './input-capture.service';
 import { OnEvent } from '@nestjs/event-emitter';
+import { OpenAIService } from '../openai/openai.service';
 
 @Injectable()
 export class AgentProcessor {
@@ -46,6 +47,7 @@ export class AgentProcessor {
     private readonly tasksService: TasksService,
     private readonly messagesService: MessagesService,
     private readonly anthropicService: AnthropicService,
+    private readonly openaiService: OpenAIService,
     private readonly configService: ConfigService,
     private readonly inputCaptureService: InputCaptureService,
   ) {
@@ -68,14 +70,15 @@ export class AgentProcessor {
 
   @OnEvent('task.takeover')
   handleTaskTakeover({ taskId }: { taskId: string }) {
+    this.logger.log(`Task takeover event received for task ID: ${taskId}`);
+
+    // If the agent is still processing this task, abort any in-flight operations
     if (this.currentTaskId === taskId && this.isProcessing) {
-      this.logger.log(`Task takeover event received for task ID: ${taskId}`);
-
-      // Signal any in-flight async operations to abort
       this.abortController?.abort();
-
-      this.inputCaptureService.start(taskId);
     }
+
+    // Always start capturing user input so that emitted actions are received
+    this.inputCaptureService.start(taskId);
   }
 
   @OnEvent('task.resume')
@@ -245,7 +248,7 @@ export class AgentProcessor {
         setImmediate(() => this.runIteration(taskId));
       }
     } catch (error: any) {
-      if (error?.name === 'AbortError') {
+      if (error?.name === 'BytebotAgentInterrupt') {
         this.logger.warn(`Processing aborted for task ID: ${taskId}`);
       } else {
         this.logger.error(
@@ -482,11 +485,11 @@ export class AgentProcessor {
     coordinates?: Coordinates;
     button: Button;
     holdKeys?: string[];
-    numClicks: number;
+    clickCount: number;
   }): Promise<void> {
-    const { coordinates, button, holdKeys, numClicks } = input;
+    const { coordinates, button, holdKeys, clickCount } = input;
     console.log(
-      `Clicking mouse ${button} ${numClicks} times ${coordinates ? `at coordinates: [${coordinates.x}, ${coordinates.y}] ` : ''} ${holdKeys ? `with holdKeys: ${holdKeys}` : ''}`,
+      `Clicking mouse ${button} ${clickCount} times ${coordinates ? `at coordinates: [${coordinates.x}, ${coordinates.y}] ` : ''} ${holdKeys ? `with holdKeys: ${holdKeys}` : ''}`,
     );
 
     try {
@@ -500,7 +503,7 @@ export class AgentProcessor {
             coordinates,
             button,
             holdKeys,
-            numClicks,
+            clickCount,
           }),
         },
       );
@@ -573,12 +576,12 @@ export class AgentProcessor {
   private async scroll(input: {
     coordinates?: Coordinates;
     direction: 'up' | 'down' | 'left' | 'right';
-    numScrolls: number;
+    scrollCount: number;
     holdKeys?: string[];
   }): Promise<void> {
-    const { coordinates, direction, numScrolls, holdKeys } = input;
+    const { coordinates, direction, scrollCount, holdKeys } = input;
     console.log(
-      `Scrolling ${direction} ${numScrolls} times ${coordinates ? `at coordinates: [${coordinates.x}, ${coordinates.y}]` : ''}`,
+      `Scrolling ${direction} ${scrollCount} times ${coordinates ? `at coordinates: [${coordinates.x}, ${coordinates.y}]` : ''}`,
     );
 
     try {
@@ -591,7 +594,7 @@ export class AgentProcessor {
             action: 'scroll',
             coordinates,
             direction,
-            numScrolls,
+            scrollCount,
             holdKeys,
           }),
         },

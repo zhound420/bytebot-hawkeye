@@ -98,7 +98,7 @@ export class ComputerUseTools {
         .array(z.string())
         .optional()
         .describe('Optional array of keys to hold during the click.'),
-      numClicks: z
+      clickCount: z
         .number()
         .describe('Number of clicks to perform (e.g., 2 for double-click).'),
     }),
@@ -107,12 +107,12 @@ export class ComputerUseTools {
     coordinates,
     button,
     holdKeys,
-    numClicks,
+    clickCount,
   }: {
     coordinates?: { x: number; y: number };
     button: 'left' | 'right' | 'middle';
     holdKeys?: string[];
-    numClicks: number;
+    clickCount: number;
   }) {
     try {
       await this.computerUse.action({
@@ -120,7 +120,7 @@ export class ComputerUseTools {
         coordinates,
         button,
         holdKeys,
-        numClicks,
+        clickCount,
       });
       return {
         content: [{ type: 'text', text: 'mouse clicked' }],
@@ -273,7 +273,7 @@ export class ComputerUseTools {
       direction: z
         .enum(['up', 'down', 'left', 'right'])
         .describe('The direction to scroll the mouse wheel.'),
-      numScrolls: z
+      scrollCount: z
         .number()
         .describe('The number of times to scroll the mouse wheel.'),
       holdKeys: z
@@ -285,12 +285,12 @@ export class ComputerUseTools {
   async scroll({
     coordinates,
     direction,
-    numScrolls,
+    scrollCount,
     holdKeys,
   }: {
     coordinates?: { x: number; y: number };
     direction: 'up' | 'down' | 'left' | 'right';
-    numScrolls: number;
+    scrollCount: number;
     holdKeys?: string[];
   }) {
     try {
@@ -298,7 +298,7 @@ export class ComputerUseTools {
         action: 'scroll',
         coordinates,
         direction,
-        numScrolls,
+        scrollCount,
         holdKeys,
       });
       return { content: [{ type: 'text', text: 'scrolled' }] };
