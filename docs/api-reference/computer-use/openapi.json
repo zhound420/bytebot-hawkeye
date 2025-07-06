@@ -103,9 +103,9 @@
             "type": "array",
             "items": {"type": "string"}
           },
-          "numClicks": {"type": "integer", "minimum": 1}
+          "clickCount": {"type": "integer", "minimum": 1}
         },
-        "required": ["action", "button", "numClicks"]
+        "required": ["action", "button", "clickCount"]
       },
       "PressMouseAction": {
         "type": "object",
@@ -139,13 +139,13 @@
           "action": {"enum": ["scroll"]},
           "coordinates": {"$ref": "#/components/schemas/Coordinates"},
           "direction": {"$ref": "#/components/schemas/ScrollDirection"},
-          "numScrolls": {"type": "integer", "minimum": 1},
+          "scrollCount": {"type": "integer", "minimum": 1},
           "holdKeys": {
             "type": "array",
             "items": {"type": "string"}
           }
         },
-        "required": ["action", "direction", "numScrolls"]
+        "required": ["action", "direction", "scrollCount"]
       },
       "TypeKeysAction": {
         "type": "object",
