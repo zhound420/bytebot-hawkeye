@@ -56,6 +56,7 @@ model Task {
   queuedAt      DateTime?
   error         String?
   result        Json?
+  model         Json
   messages      Message[]
   summaries     Summary[]
   user          User?         @relation(fields: [userId], references: [id])

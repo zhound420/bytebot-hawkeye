@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Role, TaskStatus } from "@/types";
+import { Role, TaskStatus, Model } from "@/types";
 
 export default function TaskPage() {
   const params = useParams();
@@ -26,6 +26,8 @@ export default function TaskPage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+  const [models, setModels] = useState<Model[]>([]);
+  const [selectedModel, setSelectedModel] = useState<Model | null>(null);
   const {
     messages,
     taskStatus,
@@ -67,6 +69,16 @@ export default function TaskPage() {
     messages,
     scrollContainerRef: chatContainerRef,
   });
+
+  useEffect(() => {
+    fetch('/api/tasks/models')
+      .then((res) => res.json())
+      .then((data) => {
+        setModels(data);
+        if (data.length > 0) setSelectedModel(data[0]);
+      })
+      .catch((err) => console.error('Failed to load models', err));
+  }, []);
 
   // Set isMounted to true after component mounts
   useEffect(() => {
@@ -238,12 +250,21 @@ export default function TaskPage() {
                   minLines={1}
                 />
                 <div className="mt-2">
-                  <Select value="opus-4">
+                  <Select
+                    value={selectedModel?.name}
+                    onValueChange={(val) =>
+                      setSelectedModel(models.find((m) => m.name === val) || null)
+                    }
+                  >
                     <SelectTrigger className="w-auto">
                       <SelectValue placeholder="Select an model" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="opus-4">Opus 4</SelectItem>
+                      {models.map((m) => (
+                        <SelectItem key={m.name} value={m.name}>
+                          {m.title}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

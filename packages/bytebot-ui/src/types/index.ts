@@ -14,6 +14,12 @@ export interface Message {
   createdAt?: string;
 }
 
+export interface Model {
+  provider: string;
+  name: string;
+  title: string;
+}
+
 // Task related enums and types
 export enum TaskStatus {
   PENDING = "PENDING",
@@ -59,6 +65,7 @@ export interface Task {
   queuedAt?: string;
   error?: string;
   result?: unknown;
+  model: Model;
   userId?: string;
   user?: User;
 }

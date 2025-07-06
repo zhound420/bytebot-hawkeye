@@ -1,4 +1,4 @@
-import { Message, Task } from "@/types";
+import { Message, Task, Model } from "@/types";
 
 /**
  * Fetches messages for a specific task
@@ -77,7 +77,10 @@ export async function fetchTaskById(taskId: string): Promise<Task | null> {
  * @returns The task data or null if there was an error
  */
 
-export async function startTask(message: string): Promise<Task | null> {
+export async function startTask(data: {
+  description: string;
+  model: Model;
+}): Promise<Task | null> {
   try {
     const response = await fetch(
       `/api/tasks`,
@@ -86,7 +89,7 @@ export async function startTask(message: string): Promise<Task | null> {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ description: message }),
+        body: JSON.stringify(data),
         credentials: 'include',
       },
     );
@@ -151,6 +154,23 @@ export async function fetchTasks(): Promise<Task[]> {
     return tasks || [];
   } catch (error) {
     console.error("Error fetching tasks:", error);
+    return [];
+  }
+}
+
+export async function fetchModels(): Promise<Model[]> {
+  try {
+    const response = await fetch('/api/tasks/models', {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      throw new Error('Failed to fetch models');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching models:', error);
     return [];
   }
 }

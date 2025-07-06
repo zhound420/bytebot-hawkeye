@@ -22,6 +22,7 @@ import { GuideTaskDto } from './dto/guide-task.dto';
 import { TasksGateway } from './tasks.gateway';
 import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { DEFAULT_MODEL } from '../anthropic/anthropic.constants';
 
 @Injectable()
 export class TasksService {
@@ -52,6 +53,7 @@ export class TasksService {
           priority: createTaskDto.priority || TaskPriority.MEDIUM,
           status: TaskStatus.PENDING,
           createdBy: createTaskDto.createdBy || Role.USER,
+          model: createTaskDto.model || DEFAULT_MODEL,
           ...(createTaskDto.userId ? { userId: createTaskDto.userId } : {}),
           ...(createTaskDto.scheduledFor
             ? { scheduledFor: createTaskDto.scheduledFor }

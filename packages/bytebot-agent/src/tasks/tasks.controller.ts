@@ -20,6 +20,7 @@ import { GuideTaskDto } from './dto/guide-task.dto';
 import { MessagesService } from 'src/messages/messages.service';
 import { AuthGuard } from '@thallesp/nestjs-better-auth';
 import { Request } from 'express';
+import { AVAILABLE_MODELS } from '../anthropic/anthropic.constants';
 
 const authEnabled = process.env.AUTH_ENABLED === 'true';
 
@@ -47,6 +48,11 @@ export class TasksController {
   @Get()
   async findAll(): Promise<Task[]> {
     return this.tasksService.findAll();
+  }
+
+  @Get('models')
+  async getModels() {
+    return AVAILABLE_MODELS;
   }
 
   @Get(':id')

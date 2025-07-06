@@ -3,6 +3,7 @@ import { MessagesService } from '../messages/messages.service';
 import { Injectable, Logger } from '@nestjs/common';
 import { Role, TaskPriority, TaskStatus, TaskType } from '@prisma/client';
 import { AnthropicService } from '../anthropic/anthropic.service';
+import { DEFAULT_MODEL } from '../anthropic/anthropic.constants';
 import {
   isScrollToolUseBlock,
   isWaitToolUseBlock,
@@ -135,9 +136,11 @@ export class AgentProcessor {
         `Sending ${messages.length} messages to LLM for processing`,
       );
 
+      const modelName = (task as any).model?.name ?? DEFAULT_MODEL.name;
       const messageContentBlocks: MessageContentBlock[] =
         await this.anthropicService.sendMessage(
           messages,
+          modelName,
           this.abortController.signal,
         );
 
