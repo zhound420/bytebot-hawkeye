@@ -1,0 +1,16 @@
+runtime: "container"
+startCommand:
+  type: "http"
+  configSchema: {}
+build:
+  dockerfile: "./packages/bytebotd/Dockerfile"
+  dockerBuildPath: "./packages/"
+start:
+  command:
+    [
+      "/usr/bin/supervisord",
+      "-c",
+      "/etc/supervisor/conf.d/supervisord.conf",
+      "-n",
+    ]
+  port: 9990
