@@ -20,7 +20,8 @@ import { GuideTaskDto } from './dto/guide-task.dto';
 import { MessagesService } from '../messages/messages.service';
 import { AuthGuard } from '@thallesp/nestjs-better-auth';
 import { Request } from 'express';
-import { AVAILABLE_MODELS } from '../anthropic/anthropic.constants';
+import { ANTHROPIC_MODELS } from '../anthropic/anthropic.constants';
+import { OPENAI_MODELS } from '../openai/openai.constants';
 
 const authEnabled = process.env.AUTH_ENABLED === 'true';
 
@@ -52,7 +53,7 @@ export class TasksController {
 
   @Get('models')
   async getModels() {
-    return AVAILABLE_MODELS;
+    return [...ANTHROPIC_MODELS, ...OPENAI_MODELS];
   }
 
   @Get(':id')

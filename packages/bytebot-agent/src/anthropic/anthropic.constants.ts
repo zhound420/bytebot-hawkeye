@@ -1,10 +1,6 @@
-export interface Model {
-  provider: string;
-  name: string;
-  title: string;
-}
+import { BytebotAgentModel } from 'src/agent/agent.constants';
 
-export const AVAILABLE_MODELS: Model[] = [
+export const ANTHROPIC_MODELS: BytebotAgentModel[] = [
   {
     provider: 'anthropic',
     name: 'claude-opus-4-20250514',
@@ -12,14 +8,9 @@ export const AVAILABLE_MODELS: Model[] = [
   },
   {
     provider: 'anthropic',
-    name: 'claude-3-sonnet-20240229',
-    title: 'Claude 3 Sonnet',
-  },
-  {
-    provider: 'anthropic',
-    name: 'claude-3-haiku-20240307',
-    title: 'Claude 3 Haiku',
+    name: 'claude-sonnet-4-20250514',
+    title: 'Claude Sonnet 4',
   },
 ];
 
-export const DEFAULT_MODEL = AVAILABLE_MODELS[0];
+export const DEFAULT_MODEL = ANTHROPIC_MODELS[0];

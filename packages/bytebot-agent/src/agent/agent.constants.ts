@@ -105,6 +105,12 @@ Remember: **accuracy over speed, clarity and consistency over cleverness**.
 Think before each move, keep the desktop clean when you're done, and **always** finish with \`set_task_status\`.
 `;
 
+export interface BytebotAgentModel {
+  provider: string;
+  name: string;
+  title: string;
+}
+
 export class BytebotAgentInterrupt extends Error {
   constructor() {
     super('BytebotAgentInterrupt');

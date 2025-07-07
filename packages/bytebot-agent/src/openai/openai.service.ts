@@ -37,10 +37,10 @@ export class OpenAIService {
 
   async sendMessage(
     messages: Message[],
+    model: string = DEFAULT_MODEL.name,
     signal?: AbortSignal,
   ): Promise<MessageContentBlock[]> {
     try {
-      const model = DEFAULT_MODEL;
       const maxTokens = 8192;
 
       const openaiMessages = this.formatMessagesForOpenAI(messages);
