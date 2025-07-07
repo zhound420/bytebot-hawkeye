@@ -9,7 +9,7 @@ import { ComputerUseTools } from './computer-use.tools';
     McpModule.forRoot({
       name: 'bytebotd',
       version: '0.0.1',
-      sseEndpoint: '/sse',
+      sseEndpoint: '/mcp',
     }),
   ],
   providers: [ComputerUseTools],

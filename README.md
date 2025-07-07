@@ -263,7 +263,7 @@ print(status.json())
 Use the computer control API for precise automation:
 
 The core container also exposes an [MCP](https://github.com/rekog-labs/MCP-Nest) endpoint.
-Connect your MCP client to `http://localhost:9990/sse` to invoke these tools over SSE.
+Connect your MCP client to `http://localhost:9990/mcp` to invoke these tools over SSE.
 
 ```json
 {
@@ -272,7 +272,7 @@ Connect your MCP client to `http://localhost:9990/sse` to invoke these tools ove
       "command": "npx",
       "args": [
         "mcp-remote",
-        "http://127.0.0.1:9990/sse",
+        "http://127.0.0.1:9990/mcp",
         "--transport",
         "http-first"
       ]
