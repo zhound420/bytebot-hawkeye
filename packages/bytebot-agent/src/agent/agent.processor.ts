@@ -1,8 +1,9 @@
 import { TasksService } from '../tasks/tasks.service';
 import { MessagesService } from '../messages/messages.service';
 import { Injectable, Logger } from '@nestjs/common';
-import { Role, TaskPriority, TaskStatus, TaskType } from '@prisma/client';
+import { Role, Task, TaskPriority, TaskStatus, TaskType } from '@prisma/client';
 import { AnthropicService } from '../anthropic/anthropic.service';
+import { DEFAULT_MODEL } from '../anthropic/anthropic.constants';
 import {
   isScrollToolUseBlock,
   isWaitToolUseBlock,
@@ -34,6 +35,7 @@ import { ConfigService } from '@nestjs/config';
 import { InputCaptureService } from './input-capture.service';
 import { OnEvent } from '@nestjs/event-emitter';
 import { OpenAIService } from '../openai/openai.service';
+import { BytebotAgentModel } from './agent.constants';
 
 @Injectable()
 export class AgentProcessor {
@@ -116,7 +118,7 @@ export class AgentProcessor {
     }
 
     try {
-      const task = await this.tasksService.findById(taskId);
+      const task: Task = await this.tasksService.findById(taskId);
 
       if (task.status !== TaskStatus.RUNNING) {
         this.logger.log(
@@ -138,11 +140,24 @@ export class AgentProcessor {
         `Sending ${messages.length} messages to LLM for processing`,
       );
 
-      const messageContentBlocks: MessageContentBlock[] =
-        await this.anthropicService.sendMessage(
+      const model = task.model as unknown as BytebotAgentModel;
+      let messageContentBlocks: MessageContentBlock[] = [];
+
+      if (model.provider === 'anthropic') {
+        messageContentBlocks = await this.anthropicService.sendMessage(
           messages,
+          model.name,
           this.abortController.signal,
         );
+      }
+
+      if (model.provider === 'openai') {
+        messageContentBlocks = await this.openaiService.sendMessage(
+          messages,
+          model.name,
+          this.abortController.signal,
+        );
+      }
 
       this.logger.debug(
         `Received ${messageContentBlocks.length} content blocks from LLM`,

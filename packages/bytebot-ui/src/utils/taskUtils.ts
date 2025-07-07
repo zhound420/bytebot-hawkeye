@@ -1,14 +1,14 @@
-import { Message, Task } from "@/types";
+import { Message, Task, Model } from "@/types";
 
 /**
  * Base configuration for API requests
  */
 const API_CONFIG = {
-  baseUrl: '/api',
+  baseUrl: "/api",
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
-  credentials: 'include' as RequestCredentials,
+  credentials: "include" as RequestCredentials,
 };
 
 /**
@@ -16,7 +16,7 @@ const API_CONFIG = {
  */
 async function apiRequest<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
 ): Promise<T | null> {
   try {
     const response = await fetch(`${API_CONFIG.baseUrl}${endpoint}`, {
@@ -29,7 +29,9 @@ async function apiRequest<T>(
     });
 
     if (!response.ok) {
-      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `API request failed: ${response.status} ${response.statusText}`,
+      );
     }
 
     return await response.json();
@@ -42,7 +44,9 @@ async function apiRequest<T>(
 /**
  * Build query string from parameters
  */
-function buildQueryString(params: Record<string, string | number | boolean>): string {
+function buildQueryString(
+  params: Record<string, string | number | boolean>,
+): string {
   const searchParams = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null) {
@@ -50,7 +54,7 @@ function buildQueryString(params: Record<string, string | number | boolean>): st
     }
   });
   const queryString = searchParams.toString();
-  return queryString ? `?${queryString}` : '';
+  return queryString ? `?${queryString}` : "";
 }
 
 /**
@@ -61,12 +65,12 @@ export async function fetchTaskMessages(
   options?: {
     limit?: number;
     page?: number;
-  }
+  },
 ): Promise<Message[]> {
-  const queryString = options ? buildQueryString(options) : '';
+  const queryString = options ? buildQueryString(options) : "";
   const result = await apiRequest<Message[]>(
     `/tasks/${taskId}/messages${queryString}`,
-    { method: 'GET' }
+    { method: "GET" },
   );
   return result || [];
 }
@@ -75,16 +79,19 @@ export async function fetchTaskMessages(
  * Fetches a specific task by ID
  */
 export async function fetchTaskById(taskId: string): Promise<Task | null> {
-  return apiRequest<Task>(`/tasks/${taskId}`, { method: 'GET' });
+  return apiRequest<Task>(`/tasks/${taskId}`, { method: "GET" });
 }
 
 /**
  * Sends a message to start a new task
  */
-export async function startTask(message: string): Promise<Task | null> {
-  return apiRequest<Task>('/tasks', {
-    method: 'POST',
-    body: JSON.stringify({ description: message }),
+export async function startTask(data: {
+  description: string;
+  model: Model;
+}): Promise<Task | null> {
+  return apiRequest<Task>("/tasks", {
+    method: "POST",
+    body: JSON.stringify(data),
   });
 }
 
@@ -93,10 +100,10 @@ export async function startTask(message: string): Promise<Task | null> {
  */
 export async function guideTask(
   taskId: string,
-  message: string
+  message: string,
 ): Promise<Task | null> {
   return apiRequest<Task>(`/tasks/${taskId}/guide`, {
-    method: 'POST',
+    method: "POST",
     body: JSON.stringify({ message }),
   });
 }
@@ -105,20 +112,37 @@ export async function guideTask(
  * Fetches all tasks
  */
 export async function fetchTasks(): Promise<Task[]> {
-  const result = await apiRequest<Task[]>('/tasks', { method: 'GET' });
+  const result = await apiRequest<Task[]>("/tasks", { method: "GET" });
   return result || [];
+}
+
+export async function fetchModels(): Promise<Model[]> {
+  try {
+    const response = await fetch("/api/tasks/models", {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+    });
+    if (!response.ok) {
+      throw new Error("Failed to fetch models");
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching models:", error);
+    return [];
+  }
 }
 
 /**
  * Takes over control of a task
  */
 export async function takeOverTask(taskId: string): Promise<Task | null> {
-  return apiRequest<Task>(`/tasks/${taskId}/takeover`, { method: 'POST' });
+  return apiRequest<Task>(`/tasks/${taskId}/takeover`, { method: "POST" });
 }
 
 /**
  * Resumes a paused or stopped task
  */
 export async function resumeTask(taskId: string): Promise<Task | null> {
-  return apiRequest<Task>(`/tasks/${taskId}/resume`, { method: 'POST' });
+  return apiRequest<Task>(`/tasks/${taskId}/resume`, { method: "POST" });
 }

@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { startTask } from "@/utils/taskUtils";
+import { Model } from "@/types";
 import { TaskList } from "@/components/tasks/TaskList";
 
 // Stock photo component for easy image switching
@@ -38,12 +39,24 @@ const StockPhoto: React.FC<StockPhotoProps> = ({
 export default function Home() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [models, setModels] = useState<Model[]>([]);
+  const [selectedModel, setSelectedModel] = useState<Model | null>(null);
   const router = useRouter();
   const [activePopoverIndex, setActivePopoverIndex] = useState<number | null>(
     null,
   );
   const popoverRef = useRef<HTMLDivElement>(null);
   const buttonsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetch('/api/tasks/models')
+      .then((res) => res.json())
+      .then((data) => {
+        setModels(data);
+        if (data.length > 0) setSelectedModel(data[0]);
+      })
+      .catch((err) => console.error('Failed to load models', err));
+  }, []);
 
   // Close popover when clicking outside or pressing ESC
   useEffect(() => {
@@ -81,8 +94,12 @@ export default function Home() {
     setIsLoading(true);
 
     try {
+      if (!selectedModel) throw new Error('No model selected');
       // Send request to start a new task
-      const task = await startTask(input);
+      const task = await startTask({
+        description: input,
+        model: selectedModel,
+      });
 
       if (task && task.id) {
         // Redirect to the task page
@@ -235,12 +252,21 @@ export default function Home() {
                   minLines={3}
                 />
                 <div className="mt-2">
-                  <Select defaultValue="opus-4">
+                  <Select
+                    value={selectedModel?.name}
+                    onValueChange={(val) =>
+                      setSelectedModel(models.find((m) => m.name === val) || null)
+                    }
+                  >
                     <SelectTrigger className="w-auto">
                       <SelectValue placeholder="Select a model" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="opus-4">Model: Opus 4</SelectItem>
+                      {models.map((m) => (
+                        <SelectItem key={m.name} value={m.name}>
+                          {m.title}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -285,12 +311,21 @@ export default function Home() {
                   minLines={3}
                 />
                 <div className="mt-2">
-                  <Select defaultValue="opus-4">
+                  <Select
+                    value={selectedModel?.name}
+                    onValueChange={(val) =>
+                      setSelectedModel(models.find((m) => m.name === val) || null)
+                    }
+                  >
                     <SelectTrigger className="w-auto">
                       <SelectValue placeholder="Select a model" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="opus-4">Model: Opus 4</SelectItem>
+                      {models.map((m) => (
+                        <SelectItem key={m.name} value={m.name}>
+                          {m.title}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

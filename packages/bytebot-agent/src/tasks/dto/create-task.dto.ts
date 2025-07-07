@@ -25,4 +25,7 @@ export class CreateTaskDto {
   @IsOptional()
   @IsString()
   userId?: string;
+
+  @IsOptional()
+  model?: any;
 }

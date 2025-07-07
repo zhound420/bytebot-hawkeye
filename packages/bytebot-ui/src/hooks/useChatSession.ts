@@ -230,7 +230,14 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
       startNewConversation();
 
       // Send request to start a new task or continue existing task
-      const task = await startTask(description);
+      const task = await startTask({
+        description,
+        model: {
+          provider: 'anthropic',
+          name: 'claude-opus-4-20250514',
+          title: 'Claude Opus 4',
+        },
+      });
 
       if (task) {
         // Store the task ID for polling
