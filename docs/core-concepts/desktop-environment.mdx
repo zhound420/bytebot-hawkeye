@@ -39,27 +39,24 @@ The Bytebot Desktop Environment is a fully functional Linux desktop running insi
 - **Ubuntu 22.04 LTS**: Stable, well-supported Linux distribution
 - **XFCE4 Desktop**: Lightweight, responsive desktop environment
 - **X11 Display Server**: Standard Linux graphics system
-- **SystemD**: Modern service management
+- **supervisord**: Service management
 
 ### Pre-installed Software
 
 <CardGroup cols={2}>
   <Card title="Web Browsers" icon="globe">
     - Firefox ESR (Extended Support Release)
-    - Chrome/Chromium available
     - Pre-configured for automation
     - Ad blocker extensions
   </Card>
   <Card title="Office Tools" icon="file-lines">
     - Text editors (nano, vim, gedit)
-    - LibreOffice suite (optional)
-    - PDF viewers
+    - PDF viewer
     - File managers
   </Card>
   <Card title="Communication" icon="envelope">
     - Thunderbird email client
     - Chat applications
-    - Video conferencing tools
     - Terminal emulators
   </Card>
   <Card title="Development" icon="code">
@@ -78,17 +75,12 @@ The Bytebot Desktop Environment is a fully functional Linux desktop running insi
    - Built on nutjs framework
    - Provides REST API
 
-2. **VNC Server**
-   - TigerVNC for remote access
-   - Configurable resolution
-   - Multiple connection support
-
-3. **noVNC Web Client**
+2. **noVNC Web Client**
    - Browser-based desktop access
    - No client installation needed
    - WebSocket proxy included
 
-4. **Supervisor**
+3. **Supervisor**
    - Process management
    - Service monitoring
    - Automatic restarts
@@ -164,7 +156,7 @@ curl -X POST http://localhost:9990/api/computer \
 # Move mouse
 curl -X POST http://localhost:9990/api/computer \
   -H "Content-Type: application/json" \
-  -d '{"action": "move_mouse", "coordinate": [500, 300]}'
+  -d '{"action": "move_mouse", "coordinate": {"x": 500, "y": 300}}'
 ```
 
 ## Customization
