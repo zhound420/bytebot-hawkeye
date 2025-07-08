@@ -36,6 +36,7 @@ import { InputCaptureService } from './input-capture.service';
 import { OnEvent } from '@nestjs/event-emitter';
 import { OpenAIService } from '../openai/openai.service';
 import { BytebotAgentModel } from './agent.constants';
+import { GoogleService } from '../google/google.service';
 
 @Injectable()
 export class AgentProcessor {
@@ -49,6 +50,7 @@ export class AgentProcessor {
     private readonly messagesService: MessagesService,
     private readonly anthropicService: AnthropicService,
     private readonly openaiService: OpenAIService,
+    private readonly googleService: GoogleService,
     private readonly configService: ConfigService,
     private readonly inputCaptureService: InputCaptureService,
   ) {
@@ -159,6 +161,14 @@ export class AgentProcessor {
         );
       }
 
+      if (model.provider === 'google') {
+        messageContentBlocks = await this.googleService.sendMessage(
+          messages,
+          model.name,
+          this.abortController.signal,
+        );
+      }
+
       this.logger.debug(
         `Received ${messageContentBlocks.length} content blocks from LLM`,
       );
@@ -200,6 +210,7 @@ export class AgentProcessor {
             ...(block.input.scheduledFor && {
               scheduledFor: new Date(block.input.scheduledFor),
             }),
+            model: task.model,
             priority,
           });
 
