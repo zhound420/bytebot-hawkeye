@@ -351,7 +351,7 @@ Built with amazing open source projects:
 
 ## 📄 License
 
-MIT © 2025 Tantl Labs, Inc.
+Apache-2.0 license © 2025 Tantl Labs, Inc.
 
 ---
 
