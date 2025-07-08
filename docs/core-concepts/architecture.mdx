@@ -24,7 +24,7 @@ The foundation of the system - a containerized Linux desktop that provides:
 - **XFCE4 Desktop** for a lightweight, responsive UI
 - **bytebotd Daemon** - The automation service built on nutjs that executes computer actions
 - **Pre-installed Applications**: Firefox ESR, Thunderbird, text editors, and development tools
-- **VNC & noVNC** for remote desktop access
+- **noVNC** for remote desktop access
 
 **Key Features:**
 - Runs completely isolated from your host system
@@ -139,7 +139,6 @@ graph LR
  - **Desktop API**: No authentication by default (localhost only). Supports REST and MCP.
 - **Agent API**: Can be secured with API keys
 - **Database**: Password protected, not exposed externally
-- **VNC Access**: Optional password protection
 
 <Warning>
   Default configuration is for development. For production:

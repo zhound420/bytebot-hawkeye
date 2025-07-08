@@ -22,8 +22,19 @@ import { AuthGuard } from '@thallesp/nestjs-better-auth';
 import { Request } from 'express';
 import { ANTHROPIC_MODELS } from '../anthropic/anthropic.constants';
 import { OPENAI_MODELS } from '../openai/openai.constants';
+import { GOOGLE_MODELS } from 'src/google/google.constants';
 
 const authEnabled = process.env.AUTH_ENABLED === 'true';
+
+const googleApiKey = process.env.GOOGLE_API_KEY;
+const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
+const openaiApiKey = process.env.OPENAI_API_KEY;
+
+const models = [
+  ...(anthropicApiKey ? ANTHROPIC_MODELS : []),
+  ...(openaiApiKey ? OPENAI_MODELS : []),
+  ...(googleApiKey ? GOOGLE_MODELS : []),
+];
 
 @Controller('tasks')
 @UseGuards(...(authEnabled ? [AuthGuard] : []))
@@ -53,7 +64,7 @@ export class TasksController {
 
   @Get('models')
   async getModels() {
-    return [...ANTHROPIC_MODELS, ...OPENAI_MODELS];
+    return models;
   }
 
   @Get(':id')

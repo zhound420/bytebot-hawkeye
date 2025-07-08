@@ -3,7 +3,7 @@ title: "Deploying Bytebot on Railway"
 description: "Comprehensive guide to deploying the full Bytebot stack on Railway using the official 1-click template"
 ---
 
-> **TL;DR –** Click the button below, add your Anthropic key, and your personal Bytebot instance will be live in ~2 minutes.
+> **TL;DR –** Click the button below, add your AI API key (Anthropic, OpenAI, or Google), and your personal Bytebot instance will be live in ~2 minutes.
 
 [![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/bytebot?referralCode=L9lKXQ)
 
@@ -35,7 +35,12 @@ All internal traffic flows through Railway’s [private networking](https://docs
     Click the **Deploy on Railway** button above or visit [https://railway.com/deploy/bytebot?referralCode=L9lKXQ](https://railway.com/deploy/bytebot?referralCode=L9lKXQ).
   </Step>
   <Step title="2. Configure Environment">
-    Railway automatically detects required variables. Paste your **Anthropic API key** into `ANTHROPIC_API_KEY` and keep other defaults.
+    Railway automatically detects required variables. Add your AI API key (choose one):
+    - **Anthropic**: Paste into `ANTHROPIC_API_KEY` for Claude models
+    - **OpenAI**: Paste into `OPENAI_API_KEY` for GPT models
+    - **Google**: Paste into `GOOGLE_API_KEY` for Gemini models
+    
+    Keep other defaults as is.
   </Step>
   <Step title="3. Kick off the Deployment">
     Press **Deploy**. Railway will pull the pre-built images, create the Postgres database and link all services on a private network.
@@ -73,7 +78,7 @@ All internal traffic flows through Railway’s [private networking](https://docs
 | Symptom | Likely Cause | Fix |
 | ------- | ------------ | ---- |
 | Web UI shows “connecting…” | Desktop not ready or private networking mis-config | Wait for `bytebot-desktop` container to finish starting, or restart service |
-| Agent errors `401 Anthropic` | Missing/invalid API key | Re-enter `ANTHROPIC_API_KEY` in Railway variables |
+| Agent errors `401` or `403` | Missing/invalid API key | Re-enter your AI provider's API key in Railway variables |
 | Slow desktop video | Free Railway plan throttling | Upgrade plan or reduce screen resolution in desktop settings |
 
 ---

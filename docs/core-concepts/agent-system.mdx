@@ -15,9 +15,26 @@ The Bytebot Agent System transforms a simple desktop container into an intellige
 
 ## How the AI Agent Works
 
-### The Brain: Claude AI Integration
+### The Brain: Multi-Model AI Integration
 
-At the heart of Bytebot is Claude, Anthropic's advanced AI assistant. The agent:
+At the heart of Bytebot is a flexible AI integration that supports multiple models. Choose the AI that best fits your needs:
+
+**Anthropic Claude** (Default):
+- Best for complex reasoning and visual understanding
+- Excellent at following detailed instructions
+- Superior performance on desktop automation tasks
+
+**OpenAI GPT Models**:
+- Fast and reliable for general automation
+- Strong code understanding and generation
+- Cost-effective for routine tasks
+
+**Google Gemini**:
+- Efficient for high-volume tasks
+- Good balance of speed and capability
+- Excellent multilingual support
+
+The agent with any model:
 
 1. **Understands Context**: Processes your natural language requests with full conversation history
 2. **Plans Actions**: Breaks down complex tasks into executable computer actions
@@ -31,7 +48,7 @@ At the heart of Bytebot is Claude, Anthropic's advanced AI assistant. The agent:
     "Research competitors for my SaaS product and create a comparison table"
   </Step>
   <Step title="AI Plans the Approach">
-    Claude understands the request and plans: open browser → search → visit sites → extract data → create document
+    The AI model understands the request and plans: open browser → search → visit sites → extract data → create document
   </Step>
   <Step title="Executes Actions">
     The agent controls the desktop: clicking, typing, taking screenshots, reading content
@@ -119,7 +136,7 @@ The agent processes tasks intelligently:
 ### Core Components
 
 1. **NestJS Agent Service**
-   - Integrates with Anthropic API
+   - Integrates with multiple AI provider APIs (Anthropic, OpenAI, Google)
    - Handles WebSocket connections
    - Coordinates with desktop API
 
@@ -194,7 +211,7 @@ The web interface provides:
 
 ### Data Isolation
 - All processing happens in your infrastructure
-- No data sent to external services (except Claude API)
+- No data sent to external services (except your chosen AI provider API)
 - Conversations stored locally
 - Complete audit trail
 
@@ -223,17 +240,18 @@ The web interface provides:
 
 <AccordionGroup>
   <Accordion title="Agent not responding">
-    - Check Anthropic API key is valid
+    - Check your AI provider API key is valid
     - Verify agent service is running
     - Review logs for errors
-    - Ensure sufficient API credits
+    - Ensure sufficient API credits/quota with your provider
   </Accordion>
   
   <Accordion title="Slow task execution">
     - Monitor system resources
     - Check network latency
     - Reduce screenshot frequency
-    - Optimize Claude prompts
+    - Optimize AI prompts for your chosen model
+    - Consider switching to a faster model (e.g., Gemini Flash)
   </Accordion>
 </AccordionGroup>
 

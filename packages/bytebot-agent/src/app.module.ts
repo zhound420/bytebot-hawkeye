@@ -6,6 +6,7 @@ import { TasksModule } from './tasks/tasks.module';
 import { MessagesModule } from './messages/messages.module';
 import { AnthropicModule } from './anthropic/anthropic.module';
 import { OpenAIModule } from './openai/openai.module';
+import { GoogleModule } from './google/google.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -34,6 +35,7 @@ const authEnabled = process.env.AUTH_ENABLED === 'true';
     MessagesModule,
     AnthropicModule,
     OpenAIModule,
+    GoogleModule,
     PrismaModule,
   ],
   controllers: [AppController],

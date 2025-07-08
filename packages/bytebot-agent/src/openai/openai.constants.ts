@@ -4,7 +4,12 @@ export const OPENAI_MODELS: BytebotAgentModel[] = [
   {
     provider: 'openai',
     name: 'gpt-4.1-2025-04-14',
-    title: 'OpenAI GPT 4.1',
+    title: 'GPT-4.1',
+  },
+  {
+    provider: 'openai',
+    name: 'gpt-4o-2024-05-13',
+    title: 'GPT-4o',
   },
 ];
 
