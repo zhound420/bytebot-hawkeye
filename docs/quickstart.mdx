@@ -34,7 +34,10 @@ description: "Get your AI desktop agent running in 2 minutes"
 - Docker ≥ 20.10
 - Docker Compose
 - 4GB+ RAM available
-- Anthropic API key ([get one here](https://console.anthropic.com))
+- AI API key from one of these providers:
+  - Anthropic ([get one here](https://console.anthropic.com)) - Claude models
+  - OpenAI ([get one here](https://platform.openai.com/api-keys)) - GPT models
+  - Google ([get one here](https://makersuite.google.com/app/apikey)) - Gemini models
 
 ## 🚀 2-Minute Setup
 
@@ -43,7 +46,13 @@ Get your self-hosted AI desktop agent running with just three commands:
 <Steps>
   <Step title="Clone and Configure">
     ```bash 
-    git clone https://github.com/bytebot-ai/bytebot.git cd bytebot echo "ANTHROPIC_API_KEY=your_api_key_here" > docker/.env 
+    git clone https://github.com/bytebot-ai/bytebot.git
+    cd bytebot
+    
+    # Configure your AI provider (choose one):
+    echo "ANTHROPIC_API_KEY=your_api_key_here" > docker/.env    # For Claude
+    # echo "OPENAI_API_KEY=your_api_key_here" > docker/.env     # For OpenAI
+    # echo "GOOGLE_API_KEY=your_api_key_here" > docker/.env     # For Gemini
     ```
   </Step>
 
@@ -224,6 +233,7 @@ curl -X POST http://localhost:9990/api/computer \
     cat docker/.env
     docker-compose -f docker/docker-compose.yml logs bytebot-agent 
     ```
+    Ensure you're using a valid API key from Anthropic, OpenAI, or Google.
   </Accordion>
 </AccordionGroup>
 

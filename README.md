@@ -46,7 +46,10 @@ _For an in-depth guide see [here](https://docs.bytebot.ai/deployment/railway)._
 
 - Docker ≥ 20.10
 - Docker Compose
-- Anthropic API key ([get one here](https://console.anthropic.com))
+- AI API key from one of these providers:
+  - Anthropic ([get one here](https://console.anthropic.com)) - Claude models
+  - OpenAI ([get one here](https://platform.openai.com/api-keys)) - GPT models
+  - Google ([get one here](https://makersuite.google.com/app/apikey)) - Gemini models
 
 ### Start Your Desktop Agent (2 minutes)
 
@@ -55,7 +58,11 @@ _For an in-depth guide see [here](https://docs.bytebot.ai/deployment/railway)._
 ```bash
 git clone https://github.com/bytebot-ai/bytebot.git
 cd bytebot
-echo "ANTHROPIC_API_KEY=your_api_key_here" > docker/.env
+
+# Configure your AI provider (choose one):
+echo "ANTHROPIC_API_KEY=your_api_key_here" > docker/.env    # For Claude
+# echo "OPENAI_API_KEY=your_api_key_here" > docker/.env     # For OpenAI
+# echo "GOOGLE_API_KEY=your_api_key_here" > docker/.env     # For Gemini
 ```
 
 2. **Start the agent stack:**
@@ -80,6 +87,16 @@ That's it! Start chatting with your AI desktop agent. Watch it work in real-time
 - "Download all PDFs from this website and organize them by date"
 - "Monitor this webpage and alert me when the price drops below $50"
 
+## 🤖 Supported AI Models
+
+Bytebot supports multiple AI providers to power your desktop agent:
+
+- **Anthropic Claude**: Claude 3.5 Sonnet (default) - Best for complex reasoning and visual tasks
+- **OpenAI**: GPT-4, GPT-4o - Excellent for general automation tasks
+- **Google Gemini**: Gemini 1.5 Pro, Flash - Fast and efficient for routine tasks
+
+Choose the model that best fits your needs and budget. Simply set the appropriate API key in your environment configuration.
+
 ## 🏗️ Architecture Overview
 
 Bytebot consists of four main components working together:
@@ -99,7 +116,7 @@ Bytebot consists of four main components working together:
                       │ WebSocket
 ┌─────────────────────▼───────────────────────────────────────┐
 │                 Bytebot Agent (NestJS)                       │
-│              • LLM integration                               │
+│              • Multi-LLM integration (Claude/GPT/Gemini)     │
 │              • Task orchestration                            │
 │              • Action planning                               │
 └─────────────────────┬───────────────────────────────────────┘
@@ -158,8 +175,10 @@ Bytebot consists of four main components working together:
 Create `docker/.env`:
 
 ```bash
-# Required
-ANTHROPIC_API_KEY=sk-ant-...
+# Required - Choose one of these AI providers:
+ANTHROPIC_API_KEY=sk-ant-...      # For Claude models
+# OPENAI_API_KEY=sk-...           # For OpenAI models
+# GOOGLE_API_KEY=...              # For Google Gemini models
 ```
 
 ### Desktop Customization
@@ -182,7 +201,7 @@ COPY configs/.config /home/user/.config
 
 ## 🔒 Security Considerations
 
-- **API Key**: Keep your Anthropic API key secure and never commit it
+- **API Keys**: Keep your AI provider API keys secure and never commit them
 - **Network**: By default, services are only accessible from localhost
 - **VNC**: Change the default VNC password for production use
 - **Updates**: Regularly update the container images for security patches
@@ -325,6 +344,8 @@ Built with amazing open source projects:
 
 - [nutjs](https://github.com/nut-tree/nut.js) - Desktop automation framework
 - [Anthropic Claude](https://www.anthropic.com) - AI reasoning engine
+- [OpenAI](https://openai.com) - GPT models for automation
+- [Google AI](https://ai.google.dev) - Gemini models for efficient tasks
 - [noVNC](https://novnc.com) - Browser-based VNC client
 - Inspired by Anthropic's [computer-use demo](https://github.com/anthropics/anthropic-quickstarts)
 
