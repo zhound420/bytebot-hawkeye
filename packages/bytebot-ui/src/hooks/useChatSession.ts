@@ -7,6 +7,7 @@ import {
   startTask,
   takeOverTask,
   resumeTask,
+  cancelTask,
 } from "@/utils/taskUtils";
 import { MessageContentType } from "@bytebot/shared";
 import { useWebSocket } from "./useWebSocket";
@@ -340,6 +341,20 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
     }
   };
 
+  const handleCancelTask = async () => {
+    if (!currentTaskId) return;
+
+    try {
+      const updatedTask = await cancelTask(currentTaskId);
+      if (updatedTask) {
+        setTaskStatus(updatedTask.status);
+        setControl(updatedTask.control);
+      }
+    } catch (error) {
+      console.error("Error cancelling task:", error);
+    }
+  };
+
   return {
     messages,
     taskStatus,
@@ -357,5 +372,6 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
     startNewConversation,
     handleTakeOverTask,
     handleResumeTask,
+    handleCancelTask,
   };
 }

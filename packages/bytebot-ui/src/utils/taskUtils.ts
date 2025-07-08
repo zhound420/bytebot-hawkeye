@@ -146,3 +146,10 @@ export async function takeOverTask(taskId: string): Promise<Task | null> {
 export async function resumeTask(taskId: string): Promise<Task | null> {
   return apiRequest<Task>(`/tasks/${taskId}/resume`, { method: "POST" });
 }
+
+/**
+ * Cancels a running task
+ */
+export async function cancelTask(taskId: string): Promise<Task | null> {
+  return apiRequest<Task>(`/tasks/${taskId}/cancel`, { method: "POST" });
+}
