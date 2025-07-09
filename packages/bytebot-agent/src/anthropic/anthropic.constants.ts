@@ -1,4 +1,4 @@
-import { BytebotAgentModel } from 'src/agent/agent.constants';
+import { BytebotAgentModel } from '../agent/agent.constants';
 
 export const ANTHROPIC_MODELS: BytebotAgentModel[] = [
   {

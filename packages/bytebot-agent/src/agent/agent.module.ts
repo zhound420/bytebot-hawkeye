@@ -7,6 +7,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AgentScheduler } from './agent.scheduler';
 import { InputCaptureService } from './input-capture.service';
 import { OpenAIModule } from '../openai/openai.module';
+import { GoogleModule } from '../google/google.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { OpenAIModule } from '../openai/openai.module';
     MessagesModule,
     AnthropicModule,
     OpenAIModule,
+    GoogleModule,
   ],
   providers: [AgentProcessor, AgentScheduler, InputCaptureService],
   exports: [AgentProcessor],
