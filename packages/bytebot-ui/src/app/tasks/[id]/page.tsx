@@ -42,6 +42,7 @@ export default function TaskPage() {
     handleGuideTask,
     handleTakeOverTask,
     handleResumeTask,
+    handleCancelTask,
     currentTaskId,
   } = useChatSession({ initialTaskId: taskId });
 
@@ -60,6 +61,10 @@ export default function TaskPage() {
   // Determine if user has control or is in takeover mode
   const hasUserControl =
     control === Role.USER && taskStatus === TaskStatus.RUNNING;
+
+  // Determine if task can be cancelled
+  const canCancel =
+    taskStatus === TaskStatus.RUNNING || taskStatus === TaskStatus.NEEDS_HELP;
 
   // Determine VNC mode - interactive when user has control, view-only otherwise
   const vncViewOnly = !hasUserControl;
@@ -185,6 +190,14 @@ export default function TaskPage() {
                       className="cursor-pointer rounded bg-gray-500 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-gray-600"
                     >
                       Resume
+                    </button>
+                  )}
+                  {canCancel && (
+                    <button
+                      onClick={handleCancelTask}
+                      className="cursor-pointer rounded bg-red-500 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-red-600"
+                    >
+                      Cancel
                     </button>
                   )}
                   {isTaskInactive && currentScreenshot && (

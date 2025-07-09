@@ -327,4 +327,42 @@ export class TasksService {
 
     return updatedTask;
   }
+
+  async cancel(taskId: string): Promise<Task> {
+    this.logger.log(`Cancelling task ID: ${taskId}`);
+
+    const task = await this.findById(taskId);
+    if (!task) {
+      throw new NotFoundException(`Task with ID ${taskId} not found`);
+    }
+
+    if (task.status === TaskStatus.COMPLETED || task.status === TaskStatus.FAILED || task.status === TaskStatus.CANCELLED) {
+      throw new BadRequestException(`Task ${taskId} is already completed, failed, or cancelled`);
+    }
+
+    const updatedTask = await this.prisma.task.update({
+      where: { id: taskId },
+      data: {
+        status: TaskStatus.FAILED,
+        control: Role.USER,
+      },
+    });
+
+    try {
+      await fetch(
+        `${this.configService.get<string>('BYTEBOT_DESKTOP_BASE_URL')}/input-tracking/stop`,
+        { method: 'POST' },
+      );
+    } catch (error) {
+      this.logger.error('Failed to stop input tracking', error as any);
+    }
+
+    // Broadcast cancel event so AgentProcessor can react
+    this.eventEmitter.emit('task.cancel', { taskId });
+
+    this.logger.log(`Task ${taskId} cancelled and marked as failed`);
+    this.tasksGateway.emitTaskUpdate(taskId, updatedTask);
+
+    return updatedTask;
+  }
 }

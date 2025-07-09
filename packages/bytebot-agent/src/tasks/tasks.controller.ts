@@ -121,4 +121,10 @@ export class TasksController {
   async resume(@Param('id') taskId: string): Promise<Task> {
     return this.tasksService.resume(taskId);
   }
+
+  @Post(':id/cancel')
+  @HttpCode(HttpStatus.OK)
+  async cancel(@Param('id') taskId: string): Promise<Task> {
+    return this.tasksService.cancel(taskId);
+  }
 }
