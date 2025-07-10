@@ -6,6 +6,8 @@ export enum MessageContentType {
   Image = "image",
   ToolUse = "tool_use",
   ToolResult = "tool_result",
+  Thinking = "thinking",
+  RedactedThinking = "redacted_thinking",
 }
 
 // Base type with only the discriminator
@@ -26,6 +28,17 @@ export type ImageContentBlock = {
     type: "base64";
     data: string;
   };
+} & MessageContentBlockBase;
+
+export type ThinkingContentBlock = {
+  type: MessageContentType.Thinking;
+  thinking: string;
+  signature: string;
+} & MessageContentBlockBase;
+
+export type RedactedThinkingContentBlock = {
+  type: MessageContentType.RedactedThinking;
+  data: string;
 } & MessageContentBlockBase;
 
 export type ToolUseContentBlock = {
@@ -173,5 +186,7 @@ export type MessageContentBlock =
   | TextContentBlock
   | ImageContentBlock
   | ToolUseContentBlock
+  | ThinkingContentBlock
+  | RedactedThinkingContentBlock
   | ComputerToolUseContentBlock
   | ToolResultContentBlock;

@@ -6,6 +6,8 @@ import {
   MessageContentType,
   TextContentBlock,
   ToolUseContentBlock,
+  ThinkingContentBlock,
+  RedactedThinkingContentBlock,
 } from '@bytebot/shared';
 import { DEFAULT_MODEL } from './anthropic.constants';
 import { Message, Role } from '@prisma/client';
@@ -58,10 +60,14 @@ export class AnthropicService {
       };
 
       // Make the API call
-      const response = await this.anthropic.beta.messages.create(
+      const response = await this.anthropic.messages.create(
         {
           model,
-          max_tokens: maxTokens,
+          max_tokens: maxTokens * 2,
+          thinking: {
+            type: 'enabled',
+            budget_tokens: maxTokens,
+          },
           system: [
             {
               type: 'text',
@@ -154,14 +160,18 @@ export class AnthropicService {
             input: block.input,
           } as ToolUseContentBlock;
 
-        default:
-          this.logger.warn(
-            `Unknown content block type from Anthropic: ${block.type}`,
-          );
+        case 'thinking':
           return {
-            type: MessageContentType.Text,
-            text: JSON.stringify(block),
-          } as TextContentBlock;
+            type: MessageContentType.Thinking,
+            thinking: block.thinking,
+            signature: block.signature,
+          } as ThinkingContentBlock;
+
+        case 'redacted_thinking':
+          return {
+            type: MessageContentType.RedactedThinking,
+            data: block.data,
+          } as RedactedThinkingContentBlock;
       }
     });
   }

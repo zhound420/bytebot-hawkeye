@@ -18,6 +18,8 @@ import {
   isTypeKeysToolUseBlock,
   isTypeTextToolUseBlock,
   isPressKeysToolUseBlock,
+  isThinkingContentBlock,
+  isRedactedThinkingContentBlock,
 } from "@bytebot/shared";
 import Image from "next/image";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -174,6 +176,14 @@ export function AssistantMessage({ group, messages = [] }: MessageGroupProps) {
           if (isToolResultContentBlock(block) && !block.is_error) {
             return false;
           }
+
+          if (
+            isThinkingContentBlock(block) ||
+            isRedactedThinkingContentBlock(block)
+          ) {
+            return false;
+          }
+
           return true;
         });
 

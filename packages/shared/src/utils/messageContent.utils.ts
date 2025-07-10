@@ -20,6 +20,8 @@ import {
   ScrollToolUseBlock,
   SetTaskStatusToolUseBlock,
   CreateTaskToolUseBlock,
+  ThinkingContentBlock,
+  RedactedThinkingContentBlock,
 } from "../types/messageContent.types";
 
 /**
@@ -35,6 +37,35 @@ export function isTextContentBlock(obj: unknown): obj is TextContentBlock {
   const block = obj as Partial<TextContentBlock>;
   return (
     block.type === MessageContentType.Text && typeof block.text === "string"
+  );
+}
+
+export function isThinkingContentBlock(
+  obj: unknown
+): obj is ThinkingContentBlock {
+  if (!obj || typeof obj !== "object") {
+    return false;
+  }
+
+  const block = obj as Partial<ThinkingContentBlock>;
+  return (
+    block.type === MessageContentType.Thinking &&
+    typeof block.thinking === "string" &&
+    typeof block.signature === "string"
+  );
+}
+
+export function isRedactedThinkingContentBlock(
+  obj: unknown
+): obj is RedactedThinkingContentBlock {
+  if (!obj || typeof obj !== "object") {
+    return false;
+  }
+
+  const block = obj as Partial<RedactedThinkingContentBlock>;
+  return (
+    block.type === MessageContentType.RedactedThinking &&
+    typeof block.data === "string"
   );
 }
 
