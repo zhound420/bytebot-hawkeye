@@ -16,7 +16,7 @@ export function AssistantMessage({ group }: AssistantMessageProps) {
         <div className="border border-bytebot-bronze-light-a6 bg-bytebot-bronze-light-a1 rounded-2xl w-full p-2">
           <div className="flex items-center gap-2">
             <span className="relative flex size-2 ml-1">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-fuchsia-400 opacity-75"></span>
+              <span className="absolute inline-flex h-full w-full rounded-full bg-fuchsia-400 opacity-75"></span>
               <span className="relative inline-flex size-2 rounded-full bg-fuchsia-500"></span>
             </span>
             <p className="text-bytebot-bronze-light-12 text-[12px] font-medium">You took control</p>

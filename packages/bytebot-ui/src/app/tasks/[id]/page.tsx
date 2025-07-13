@@ -26,6 +26,7 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { VirtualDesktopStatusHeader, VirtualDesktopStatus } from "@/components/VirtualDesktopStatusHeader";
 
 export default function TaskPage() {
   const params = useParams();
@@ -159,54 +160,48 @@ export default function TaskPage() {
               ref={containerRef}
               className="border-bytebot-bronze-light-5 shadow-bytebot flex aspect-[4/3] w-full flex-col rounded-lg border"
             >
-              {/* Status Header */}
+              {/* Header */}
               <div className="border-bytebot-bronze-light-5 bg-bytebot-bronze-light-1 flex items-center justify-between rounded-t-lg border-b px-4 py-2">
+                {/* Status Header */}
                 <div className="flex items-center gap-2">
-                  {taskStatus === TaskStatus.RUNNING && (
-                    <span className="relative flex size-2 ml-1">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-fuchsia-400 opacity-75"></span>
-                      <span className="relative inline-flex size-2 rounded-full bg-green-700"></span>
-                    </span>
-                  )}
-                  <span className="text-bytebot-bronze-light-12 text-md font-medium">
-                    Virtual Desktop
-                  </span>
+                  <VirtualDesktopStatusHeader
+                    status={(() => {
+                      if (taskStatus === TaskStatus.RUNNING && control === Role.USER) return "user_control";
+                      if (taskStatus === TaskStatus.RUNNING) return "running";
+                      if (taskStatus === TaskStatus.NEEDS_HELP) return "needs_attention";
+                      if (taskStatus === TaskStatus.FAILED) return "failed";
+                      if (taskStatus === TaskStatus.CANCELLED) return "canceled";
+                      if (taskStatus === TaskStatus.COMPLETED) return "canceled";
+                      // You may want to add a scheduled state if you have that info
+                      return "running";
+                    })() as VirtualDesktopStatus}
+                  />
                 </div>
-                <div className="flex items-center gap-2">
-                  {canTakeOver && (
-                    <Button
-                      onClick={handleTakeOverTask}
-                      variant="default"
-                      size="sm"
-                      icon={<HugeiconsIcon icon={WavingHand01Icon} className="h-5 w-5" />}
-                    >
-                      Take Over
-                    </Button>
-                  )}
-                  {hasUserControl && (
-                    <Button
-                      onClick={handleResumeTask}
-                      variant="default" 
-                      size="sm"
-                    >
-                      Proceed
-                    </Button>
-                  )}
-                  {canCancel && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button className="cursor-pointer rounded p-1 hover:bg-gray-100 transition-colors">
-                          <HugeiconsIcon icon={MoreHorizontalIcon} className="h-5 w-5 text-gray-500" />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={handleCancelTask} className="text-red-600 focus:bg-red-50">
-                          Cancel
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
-                </div>
+                
+                {/* Actions */}
+                {hasUserControl && (
+                  <Button
+                    onClick={handleResumeTask}
+                    variant="default" 
+                    size="sm"
+                  >
+                    Proceed
+                  </Button>
+                )}
+                {canCancel && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="cursor-pointer rounded p-1 hover:bg-gray-100 transition-colors">
+                        <HugeiconsIcon icon={MoreHorizontalIcon} className="h-5 w-5 text-gray-500" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={handleCancelTask} className="text-red-600 focus:bg-red-50">
+                        Cancel
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
               </div>
 
               <div className="flex-1 rounded-b-[14px]">
