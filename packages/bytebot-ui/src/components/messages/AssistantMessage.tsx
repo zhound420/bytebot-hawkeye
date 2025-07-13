@@ -2,12 +2,14 @@ import React from "react";
 import { GroupedMessages } from "@/types";
 import { MessageAvatar } from "./MessageAvatar";
 import { MessageContent } from "./content/MessageContent";
+import { isToolResultContentBlock, isImageContentBlock } from "@bytebot/shared";
 
 interface AssistantMessageProps {
   group: GroupedMessages;
+  messageIdToIndex: Record<string, number>;
 }
 
-export function AssistantMessage({ group }: AssistantMessageProps) {
+export function AssistantMessage({ group, messageIdToIndex }: AssistantMessageProps) {
   return (
     <div className="flex items-start justify-start gap-2 px-4 py-3">
       <MessageAvatar role={group.role} />
@@ -23,7 +25,24 @@ export function AssistantMessage({ group }: AssistantMessageProps) {
           </div>
           <div className="shadow-bytebot rounded-2xl p-1 bg-bytebot-bronze-light-2 mt-2 space-y-0.5">
             {group.messages.map((message) => (
-              <div key={message.id}>
+              <div key={message.id} data-message-index={messageIdToIndex[message.id]}>
+                {/* Render hidden divs for each screenshot block */}
+                {message.content.map((block, blockIndex) => {
+                  if (isToolResultContentBlock(block) && block.content && block.content.length > 0) {
+                    const imageBlock = block.content[0];
+                    if (isImageContentBlock(imageBlock)) {
+                      return (
+                        <div
+                          key={blockIndex}
+                          data-message-index={messageIdToIndex[message.id]}
+                          data-block-index={blockIndex}
+                          style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }}
+                        />
+                      );
+                    }
+                  }
+                  return null;
+                })}
                 <MessageContent 
                   content={message.content} 
                   isTakeOver={message.take_over}
@@ -35,7 +54,24 @@ export function AssistantMessage({ group }: AssistantMessageProps) {
       ) : (
         <div>
           {group.messages.map((message) => (
-            <div key={message.id}>
+            <div key={message.id} data-message-index={messageIdToIndex[message.id]}>
+              {/* Render hidden divs for each screenshot block */}
+              {message.content.map((block, blockIndex) => {
+                if (isToolResultContentBlock(block) && block.content && block.content.length > 0) {
+                  const imageBlock = block.content[0];
+                  if (isImageContentBlock(imageBlock)) {
+                    return (
+                      <div
+                        key={blockIndex}
+                        data-message-index={messageIdToIndex[message.id]}
+                        data-block-index={blockIndex}
+                        style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }}
+                      />
+                    );
+                  }
+                }
+                return null;
+              })}
               <MessageContent 
                 content={message.content} 
                 isTakeOver={message.take_over}

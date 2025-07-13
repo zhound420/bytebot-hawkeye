@@ -13,6 +13,7 @@ interface ChatContainerProps {
   hasMoreMessages?: boolean;
   loadMoreMessages?: () => void;
   scrollRef?: React.RefObject<HTMLDivElement | null>;
+  messageIdToIndex: Record<string, number>;
 }
 
 
@@ -25,6 +26,7 @@ export function ChatContainer({
   hasMoreMessages = false,
   loadMoreMessages,
   scrollRef,
+  messageIdToIndex,
 }: ChatContainerProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -78,7 +80,7 @@ export function ChatContainer({
         <>
           {groupedMessages.map((group, groupIndex) => (
             <div key={groupIndex}>
-              <MessageGroup group={group} />
+              <MessageGroup group={group} messageIdToIndex={messageIdToIndex} />
             </div>
           ))}
 

@@ -86,6 +86,15 @@ export default function TaskPage() {
     scrollContainerRef: chatContainerRef,
   });
 
+  // Map each message ID to its flat index for screenshot scroll logic
+  const messageIdToIndex = React.useMemo(() => {
+    const map: Record<string, number> = {};
+    messages.forEach((msg, idx) => {
+      map[msg.id] = idx;
+    });
+    return map;
+  }, [messages]);
+
   useEffect(() => {
     fetch('/api/tasks/models')
       .then((res) => res.json())
@@ -241,6 +250,7 @@ export default function TaskPage() {
                 loadMoreMessages={loadMoreMessages}
                 scrollRef={chatContainerRef}
                 control={control}
+                messageIdToIndex={messageIdToIndex}
               />
             </div>
 

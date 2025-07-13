@@ -32,6 +32,22 @@ export function useScrollScreenshot({ messages, scrollContainerRef }: UseScrollS
     }
   }, [messages, scrollContainerRef]);
 
+  // After initial render, force a re-check for screenshot markers using MutationObserver
+  useEffect(() => {
+    if (!scrollContainerRef.current) return;
+
+    const container = scrollContainerRef.current;
+    const observer = new MutationObserver(() => {
+      // When the DOM changes, trigger a scroll event to update screenshot selection
+      const event = new Event('scroll');
+      container.dispatchEvent(event);
+    });
+
+    observer.observe(container, { childList: true, subtree: true });
+
+    return () => observer.disconnect();
+  }, [scrollContainerRef, allScreenshots.length]);
+
   // Store the actual scrolling element
   const actualScrollElementRef = useRef<HTMLElement | null>(null);
 
@@ -46,7 +62,6 @@ export function useScrollScreenshot({ messages, scrollContainerRef }: UseScrollS
       if ((Date.now() - now) <= 150 && allScreenshots.length > 0) {
         const scrollContainer = scrollElement || actualScrollElementRef.current || scrollContainerRef.current;
         const screenshot = getScreenshotForScrollPosition(allScreenshots, messages, scrollContainer);
-        
         // Only update if screenshot actually changed
         if (screenshot?.id !== currentScreenshot?.id) {
           setCurrentScreenshot(screenshot);
