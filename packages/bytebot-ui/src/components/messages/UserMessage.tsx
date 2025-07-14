@@ -11,7 +11,7 @@ interface UserMessageProps {
 
 export function UserMessage({ group, messageIdToIndex }: UserMessageProps) {
   return (
-    <div className="mb-4 flex items-start justify-start gap-2 px-4 py-3">
+    <div className="flex items-start justify-start gap-2 px-4 py-3 border-b border-bytebot-bronze-light-7">
       <MessageAvatar role={group.role} />
       
       <div>

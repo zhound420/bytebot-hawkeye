@@ -42,7 +42,7 @@ export default function Tasks() {
               <p className="text-gray-500">Loading tasks...</p>
             </div>
           ) : tasks.length === 0 ? (
-            <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-7 shadow-bytebot rounded-xl border p-8 text-center">
+            <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-7 rounded-xl border p-8 text-center">
               <div className="flex flex-col items-center justify-center">
                 <h3 className="text-bytebot-bronze-light-12 mb-1 text-lg font-medium">
                   No tasks yet

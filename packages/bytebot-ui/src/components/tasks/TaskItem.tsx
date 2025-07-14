@@ -6,9 +6,10 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Tick02Icon,
   CancelCircleIcon,
-  Loading03Icon,
-  MessageQuestionIcon,
+  AlertCircleIcon,
+  TimeScheduleIcon,
 } from "@hugeicons/core-free-icons";
+import { Loader } from "@/components/ui/loader";
 import Link from "next/link";
 
 interface TaskItemProps {
@@ -17,38 +18,41 @@ interface TaskItemProps {
 
 interface StatusIconConfig {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  icon: any; // HugeIcons IconSvgObject type
+  icon?: any; // HugeIcons IconSvgObject type
   color?: string;
+  useLoader?: boolean;
 }
 
 const STATUS_CONFIGS: Record<TaskStatus, StatusIconConfig> = {
   [TaskStatus.COMPLETED]: {
     icon: Tick02Icon,
-    color: "bg-bytebot-green-3 border-bytebot-green-a5 text-bytebot-green-9",
+    color: "text-bytebot-green-8",
   },
   [TaskStatus.RUNNING]: {
-    icon: Loading03Icon,
-    color: "border-orange-700 bg-orange-100 text-orange-900",
+    useLoader: true,
   },
   [TaskStatus.NEEDS_HELP]: {
-    icon: MessageQuestionIcon,
-    color: "border-blue-700 bg-blue-100 text-blue-900",
+    icon: AlertCircleIcon,
+    color: "text-[#FF9D00]",
   },
   [TaskStatus.PENDING]: {
-    icon: Loading03Icon,
-    color: "border-yellow-700 bg-yellow-100 text-yellow-900",
+    useLoader: true,
   },
   [TaskStatus.FAILED]: {
-    icon: CancelCircleIcon,
-    color: "bg-bytebot-red-light-3 border-bytebot-red-light-7 text-bytebot-red-light-9",
+    icon: AlertCircleIcon,
+    color: "text-bytebot-red-light-9",
   },
   [TaskStatus.NEEDS_REVIEW]: {
-    icon: MessageQuestionIcon,
-    color: "border-purple-700 bg-purple-100 text-purple-900",
+    icon: AlertCircleIcon,
+    color: "text-[#FF9D00]",
   },
   [TaskStatus.CANCELLED]: {
     icon: CancelCircleIcon,
-    color: "border-gray-700 bg-gray-100 text-gray-900",
+    color: "text-bytebot-bronze-light-10",
+  },
+  [TaskStatus.SCHEDULED]: {
+    icon: TimeScheduleIcon,
+    color: "text-bytebot-bronze-light-10",
   },
 };
 
@@ -75,13 +79,21 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
     const config = STATUS_CONFIGS[status];
     if (!config) return null;
 
-    const { icon, color } = config;
+    const { icon, color, useLoader } = config;
+
+    if (useLoader) {
+      return (
+        <div className="flex items-center justify-center">
+          <Loader size={16} />
+        </div>
+      );
+    }
 
     return (
       <div className="flex items-center justify-center">
         <HugeiconsIcon
           icon={icon}
-          className={`h-4 w-4 ${color}`}
+          className={`h-5 w-5 ${color}`}
         />
       </div>
     );
@@ -89,7 +101,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
 
   return (
     <Link href={`/tasks/${task.id}`} className="block">
-      <div className="shadow-bytebot bg-bytebot-bronze-light-2 border-bytebot-bronze-light-7 hover:bg-bytebot-bronze-light-3 flex min-h-24 items-start rounded-lg border-[0.5px] p-5 transition-colors">
+      <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-7 hover:bg-bytebot-bronze-light-3 flex min-h-24 items-start rounded-lg border p-5 transition-colors">
         <div className="flex-1 space-y-2 mb-0.5">
           <div className="flex items-center justify-start space-x-2">
             <StatusIcon status={task.status} />
@@ -97,7 +109,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
               {capitalizeFirstChar(task.description)}
             </div>
           </div>
-          <div className="text-xs flex items-center justify-start space-x-1.5 ml-6">
+          <div className="text-xs flex items-center justify-start space-x-1.5 ml-7">
             <span className="text-bytebot-bronze-light-10">
               {formatDate(task.createdAt)}
             </span>

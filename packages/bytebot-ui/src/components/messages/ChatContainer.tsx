@@ -72,9 +72,9 @@ export function ChatContainer({
   };
 
   return (
-    <div className="h-full bg-bytebot-bronze-light-2 border border-bytebot-bronze-light-7 rounded-lg">
+    <div className="bg-bytebot-bronze-light-2 border border-bytebot-bronze-light-7 rounded-lg overflow-hidden">
       {isLoadingSession ? (
-        <div className="flex h-full items-center justify-center">
+        <div className="flex h-full items-center justify-center min-h-80 bg-bytebot-bronze-light-3">
           <Loader size={32} />
         </div>
       ) : groupedMessages.length > 0 ? (
@@ -86,7 +86,7 @@ export function ChatContainer({
           ))}
 
           {taskStatus === TaskStatus.RUNNING && control === Role.ASSISTANT && (
-            <div className="flex items-center justify-start gap-4 px-4 py-3">
+            <div className="flex items-center justify-start gap-4 px-4 py-3 bg-bytebot-bronze-light-3">
               <MessageAvatar role={Role.ASSISTANT} />
               <div className="flex items-center justify-start gap-2">
                 <div className="flex h-full items-center justify-center py-2">

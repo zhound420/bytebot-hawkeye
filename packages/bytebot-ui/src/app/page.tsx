@@ -129,7 +129,7 @@ export default function Home() {
                 </h1>
               </div>
 
-              <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-7 shadow-bytebot w-full rounded-2xl border-[0.5px] p-2 mb-10">
+              <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-7 border w-full rounded-2xl p-2 mb-10">
                 <ChatInput
                   input={input}
                   isLoading={isLoading}
@@ -180,7 +180,7 @@ export default function Home() {
                 </h1>
               </div>
 
-              <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-5 shadow-bytebot w-full rounded-2xl border-[0.5px] p-2 mb-10">
+              <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-5 borderw-full rounded-2xl p-2 mb-10">
                 <ChatInput
                   input={input}
                   isLoading={isLoading}

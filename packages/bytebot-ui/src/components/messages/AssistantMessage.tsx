@@ -12,7 +12,7 @@ interface AssistantMessageProps {
 
 export function AssistantMessage({ group, messageIdToIndex }: AssistantMessageProps) {
   return (
-    <div className="flex items-start justify-start gap-2 px-4 py-3 bg-bytebot-bronze-light-3 border-t border-bytebot-bronze-light-7">
+    <div className="flex items-start justify-start gap-2 px-4 py-3 bg-bytebot-bronze-light-3">
       <MessageAvatar role={group.role} />
 
       {group.take_over ? (
@@ -26,7 +26,7 @@ export function AssistantMessage({ group, messageIdToIndex }: AssistantMessagePr
             />
             <p className="text-bytebot-bronze-light-12 text-[12px] font-medium">You took control</p>
           </div>
-          <div className="shadow-bytebot rounded-2xl p-1 bg-bytebot-bronze-light-2 mt-2 space-y-0.5">
+          <div className="rounded-2xl p-1 bg-bytebot-bronze-light-2 mt-2 space-y-0.5">
             {group.messages.map((message) => (
               <div key={message.id} data-message-index={messageIdToIndex[message.id]}>
                 {/* Render hidden divs for each screenshot block */}
