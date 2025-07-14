@@ -72,7 +72,7 @@ export function ChatContainer({
   };
 
   return (
-    <div className="h-full shadow-bytebot bg-bytebot-bronze-light-2 border-bytebot-bronze-light-7 rounded-2xl overflow-hidden">
+    <div className="h-full bg-bytebot-bronze-light-2 border border-bytebot-bronze-light-7 rounded-lg">
       {isLoadingSession ? (
         <div className="flex h-full items-center justify-center">
           <Loader size={32} />

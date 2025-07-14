@@ -12,7 +12,7 @@ interface AssistantMessageProps {
 
 export function AssistantMessage({ group, messageIdToIndex }: AssistantMessageProps) {
   return (
-    <div className="flex items-start justify-start gap-2 px-4 py-3">
+    <div className="flex items-start justify-start gap-2 px-4 py-3 bg-bytebot-bronze-light-3 border-t border-bytebot-bronze-light-7">
       <MessageAvatar role={group.role} />
 
       {group.take_over ? (

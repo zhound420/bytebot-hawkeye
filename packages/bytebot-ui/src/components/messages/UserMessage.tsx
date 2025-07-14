@@ -34,7 +34,7 @@ export function UserMessage({ group, messageIdToIndex }: UserMessageProps) {
               }
               return null;
             })}
-            <div className="max-w-4/5 space-y-2 bg-bytebot-bronze-light-4 rounded-md px-2 py-1">
+            <div className="space-y-2 bg-bytebot-bronze-light-4 rounded-md px-2 py-1">
               {message.content.map((block, index) => (
                 <div key={index} className="text-bytebot-bronze-light-12 text-xs">
                   {isTextContentBlock(block) && (

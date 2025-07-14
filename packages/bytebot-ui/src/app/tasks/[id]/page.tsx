@@ -167,10 +167,10 @@ export default function TaskPage() {
           <div className="col-span-4">
             <div
               ref={containerRef}
-              className="border-bytebot-bronze-light-5 shadow-bytebot flex aspect-[4/3] w-full flex-col rounded-lg border"
+              className="border-bytebot-bronze-light-7 flex aspect-[4/3] w-full flex-col rounded-lg border overflow-hidden"
             >
               {/* Header */}
-              <div className="border-bytebot-bronze-light-5 bg-bytebot-bronze-light-1 flex items-center justify-between rounded-t-lg border-b px-4 py-2">
+              <div className="bg-bytebot-bronze-light-2 flex items-center justify-between rounded-t-lg border-b border-bytebot-bronze-light-7 px-4 py-2">
                 {/* Status Header */}
                 <div className="flex items-center gap-2">
                   <VirtualDesktopStatusHeader
@@ -225,7 +225,7 @@ export default function TaskPage() {
                 </div>
               </div>
 
-              <div className="flex-1 rounded-b-[14px]">
+              <div className="flex-1 rounded-b-lg">
                 <div
                   style={{
                     width: `${containerSize.width}px`,
@@ -236,7 +236,7 @@ export default function TaskPage() {
                   {isTaskInactive ? (
                     <ScreenshotViewer
                       screenshot={currentScreenshot}
-                      className="shadow-bytebot h-full w-full"
+                      className="h-full w-full"
                     />
                   ) : (
                     <VncViewer viewOnly={vncViewOnly} />
@@ -268,7 +268,7 @@ export default function TaskPage() {
 
             {/* Fixed chat input */}
             {taskStatus === TaskStatus.NEEDS_HELP && (
-              <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-5 shadow-bytebot rounded-2xl border-[0.5px] p-2">
+              <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-7 shadow-bytebot rounded-2xl border-[0.5px] p-2">
                 <ChatInput
                   input={input}
                   isLoading={isLoading}
