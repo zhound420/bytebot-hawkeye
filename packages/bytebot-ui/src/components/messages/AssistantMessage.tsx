@@ -3,6 +3,7 @@ import { GroupedMessages } from "@/types";
 import { MessageAvatar } from "./MessageAvatar";
 import { MessageContent } from "./content/MessageContent";
 import { isToolResultContentBlock, isImageContentBlock } from "@bytebot/shared";
+import Image from "next/image";
 
 interface AssistantMessageProps {
   group: GroupedMessages;
@@ -17,10 +18,12 @@ export function AssistantMessage({ group, messageIdToIndex }: AssistantMessagePr
       {group.take_over ? (
         <div className="border border-bytebot-bronze-light-a6 bg-bytebot-bronze-light-a1 rounded-2xl w-full p-2">
           <div className="flex items-center gap-2">
-            <span className="relative flex size-2 ml-1">
-              <span className="absolute inline-flex h-full w-full rounded-full bg-fuchsia-400 opacity-75"></span>
-              <span className="relative inline-flex size-2 rounded-full bg-fuchsia-500"></span>
-            </span>
+            <Image
+              src="/indicators/indicator-pink.png"
+              alt="User control status"
+              width={15}
+              height={15}
+            />
             <p className="text-bytebot-bronze-light-12 text-[12px] font-medium">You took control</p>
           </div>
           <div className="shadow-bytebot rounded-2xl p-1 bg-bytebot-bronze-light-2 mt-2 space-y-0.5">

@@ -188,29 +188,41 @@ export default function TaskPage() {
                 </div>
                 
                 {/* Actions */}
-                {hasUserControl && (
-                  <Button
-                    onClick={handleResumeTask}
-                    variant="default" 
-                    size="sm"
-                  >
-                    Proceed
-                  </Button>
-                )}
-                {canCancel && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button className="cursor-pointer rounded p-1 hover:bg-gray-100 transition-colors">
-                        <HugeiconsIcon icon={MoreHorizontalIcon} className="h-5 w-5 text-gray-500" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={handleCancelTask} className="text-red-600 focus:bg-red-50">
-                        Cancel
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
+                <div className="flex items-center gap-2">
+                  {canTakeOver && (
+                    <Button
+                      onClick={handleTakeOverTask}
+                      variant="default"
+                      size="sm"
+                      icon={<HugeiconsIcon icon={WavingHand01Icon} className="h-5 w-5" />}
+                    >
+                      Take Over
+                    </Button>
+                  )}
+                  {hasUserControl && (
+                    <Button
+                      onClick={handleResumeTask}
+                      variant="default" 
+                      size="sm"
+                    >
+                      Proceed
+                    </Button>
+                  )}
+                  {canCancel && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="cursor-pointer rounded p-1 hover:bg-gray-100 transition-colors">
+                          <HugeiconsIcon icon={MoreHorizontalIcon} className="h-5 w-5 text-gray-500" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={handleCancelTask} className="text-red-600 focus:bg-red-50">
+                          Cancel
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </div>
               </div>
 
               <div className="flex-1 rounded-b-[14px]">
@@ -240,7 +252,7 @@ export default function TaskPage() {
             className="col-span-3 flex h-full flex-col overflow-scroll"
           >
             {/* Messages scrollable area */}
-            <div className="flex-1 px-4 pb-2">
+            <div className="flex-1 px-4 pb-2 h-full">
               <ChatContainer
                 taskStatus={taskStatus}
                 groupedMessages={groupedMessages}
