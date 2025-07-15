@@ -336,14 +336,20 @@ export class TasksService {
       throw new NotFoundException(`Task with ID ${taskId} not found`);
     }
 
-    if (task.status === TaskStatus.COMPLETED || task.status === TaskStatus.FAILED || task.status === TaskStatus.CANCELLED) {
-      throw new BadRequestException(`Task ${taskId} is already completed, failed, or cancelled`);
+    if (
+      task.status === TaskStatus.COMPLETED ||
+      task.status === TaskStatus.FAILED ||
+      task.status === TaskStatus.CANCELLED
+    ) {
+      throw new BadRequestException(
+        `Task ${taskId} is already completed, failed, or cancelled`,
+      );
     }
 
     const updatedTask = await this.prisma.task.update({
       where: { id: taskId },
       data: {
-        status: TaskStatus.FAILED,
+        status: TaskStatus.CANCELLED,
         control: Role.USER,
       },
     });
