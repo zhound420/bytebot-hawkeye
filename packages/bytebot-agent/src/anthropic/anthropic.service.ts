@@ -12,13 +12,14 @@ import {
 import { DEFAULT_MODEL } from './anthropic.constants';
 import { Message, Role } from '@prisma/client';
 import { anthropicTools } from './anthropic.tools';
+import { AGENT_SYSTEM_PROMPT } from '../agent/agent.constants';
 import {
-  AGENT_SYSTEM_PROMPT,
+  BytebotAgentService,
   BytebotAgentInterrupt,
-} from '../agent/agent.constants';
+} from '../agent/agent.types';
 
 @Injectable()
-export class AnthropicService {
+export class AnthropicService implements BytebotAgentService {
   private readonly anthropic: Anthropic;
   private readonly logger = new Logger(AnthropicService.name);
 
@@ -36,14 +37,8 @@ export class AnthropicService {
     });
   }
 
-  /**
-   * Sends a message to Anthropic Claude and returns the response
-   *
-   * @param messages Array of message content blocks representing the conversation
-   * @param options Additional options for the API call
-   * @returns The AI response as an array of message content blocks
-   */
-  async sendMessage(
+  async generateMessage(
+    systemPrompt: string,
     messages: Message[],
     model: string = DEFAULT_MODEL.name,
     signal?: AbortSignal,
@@ -71,7 +66,7 @@ export class AnthropicService {
           system: [
             {
               type: 'text',
-              text: AGENT_SYSTEM_PROMPT,
+              text: systemPrompt,
               cache_control: { type: 'ephemeral' },
             },
           ],

@@ -1,4 +1,4 @@
-import { BytebotAgentModel } from 'src/agent/agent.constants';
+import { BytebotAgentModel } from 'src/agent/agent.types';
 
 export const OPENAI_MODELS: BytebotAgentModel[] = [
   {

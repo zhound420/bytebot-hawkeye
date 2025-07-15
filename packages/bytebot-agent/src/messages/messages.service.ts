@@ -6,7 +6,11 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Message, Role, Prisma } from '@prisma/client';
-import { MessageContentBlock, isComputerToolUseContentBlock, isToolResultContentBlock } from '@bytebot/shared';
+import {
+  MessageContentBlock,
+  isComputerToolUseContentBlock,
+  isToolResultContentBlock,
+} from '@bytebot/shared';
 import { TasksGateway } from '../tasks/tasks.gateway';
 
 // Extended message type for processing
@@ -81,10 +85,37 @@ export class MessagesService {
     });
   }
 
+  async findUnsummarized(taskId: string): Promise<Message[]> {
+    return this.prisma.message.findMany({
+      where: {
+        taskId,
+        summaryId: null,
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  async attachSummary(
+    taskId: string,
+    summaryId: string,
+    messageIds: string[],
+  ): Promise<void> {
+    if (messageIds.length === 0) {
+      return;
+    }
+
+    await this.prisma.message.updateMany({
+      where: { taskId, id: { in: messageIds } },
+      data: { summaryId },
+    });
+  }
+
   /**
    * Groups back-to-back messages from the same role and take_over status
    */
-  private groupBackToBackMessages(messages: ProcessedMessage[]): GroupedMessages[] {
+  private groupBackToBackMessages(
+    messages: ProcessedMessage[],
+  ): GroupedMessages[] {
     const groupedConversation: GroupedMessages[] = [];
     let currentGroup: GroupedMessages | null = null;
 
@@ -93,7 +124,11 @@ export class MessagesService {
       const isTakeOver = message.take_over || false;
 
       // If this is the first message, role is different, or take_over status is different from the previous group
-      if (!currentGroup || currentGroup.role !== role || currentGroup.take_over !== isTakeOver) {
+      if (
+        !currentGroup ||
+        currentGroup.role !== role ||
+        currentGroup.take_over !== isTakeOver
+      ) {
         // Save the previous group if it exists
         if (currentGroup) {
           groupedConversation.push(currentGroup);
@@ -126,7 +161,7 @@ export class MessagesService {
    */
   private filterMessages(messages: Message[]): ProcessedMessage[] {
     const filteredMessages: ProcessedMessage[] = [];
-    
+
     for (const message of messages) {
       const processedMessage: ProcessedMessage = { ...message };
       const contentBlocks = message.content as MessageContentBlock[];
@@ -136,9 +171,17 @@ export class MessagesService {
         if (contentBlocks.every((block) => isToolResultContentBlock(block))) {
           // Pure tool results should be shown as assistant messages
           processedMessage.role = Role.ASSISTANT;
-        } else if (contentBlocks.every((block) => isToolResultContentBlock(block) || isComputerToolUseContentBlock(block))) {
+        } else if (
+          contentBlocks.every(
+            (block) =>
+              isToolResultContentBlock(block) ||
+              isComputerToolUseContentBlock(block),
+          )
+        ) {
           // Computer tool use (take over actions) should be shown as assistant messages with take_over flag
-          processedMessage.content = contentBlocks.filter((block) => isComputerToolUseContentBlock(block));
+          processedMessage.content = contentBlocks.filter((block) =>
+            isComputerToolUseContentBlock(block),
+          );
           processedMessage.role = Role.ASSISTANT;
           processedMessage.take_over = true;
         }
@@ -148,7 +191,7 @@ export class MessagesService {
 
       filteredMessages.push(processedMessage);
     }
-    
+
     return filteredMessages;
   }
 

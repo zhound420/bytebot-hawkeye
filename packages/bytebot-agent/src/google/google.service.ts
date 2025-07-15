@@ -6,10 +6,11 @@ import {
   TextContentBlock,
   ToolUseContentBlock,
 } from '@bytebot/shared';
+import { AGENT_SYSTEM_PROMPT } from '../agent/agent.constants';
 import {
-  AGENT_SYSTEM_PROMPT,
+  BytebotAgentService,
   BytebotAgentInterrupt,
-} from '../agent/agent.constants';
+} from '../agent/agent.types';
 import { Message, Role } from '@prisma/client';
 import { googleTools } from './google.tools';
 import {
@@ -22,7 +23,7 @@ import { v4 as uuid } from 'uuid';
 import { DEFAULT_MODEL } from './google.constants';
 
 @Injectable()
-export class GoogleService {
+export class GoogleService implements BytebotAgentService {
   private readonly google: GoogleGenAI;
   private readonly logger = new Logger(GoogleService.name);
 
@@ -40,14 +41,8 @@ export class GoogleService {
     });
   }
 
-  /**
-   * Sends a message to Google Gemini and returns the response
-   *
-   * @param messages Array of message content blocks representing the conversation
-   * @param options Additional options for the API call
-   * @returns The AI response as an array of message content blocks
-   */
-  async sendMessage(
+  async generateMessage(
+    systemPrompt: string,
     messages: Message[],
     model: string = DEFAULT_MODEL.name,
     signal?: AbortSignal,
@@ -64,7 +59,7 @@ export class GoogleService {
           contents: googleMessages,
           config: {
             maxOutputTokens: maxTokens,
-            systemInstruction: AGENT_SYSTEM_PROMPT,
+            systemInstruction: systemPrompt,
             tools: [
               {
                 functionDeclarations: googleTools,

@@ -13,11 +13,15 @@ import { Message, Role } from '@prisma/client';
 import { openaiTools } from './openai.tools';
 import {
   AGENT_SYSTEM_PROMPT,
-  BytebotAgentInterrupt,
+  SUMMARIZATION_SYSTEM_PROMPT,
 } from '../agent/agent.constants';
+import {
+  BytebotAgentService,
+  BytebotAgentInterrupt,
+} from '../agent/agent.types';
 
 @Injectable()
-export class OpenAIService {
+export class OpenAIService implements BytebotAgentService {
   private readonly openai: OpenAI;
   private readonly logger = new Logger(OpenAIService.name);
 
@@ -35,22 +39,22 @@ export class OpenAIService {
     });
   }
 
-  async sendMessage(
+  async generateMessage(
+    systemPrompt: string,
     messages: Message[],
     model: string = DEFAULT_MODEL.name,
     signal?: AbortSignal,
   ): Promise<MessageContentBlock[]> {
     try {
-      const maxTokens = 8192;
-
       const openaiMessages = this.formatMessagesForOpenAI(messages);
 
+      const maxTokens = 8192;
       const response = await this.openai.responses.create(
         {
           model,
           max_output_tokens: maxTokens,
           input: openaiMessages,
-          instructions: AGENT_SYSTEM_PROMPT,
+          instructions: systemPrompt,
           tools: openaiTools,
           reasoning: null,
         },

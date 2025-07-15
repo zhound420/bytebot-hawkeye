@@ -8,12 +8,14 @@ import { AgentScheduler } from './agent.scheduler';
 import { InputCaptureService } from './input-capture.service';
 import { OpenAIModule } from '../openai/openai.module';
 import { GoogleModule } from '../google/google.module';
+import { SummariesModule } from 'src/summaries/summaries.modue';
 
 @Module({
   imports: [
     ConfigModule,
     TasksModule,
     MessagesModule,
+    SummariesModule,
     AnthropicModule,
     OpenAIModule,
     GoogleModule,

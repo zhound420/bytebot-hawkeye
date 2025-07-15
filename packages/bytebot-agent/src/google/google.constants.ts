@@ -1,4 +1,4 @@
-import { BytebotAgentModel } from '../agent/agent.constants';
+import { BytebotAgentModel } from '../agent/agent.types';
 
 export const GOOGLE_MODELS: BytebotAgentModel[] = [
   {

@@ -13,6 +13,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { AuthModule } from '@thallesp/nestjs-better-auth';
 import { auth } from './auth';
+import { SummariesModule } from './summaries/summaries.modue';
 
 const authEnabled = process.env.AUTH_ENABLED === 'true';
 
@@ -33,6 +34,7 @@ const authEnabled = process.env.AUTH_ENABLED === 'true';
     AgentModule,
     TasksModule,
     MessagesModule,
+    SummariesModule,
     AnthropicModule,
     OpenAIModule,
     GoogleModule,
