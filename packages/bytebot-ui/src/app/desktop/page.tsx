@@ -13,7 +13,7 @@ export default function DesktopPage() {
         <div className="flex h-full items-center justify-center">
           {/* Main container */}
           <div className="w-[60%]">
-            <DesktopContainer viewOnly={false} status="running">
+            <DesktopContainer viewOnly={false} status="live_view">
               {/* No action buttons for desktop page */}
             </DesktopContainer>
           </div>

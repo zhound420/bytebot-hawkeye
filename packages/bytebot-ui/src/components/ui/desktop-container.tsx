@@ -2,7 +2,10 @@ import React, { useRef, useEffect, useState } from "react";
 import { VncViewer } from "@/components/vnc/VncViewer";
 import { ScreenshotViewer } from "@/components/screenshot/ScreenshotViewer";
 import { ScreenshotData } from "@/utils/screenshotUtils";
-import { VirtualDesktopStatusHeader, VirtualDesktopStatus } from "@/components/VirtualDesktopStatusHeader";
+import {
+  VirtualDesktopStatusHeader,
+  VirtualDesktopStatus,
+} from "@/components/VirtualDesktopStatusHeader";
 
 interface DesktopContainerProps {
   children?: React.ReactNode;
@@ -70,23 +73,20 @@ export const DesktopContainer: React.FC<DesktopContainerProps> = ({
 
   return (
     <div
-      ref={containerRef}
-      className={`border-bytebot-bronze-light-7 flex aspect-[4/3] w-full flex-col rounded-lg border ${className}`}
+      className={`border-bytebot-bronze-light-7 flex w-full flex-col rounded-t-lg border-t border-r border-l ${className}`}
     >
       {/* Header */}
-      <div className="bg-bytebot-bronze-light-2 flex items-center justify-between rounded-t-lg border-b border-bytebot-bronze-light-7 px-4 py-2">
+      <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-7 flex items-center justify-between rounded-t-lg border-b px-4 py-2">
         {/* Status Header */}
         <div className="flex items-center gap-2">
           <VirtualDesktopStatusHeader status={status} />
         </div>
-        
+
         {/* Actions */}
-        <div className="flex items-center gap-2">
-          {children}
-        </div>
+        <div className="flex items-center gap-2">{children}</div>
       </div>
 
-      <div className="flex-1 rounded-b-lg overflow-hidden">
+      <div ref={containerRef} className="flex aspect-[4/3] overflow-hidden">
         <div
           style={{
             width: `${containerSize.width}px`,
@@ -106,4 +106,4 @@ export const DesktopContainer: React.FC<DesktopContainerProps> = ({
       </div>
     </div>
   );
-}; 
+};

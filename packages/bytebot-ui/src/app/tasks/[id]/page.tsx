@@ -17,7 +17,10 @@ import {
 } from "@/components/ui/select";
 import { Role, TaskStatus, Model } from "@/types";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { MoreVerticalCircle01Icon, WavingHand01Icon } from "@hugeicons/core-free-icons";
+import {
+  MoreVerticalCircle01Icon,
+  WavingHand01Icon,
+} from "@hugeicons/core-free-icons";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -25,7 +28,7 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { VirtualDesktopStatusHeader, VirtualDesktopStatus } from "@/components/VirtualDesktopStatusHeader";
+import { VirtualDesktopStatus } from "@/components/VirtualDesktopStatusHeader";
 
 export default function TaskPage() {
   const params = useParams();
@@ -54,8 +57,6 @@ export default function TaskPage() {
     currentTaskId,
   } = useChatSession({ initialTaskId: taskId });
 
-  const [isMounted, setIsMounted] = useState(false);
-
   // Determine if task is inactive (show screenshot) or active (show VNC)
   const isTaskInactive =
     taskStatus === TaskStatus.COMPLETED ||
@@ -78,7 +79,7 @@ export default function TaskPage() {
   const vncViewOnly = !hasUserControl;
 
   // Use scroll screenshot hook for inactive tasks
-  const { currentScreenshot, allScreenshots } = useScrollScreenshot({
+  const { currentScreenshot } = useScrollScreenshot({
     messages,
     scrollContainerRef: chatContainerRef,
   });
@@ -93,18 +94,13 @@ export default function TaskPage() {
   }, [messages]);
 
   useEffect(() => {
-    fetch('/api/tasks/models')
+    fetch("/api/tasks/models")
       .then((res) => res.json())
       .then((data) => {
         setModels(data);
         if (data.length > 0) setSelectedModel(data[0]);
       })
-      .catch((err) => console.error('Failed to load models', err));
-  }, []);
-
-  // Set isMounted to true after component mounts
-  useEffect(() => {
-    setIsMounted(true);
+      .catch((err) => console.error("Failed to load models", err));
   }, []);
 
   // Redirect if task ID doesn't match current task
@@ -113,8 +109,6 @@ export default function TaskPage() {
       router.push(`/tasks/${currentTaskId}`);
     }
   }, [currentTaskId, taskId, router]);
-
-
 
   return (
     <div className="flex h-screen flex-col overflow-hidden">
@@ -127,50 +121,64 @@ export default function TaskPage() {
             <DesktopContainer
               screenshot={isTaskInactive ? currentScreenshot : null}
               viewOnly={vncViewOnly}
-              status={(() => {
-                if (taskStatus === TaskStatus.RUNNING && control === Role.USER) return "user_control";
-                if (taskStatus === TaskStatus.RUNNING) return "running";
-                if (taskStatus === TaskStatus.NEEDS_HELP) return "needs_attention";
-                if (taskStatus === TaskStatus.FAILED) return "failed";
-                if (taskStatus === TaskStatus.CANCELLED) return "canceled";
-                if (taskStatus === TaskStatus.COMPLETED) return "canceled";
-                // You may want to add a scheduled state if you have that info
-                return "running";
-              })() as VirtualDesktopStatus}
+              status={
+                (() => {
+                  if (
+                    taskStatus === TaskStatus.RUNNING &&
+                    control === Role.USER
+                  )
+                    return "user_control";
+                  if (taskStatus === TaskStatus.RUNNING) return "running";
+                  if (taskStatus === TaskStatus.NEEDS_HELP)
+                    return "needs_attention";
+                  if (taskStatus === TaskStatus.FAILED) return "failed";
+                  if (taskStatus === TaskStatus.CANCELLED) return "canceled";
+                  if (taskStatus === TaskStatus.COMPLETED) return "completed";
+                  // You may want to add a scheduled state if you have that info
+                  return "pending";
+                })() as VirtualDesktopStatus
+              }
             >
-                {canTakeOver && (
-                  <Button
-                    onClick={handleTakeOverTask}
-                    variant="default"
-                    size="sm"
-                    icon={<HugeiconsIcon icon={WavingHand01Icon} className="h-5 w-5" />}
-                  >
-                    Take Over
-                  </Button>
-                )}
-                {hasUserControl && (
-                  <Button
-                    onClick={handleResumeTask}
-                    variant="default" 
-                    size="sm"
-                  >
-                    Proceed
-                  </Button>
-                )}
-                {canCancel && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="icon">
-                        <HugeiconsIcon icon={MoreVerticalCircle01Icon} className="h-5 w-5 text-bytebot-bronze-light-11" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={handleCancelTask} className="text-red-600 focus:bg-red-50">
-                        Cancel
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
+              {canTakeOver && (
+                <Button
+                  onClick={handleTakeOverTask}
+                  variant="default"
+                  size="sm"
+                  icon={
+                    <HugeiconsIcon
+                      icon={WavingHand01Icon}
+                      className="h-5 w-5"
+                    />
+                  }
+                >
+                  Take Over
+                </Button>
+              )}
+              {hasUserControl && (
+                <Button onClick={handleResumeTask} variant="default" size="sm">
+                  Proceed
+                </Button>
+              )}
+              {canCancel && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon">
+                      <HugeiconsIcon
+                        icon={MoreVerticalCircle01Icon}
+                        className="text-bytebot-bronze-light-11 h-5 w-5"
+                      />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onClick={handleCancelTask}
+                      className="text-red-600 focus:bg-red-50"
+                    >
+                      Cancel
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </DesktopContainer>
           </div>
 
@@ -180,7 +188,7 @@ export default function TaskPage() {
             className="col-span-3 flex h-full flex-col overflow-scroll"
           >
             {/* Messages scrollable area */}
-            <div className="flex-1 px-4 pb-2 h-full">
+            <div className="h-full flex-1 px-4 pb-2">
               <ChatContainer
                 taskStatus={taskStatus}
                 groupedMessages={groupedMessages}
@@ -208,7 +216,9 @@ export default function TaskPage() {
                   <Select
                     value={selectedModel?.name}
                     onValueChange={(val) =>
-                      setSelectedModel(models.find((m) => m.name === val) || null)
+                      setSelectedModel(
+                        models.find((m) => m.name === val) || null,
+                      )
                     }
                   >
                     <SelectTrigger className="w-auto">

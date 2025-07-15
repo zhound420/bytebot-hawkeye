@@ -8,8 +8,10 @@ export type VirtualDesktopStatus =
   | "needs_attention"
   | "failed"
   | "canceled"
-  | "scheduled"
-  | "user_control";
+  | "pending"
+  | "user_control"
+  | "completed"
+  | "live_view";
 
 interface StatusConfig {
   dot: React.ReactNode;
@@ -19,95 +21,125 @@ interface StatusConfig {
 }
 
 const statusConfig: Record<VirtualDesktopStatus, StatusConfig> = {
+  live_view: {
+    dot: (
+      <span className="flex items-center justify-center">
+        <Image
+          src="/indicators/indicator-black.svg"
+          alt="Live view status"
+          width={15}
+          height={15}
+        />
+      </span>
+    ),
+    text: "Live Desktop View",
+    gradient: "from-gray-700 to-gray-900",
+    subtext: "",
+  },
   running: {
     dot: (
       <span className="flex items-center justify-center">
         <Image
-          src="/indicators/indicator-green.png"
+          src="/indicators/indicator-green.svg"
           alt="Running status"
           width={15}
           height={15}
         />
       </span>
     ),
-    text: "Virtual Desktop",
+    text: "Running",
     gradient: "from-green-700 to-green-900",
-    subtext: "Running...",
+    subtext: "Task in progress",
   },
   needs_attention: {
     dot: (
       <span className="flex items-center justify-center">
         <Image
-          src="/indicators/indicator-orange.png"
+          src="/indicators/indicator-orange.svg"
           alt="Needs attention status"
           width={15}
           height={15}
         />
       </span>
     ),
-    text: "Virtual Desktop",
+    text: "Needs Attention",
     gradient: "from-yellow-600 to-orange-700",
-    subtext: "Needs Attention",
+    subtext: "Task needs attention",
   },
   failed: {
     dot: (
       <span className="flex items-center justify-center">
         <Image
-          src="/indicators/indicator-red.png"
+          src="/indicators/indicator-red.svg"
           alt="Failed status"
           width={15}
           height={15}
         />
       </span>
     ),
-    text: "Virtual Desktop",
+    text: "Failed",
     gradient: "from-red-700 to-red-900",
-    subtext: "Failed",
+    subtext: "Task failed",
   },
   canceled: {
     dot: (
       <span className="flex items-center justify-center">
         <Image
-          src="/indicators/indicator-gray.png"
+          src="/indicators/indicator-gray.svg"
           alt="Canceled status"
           width={15}
           height={15}
         />
       </span>
     ),
-    text: "Virtual Desktop",
+    text: "Canceled",
     gradient: "",
-    subtext: "Canceled",
+    subtext: "Task canceled",
   },
-  scheduled: {
+  pending: {
     dot: (
       <span className="flex items-center justify-center">
         <Image
-          src="/indicators/indicator-gray.png"
-          alt="Scheduled status"
+          src="/indicators/indicator-gray.svg"
+          alt="Pending status"
           width={15}
           height={15}
         />
       </span>
     ),
-    text: "Virtual Desktop",
+    text: "Pending",
     gradient: "",
-    subtext: "Scheduled at 3am today",
+    subtext: "Task pending",
   },
   user_control: {
     dot: (
       <span className="flex items-center justify-center">
         <Image
-          src="/indicators/indicator-pink.png"
+          src="/indicators/indicator-pink.svg"
           alt="User control status"
           width={15}
           height={15}
         />
       </span>
     ),
-    text: "Virtual Desktop",
+    text: "Running",
     gradient: "from-pink-500 to-fuchsia-700",
     subtext: "You took control",
+  },
+  completed: {
+    dot: (
+      <span className="flex items-center justify-center">
+        <Image
+          src="/indicators/indicator-green.svg"
+          alt="Completed status"
+          width={15}
+          height={15}
+        />
+      </span>
+    ),
+    text: "Completed",
+    gradient: "from-green-700 to-green-900",
+    subtext: "",
   },
 };
 
@@ -117,41 +149,45 @@ export interface VirtualDesktopStatusHeaderProps {
   className?: string;
 }
 
-export const VirtualDesktopStatusHeader: React.FC<VirtualDesktopStatusHeaderProps> = ({
-  status,
-  subtext,
-  className,
-}) => {
+export const VirtualDesktopStatusHeader: React.FC<
+  VirtualDesktopStatusHeaderProps
+> = ({ status, subtext, className }) => {
   const config = statusConfig[status];
   return (
     <div className={cn("flex items-start gap-2", className)}>
-      <span className="flex items-center justify-center mt-1">
+      <span className="mt-1 flex items-center justify-center">
         {config.dot}
       </span>
       <div>
         <span
-            className={cn(
-              "text-md font-semibold text-base",
-              config.gradient 
-                ? "bg-clip-text text-transparent" 
-                : "text-zinc-600"
-            )}
-            style={config.gradient ? {
-              backgroundImage: `linear-gradient(to right, var(--tw-gradient-stops))`,
-            } : undefined}
+          className={cn(
+            "text-md text-base font-semibold",
+            config.gradient ? "bg-clip-text text-transparent" : "text-zinc-600",
+          )}
+          style={
+            config.gradient
+              ? {
+                  backgroundImage: `linear-gradient(to right, var(--tw-gradient-stops))`,
+                }
+              : undefined
+          }
         >
-            <span className={cn(
-              config.gradient ? `bg-gradient-to-r ${config.gradient} bg-clip-text text-transparent` : ""
-            )}>
+          <span
+            className={cn(
+              config.gradient
+                ? `bg-gradient-to-r ${config.gradient} bg-clip-text text-transparent`
+                : "",
+            )}
+          >
             {config.text}
-            </span>
+          </span>
         </span>
         {config.subtext && (
-            <span className="block text-[12px] text-zinc-400">
+          <span className="block text-[12px] text-zinc-400">
             {subtext || config.subtext}
-            </span>
+          </span>
         )}
       </div>
     </div>
   );
-}; 
+};
