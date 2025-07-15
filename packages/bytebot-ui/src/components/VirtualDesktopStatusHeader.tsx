@@ -93,7 +93,7 @@ const statusConfig: Record<VirtualDesktopStatus, StatusConfig> = {
       </span>
     ),
     text: "Canceled",
-    gradient: "",
+    gradient: "from-red-700 to-red-900",
     subtext: "Task canceled",
   },
   pending: {
@@ -108,7 +108,7 @@ const statusConfig: Record<VirtualDesktopStatus, StatusConfig> = {
       </span>
     ),
     text: "Pending",
-    gradient: "",
+    gradient: "from-gray-400 to-gray-600",
     subtext: "Task pending",
   },
   user_control: {
@@ -139,7 +139,7 @@ const statusConfig: Record<VirtualDesktopStatus, StatusConfig> = {
     ),
     text: "Completed",
     gradient: "from-green-700 to-green-900",
-    subtext: "",
+    subtext: "Task completed",
   },
 };
 
