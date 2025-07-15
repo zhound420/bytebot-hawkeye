@@ -12,6 +12,14 @@ export interface Message {
   role: Role;
   taskId?: string;
   createdAt?: string;
+  take_over?: boolean;
+}
+
+// Grouped messages interface for processed endpoint
+export interface GroupedMessages {
+  role: Role;
+  messages: Message[];
+  take_over?: boolean;
 }
 
 export interface Model {
@@ -29,6 +37,7 @@ export enum TaskStatus {
   COMPLETED = "COMPLETED",
   CANCELLED = "CANCELLED",
   FAILED = "FAILED",
+  SCHEDULED = "SCHEDULED",
 }
 
 export enum TaskPriority {

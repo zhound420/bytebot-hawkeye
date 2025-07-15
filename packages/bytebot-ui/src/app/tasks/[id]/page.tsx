@@ -2,9 +2,8 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { Header } from "@/components/layout/Header";
-import { VncViewer } from "@/components/vnc/VncViewer";
-import { ScreenshotViewer } from "@/components/screenshot/ScreenshotViewer";
 import { ChatContainer } from "@/components/messages/ChatContainer";
+import { DesktopContainer } from "@/components/ui/desktop-container";
 import { ChatInput } from "@/components/messages/ChatInput";
 import { useChatSession } from "@/hooks/useChatSession";
 import { useScrollScreenshot } from "@/hooks/useScrollScreenshot";
@@ -17,19 +16,28 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Role, TaskStatus, Model } from "@/types";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { MoreVerticalCircle01Icon, WavingHand01Icon } from "@hugeicons/core-free-icons";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { VirtualDesktopStatusHeader, VirtualDesktopStatus } from "@/components/VirtualDesktopStatusHeader";
 
 export default function TaskPage() {
   const params = useParams();
   const router = useRouter();
   const taskId = params.id as string;
 
-  const containerRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
-  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const [models, setModels] = useState<Model[]>([]);
   const [selectedModel, setSelectedModel] = useState<Model | null>(null);
   const {
     messages,
+    groupedMessages,
     taskStatus,
     control,
     input,
@@ -75,6 +83,15 @@ export default function TaskPage() {
     scrollContainerRef: chatContainerRef,
   });
 
+  // Map each message ID to its flat index for screenshot scroll logic
+  const messageIdToIndex = React.useMemo(() => {
+    const map: Record<string, number> = {};
+    messages.forEach((msg, idx) => {
+      map[msg.id] = idx;
+    });
+    return map;
+  }, [messages]);
+
   useEffect(() => {
     fetch('/api/tasks/models')
       .then((res) => res.json())
@@ -97,45 +114,7 @@ export default function TaskPage() {
     }
   }, [currentTaskId, taskId, router]);
 
-  // Calculate the container size on mount and window resize
-  useEffect(() => {
-    if (!isMounted) return;
 
-    const updateSize = () => {
-      if (!containerRef.current) return;
-
-      const parentWidth =
-        containerRef.current.parentElement?.offsetWidth ||
-        containerRef.current.offsetWidth;
-      const parentHeight =
-        containerRef.current.parentElement?.offsetHeight ||
-        containerRef.current.offsetHeight;
-
-      // Calculate the maximum size while maintaining 1280:960 aspect ratio
-      let width, height;
-      const aspectRatio = 1280 / 960;
-
-      if (parentWidth / parentHeight > aspectRatio) {
-        // Width is the limiting factor
-        height = parentHeight;
-        width = height * aspectRatio;
-      } else {
-        // Height is the limiting factor
-        width = parentWidth;
-        height = width / aspectRatio;
-      }
-
-      // Cap at maximum dimensions
-      width = Math.min(width, 1280);
-      height = Math.min(height, 960);
-
-      setContainerSize({ width, height });
-    };
-
-    updateSize();
-    window.addEventListener("resize", updateSize);
-    return () => window.removeEventListener("resize", updateSize);
-  }, [isMounted]);
 
   return (
     <div className="flex h-screen flex-col overflow-hidden">
@@ -145,92 +124,54 @@ export default function TaskPage() {
         <div className="grid h-full grid-cols-7 gap-4">
           {/* Main container */}
           <div className="col-span-4">
-            <div
-              ref={containerRef}
-              className="border-bytebot-bronze-light-5 shadow-bytebot flex aspect-[4/3] w-full flex-col rounded-lg border"
+            <DesktopContainer
+              screenshot={isTaskInactive ? currentScreenshot : null}
+              viewOnly={vncViewOnly}
+              status={(() => {
+                if (taskStatus === TaskStatus.RUNNING && control === Role.USER) return "user_control";
+                if (taskStatus === TaskStatus.RUNNING) return "running";
+                if (taskStatus === TaskStatus.NEEDS_HELP) return "needs_attention";
+                if (taskStatus === TaskStatus.FAILED) return "failed";
+                if (taskStatus === TaskStatus.CANCELLED) return "canceled";
+                if (taskStatus === TaskStatus.COMPLETED) return "canceled";
+                // You may want to add a scheduled state if you have that info
+                return "running";
+              })() as VirtualDesktopStatus}
             >
-              {/* Status Header */}
-              <div className="border-bytebot-bronze-light-5 bg-bytebot-bronze-light-1 flex items-center justify-between rounded-t-lg border-b px-4 py-2">
-                <div className="flex items-center gap-2">
-                  <div
-                    className={`h-2 w-2 rounded-full ${
-                      taskStatus === TaskStatus.COMPLETED
-                        ? "bg-green-500"
-                        : taskStatus === TaskStatus.FAILED
-                          ? "bg-red-500"
-                          : taskStatus === TaskStatus.CANCELLED
-                            ? "bg-gray-500"
-                            : taskStatus === TaskStatus.RUNNING
-                              ? "animate-pulse bg-green-400"
-                              : "bg-yellow-400"
-                    }`}
-                  />
-                  <span className="text-bytebot-bronze-dark-8 text-sm font-medium">
-                    {isTaskInactive
-                      ? `Task ${taskStatus.toLowerCase()} - Screenshot View`
-                      : hasUserControl
-                        ? "User Control - Interactive"
-                        : taskStatus === TaskStatus.RUNNING
-                          ? "Agent Control - Live View"
-                          : `Task ${taskStatus.toLowerCase()} - Live View`}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {canTakeOver && (
-                    <button
-                      onClick={handleTakeOverTask}
-                      className="cursor-pointer rounded bg-gray-500 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-gray-600"
-                    >
-                      Take Over
-                    </button>
-                  )}
-                  {hasUserControl && (
-                    <button
-                      onClick={handleResumeTask}
-                      className="cursor-pointer rounded bg-gray-500 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-gray-600"
-                    >
-                      Resume
-                    </button>
-                  )}
-                  {canCancel && (
-                    <button
-                      onClick={handleCancelTask}
-                      className="cursor-pointer rounded bg-red-500 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-red-600"
-                    >
-                      Cancel
-                    </button>
-                  )}
-                  {isTaskInactive && currentScreenshot && (
-                    <span className="text-bytebot-bronze-light-11 bg-bytebot-bronze-light-3 rounded px-2 py-1 text-xs">
-                      Screenshot{" "}
-                      {allScreenshots.findIndex(
-                        (s) => s.id === currentScreenshot.id,
-                      ) + 1}{" "}
-                      of {allScreenshots.length}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex-1 rounded-b-[14px]">
-                <div
-                  style={{
-                    width: `${containerSize.width}px`,
-                    height: `${containerSize.height}px`,
-                    maxWidth: "100%",
-                  }}
-                >
-                  {isTaskInactive ? (
-                    <ScreenshotViewer
-                      screenshot={currentScreenshot}
-                      className="shadow-bytebot h-full w-full"
-                    />
-                  ) : (
-                    <VncViewer viewOnly={vncViewOnly} />
-                  )}
-                </div>
-              </div>
-            </div>
+                {canTakeOver && (
+                  <Button
+                    onClick={handleTakeOverTask}
+                    variant="default"
+                    size="sm"
+                    icon={<HugeiconsIcon icon={WavingHand01Icon} className="h-5 w-5" />}
+                  >
+                    Take Over
+                  </Button>
+                )}
+                {hasUserControl && (
+                  <Button
+                    onClick={handleResumeTask}
+                    variant="default" 
+                    size="sm"
+                  >
+                    Proceed
+                  </Button>
+                )}
+                {canCancel && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="icon">
+                        <HugeiconsIcon icon={MoreVerticalCircle01Icon} className="h-5 w-5 text-bytebot-bronze-light-11" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={handleCancelTask} className="text-red-600 focus:bg-red-50">
+                        Cancel
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+            </DesktopContainer>
           </div>
 
           {/* Chat Area */}
@@ -239,22 +180,23 @@ export default function TaskPage() {
             className="col-span-3 flex h-full flex-col overflow-scroll"
           >
             {/* Messages scrollable area */}
-            <div className="flex-1 px-4 pt-4 pb-2">
+            <div className="flex-1 px-4 pb-2 h-full">
               <ChatContainer
                 taskStatus={taskStatus}
-                messages={messages}
+                groupedMessages={groupedMessages}
                 isLoadingSession={isLoadingSession}
                 isLoadingMoreMessages={isLoadingMoreMessages}
                 hasMoreMessages={hasMoreMessages}
                 loadMoreMessages={loadMoreMessages}
                 scrollRef={chatContainerRef}
                 control={control}
+                messageIdToIndex={messageIdToIndex}
               />
             </div>
 
             {/* Fixed chat input */}
             {taskStatus === TaskStatus.NEEDS_HELP && (
-              <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-5 shadow-bytebot rounded-2xl border-[0.5px] p-2">
+              <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-7 shadow-rounded-2xl border p-2">
                 <ChatInput
                   input={input}
                   isLoading={isLoading}

@@ -1,107 +1,39 @@
 import React, { useRef, useEffect, useCallback } from "react";
-import { Message, Role, TaskStatus } from "@/types";
+import { Role, TaskStatus, GroupedMessages } from "@/types";
 import { MessageGroup } from "./MessageGroup";
-import { isToolResultContentBlock } from "@bytebot/shared";
 import { TextShimmer } from "../ui/text-shimmer";
+import { MessageAvatar } from "./MessageAvatar";
+import { Loader } from "../ui/loader";
 
 interface ChatContainerProps {
   taskStatus: TaskStatus;
   control: Role;
-  messages: Message[];
+  groupedMessages: GroupedMessages[];
   isLoadingSession: boolean;
   isLoadingMoreMessages?: boolean;
   hasMoreMessages?: boolean;
   loadMoreMessages?: () => void;
   scrollRef?: React.RefObject<HTMLDivElement | null>;
+  messageIdToIndex: Record<string, number>;
 }
 
-export interface GroupedMessages {
-  role: Role;
-  messages: Message[];
-}
-
-/**
- * Groups back-to-back messages from the same role in a conversation JSON
- *
- * @param {Object} conversation - The conversation JSON object with messages array
- * @returns {Object} A new conversation object with grouped messages
- */
-function groupBackToBackMessages(messages: Message[]): GroupedMessages[] {
-  const groupedConversation: GroupedMessages[] = [];
-
-  let currentGroup: GroupedMessages | null = null;
-
-  for (const message of messages) {
-    const role = message.role;
-
-    // If this is the first message or role is different from the previous group
-    if (!currentGroup || currentGroup.role !== role) {
-      // Save the previous group if it exists
-      if (currentGroup) {
-        groupedConversation.push(currentGroup);
-      }
-
-      // Start a new group
-      currentGroup = {
-        role: role,
-        messages: [message],
-      };
-    } else {
-      // Same role as previous, merge the content
-      currentGroup.messages.push(message);
-    }
-  }
-
-  // Add the last group
-  if (currentGroup) {
-    groupedConversation.push(currentGroup);
-  }
-
-  return groupedConversation;
-}
-
-function filterMessages(messages: Message[]): Message[] {
-  const filteredMessages: Message[] = [];
-  for (const message of messages) {
-    const contentBlocks = message.content;
-
-    // If the role is a user message and all the content blocks are tool result blocks
-    if (
-      message.role === Role.USER &&
-      contentBlocks.every((block) => isToolResultContentBlock(block))
-    ) {
-      message.role = Role.ASSISTANT;
-    }
-
-    filteredMessages.push(message);
-  }
-  return filteredMessages;
-}
 
 export function ChatContainer({
   taskStatus,
   control,
-  messages,
+  groupedMessages,
   isLoadingSession,
   isLoadingMoreMessages = false,
   hasMoreMessages = false,
   loadMoreMessages,
   scrollRef,
+  messageIdToIndex,
 }: ChatContainerProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  // Group back-to-back messages from the same role
-  const groupedConversation = groupBackToBackMessages(filterMessages(messages));
 
   // Infinite scroll handler
   const handleScroll = useCallback(() => {
     if (!scrollRef?.current || !loadMoreMessages) {
-      console.log("Scroll handler early return:", {
-        hasScrollRef: !!scrollRef?.current,
-        hasLoadMoreMessages: !!loadMoreMessages,
-        hasMoreMessages,
-        isLoadingMoreMessages,
-      });
       return;
     }
 
@@ -110,17 +42,7 @@ export function ChatContainer({
     const { scrollTop, scrollHeight, clientHeight } = container;
     const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
 
-    console.log("Scroll metrics:", {
-      scrollTop,
-      scrollHeight,
-      clientHeight,
-      distanceFromBottom,
-      hasMoreMessages,
-      isLoadingMoreMessages,
-    });
-
     if (distanceFromBottom <= 20 && hasMoreMessages && !isLoadingMoreMessages) {
-      console.log("Triggering loadMoreMessages");
       loadMoreMessages();
     }
   }, [scrollRef, loadMoreMessages, hasMoreMessages, isLoadingMoreMessages]);
@@ -134,7 +56,7 @@ export function ChatContainer({
     }
   }, [handleScroll, scrollRef]);
 
-  // This effect runs whenever the messages array changes
+  // This effect runs whenever the grouped messages array changes
   useEffect(() => {
     if (
       taskStatus === TaskStatus.RUNNING ||
@@ -142,7 +64,7 @@ export function ChatContainer({
     ) {
       scrollToBottom();
     }
-  }, [taskStatus, messages]);
+  }, [taskStatus, groupedMessages]);
 
   // Function to scroll to the bottom of the messages
   const scrollToBottom = () => {
@@ -150,29 +72,37 @@ export function ChatContainer({
   };
 
   return (
-    <div className="flex-1 p-4">
+    <div className="bg-bytebot-bronze-light-2 border border-bytebot-bronze-light-7 rounded-lg overflow-hidden">
       {isLoadingSession ? (
-        <div className="flex h-full items-center justify-center">
-          <div className="border-t-primary h-8 w-8 animate-spin rounded-full border-4 border-gray-300"></div>
+        <div className="flex h-full items-center justify-center min-h-80 bg-bytebot-bronze-light-3">
+          <Loader size={32} />
         </div>
-      ) : messages.length > 0 ? (
+      ) : groupedMessages.length > 0 ? (
         <>
-          {groupedConversation.map((group, groupIndex) => (
+          {groupedMessages.map((group, groupIndex) => (
             <div key={groupIndex}>
-              <MessageGroup group={group} messages={messages} />
+              <MessageGroup group={group} messageIdToIndex={messageIdToIndex} />
             </div>
           ))}
 
           {taskStatus === TaskStatus.RUNNING && control === Role.ASSISTANT && (
-            <TextShimmer className="text-sm" duration={2}>
-              Bytebot is working...
-            </TextShimmer>
+            <div className="flex items-center justify-start gap-4 px-4 py-3 bg-bytebot-bronze-light-3">
+              <MessageAvatar role={Role.ASSISTANT} />
+              <div className="flex items-center justify-start gap-2">
+                <div className="flex h-full items-center justify-center py-2">
+                  <Loader size={20} />
+                </div>
+                <TextShimmer className="text-sm" duration={2}>
+                  Bytebot is working...
+                </TextShimmer>
+              </div>
+            </div>
           )}
 
           {/* Loading indicator for infinite scroll at bottom */}
           {isLoadingMoreMessages && (
             <div className="flex justify-center py-4">
-              <div className="border-t-primary h-6 w-6 animate-spin rounded-full border-2 border-gray-300"></div>
+              <Loader size={24} />
             </div>
           )}
         </>

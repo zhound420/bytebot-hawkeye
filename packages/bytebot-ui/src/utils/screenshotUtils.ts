@@ -30,7 +30,6 @@ export function extractScreenshots(messages: Message[]): ScreenshotData[] {
       }
     });
   });
-  
   return screenshots;
 }
 
@@ -46,24 +45,25 @@ export function getScreenshotForScrollPosition(
     return screenshots[screenshots.length - 1] || null; // Default to last screenshot
   }
 
-  // Get all message elements in the scroll container
-  const messageElements = scrollContainer.querySelectorAll('[data-message-index]');
-  
-  if (messageElements.length === 0) {
+  // Get all screenshot marker elements in the scroll container
+  const screenshotElements = scrollContainer.querySelectorAll('[data-message-index][data-block-index]');
+  if (screenshotElements.length === 0) {
     return screenshots[screenshots.length - 1] || null;
   }
 
   const containerScrollTop = scrollContainer.scrollTop;
   const containerHeight = scrollContainer.clientHeight;
 
-  // Find the message that's most visible at 350px down from the top of the container
+  // Find the screenshot marker that's most visible at 350px down from the top of the container
   const targetViewPosition = 350; // 350px down from top
   let bestVisibleMessageIndex = 0;
+  let bestVisibleBlockIndex = 0;
   let bestVisibility = 0;
   let minDistanceFromTarget = Infinity;
 
-  messageElements.forEach((element) => {
+  screenshotElements.forEach((element) => {
     const messageIndex = parseInt((element as HTMLElement).dataset.messageIndex || '0');
+    const blockIndex = parseInt((element as HTMLElement).dataset.blockIndex || '0');
     const elementTop = (element as HTMLElement).offsetTop;
     const elementHeight = (element as HTMLElement).offsetHeight;
     const elementBottom = elementTop + elementHeight;
@@ -81,33 +81,37 @@ export function getScreenshotForScrollPosition(
       const visibleTop = Math.max(0, distanceFromViewportTop);
       const visibleBottom = Math.min(containerHeight, distanceFromViewportBottom);
       const visibleHeight = Math.max(0, visibleBottom - visibleTop);
-      const visibility = visibleHeight / elementHeight;
+      const visibility = elementHeight === 0 ? 1 : visibleHeight / elementHeight;
       
       // Calculate distance from our target position (150px down)
       const elementCenter = distanceFromViewportTop + (elementHeight / 2);
       const distanceFromTarget = Math.abs(elementCenter - targetViewPosition);
       
       // Prefer elements that are closer to our target position and more visible
-      if (visibility > 0.1 && // Must be at least 10% visible
+      if (visibility > 0.1 && 
           (distanceFromTarget < minDistanceFromTarget || 
            (distanceFromTarget === minDistanceFromTarget && visibility > bestVisibility))) {
         bestVisibility = visibility;
         bestVisibleMessageIndex = messageIndex;
+        bestVisibleBlockIndex = blockIndex;
         minDistanceFromTarget = distanceFromTarget;
       }
     }
   });
 
-  // Find the most recent screenshot at or before this message index
+  // Find the most recent screenshot at or before this message and block index
   let bestScreenshot: ScreenshotData | null = null;
   for (const screenshot of screenshots) {
-    if (screenshot.messageIndex <= bestVisibleMessageIndex) {
+    if (
+      screenshot.messageIndex < bestVisibleMessageIndex ||
+      (screenshot.messageIndex === bestVisibleMessageIndex && screenshot.blockIndex <= bestVisibleBlockIndex)
+    ) {
       bestScreenshot = screenshot;
     }
     // Don't break - we want to continue to find the best match
   }
   
-  // If no screenshot found at or before this message, use the first screenshot
+  // If no screenshot found at or before this marker, use the first screenshot
   if (!bestScreenshot && screenshots.length > 0) {
     bestScreenshot = screenshots[0];
   }
