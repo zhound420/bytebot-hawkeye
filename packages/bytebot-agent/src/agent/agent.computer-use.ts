@@ -147,7 +147,7 @@ export async function handleComputerToolUse(
     };
   } catch (error) {
     logger.error(
-      `Error executing ${block.input.action} tool: ${error.message}`,
+      `Error executing ${block.name} tool: ${error.message}`,
       error.stack,
     );
     return {
@@ -156,7 +156,7 @@ export async function handleComputerToolUse(
       content: [
         {
           type: MessageContentType.Text,
-          text: `Error executing ${block.input.action} tool: ${error.message}`,
+          text: `Error executing ${block.name} tool: ${error.message}`,
         },
       ],
       is_error: true,

@@ -9,13 +9,17 @@ import {
 import { TextContent } from "./TextContent";
 import { ImageContent } from "./ImageContent";
 import { ComputerToolContent } from "./ComputerToolContent";
+import { ErrorContent } from "./ErrorContent";
 
 interface MessageContentProps {
   content: MessageContentBlock[];
   isTakeOver?: boolean;
 }
 
-export function MessageContent({ content, isTakeOver = false }: MessageContentProps) {
+export function MessageContent({
+  content,
+  isTakeOver = false,
+}: MessageContentProps) {
   // Filter content blocks and check if any visible content remains
   const visibleBlocks = content.filter((block) => {
     // Filter logic from the original code
@@ -48,6 +52,10 @@ export function MessageContent({ content, isTakeOver = false }: MessageContentPr
 
           {isComputerToolUseContentBlock(block) && (
             <ComputerToolContent block={block} isTakeOver={isTakeOver} />
+          )}
+
+          {isToolResultContentBlock(block) && block.is_error && (
+            <ErrorContent block={block} />
           )}
         </div>
       ))}
