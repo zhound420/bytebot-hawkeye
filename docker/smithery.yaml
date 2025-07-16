@@ -3,8 +3,8 @@ startCommand:
   type: "http"
   configSchema: {}
 build:
-  dockerfile: "./packages/bytebotd/Dockerfile"
-  dockerBuildPath: "./packages/"
+  dockerfile: "./bytebot-desktop.Dockerfile"
+  dockerBuildPath: "."
 start:
   command:
     [
