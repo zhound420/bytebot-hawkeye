@@ -89,6 +89,7 @@ export class MessagesService {
     return this.prisma.message.findMany({
       where: {
         taskId,
+        // find messages that don't have a summaryId
         summaryId: null,
       },
       orderBy: { createdAt: 'asc' },

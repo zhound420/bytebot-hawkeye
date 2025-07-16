@@ -1,7 +1,14 @@
 import { TasksService } from '../tasks/tasks.service';
 import { MessagesService } from '../messages/messages.service';
 import { Injectable, Logger } from '@nestjs/common';
-import { Role, Task, TaskPriority, TaskStatus, TaskType } from '@prisma/client';
+import {
+  Message,
+  Role,
+  Task,
+  TaskPriority,
+  TaskStatus,
+  TaskType,
+} from '@prisma/client';
 import { AnthropicService } from '../anthropic/anthropic.service';
 import {
   isComputerToolUseContentBlock,
@@ -119,6 +126,13 @@ export class AgentProcessor {
     try {
       const task: Task = await this.tasksService.findById(taskId);
 
+      if (task.control !== Role.ASSISTANT) {
+        this.logger.debug(
+          `Task ${taskId} is not under agent control, skipping iteration`,
+        );
+        return;
+      }
+
       if (task.status !== TaskStatus.RUNNING) {
         this.logger.log(
           `Task processing completed for task ID: ${taskId} with status: ${task.status}`,
@@ -147,7 +161,7 @@ export class AgentProcessor {
                 taskId,
                 summaryId: null,
                 userId: null,
-                role: Role.ASSISTANT,
+                role: Role.USER,
                 content: [
                   {
                     type: MessageContentType.Text,
@@ -183,6 +197,7 @@ export class AgentProcessor {
         AGENT_SYSTEM_PROMPT,
         messages,
         model.name,
+        true,
         this.abortController.signal,
       );
 
@@ -208,16 +223,37 @@ export class AgentProcessor {
         taskId,
       });
 
-      if (unsummarizedMessages.length >= 100) {
+      if (messages.length >= 100) {
         try {
           // After we've successfully generated a response, we can summarize the unsummarized messages
           const summaryContentBlocks = await service.generateMessage(
             SUMMARIZATION_SYSTEM_PROMPT,
-            messages,
+            [
+              ...messages,
+              {
+                id: '',
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                taskId,
+                summaryId: null,
+                userId: null,
+                role: Role.USER,
+                content: [
+                  {
+                    type: MessageContentType.Text,
+                    text: 'Respond with a summary of the messages above. Do not include any additional information.',
+                  },
+                ],
+              },
+            ],
             model.name,
+            false,
             this.abortController.signal,
           );
 
+          this.logger.debug(
+            `Received ${summaryContentBlocks.length} summary content blocks from LLM`,
+          );
           const summaryContent = summaryContentBlocks
             .filter(
               (block: MessageContentBlock) =>
@@ -231,11 +267,11 @@ export class AgentProcessor {
             taskId,
           });
 
-          await this.messagesService.attachSummary(
-            taskId,
-            summary.id,
-            unsummarizedMessages.map((message) => message.id),
-          );
+          await this.messagesService.attachSummary(taskId, summary.id, [
+            ...messages.map((message) => {
+              return message.id;
+            }),
+          ]);
         } catch (error: any) {
           this.logger.error(
             `Error summarizing messages for task ID: ${taskId}`,
@@ -326,6 +362,7 @@ export class AgentProcessor {
     } catch (error: any) {
       if (error?.name === 'BytebotAgentInterrupt') {
         this.logger.warn(`Processing aborted for task ID: ${taskId}`);
+        return;
       } else {
         this.logger.error(
           `Error during task processing iteration for task ID: ${taskId} - ${error.message}`,

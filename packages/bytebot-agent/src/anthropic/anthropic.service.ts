@@ -12,7 +12,6 @@ import {
 import { DEFAULT_MODEL } from './anthropic.constants';
 import { Message, Role } from '@prisma/client';
 import { anthropicTools } from './anthropic.tools';
-import { AGENT_SYSTEM_PROMPT } from '../agent/agent.constants';
 import {
   BytebotAgentService,
   BytebotAgentInterrupt,
@@ -41,6 +40,7 @@ export class AnthropicService implements BytebotAgentService {
     systemPrompt: string,
     messages: Message[],
     model: string = DEFAULT_MODEL.name,
+    useTools: boolean = true,
     signal?: AbortSignal,
   ): Promise<MessageContentBlock[]> {
     try {
@@ -59,10 +59,7 @@ export class AnthropicService implements BytebotAgentService {
         {
           model,
           max_tokens: maxTokens * 2,
-          thinking: {
-            type: 'enabled',
-            budget_tokens: maxTokens,
-          },
+          thinking: { type: 'disabled' },
           system: [
             {
               type: 'text',
@@ -71,7 +68,7 @@ export class AnthropicService implements BytebotAgentService {
             },
           ],
           messages: anthropicMessages,
-          tools: anthropicTools,
+          tools: useTools ? anthropicTools : [],
         },
         { signal },
       );

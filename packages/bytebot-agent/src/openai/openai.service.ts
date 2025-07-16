@@ -43,6 +43,7 @@ export class OpenAIService implements BytebotAgentService {
     systemPrompt: string,
     messages: Message[],
     model: string = DEFAULT_MODEL.name,
+    useTools: boolean = true,
     signal?: AbortSignal,
   ): Promise<MessageContentBlock[]> {
     try {
@@ -55,7 +56,7 @@ export class OpenAIService implements BytebotAgentService {
           max_output_tokens: maxTokens,
           input: openaiMessages,
           instructions: systemPrompt,
-          tools: openaiTools,
+          tools: useTools ? openaiTools : [],
           reasoning: null,
         },
         { signal },

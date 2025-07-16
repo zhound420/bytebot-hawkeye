@@ -45,6 +45,7 @@ export class GoogleService implements BytebotAgentService {
     systemPrompt: string,
     messages: Message[],
     model: string = DEFAULT_MODEL.name,
+    useTools: boolean = true,
     signal?: AbortSignal,
   ): Promise<MessageContentBlock[]> {
     try {
@@ -60,11 +61,13 @@ export class GoogleService implements BytebotAgentService {
           config: {
             maxOutputTokens: maxTokens,
             systemInstruction: systemPrompt,
-            tools: [
-              {
-                functionDeclarations: googleTools,
-              },
-            ],
+            tools: useTools
+              ? [
+                  {
+                    functionDeclarations: googleTools,
+                  },
+                ]
+              : [],
             abortSignal: signal,
           },
         });

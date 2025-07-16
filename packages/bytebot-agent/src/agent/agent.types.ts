@@ -6,6 +6,7 @@ export interface BytebotAgentService {
     systemPrompt: string,
     messages: Message[],
     model: string,
+    useTools: boolean,
     signal?: AbortSignal,
   ): Promise<MessageContentBlock[]>;
 }
