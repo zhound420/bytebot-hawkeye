@@ -13,16 +13,20 @@ col=0
 row=2
 col=0
 
-[/home/user/Desktop/terminal.desktop]
+[/home/user/Desktop/code.desktop]
 row=3
 col=0
 
-
-[/home/user]
+[/home/user/Desktop/terminal.desktop]
 row=4
 col=0
 
 
-[Trash]
+[/home/user]
 row=5
+col=0
+
+
+[Trash]
+row=6
 col=0

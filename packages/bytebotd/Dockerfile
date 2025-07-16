@@ -117,6 +117,24 @@ RUN ARCH=$(dpkg --print-architecture) && \
         echo "1Password is not available for $ARCH architecture."; \
     fi
 
+# Install Visual Studio Code
+RUN ARCH=$(dpkg --print-architecture) && \
+    if [ "$ARCH" = "amd64" ]; then \
+        apt-get update && apt-get install -y wget gpg apt-transport-https software-properties-common && \
+        wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /usr/share/keyrings/ms_vscode.gpg && \
+        echo "deb [arch=amd64 signed-by=/usr/share/keyrings/ms_vscode.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list && \
+        apt-get update && apt-get install -y code && \
+        apt-get clean && rm -rf /var/lib/apt/lists/* ; \
+    elif [ "$ARCH" = "arm64" ]; then \
+        apt-get update && apt-get install -y wget gpg && \
+        wget -qO /tmp/code_arm64.deb https://update.code.visualstudio.com/latest/linux-deb-arm64/stable && \
+        apt-get install -y /tmp/code_arm64.deb && \
+        rm -f /tmp/code_arm64.deb && \
+        apt-get clean && rm -rf /var/lib/apt/lists/* ; \
+    else \
+        echo "VSCode is not available for $ARCH architecture."; \
+    fi
+
 # Install Node.js
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get update \
@@ -211,6 +229,7 @@ RUN mkdir -p /home/user/Desktop && \
     cp -f /usr/share/applications/firefox.desktop /home/user/Desktop/ && \
     cp -f /usr/share/applications/thunderbird.desktop /home/user/Desktop/ && \
     cp -f /usr/share/applications/1password.desktop /home/user/Desktop/ && \
+    cp -f /usr/share/applications/code.desktop /home/user/Desktop/ && \
     cp -f /usr/share/applications/terminal.desktop /home/user/Desktop/ && \
     chmod +x /home/user/Desktop/*.desktop && \
     chown user:user /home/user/Desktop/*.desktop
