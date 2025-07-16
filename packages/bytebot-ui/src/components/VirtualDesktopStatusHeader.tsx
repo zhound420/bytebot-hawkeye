@@ -93,7 +93,7 @@ const statusConfig: Record<VirtualDesktopStatus, StatusConfig> = {
       </span>
     ),
     text: "Canceled",
-    gradient: "from-red-700 to-red-900",
+    gradient: "from-gray-400 to-gray-600",
     subtext: "Task canceled",
   },
   pending: {

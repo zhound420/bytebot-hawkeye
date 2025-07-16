@@ -47,13 +47,13 @@ export default function Home() {
   const buttonsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetch('/api/tasks/models')
+    fetch("/api/tasks/models")
       .then((res) => res.json())
       .then((data) => {
         setModels(data);
         if (data.length > 0) setSelectedModel(data[0]);
       })
-      .catch((err) => console.error('Failed to load models', err));
+      .catch((err) => console.error("Failed to load models", err));
   }, []);
 
   // Close popover when clicking outside or pressing ESC
@@ -92,7 +92,7 @@ export default function Home() {
     setIsLoading(true);
 
     try {
-      if (!selectedModel) throw new Error('No model selected');
+      if (!selectedModel) throw new Error("No model selected");
       // Send request to start a new task
       const task = await startTask({
         description: input,
@@ -125,11 +125,11 @@ export default function Home() {
             <div className="flex w-full max-w-xl flex-col items-center">
               <div className="mb-6 flex w-full flex-col items-start justify-start">
                 <h1 className="text-bytebot-bronze-light-12 mb-1 text-2xl">
-                  What would you like to automate?
+                  What can I help you get done?
                 </h1>
               </div>
 
-              <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-7 border w-full rounded-2xl p-2 mb-10">
+              <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-7 mb-10 w-full rounded-2xl border p-2">
                 <ChatInput
                   input={input}
                   isLoading={isLoading}
@@ -141,7 +141,9 @@ export default function Home() {
                   <Select
                     value={selectedModel?.name}
                     onValueChange={(val) =>
-                      setSelectedModel(models.find((m) => m.name === val) || null)
+                      setSelectedModel(
+                        models.find((m) => m.name === val) || null,
+                      )
                     }
                   >
                     <SelectTrigger className="w-auto">
@@ -158,7 +160,11 @@ export default function Home() {
                 </div>
               </div>
 
-              <TaskList className="w-full" title="Latest Tasks" description="You'll see tasks that are completed, scheduled, or require your attention." />
+              <TaskList
+                className="w-full"
+                title="Latest Tasks"
+                description="You'll see tasks that are completed, scheduled, or require your attention."
+              />
             </div>
           </div>
 
@@ -176,11 +182,11 @@ export default function Home() {
             <div className="flex w-full max-w-xl flex-col items-center pb-10">
               <div className="mb-6 flex w-full flex-col items-start justify-start">
                 <h1 className="text-bytebot-bronze-light-12 mb-1 text-2xl">
-                  What would you like to automate?
+                  What can I help you get done?
                 </h1>
               </div>
 
-              <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-5 borderw-full rounded-2xl p-2 mb-10">
+              <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-5 borderw-full mb-10 rounded-2xl p-2">
                 <ChatInput
                   input={input}
                   isLoading={isLoading}
@@ -192,7 +198,9 @@ export default function Home() {
                   <Select
                     value={selectedModel?.name}
                     onValueChange={(val) =>
-                      setSelectedModel(models.find((m) => m.name === val) || null)
+                      setSelectedModel(
+                        models.find((m) => m.name === val) || null,
+                      )
                     }
                   >
                     <SelectTrigger className="w-auto">
@@ -209,7 +217,11 @@ export default function Home() {
                 </div>
               </div>
 
-              <TaskList className="w-full" title="Latest Tasks" description="You'll see tasks that are completed, scheduled, or require your attention." />
+              <TaskList
+                className="w-full"
+                title="Latest Tasks"
+                description="You'll see tasks that are completed, scheduled, or require your attention."
+              />
             </div>
           </div>
         </div>
