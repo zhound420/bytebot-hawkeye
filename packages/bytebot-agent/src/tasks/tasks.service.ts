@@ -339,20 +339,10 @@ export class TasksService {
       where: { id: taskId },
       data: {
         status: TaskStatus.CANCELLED,
-        control: Role.USER,
       },
     });
 
-    try {
-      await fetch(
-        `${this.configService.get<string>('BYTEBOT_DESKTOP_BASE_URL')}/input-tracking/stop`,
-        { method: 'POST' },
-      );
-    } catch (error) {
-      this.logger.error('Failed to stop input tracking', error as any);
-    }
-
-    // Broadcast cancel event so AgentProcessor can react
+    // Broadcast cancel event so AgentProcessor can cancel processing
     this.eventEmitter.emit('task.cancel', { taskId });
 
     this.logger.log(`Task ${taskId} cancelled and marked as failed`);

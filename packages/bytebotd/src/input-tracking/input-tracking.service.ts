@@ -130,19 +130,14 @@ export class InputTrackingService implements OnModuleDestroy {
       if (this.clickMouseActionTimeout) {
         clearTimeout(this.clickMouseActionTimeout);
       }
-      this.clickMouseActionTimeout = setTimeout(async () => {
-        if (this.clickMouseActionBuffer.length === 1) {
-          await this.logAction(this.clickMouseActionBuffer[0]);
-        }
 
-        if (this.clickMouseActionBuffer.length > 1) {
-          this.clickMouseActionBuffer.forEach(async (action) => {
-            // Skip single click actions
-            if (action.clickCount > 1) {
-              await this.logAction(action);
-            }
-          });
-        }
+      this.clickMouseActionTimeout = setTimeout(async () => {
+        // pick the event with the largest clickCount in the burst
+        const final = this.clickMouseActionBuffer.reduce((a, b) =>
+          b.clickCount > a.clickCount ? b : a,
+        );
+        await this.logAction(final); // emit exactly once
+
         this.clickMouseActionTimeout = null;
         this.clickMouseActionBuffer = [];
       }, this.CLICK_DEBOUNCE_MS);

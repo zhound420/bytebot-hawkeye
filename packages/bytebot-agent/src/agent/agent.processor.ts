@@ -98,6 +98,13 @@ export class AgentProcessor {
     }
   }
 
+  @OnEvent('task.cancel')
+  async handleTaskCancel({ taskId }: { taskId: string }) {
+    this.logger.log(`Task cancel event received for task ID: ${taskId}`);
+
+    await this.stopProcessing();
+  }
+
   processTask(taskId: string) {
     this.logger.log(`Starting processing for task ID: ${taskId}`);
 
@@ -378,12 +385,6 @@ export class AgentProcessor {
 
     // Signal any in-flight async operations to abort
     this.abortController?.abort();
-
-    if (this.currentTaskId) {
-      await this.tasksService.update(this.currentTaskId, {
-        status: TaskStatus.CANCELLED,
-      });
-    }
 
     this.isProcessing = false;
     this.currentTaskId = null;

@@ -6,7 +6,6 @@ import {
   TextContentBlock,
   ToolUseContentBlock,
 } from '@bytebot/shared';
-import { AGENT_SYSTEM_PROMPT } from '../agent/agent.constants';
 import {
   BytebotAgentService,
   BytebotAgentInterrupt,
