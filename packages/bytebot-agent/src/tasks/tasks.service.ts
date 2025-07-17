@@ -17,7 +17,7 @@ import {
   TaskType,
   TaskPriority,
 } from '@prisma/client';
-import { GuideTaskDto } from './dto/guide-task.dto';
+import { AddTaskMessageDto } from './dto/add-task-message.dto';
 import { TasksGateway } from './tasks.gateway';
 import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -213,28 +213,16 @@ export class TasksService {
     return deletedTask;
   }
 
-  async guideTask(taskId: string, guideTaskDto: GuideTaskDto) {
+  async addTaskMessage(taskId: string, addTaskMessageDto: AddTaskMessageDto) {
     const task = await this.findById(taskId);
     if (!task) {
       this.logger.warn(`Task with ID: ${taskId} not found for guiding`);
       throw new NotFoundException(`Task with ID ${taskId} not found`);
     }
 
-    // Allow guiding for NEEDS_HELP status
-    const canGuide = task.status === TaskStatus.NEEDS_HELP;
-
-    if (!canGuide) {
-      this.logger.warn(
-        `Task with ID: ${taskId} cannot be guided in current state`,
-      );
-      throw new BadRequestException(
-        `Task with ID ${taskId} cannot be guided in current state`,
-      );
-    }
-
     const message = await this.prisma.message.create({
       data: {
-        content: [{ type: 'text', text: guideTaskDto.message }],
+        content: [{ type: 'text', text: addTaskMessageDto.message }],
         role: Role.USER,
         taskId,
       },
@@ -242,14 +230,15 @@ export class TasksService {
 
     this.tasksGateway.emitNewMessage(taskId, message);
 
-    const updatedTask = await this.prisma.task.update({
-      where: { id: taskId },
-      data: {
-        status: TaskStatus.RUNNING,
-      },
-    });
-
-    return updatedTask;
+    if (task.status === TaskStatus.NEEDS_HELP) {
+      await this.prisma.task.update({
+        where: { id: taskId },
+        data: {
+          status: TaskStatus.RUNNING,
+        },
+      });
+    }
+    return task;
   }
 
   async resume(taskId: string): Promise<Task> {

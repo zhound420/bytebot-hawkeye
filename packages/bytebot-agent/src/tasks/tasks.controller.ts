@@ -16,7 +16,7 @@ import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { Message, Task } from '@prisma/client';
-import { GuideTaskDto } from './dto/guide-task.dto';
+import { AddTaskMessageDto } from './dto/add-task-message.dto';
 import { MessagesService } from '../messages/messages.service';
 import { AuthGuard } from '@thallesp/nestjs-better-auth';
 import { Request } from 'express';
@@ -87,6 +87,15 @@ export class TasksController {
     return messages;
   }
 
+  @Post(':id/messages')
+  @HttpCode(HttpStatus.CREATED)
+  async addTaskMessage(
+    @Param('id') taskId: string,
+    @Body() guideTaskDto: AddTaskMessageDto,
+  ): Promise<Task> {
+    return this.tasksService.addTaskMessage(taskId, guideTaskDto);
+  }
+
   @Get(':id/messages/raw')
   async taskRawMessages(
     @Param('id') taskId: string,
@@ -127,15 +136,6 @@ export class TasksController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async delete(@Param('id') id: string): Promise<void> {
     await this.tasksService.delete(id);
-  }
-
-  @Post(':id/guide')
-  @HttpCode(HttpStatus.CREATED)
-  async guideTask(
-    @Param('id') taskId: string,
-    @Body() guideTaskDto: GuideTaskDto,
-  ): Promise<Task> {
-    return this.tasksService.guideTask(taskId, guideTaskDto);
   }
 
   @Post(':id/takeover')

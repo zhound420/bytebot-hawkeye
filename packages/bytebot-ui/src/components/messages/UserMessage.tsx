@@ -2,7 +2,11 @@ import React from "react";
 import ReactMarkdown from "react-markdown";
 import { GroupedMessages } from "@/types";
 import { MessageAvatar } from "./MessageAvatar";
-import { isTextContentBlock, isToolResultContentBlock, isImageContentBlock } from "@bytebot/shared";
+import {
+  isTextContentBlock,
+  isToolResultContentBlock,
+  isImageContentBlock,
+} from "@bytebot/shared";
 
 interface UserMessageProps {
   group: GroupedMessages;
@@ -10,16 +14,77 @@ interface UserMessageProps {
 }
 
 export function UserMessage({ group, messageIdToIndex }: UserMessageProps) {
+  if (messageIdToIndex[group.messages[0].id] === 0) {
+    return (
+      <div className="border-bytebot-bronze-light-7 flex items-start justify-start gap-2 border-b px-4 py-3">
+        <MessageAvatar role={group.role} />
+
+        <div>
+          {group.messages.map((message) => (
+            <div
+              key={message.id}
+              data-message-index={messageIdToIndex[message.id]}
+            >
+              {/* Render hidden divs for each screenshot block */}
+              {message.content.map((block, blockIndex) => {
+                if (
+                  isToolResultContentBlock(block) &&
+                  block.content &&
+                  block.content.length > 0
+                ) {
+                  const imageBlock = block.content[0];
+                  if (isImageContentBlock(imageBlock)) {
+                    return (
+                      <div
+                        key={blockIndex}
+                        data-message-index={messageIdToIndex[message.id]}
+                        data-block-index={blockIndex}
+                        style={{
+                          position: "absolute",
+                          width: 0,
+                          height: 0,
+                          overflow: "hidden",
+                        }}
+                      />
+                    );
+                  }
+                }
+                return null;
+              })}
+              <div className="bg-bytebot-bronze-light-4 space-y-2 rounded-md px-2 py-1">
+                {message.content.map((block, index) => (
+                  <div
+                    key={index}
+                    className="text-bytebot-bronze-light-12 text-sm"
+                  >
+                    {isTextContentBlock(block) && (
+                      <ReactMarkdown>{block.text}</ReactMarkdown>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex items-start justify-start gap-2 px-4 py-3 border-b border-bytebot-bronze-light-7">
-      <MessageAvatar role={group.role} />
-      
+    <div className="bg-bytebot-bronze-light-3 flex items-start justify-end gap-2 px-4 py-3">
       <div>
         {group.messages.map((message) => (
-          <div key={message.id} data-message-index={messageIdToIndex[message.id]}>
+          <div
+            key={message.id}
+            data-message-index={messageIdToIndex[message.id]}
+          >
             {/* Render hidden divs for each screenshot block */}
             {message.content.map((block, blockIndex) => {
-              if (isToolResultContentBlock(block) && block.content && block.content.length > 0) {
+              if (
+                isToolResultContentBlock(block) &&
+                block.content &&
+                block.content.length > 0
+              ) {
                 const imageBlock = block.content[0];
                 if (isImageContentBlock(imageBlock)) {
                   return (
@@ -27,16 +92,21 @@ export function UserMessage({ group, messageIdToIndex }: UserMessageProps) {
                       key={blockIndex}
                       data-message-index={messageIdToIndex[message.id]}
                       data-block-index={blockIndex}
-                      style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }}
+                      style={{
+                        position: "absolute",
+                        width: 0,
+                        height: 0,
+                        overflow: "hidden",
+                      }}
                     />
                   );
                 }
               }
               return null;
             })}
-            <div className="space-y-2 bg-bytebot-bronze-light-4 rounded-md px-2 py-1">
+            <div className="space-y-2 rounded-md text-fuchsia-600">
               {message.content.map((block, index) => (
-                <div key={index} className="text-bytebot-bronze-light-12 text-xs">
+                <div key={index} className="prose prose-sm max-w-none text-sm">
                   {isTextContentBlock(block) && (
                     <ReactMarkdown>{block.text}</ReactMarkdown>
                   )}
@@ -46,6 +116,8 @@ export function UserMessage({ group, messageIdToIndex }: UserMessageProps) {
           </div>
         ))}
       </div>
+
+      <MessageAvatar role={group.role} />
     </div>
   );
 }

@@ -50,7 +50,7 @@ export default function TaskPage() {
     isLoadingMoreMessages,
     hasMoreMessages,
     loadMoreMessages,
-    handleGuideTask,
+    handleAddMessage,
     handleTakeOverTask,
     handleResumeTask,
     handleCancelTask,
@@ -183,12 +183,12 @@ export default function TaskPage() {
           </div>
 
           {/* Chat Area */}
-          <div
-            ref={chatContainerRef}
-            className="col-span-3 flex h-full flex-col overflow-scroll"
-          >
+          <div className="col-span-3 flex h-full min-h-0 flex-col">
             {/* Messages scrollable area */}
-            <div className="h-full flex-1 px-4 pb-2">
+            <div
+              ref={chatContainerRef}
+              className="min-h-0 flex-1 overflow-scroll px-4"
+            >
               <ChatContainer
                 taskStatus={taskStatus}
                 groupedMessages={groupedMessages}
@@ -203,35 +203,18 @@ export default function TaskPage() {
             </div>
 
             {/* Fixed chat input */}
-            {taskStatus === TaskStatus.NEEDS_HELP && (
-              <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-7 shadow-rounded-2xl border p-2">
-                <ChatInput
-                  input={input}
-                  isLoading={isLoading}
-                  onInputChange={setInput}
-                  onSend={handleGuideTask}
-                  minLines={1}
-                />
-                <div className="mt-2">
-                  <Select
-                    value={selectedModel?.name}
-                    onValueChange={(val) =>
-                      setSelectedModel(
-                        models.find((m) => m.name === val) || null,
-                      )
-                    }
-                  >
-                    <SelectTrigger className="w-auto">
-                      <SelectValue placeholder="Select an model" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {models.map((m) => (
-                        <SelectItem key={m.name} value={m.name}>
-                          {m.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+            {[TaskStatus.RUNNING, TaskStatus.NEEDS_HELP].includes(
+              taskStatus,
+            ) && (
+              <div className="flex-shrink-0 px-4 pb-4">
+                <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-7 shadow-rounded-2xl border p-2">
+                  <ChatInput
+                    input={input}
+                    isLoading={isLoading}
+                    onInputChange={setInput}
+                    onSend={handleAddMessage}
+                    minLines={1}
+                  />
                 </div>
               </div>
             )}

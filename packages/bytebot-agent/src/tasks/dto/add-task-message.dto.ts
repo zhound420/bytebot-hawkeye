@@ -1,6 +1,6 @@
 import { IsNotEmpty, IsString } from 'class-validator';
 
-export class GuideTaskDto {
+export class AddTaskMessageDto {
   @IsNotEmpty()
   @IsString()
   message: string;

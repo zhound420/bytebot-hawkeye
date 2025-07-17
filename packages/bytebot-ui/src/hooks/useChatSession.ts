@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Message, Role, TaskStatus, Task, GroupedMessages } from "@/types";
 import {
-  guideTask,
+  addMessage,
   fetchTaskMessages,
   fetchTaskProcessedMessages,
   fetchTaskById,
@@ -48,12 +48,15 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
   // Function to reload grouped messages
   const reloadGroupedMessages = useCallback(async () => {
     if (!currentTaskId) return;
-    
+
     try {
-      const processedMessages = await fetchTaskProcessedMessages(currentTaskId, {
-        limit: 100, // Get more messages for grouped view
-        page: 1,
-      });
+      const processedMessages = await fetchTaskProcessedMessages(
+        currentTaskId,
+        {
+          limit: 1000, // Get more messages for grouped view
+          page: 1,
+        },
+      );
       setGroupedMessages(processedMessages);
     } catch (error) {
       console.error("Error reloading grouped messages:", error);
@@ -103,28 +106,28 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
 
   // Load more messages function for infinite scroll
   const loadMoreMessages = useCallback(async () => {
-    console.log('loadMoreMessages called with state:', {
+    console.log("loadMoreMessages called with state:", {
       currentTaskId,
       isLoadingMoreMessages,
       hasMoreMessages,
-      currentPage
+      currentPage,
     });
 
     if (!currentTaskId || isLoadingMoreMessages || !hasMoreMessages) {
-      console.log('loadMoreMessages early return');
+      console.log("loadMoreMessages early return");
       return;
     }
 
-    console.log('Starting to load more messages');
+    console.log("Starting to load more messages");
     setIsLoadingMoreMessages(true);
     try {
       const nextPage = currentPage + 1;
-      console.log('Fetching page:', nextPage);
+      console.log("Fetching page:", nextPage);
       const newMessages = await fetchTaskMessages(currentTaskId, {
         limit: 10,
         page: nextPage,
       });
-      console.log('Received messages:', newMessages.length);
+      console.log("Received messages:", newMessages.length);
 
       if (newMessages.length === 0) {
         setHasMoreMessages(false);
@@ -139,7 +142,7 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
 
         // Filter out any messages we already have
         const uniqueMessages = formattedMessages.filter(
-          (msg) => !processedMessageIds.current.has(msg.id)
+          (msg) => !processedMessageIds.current.has(msg.id),
         );
 
         if (uniqueMessages.length > 0) {
@@ -178,10 +181,13 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
             limit: 10,
             page: 1,
           });
-          const processedMessages = await fetchTaskProcessedMessages(initialTaskId, {
-            limit: 100, // Get more messages for grouped view
-            page: 1,
-          });
+          const processedMessages = await fetchTaskProcessedMessages(
+            initialTaskId,
+            {
+              limit: 1000, // Get more messages for grouped view
+              page: 1,
+            },
+          );
 
           if (task) {
             console.log(`Found task: ${task.id}`);
@@ -209,7 +215,7 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
 
               setMessages(formattedMessages);
               setCurrentPage(1);
-              
+
               // If we got fewer messages than requested, we've reached the end
               if (messages.length < 10) {
                 setHasMoreMessages(false);
@@ -260,9 +266,9 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
       const task = await startTask({
         description,
         model: {
-          provider: 'anthropic',
-          name: 'claude-opus-4-20250514',
-          title: 'Claude Opus 4',
+          provider: "anthropic",
+          name: "claude-opus-4-20250514",
+          title: "Claude Opus 4",
         },
       });
 
@@ -290,7 +296,7 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
     }
   };
 
-  const handleGuideTask = async () => {
+  const handleAddMessage = async () => {
     if (!input.trim()) return;
 
     setIsLoading(true);
@@ -300,7 +306,7 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
       setInput("");
 
       // Send request to start a new task or continue existing task
-      const response = await guideTask(currentTaskId!, message);
+      const response = await addMessage(currentTaskId!, message);
 
       if (!response) {
         // Add error message to chat
@@ -394,7 +400,7 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
     isLoadingMoreMessages,
     hasMoreMessages,
     loadMoreMessages,
-    handleGuideTask,
+    handleAddMessage,
     handleStartTask,
     startNewConversation,
     handleTakeOverTask,

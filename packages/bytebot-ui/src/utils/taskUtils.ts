@@ -134,11 +134,11 @@ export async function startTask(data: {
 /**
  * Guides an existing task with a message
  */
-export async function guideTask(
+export async function addMessage(
   taskId: string,
   message: string,
 ): Promise<Task | null> {
-  return apiRequest<Task>(`/tasks/${taskId}/guide`, {
+  return apiRequest<Task>(`/tasks/${taskId}/messages`, {
     method: "POST",
     body: JSON.stringify({ message }),
   });

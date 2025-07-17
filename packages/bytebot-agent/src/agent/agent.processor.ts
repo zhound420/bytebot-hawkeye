@@ -126,13 +126,6 @@ export class AgentProcessor {
     try {
       const task: Task = await this.tasksService.findById(taskId);
 
-      if (task.control !== Role.ASSISTANT) {
-        this.logger.debug(
-          `Task ${taskId} is not under agent control, skipping iteration`,
-        );
-        return;
-      }
-
       if (task.status !== TaskStatus.RUNNING) {
         this.logger.log(
           `Task processing completed for task ID: ${taskId} with status: ${task.status}`,
@@ -362,7 +355,6 @@ export class AgentProcessor {
     } catch (error: any) {
       if (error?.name === 'BytebotAgentInterrupt') {
         this.logger.warn(`Processing aborted for task ID: ${taskId}`);
-        return;
       } else {
         this.logger.error(
           `Error during task processing iteration for task ID: ${taskId} - ${error.message}`,
