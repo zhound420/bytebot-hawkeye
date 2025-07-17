@@ -242,12 +242,18 @@ export class ComputerUseService {
   }
 
   private async application(action: ApplicationAction): Promise<void> {
+    if (action.application === 'desktop') {
+      await exec(`wmctrl -k on`);
+      return;
+    }
+
     const commandMap: Record<string, string> = {
-      firefox: 'firefox-esr',
-      '1password': '1password',
-      thunderbird: 'thunderbird',
+      firefox: 'Navigator.firefox-esr',
+      '1password': '1password.1Password',
+      thunderbird: 'Mail.thunderbird',
       vscode: 'code',
-      terminal: 'exo-open --launch TerminalEmulator',
+      terminal: 'xfce4-terminal.Xfce4-Terminal',
+      directory: 'Thunar',
     };
 
     const cmd = commandMap[action.application];
@@ -255,13 +261,19 @@ export class ComputerUseService {
       throw new Error(`Unknown application: ${action.application}`);
     }
 
-    await new Promise<void>((resolve) => {
-      exec(`wmctrl -xa ${action.application} || (${cmd} &)`, () => {
-        exec(
-          `wmctrl -xa ${action.application} && wmctrl -r :ACTIVE: -b add,maximized_vert,maximized_horz`,
-          () => resolve(),
-        );
-      });
-    });
+    // check if the application is already open using wmctrl -lx
+    const result = await exec(`wmctrl -lx | grep ${action.application}`);
+    if (result.stdout) {
+      // application is already open
+      this.logger.log(`Application ${action.application} is already open`);
+      // focus the application in fullscreen
+      await exec(`wmctrl -xa ${cmd} -e 0 -b add,maximized_vert,maximized_horz`);
+      return;
+    }
+
+    // application is not open, open it
+    await exec(`${cmd} &`);
+    this.logger.log(`Application ${action.application} opened`);
+    await exec(`wmctrl -xa ${cmd} -e 0 -b add,maximized_vert,maximized_horz`);
   }
 }

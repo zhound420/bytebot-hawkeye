@@ -1,6 +1,14 @@
 export type Coordinates = { x: number; y: number };
 export type Button = "left" | "right" | "middle";
 export type Press = "up" | "down";
+export type Application =
+  | "firefox"
+  | "1password"
+  | "thunderbird"
+  | "vscode"
+  | "terminal"
+  | "desktop"
+  | "directory";
 
 // Define individual computer action types
 export type MoveMouseAction = {
@@ -78,7 +86,7 @@ export type CursorPositionAction = {
 
 export type ApplicationAction = {
   action: "application";
-  application: string;
+  application: Application;
 };
 
 // Define the union type using the individual action types

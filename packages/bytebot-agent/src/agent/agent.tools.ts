@@ -263,14 +263,21 @@ export const _cursorPositionTool = {
 
 export const _applicationTool = {
   name: 'computer_application',
-  description:
-    'Opens or focuses an application and ensures it is fullscreen',
+  description: 'Opens or focuses an application and ensures it is fullscreen',
   input_schema: {
     type: 'object' as const,
     properties: {
       application: {
         type: 'string' as const,
-        enum: ['firefox', '1password', 'thunderbird', 'vscode', 'terminal'],
+        enum: [
+          'firefox',
+          '1password',
+          'thunderbird',
+          'vscode',
+          'terminal',
+          'desktop',
+          'directory',
+        ],
         description: 'The application to open or focus',
       },
     },

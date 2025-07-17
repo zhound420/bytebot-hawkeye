@@ -32,4 +32,6 @@ export enum ApplicationName {
   THUNDERBIRD = 'thunderbird',
   VSCODE = 'vscode',
   TERMINAL = 'terminal',
+  DESKTOP = 'desktop',
+  DIRECTORY = 'directory',
 }

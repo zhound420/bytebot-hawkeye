@@ -489,13 +489,22 @@ V, W, X, Y, Z
         'thunderbird',
         'vscode',
         'terminal',
+        'desktop',
+        'directory',
       ]),
     }),
   })
   async application({
     application,
   }: {
-    application: 'firefox' | '1password' | 'thunderbird' | 'vscode' | 'terminal';
+    application:
+      | 'firefox'
+      | '1password'
+      | 'thunderbird'
+      | 'vscode'
+      | 'terminal'
+      | 'desktop'
+      | 'directory';
   }) {
     try {
       await this.computerUse.action({ action: 'application', application });
