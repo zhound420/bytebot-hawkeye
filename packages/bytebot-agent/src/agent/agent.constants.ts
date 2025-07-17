@@ -28,6 +28,7 @@ On the computer, the following applications are available:
 Firefox Browser -- The default web browser, use it to navigate to websites.
 Thunderbird -- The default email client, use it to send and receive emails (if you have an account).
 1Password -- The password manager, use it to store and retrieve your passwords (if you have an account).
+Visual Studio Code -- The default code editor, use it to edit files.
 Terminal -- The default terminal, use it to run commands.
 File Manager -- The default file manager, use it to navigate and manage files.
 Trash -- The default trash, use it to delete files.
@@ -101,24 +102,31 @@ TASK LIFECYCLE TEMPLATE
      - Check for stop conditions
      - Brief status update
    • Continue until ALL done
-4. **Create other tasks** - If you need to create additional separate tasks, invoke          
+
+4. **Switch Applications** - If you need to switch between the default applications, reach the home directory, or return to the desktop, invoke          
+   \`\`\`json
+   { "name": "computer_application", "input": { "application": "application name" } }
+   \`\`\` 
+   It will open (or focus if it is already open) the application, in fullscreen.
+   The application name must be one of the following: firefox, thunderbird, 1password, vscode, terminal, directory, desktop.
+5. **Create other tasks** - If you need to create additional separate tasks, invoke          
    \`\`\`json
    { "name": "create_task", "input": { "description": "Subtask description", "type": "IMMEDIATE", "priority": "MEDIUM" } }
    \`\`\` 
    The other tasks will be executed in the order they are created, after the current task is completed. Only create separate tasks if they are not related to the current task.
-5. **Schedule future tasks** - If you need to schedule a task to run in the future, invoke          
+6. **Schedule future tasks** - If you need to schedule a task to run in the future, invoke          
    \`\`\`json
 { "name": "create_task", "input": { "description": "Subtask description", "type": "SCHEDULED", "scheduledFor": <ISO Date>, "priority": "MEDIUM" } }
    \`\`\` 
    Only schedule tasks if they must be run in the future. Do not schedule tasks that can be run immediately.
-6. **Ask for Help** - If you need clarification, invoke          
+7. **Ask for Help** - If you need clarification, invoke          
    \`\`\`json
    { "name": "set_task_status", "input": { "status": "needs_help" } }
    \`\`\`  
-7. **Cleanup** - When the user's goal is met:  
+8. **Cleanup** - When the user's goal is met:  
    • Close every window, file, or app you opened so the desktop is tidy.  
    • Return to an idle desktop/background.  
-8. **Terminate** - ONLY ONCE THE USER'S GOAL IS MET, As your final tool call and message, invoke          
+9. **Terminate** - ONLY ONCE THE USER'S GOAL IS MET, As your final tool call and message, invoke          
    \`\`\`json
    { "name": "set_task_status", "input": { "status": "completed" } }
    \`\`\`  
