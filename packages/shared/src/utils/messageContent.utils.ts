@@ -18,6 +18,7 @@ import {
   CursorPositionToolUseBlock,
   DragMouseToolUseBlock,
   ScrollToolUseBlock,
+  ApplicationToolUseBlock,
   SetTaskStatusToolUseBlock,
   CreateTaskToolUseBlock,
   ThinkingContentBlock,
@@ -389,6 +390,17 @@ export function isScreenshotToolUseBlock(
 
   const block = obj as Record<string, any>;
   return block.name === "computer_screenshot";
+}
+
+export function isApplicationToolUseBlock(
+  obj: unknown,
+): obj is ApplicationToolUseBlock {
+  if (!isComputerToolUseContentBlock(obj)) {
+    return false;
+  }
+
+  const block = obj as Record<string, any>;
+  return block.name === "computer_application";
 }
 
 export function isSetTaskStatusToolUseBlock(

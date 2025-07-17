@@ -17,6 +17,7 @@ import {
   isPressKeysToolUseBlock,
   isTypeTextToolUseBlock,
   isWaitToolUseBlock,
+  isApplicationToolUseBlock,
 } from '@bytebot/shared';
 import { Logger } from '@nestjs/common';
 
@@ -133,6 +134,9 @@ export async function handleComputerToolUse(
     }
     if (isWaitToolUseBlock(block)) {
       await wait(block.input);
+    }
+    if (isApplicationToolUseBlock(block)) {
+      await application(block.input);
     }
     logger.debug(`Tool execution successful for tool_use_id: ${block.id}`);
     return {
@@ -457,6 +461,25 @@ async function screenshot(): Promise<string> {
     return data.image; // Base64 encoded image
   } catch (error) {
     console.error('Error in screenshot action:', error);
+    throw error;
+  }
+}
+
+async function application(input: { application: string }): Promise<void> {
+  const { application } = input;
+  console.log(`Opening application: ${application}`);
+
+  try {
+    await fetch(`${BYTEBOT_DESKTOP_BASE_URL}/computer-use`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'application',
+        application,
+      }),
+    });
+  } catch (error) {
+    console.error('Error in application action:', error);
     throw error;
   }
 }

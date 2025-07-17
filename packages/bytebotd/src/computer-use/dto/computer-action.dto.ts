@@ -14,6 +14,7 @@ import {
   CoordinatesDto,
   PressType,
   ScrollDirection,
+  ApplicationName,
 } from './base.dto';
 
 /**
@@ -183,6 +184,14 @@ export class CursorPositionActionDto extends BaseActionDto {
   action: 'cursor_position';
 }
 
+export class ApplicationActionDto extends BaseActionDto {
+  @IsIn(['application'])
+  action: 'application';
+
+  @IsEnum(ApplicationName)
+  application: ApplicationName;
+}
+
 // Union type for all computer actions
 export type ComputerActionDto =
   | MoveMouseActionDto
@@ -196,4 +205,5 @@ export type ComputerActionDto =
   | TypeTextActionDto
   | WaitActionDto
   | ScreenshotActionDto
-  | CursorPositionActionDto;
+  | CursorPositionActionDto
+  | ApplicationActionDto;

@@ -261,6 +261,23 @@ export const _cursorPositionTool = {
   },
 };
 
+export const _applicationTool = {
+  name: 'computer_application',
+  description:
+    'Opens or focuses an application and ensures it is fullscreen',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      application: {
+        type: 'string' as const,
+        enum: ['firefox', '1password', 'thunderbird', 'vscode', 'terminal'],
+        description: 'The application to open or focus',
+      },
+    },
+    required: ['application'],
+  },
+};
+
 /**
  * Tool definitions for task management
  */
@@ -325,6 +342,7 @@ export const agentTools = [
   _typeTextTool,
   _waitTool,
   _screenshotTool,
+  _applicationTool,
   _cursorPositionTool,
   _setTaskStatusTool,
   _createTaskTool,

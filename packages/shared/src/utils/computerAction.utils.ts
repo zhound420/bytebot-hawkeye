@@ -12,6 +12,7 @@ import {
   WaitAction,
   ScreenshotAction,
   CursorPositionAction,
+  ApplicationAction,
 } from "../types/computerAction.types";
 import {
   ComputerToolUseContentBlock,
@@ -58,6 +59,8 @@ export const isScreenshotAction =
   createActionTypeGuard<ScreenshotAction>("screenshot");
 export const isCursorPositionAction =
   createActionTypeGuard<CursorPositionAction>("cursor_position");
+export const isApplicationAction =
+  createActionTypeGuard<ApplicationAction>("application");
 
 /**
  * Base converter for creating tool use blocks
@@ -250,6 +253,15 @@ export function convertCursorPositionActionToToolUseBlock(
   return createToolUseBlock("computer_cursor_position", toolUseId, {});
 }
 
+export function convertApplicationActionToToolUseBlock(
+  action: ApplicationAction,
+  toolUseId: string,
+): ComputerToolUseContentBlock {
+  return createToolUseBlock("computer_application", toolUseId, {
+    application: action.application,
+  });
+}
+
 /**
  * Generic converter that handles all action types
  */
@@ -282,6 +294,8 @@ export function convertComputerActionToToolUseBlock(
       return convertScreenshotActionToToolUseBlock(action, toolUseId);
     case "cursor_position":
       return convertCursorPositionActionToToolUseBlock(action, toolUseId);
+    case "application":
+      return convertApplicationActionToToolUseBlock(action, toolUseId);
     default:
       const exhaustiveCheck: never = action;
       throw new Error(

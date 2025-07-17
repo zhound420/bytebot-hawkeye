@@ -141,6 +141,13 @@ export type CursorPositionToolUseBlock = ToolUseContentBlock & {
   name: "computer_cursor_position";
 };
 
+export type ApplicationToolUseBlock = ToolUseContentBlock & {
+  name: "computer_application";
+  input: {
+    application: string;
+  };
+};
+
 export type ComputerToolUseContentBlock =
   | MoveMouseToolUseBlock
   | TraceMouseToolUseBlock
@@ -154,7 +161,8 @@ export type ComputerToolUseContentBlock =
   | DragMouseToolUseBlock
   | ScrollToolUseBlock
   | TypeTextToolUseBlock
-  | CursorPositionToolUseBlock;
+  | CursorPositionToolUseBlock
+  | ApplicationToolUseBlock;
 
 export type SetTaskStatusToolUseBlock = ToolUseContentBlock & {
   name: "set_task_status";

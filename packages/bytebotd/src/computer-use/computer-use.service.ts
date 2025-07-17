@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { exec } from 'child_process';
 import { NutService } from '../nut/nut.service';
 import {
   ComputerAction,
@@ -15,6 +16,7 @@ import {
   PressKeysAction,
   TypeTextAction,
   WaitAction,
+  ApplicationAction,
 } from '@bytebot/shared';
 
 @Injectable()
@@ -74,6 +76,11 @@ export class ComputerUseService {
 
       case 'cursor_position':
         return this.cursor_position();
+
+      case 'application': {
+        await this.application(params as ApplicationAction);
+        break;
+      }
 
       default:
         throw new Error(
@@ -232,5 +239,29 @@ export class ComputerUseService {
   private async cursor_position(): Promise<{ x: number; y: number }> {
     this.logger.log(`Getting cursor position`);
     return await this.nutService.getCursorPosition();
+  }
+
+  private async application(action: ApplicationAction): Promise<void> {
+    const commandMap: Record<string, string> = {
+      firefox: 'firefox-esr',
+      '1password': '1password',
+      thunderbird: 'thunderbird',
+      vscode: 'code',
+      terminal: 'exo-open --launch TerminalEmulator',
+    };
+
+    const cmd = commandMap[action.application];
+    if (!cmd) {
+      throw new Error(`Unknown application: ${action.application}`);
+    }
+
+    await new Promise<void>((resolve) => {
+      exec(`wmctrl -xa ${action.application} || (${cmd} &)`, () => {
+        exec(
+          `wmctrl -xa ${action.application} && wmctrl -r :ACTIVE: -b add,maximized_vert,maximized_horz`,
+          () => resolve(),
+        );
+      });
+    });
   }
 }

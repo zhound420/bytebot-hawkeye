@@ -20,6 +20,7 @@ import {
   isDragMouseToolUseBlock,
   isPressMouseToolUseBlock,
   isTraceMouseToolUseBlock,
+  isApplicationToolUseBlock,
 } from "@bytebot/shared";
 
 // Define the IconType for proper type checking
@@ -127,6 +128,10 @@ export function getLabel(block: ComputerToolUseContentBlock) {
 
   if (isTraceMouseToolUseBlock(block)) {
     return "Trace Mouse";
+  }
+
+  if (isApplicationToolUseBlock(block)) {
+    return "Open App";
   }
 
   return "Unknown";

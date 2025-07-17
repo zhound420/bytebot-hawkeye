@@ -76,6 +76,11 @@ export type CursorPositionAction = {
   action: "cursor_position";
 };
 
+export type ApplicationAction = {
+  action: "application";
+  application: string;
+};
+
 // Define the union type using the individual action types
 export type ComputerAction =
   | MoveMouseAction
@@ -89,4 +94,5 @@ export type ComputerAction =
   | TypeTextAction
   | WaitAction
   | ScreenshotAction
-  | CursorPositionAction;
+  | CursorPositionAction
+  | ApplicationAction;

@@ -25,3 +25,11 @@ export enum ScrollDirection {
   LEFT = 'left',
   RIGHT = 'right',
 }
+
+export enum ApplicationName {
+  FIREFOX = 'firefox',
+  ONEPASSWORD = '1password',
+  THUNDERBIRD = 'thunderbird',
+  VSCODE = 'vscode',
+  TERMINAL = 'terminal',
+}

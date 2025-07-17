@@ -19,6 +19,7 @@ import {
   WaitActionDto,
   ScreenshotActionDto,
   CursorPositionActionDto,
+  ApplicationActionDto,
 } from './computer-action.dto';
 
 @Injectable()
@@ -65,6 +66,9 @@ export class ComputerActionValidationPipe implements PipeTransform {
         break;
       case 'cursor_position':
         dto = plainToClass(CursorPositionActionDto, value);
+        break;
+      case 'application':
+        dto = plainToClass(ApplicationActionDto, value);
         break;
       default:
         throw new BadRequestException(`Unknown action: ${value.action}`);

@@ -479,6 +479,40 @@ V, W, X, Y, Z
   }
 
   @Tool({
+    name: 'computer_application',
+    description:
+      'Opens or switches to the specified application and maximizes it.',
+    parameters: z.object({
+      application: z.enum([
+        'firefox',
+        '1password',
+        'thunderbird',
+        'vscode',
+        'terminal',
+      ]),
+    }),
+  })
+  async application({
+    application,
+  }: {
+    application: 'firefox' | '1password' | 'thunderbird' | 'vscode' | 'terminal';
+  }) {
+    try {
+      await this.computerUse.action({ action: 'application', application });
+      return { content: [{ type: 'text', text: 'application opened' }] };
+    } catch (err) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Error opening application: ${(err as Error).message}`,
+          },
+        ],
+      };
+    }
+  }
+
+  @Tool({
     name: 'computer_screenshot',
     description: 'Captures a screenshot of the current screen.',
   })
