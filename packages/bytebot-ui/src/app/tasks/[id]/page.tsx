@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import { Header } from "@/components/layout/Header";
 import { ChatContainer } from "@/components/messages/ChatContainer";
 import { DesktopContainer } from "@/components/ui/desktop-container";
@@ -8,14 +8,7 @@ import { ChatInput } from "@/components/messages/ChatInput";
 import { useChatSession } from "@/hooks/useChatSession";
 import { useScrollScreenshot } from "@/hooks/useScrollScreenshot";
 import { useParams, useRouter } from "next/navigation";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Role, TaskStatus, Model } from "@/types";
+import { Role, TaskStatus } from "@/types";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   MoreVerticalCircle01Icon,
@@ -36,8 +29,6 @@ export default function TaskPage() {
   const taskId = params.id as string;
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
-  const [models, setModels] = useState<Model[]>([]);
-  const [selectedModel, setSelectedModel] = useState<Model | null>(null);
   const {
     messages,
     groupedMessages,
@@ -92,16 +83,6 @@ export default function TaskPage() {
     });
     return map;
   }, [messages]);
-
-  useEffect(() => {
-    fetch("/api/tasks/models")
-      .then((res) => res.json())
-      .then((data) => {
-        setModels(data);
-        if (data.length > 0) setSelectedModel(data[0]);
-      })
-      .catch((err) => console.error("Failed to load models", err));
-  }, []);
 
   // Redirect if task ID doesn't match current task
   useEffect(() => {
