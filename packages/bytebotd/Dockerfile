@@ -170,6 +170,7 @@ RUN apt-get update && \
         libxrandr-dev \
         libxkbcommon-dev \
         libxkbcommon-x11-dev \
+        xclip \
         git build-essential && \
     rm -rf /var/lib/apt/lists/*
 

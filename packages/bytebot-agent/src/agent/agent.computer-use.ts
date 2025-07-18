@@ -18,6 +18,7 @@ import {
   isTypeTextToolUseBlock,
   isWaitToolUseBlock,
   isApplicationToolUseBlock,
+  isPasteTextToolUseBlock,
 } from '@bytebot/shared';
 import { Logger } from '@nestjs/common';
 
@@ -131,6 +132,9 @@ export async function handleComputerToolUse(
     }
     if (isTypeTextToolUseBlock(block)) {
       await typeText(block.input);
+    }
+    if (isPasteTextToolUseBlock(block)) {
+      await pasteText(block.input);
     }
     if (isWaitToolUseBlock(block)) {
       await wait(block.input);
@@ -391,6 +395,25 @@ async function typeText(input: {
     });
   } catch (error) {
     console.error('Error in type_text action:', error);
+    throw error;
+  }
+}
+
+async function pasteText(input: { text: string }): Promise<void> {
+  const { text } = input;
+  console.log(`Pasting text: ${text}`);
+
+  try {
+    await fetch(`${BYTEBOT_DESKTOP_BASE_URL}/computer-use`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'paste_text',
+        text,
+      }),
+    });
+  } catch (error) {
+    console.error('Error in paste_text action:', error);
     throw error;
   }
 }

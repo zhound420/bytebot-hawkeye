@@ -23,6 +23,7 @@ import {
   CreateTaskToolUseBlock,
   ThinkingContentBlock,
   RedactedThinkingContentBlock,
+  PasteTextToolUseBlock,
 } from "../types/messageContent.types";
 
 /**
@@ -362,6 +363,17 @@ export function isTypeTextToolUseBlock(
   return block.name === "computer_type_text";
 }
 
+export function isPasteTextToolUseBlock(
+  obj: unknown
+): obj is PasteTextToolUseBlock {
+  if (!isComputerToolUseContentBlock(obj)) {
+    return false;
+  }
+
+  const block = obj as Record<string, any>;
+  return block.name === "computer_paste_text";
+}
+
 /**
  * Type guard to check if an object is a WaitToolUseBlock
  * @param obj The object to validate
@@ -393,7 +405,7 @@ export function isScreenshotToolUseBlock(
 }
 
 export function isApplicationToolUseBlock(
-  obj: unknown,
+  obj: unknown
 ): obj is ApplicationToolUseBlock {
   if (!isComputerToolUseContentBlock(obj)) {
     return false;

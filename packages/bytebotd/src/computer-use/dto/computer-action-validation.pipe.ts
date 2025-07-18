@@ -16,6 +16,7 @@ import {
   TypeKeysActionDto,
   PressKeysActionDto,
   TypeTextActionDto,
+  PasteTextActionDto,
   WaitActionDto,
   ScreenshotActionDto,
   CursorPositionActionDto,
@@ -57,6 +58,9 @@ export class ComputerActionValidationPipe implements PipeTransform {
         break;
       case 'type_text':
         dto = plainToClass(TypeTextActionDto, value);
+        break;
+      case 'paste_text':
+        dto = plainToClass(PasteTextActionDto, value);
         break;
       case 'wait':
         dto = plainToClass(WaitActionDto, value);

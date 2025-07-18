@@ -58,6 +58,11 @@ export type TypeKeysAction = {
   delay?: number;
 };
 
+export type PasteTextAction = {
+  action: "paste_text";
+  text: string;
+};
+
 export type PressKeysAction = {
   action: "press_keys";
   keys: string[];
@@ -100,6 +105,7 @@ export type ComputerAction =
   | TypeKeysAction
   | PressKeysAction
   | TypeTextAction
+  | PasteTextAction
   | WaitAction
   | ScreenshotAction
   | CursorPositionAction

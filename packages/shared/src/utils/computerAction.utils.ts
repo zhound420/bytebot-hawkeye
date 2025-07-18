@@ -13,6 +13,7 @@ import {
   ScreenshotAction,
   CursorPositionAction,
   ApplicationAction,
+  PasteTextAction,
 } from "../types/computerAction.types";
 import {
   ComputerToolUseContentBlock,
@@ -230,6 +231,15 @@ export function convertTypeTextActionToToolUseBlock(
   );
 }
 
+export function convertPasteTextActionToToolUseBlock(
+  action: PasteTextAction,
+  toolUseId: string
+): ComputerToolUseContentBlock {
+  return createToolUseBlock("computer_paste_text", toolUseId, {
+    text: action.text,
+  });
+}
+
 export function convertWaitActionToToolUseBlock(
   action: WaitAction,
   toolUseId: string
@@ -255,7 +265,7 @@ export function convertCursorPositionActionToToolUseBlock(
 
 export function convertApplicationActionToToolUseBlock(
   action: ApplicationAction,
-  toolUseId: string,
+  toolUseId: string
 ): ComputerToolUseContentBlock {
   return createToolUseBlock("computer_application", toolUseId, {
     application: action.application,
@@ -288,6 +298,8 @@ export function convertComputerActionToToolUseBlock(
       return convertPressKeysActionToToolUseBlock(action, toolUseId);
     case "type_text":
       return convertTypeTextActionToToolUseBlock(action, toolUseId);
+    case "paste_text":
+      return convertPasteTextActionToToolUseBlock(action, toolUseId);
     case "wait":
       return convertWaitActionToToolUseBlock(action, toolUseId);
     case "screenshot":

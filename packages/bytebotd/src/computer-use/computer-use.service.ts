@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { exec } from 'child_process';
+import { promisify } from 'util';
 import { NutService } from '../nut/nut.service';
 import {
   ComputerAction,
@@ -18,6 +19,7 @@ import {
   WaitAction,
   ApplicationAction,
   Application,
+  PasteTextAction,
 } from '@bytebot/shared';
 
 @Injectable()
@@ -65,6 +67,10 @@ export class ComputerUseService {
       }
       case 'type_text': {
         await this.typeText(params as TypeTextAction);
+        break;
+      }
+      case 'paste_text': {
+        await this.pasteText(params as PasteTextAction);
         break;
       }
       case 'wait': {
@@ -227,6 +233,11 @@ export class ComputerUseService {
     await this.nutService.typeText(text, delay);
   }
 
+  private async pasteText(action: PasteTextAction): Promise<void> {
+    const { text } = action;
+    await this.nutService.pasteText(text);
+  }
+
   private async delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
@@ -243,8 +254,9 @@ export class ComputerUseService {
   }
 
   private async application(action: ApplicationAction): Promise<void> {
+    const execAsync = promisify(exec);
     if (action.application === 'desktop') {
-      await exec(`wmctrl -k on`);
+      await execAsync(`sudo -u user wmctrl -k on`);
       return;
     }
 
@@ -268,24 +280,34 @@ export class ComputerUseService {
     };
 
     // check if the application is already open using wmctrl -lx
-    const result = await exec(
-      `wmctrl -lx | grep ${processMap[action.application]}`,
-    );
-    if (result.stdout) {
-      // application is already open
+    let appOpen = false;
+    try {
+      const { stdout } = await execAsync(
+        `sudo -u user wmctrl -lx | grep ${processMap[action.application]}`,
+      );
+      appOpen = stdout.trim().length > 0;
+    } catch (error: any) {
+      // grep returns exit code 1 when no match is found – treat as "not open"
+      if (error.code !== 1) {
+        throw error;
+      }
+    }
+
+    if (appOpen) {
       this.logger.log(`Application ${action.application} is already open`);
-      // focus the application in fullscreen
-      await exec(
-        `wmctrl -xa ${processMap[action.application]} -e 0 -b add,maximized_vert,maximized_horz`,
+      await execAsync(
+        `sudo -u user wmctrl -xa ${processMap[action.application]} -e 0 -b add,maximized_vert,maximized_horz`,
       );
       return;
     }
 
     // application is not open, open it
-    await exec(`nohup ${commandMap[action.application]} > /dev/null 2>&1 &`);
+    await execAsync(
+      `sudo -u user nohup ${commandMap[action.application]} > /dev/null 2>&1 &`,
+    );
     this.logger.log(`Application ${action.application} opened`);
-    await exec(
-      `wmctrl -xa ${processMap[action.application]} -e 0 -b add,maximized_vert,maximized_horz`,
+    await execAsync(
+      `sudo -u user wmctrl -xa ${processMap[action.application]} -e 0 -b add,maximized_vert,maximized_horz`,
     );
   }
 }

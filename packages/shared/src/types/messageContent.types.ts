@@ -126,6 +126,14 @@ export type TypeTextToolUseBlock = ToolUseContentBlock & {
   };
 };
 
+export type PasteTextToolUseBlock = ToolUseContentBlock & {
+  name: "computer_paste_text";
+  input: {
+    text: string;
+    isSensitive?: boolean;
+  };
+};
+
 export type WaitToolUseBlock = ToolUseContentBlock & {
   name: "computer_wait";
   input: {
@@ -156,11 +164,11 @@ export type ComputerToolUseContentBlock =
   | TypeKeysToolUseBlock
   | PressKeysToolUseBlock
   | TypeTextToolUseBlock
+  | PasteTextToolUseBlock
   | WaitToolUseBlock
   | ScreenshotToolUseBlock
   | DragMouseToolUseBlock
   | ScrollToolUseBlock
-  | TypeTextToolUseBlock
   | CursorPositionToolUseBlock
   | ApplicationToolUseBlock;
 

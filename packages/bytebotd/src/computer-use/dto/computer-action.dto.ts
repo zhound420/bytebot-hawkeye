@@ -165,6 +165,14 @@ export class TypeTextActionDto extends BaseActionDto {
   delay?: number;
 }
 
+export class PasteTextActionDto extends BaseActionDto {
+  @IsIn(['paste_text'])
+  action: 'paste_text';
+
+  @IsString()
+  text: string;
+}
+
 export class WaitActionDto extends BaseActionDto {
   @IsIn(['wait'])
   action: 'wait';

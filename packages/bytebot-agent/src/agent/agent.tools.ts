@@ -201,7 +201,8 @@ export const _pressKeysTool = {
 
 export const _typeTextTool = {
   name: 'computer_type_text',
-  description: 'Types a string of text character by character',
+  description:
+    'Types a string of text character by character. Useful for strings less than 25 characters, or passwords/sensitive form fields.',
   input_schema: {
     type: 'object' as const,
     properties: {
@@ -213,6 +214,27 @@ export const _typeTextTool = {
         type: 'number' as const,
         description: 'Optional delay in milliseconds between characters',
         nullable: true,
+      },
+      isSensitive: {
+        type: 'boolean' as const,
+        description: 'Flag to indicate sensitive information',
+        nullable: true,
+      },
+    },
+    required: ['text'],
+  },
+};
+
+export const _pasteTextTool = {
+  name: 'computer_paste_text',
+  description:
+    'Copies text to the clipboard and pastes it. Useful for large text or special characters not on the standard keyboard.',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      text: {
+        type: 'string' as const,
+        description: 'The text string to type',
       },
       isSensitive: {
         type: 'boolean' as const,
@@ -347,6 +369,7 @@ export const agentTools = [
   _typeKeysTool,
   _pressKeysTool,
   _typeTextTool,
+  _pasteTextTool,
   _waitTool,
   _screenshotTool,
   _applicationTool,
