@@ -17,6 +17,7 @@ import {
   TypeTextAction,
   WaitAction,
   ApplicationAction,
+  Application,
 } from '@bytebot/shared';
 
 @Injectable()
@@ -248,32 +249,43 @@ export class ComputerUseService {
     }
 
     const commandMap: Record<string, string> = {
+      firefox: 'firefox-esr',
+      '1password': '1password',
+      thunderbird: 'thunderbird',
+      vscode: 'code',
+      terminal: 'xfce4-terminal',
+      directory: 'thunar',
+    };
+
+    const processMap: Record<Application, string> = {
       firefox: 'Navigator.firefox-esr',
       '1password': '1password.1Password',
       thunderbird: 'Mail.thunderbird',
       vscode: 'code',
       terminal: 'xfce4-terminal.Xfce4-Terminal',
       directory: 'Thunar',
+      desktop: 'xfce4-desktop.Xfce4-Desktop',
     };
 
-    const cmd = commandMap[action.application];
-    if (!cmd) {
-      throw new Error(`Unknown application: ${action.application}`);
-    }
-
     // check if the application is already open using wmctrl -lx
-    const result = await exec(`wmctrl -lx | grep ${action.application}`);
+    const result = await exec(
+      `wmctrl -lx | grep ${processMap[action.application]}`,
+    );
     if (result.stdout) {
       // application is already open
       this.logger.log(`Application ${action.application} is already open`);
       // focus the application in fullscreen
-      await exec(`wmctrl -xa ${cmd} -e 0 -b add,maximized_vert,maximized_horz`);
+      await exec(
+        `wmctrl -xa ${processMap[action.application]} -e 0 -b add,maximized_vert,maximized_horz`,
+      );
       return;
     }
 
     // application is not open, open it
-    await exec(`${cmd} &`);
+    await exec(`nohup ${commandMap[action.application]} > /dev/null 2>&1 &`);
     this.logger.log(`Application ${action.application} opened`);
-    await exec(`wmctrl -xa ${cmd} -e 0 -b add,maximized_vert,maximized_horz`);
+    await exec(
+      `wmctrl -xa ${processMap[action.application]} -e 0 -b add,maximized_vert,maximized_horz`,
+    );
   }
 }
