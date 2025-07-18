@@ -251,6 +251,25 @@ Type a text string with optional delay.
 }
 ```
 
+### paste_text
+
+Paste text to the current cursor position. This is especially useful for special characters that aren't on the standard keyboard.
+
+**Parameters:**
+
+| Parameter | Type   | Required | Description                                                              |
+| --------- | ------ | -------- | ------------------------------------------------------------------------ |
+| `text`    | String | Yes      | The text to paste, including special characters and emojis               |
+
+**Example:**
+
+```json
+{
+  "action": "paste_text",
+  "text": "Special characters: ©®™€¥£ émojis 🎉"
+}
+```
+
 ### wait
 
 Wait for a specified duration.
@@ -295,6 +314,34 @@ Get the current position of the mouse cursor.
 ```json
 {
   "action": "cursor_position"
+}
+```
+
+### application
+
+Switch between different applications or navigate to the desktop/directory.
+
+**Parameters:**
+
+| Parameter     | Type   | Required | Description                                                              |
+| ------------- | ------ | -------- | ------------------------------------------------------------------------ |
+| `application` | String | Yes      | The application to switch to. See available options below.               |
+
+**Available Applications:**
+- `firefox` - Mozilla Firefox web browser
+- `1password` - Password manager
+- `thunderbird` - Email client
+- `vscode` - Visual Studio Code editor
+- `terminal` - Terminal/console application
+- `desktop` - Switch to desktop
+- `directory` - File manager/directory browser
+
+**Example:**
+
+```json
+{
+  "action": "application",
+  "application": "firefox"
 }
 ```
 
@@ -387,6 +434,20 @@ const bytebot = {
     });
   },
   
+  async pasteText(text) {
+    return this.action({
+      action: 'paste_text',
+      text
+    });
+  },
+  
+  async switchApplication(application) {
+    return this.action({
+      action: 'application',
+      application
+    });
+  },
+  
   async screenshot() {
     return this.action({ action: 'screenshot' });
   }
@@ -394,6 +455,9 @@ const bytebot = {
 
 // Example usage:
 async function example() {
+  // Switch to Firefox
+  await bytebot.switchApplication('firefox');
+  
   // Navigate to a website
   await bytebot.moveMouse(100, 35);
   await bytebot.clickMouse(100, 35);
@@ -409,6 +473,9 @@ async function example() {
     action: 'wait',
     duration: 2000
   });
+  
+  // Paste some special characters
+  await bytebot.pasteText('© 2025 Example Corp™ - €100');
   
   // Take a screenshot
   const result = await bytebot.screenshot();

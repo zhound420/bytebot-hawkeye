@@ -124,7 +124,7 @@ Bytebot consists of four main components working together:
 ┌─────────────────────▼───────────────────────────────────────┐
 │              Bytebot Desktop (Ubuntu + XFCE)                 │
 │              • Full Linux desktop                            │
-│              • Browser, email, office apps                   │
+│              • Browser, email, VSCode, office apps           │
 │              • Automation daemon (bytebotd)                  │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -319,6 +319,20 @@ POST http://localhost:9990/computer-use
 {
   "action": "type_text",
   "text": "Hello, Bytebot!"
+}
+
+// Paste text (useful for special characters)
+POST http://localhost:9990/computer-use
+{
+  "action": "paste_text",
+  "text": "Special characters: ©®™€¥£"
+}
+
+// Switch applications
+POST http://localhost:9990/computer-use
+{
+  "action": "application",
+  "application": "firefox"  // Options: firefox, 1password, thunderbird, vscode, terminal, desktop, directory
 }
 ```
 

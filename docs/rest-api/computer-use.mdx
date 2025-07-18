@@ -349,6 +349,22 @@ Execute actions like mouse movements, clicks, keyboard input, and screenshots in
 
 </Accordion>
 
+<Accordion title="paste_text">
+  <ParamField body="text" type="string" required>
+    The text to paste. Useful for special characters that aren't on the standard keyboard.
+  </ParamField>
+
+**Example Request**
+
+```json
+{
+  "action": "paste_text",
+  "text": "Special characters: ©®™€¥£ émojis 🎉"
+}
+```
+
+</Accordion>
+
 ### System Actions
 
 <Accordion title="wait">
@@ -390,6 +406,31 @@ No parameters required.
   "action": "cursor_position"
 }
 ```
+
+</Accordion>
+
+<Accordion title="application">
+  <ParamField body="application" type="string" required>
+    The application to switch to. Available options: `firefox`, `1password`, `thunderbird`, `vscode`, `terminal`, `desktop`, `directory`.
+  </ParamField>
+
+**Example Request**
+
+```json
+{
+  "action": "application",
+  "application": "firefox"
+}
+```
+
+**Available Applications:**
+- `firefox` - Mozilla Firefox web browser
+- `1password` - Password manager
+- `thunderbird` - Email client
+- `vscode` - Visual Studio Code editor
+- `terminal` - Terminal/console application
+- `desktop` - Switch to desktop
+- `directory` - File manager/directory browser
 
 </Accordion>
 
