@@ -9,7 +9,7 @@ import {
   Button,
   FileType,
 } from '@nut-tree-fork/nut-js';
-import { promises as fs } from 'fs';
+import { spawn } from 'child_process';
 import * as path from 'path';
 
 /**
@@ -128,10 +128,14 @@ export class NutService {
 
     // Create screenshot directory if it doesn't exist
     this.screenshotDir = path.join('/tmp', 'bytebot-screenshots');
-    fs.mkdir(this.screenshotDir, { recursive: true }).catch((err) => {
-      this.logger.error(
-        `Failed to create screenshot directory: ${err.message}`,
-      );
+    import('fs').then((fs) => {
+      fs.promises
+        .mkdir(this.screenshotDir, { recursive: true })
+        .catch((err) => {
+          this.logger.error(
+            `Failed to create screenshot directory: ${err.message}`,
+          );
+        });
     });
   }
 
@@ -218,7 +222,6 @@ export class NutService {
       for (let i = 0; i < text.length; i++) {
         const char = text[i];
         const keyInfo = this.charToKeyInfo(char);
-
         if (keyInfo) {
           if (keyInfo.withShift) {
             // Hold shift key, press the character key, and release shift key
@@ -228,7 +231,6 @@ export class NutService {
             await keyboard.pressKey(keyInfo.keyCode);
             await keyboard.releaseKey(keyInfo.keyCode);
           }
-
           if (delayMs > 0 && i < text.length - 1) {
             await new Promise((resolve) => setTimeout(resolve, delayMs));
           }
@@ -238,6 +240,38 @@ export class NutService {
       }
     } catch (error) {
       throw new Error(`Failed to type text: ${error.message}`);
+    }
+  }
+
+  async pasteText(text: string): Promise<void> {
+    this.logger.log(`Pasting text: ${text}`);
+
+    try {
+      // Copy text to clipboard using xclip via spawn
+      await new Promise<void>((resolve, reject) => {
+        const child = spawn('xclip', ['-selection', 'clipboard'], {
+          env: { ...process.env, DISPLAY: ':0.0' },
+          stdio: ['pipe', 'ignore', 'inherit'],
+        });
+
+        child.once('error', reject);
+        child.once('close', (code) => {
+          code === 0
+            ? resolve()
+            : reject(new Error(`xclip exited with code ${code}`));
+        });
+
+        child.stdin.write(text);
+        child.stdin.end();
+      });
+
+      // brief pause to ensure clipboard owner is set
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      await keyboard.pressKey(Key.LeftControl, Key.V);
+      await keyboard.releaseKey(Key.LeftControl, Key.V);
+    } catch (error) {
+      throw new Error(`Failed to paste text: ${error.message}`);
     }
   }
 
@@ -443,14 +477,14 @@ export class NutService {
       await screen.capture(filename, FileType.PNG, this.screenshotDir);
 
       // Read the file back and return as buffer
-      return await fs.readFile(filepath);
+      return await import('fs').then((fs) => fs.promises.readFile(filepath));
     } catch (error) {
       this.logger.error(`Error taking screenshot: ${error.message}`);
       throw error;
     } finally {
       // Clean up the temporary file
       try {
-        await fs.unlink(filepath);
+        await import('fs').then((fs) => fs.promises.unlink(filepath));
       } catch (unlinkError) {
         // Ignore if file doesn't exist
         this.logger.warn(

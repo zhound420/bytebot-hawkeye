@@ -1,10 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { exec, spawn } from 'child_process';
+import { promisify } from 'util';
 import { NutService } from '../nut/nut.service';
 import {
   ComputerAction,
-  Coordinates,
-  Button,
-  Press,
   MoveMouseAction,
   TraceMouseAction,
   ClickMouseAction,
@@ -15,6 +14,9 @@ import {
   PressKeysAction,
   TypeTextAction,
   WaitAction,
+  ApplicationAction,
+  Application,
+  PasteTextAction,
 } from '@bytebot/shared';
 
 @Injectable()
@@ -64,6 +66,10 @@ export class ComputerUseService {
         await this.typeText(params as TypeTextAction);
         break;
       }
+      case 'paste_text': {
+        await this.pasteText(params as PasteTextAction);
+        break;
+      }
       case 'wait': {
         const waitParams = params as WaitAction;
         await this.delay(waitParams.duration);
@@ -74,6 +80,11 @@ export class ComputerUseService {
 
       case 'cursor_position':
         return this.cursor_position();
+
+      case 'application': {
+        await this.application(params as ApplicationAction);
+        break;
+      }
 
       default:
         throw new Error(
@@ -219,6 +230,11 @@ export class ComputerUseService {
     await this.nutService.typeText(text, delay);
   }
 
+  private async pasteText(action: PasteTextAction): Promise<void> {
+    const { text } = action;
+    await this.nutService.pasteText(text);
+  }
+
   private async delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
@@ -232,5 +248,125 @@ export class ComputerUseService {
   private async cursor_position(): Promise<{ x: number; y: number }> {
     this.logger.log(`Getting cursor position`);
     return await this.nutService.getCursorPosition();
+  }
+
+  private async application(action: ApplicationAction): Promise<void> {
+    const execAsync = promisify(exec);
+
+    // Helper to run a command via spawn and resolve on successful exit
+    const spawnAsync = (
+      command: string,
+      args: string[],
+      options: Record<string, any> = {},
+    ): Promise<void> => {
+      return new Promise((resolve, reject) => {
+        const child = spawn(command, args, {
+          env: { ...process.env, DISPLAY: ':0.0' }, // ensure DISPLAY is set for GUI tools
+          stdio: ['ignore', 'ignore', 'inherit'],
+          ...options,
+        });
+
+        child.once('error', reject);
+        child.once('close', (code) => {
+          code === 0
+            ? resolve()
+            : reject(new Error(`${command} exited with code ${code}`));
+        });
+
+        // If detached we need to unref so parent can exit
+        if (options.detached) {
+          child.unref();
+        }
+      });
+    };
+
+    if (action.application === 'desktop') {
+      await spawnAsync('sudo', ['-u', 'user', 'wmctrl', '-k', 'on']);
+      return;
+    }
+
+    const commandMap: Record<string, string> = {
+      firefox: 'firefox-esr',
+      '1password': '1password',
+      thunderbird: 'thunderbird',
+      vscode: 'code',
+      terminal: 'xfce4-terminal',
+      directory: 'thunar',
+    };
+
+    const processMap: Record<Application, string> = {
+      firefox: 'Navigator.firefox-esr',
+      '1password': '1password.1Password',
+      thunderbird: 'Mail.thunderbird',
+      vscode: 'code.Code',
+      terminal: 'xfce4-terminal.Xfce4-Terminal',
+      directory: 'Thunar',
+      desktop: 'xfdesktop.Xfdesktop',
+    };
+
+    // check if the application is already open using wmctrl -lx
+    let appOpen = false;
+    try {
+      const { stdout } = await execAsync(
+        `sudo -u user wmctrl -lx | grep ${processMap[action.application]}`,
+      );
+      appOpen = stdout.trim().length > 0;
+    } catch (error: any) {
+      // grep returns exit code 1 when no match is found – treat as "not open"
+      if (error.code !== 1) {
+        throw error;
+      }
+    }
+
+    if (appOpen) {
+      this.logger.log(`Application ${action.application} is already open`);
+      await spawnAsync('sudo', [
+        '-u',
+        'user',
+        'wmctrl',
+        '-x',
+        '-a',
+        processMap[action.application],
+      ]);
+
+      await spawnAsync('sudo', [
+        '-u',
+        'user',
+        'wmctrl',
+        '-x',
+        '-r',
+        processMap[action.application],
+        '-b',
+        'add,maximized_vert,maximized_horz',
+      ]);
+      return;
+    }
+
+    // application is not open, open it
+    await spawnAsync(
+      'sudo',
+      ['-u', 'user', 'nohup', commandMap[action.application]],
+      { detached: true },
+    );
+    this.logger.log(`Application ${action.application} opened`);
+    await spawnAsync('sudo', [
+      '-u',
+      'user',
+      'wmctrl',
+      '-x',
+      '-a',
+      processMap[action.application],
+    ]);
+
+    await spawnAsync('sudo', [
+      '-u',
+      'user',
+      'wmctrl',
+      '-x',
+      '-r',
+      processMap[action.application],
+      '-b',
+      'add,maximized_vert,maximized_horz',
+    ]);
   }
 }

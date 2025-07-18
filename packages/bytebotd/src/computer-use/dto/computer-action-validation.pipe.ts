@@ -16,9 +16,11 @@ import {
   TypeKeysActionDto,
   PressKeysActionDto,
   TypeTextActionDto,
+  PasteTextActionDto,
   WaitActionDto,
   ScreenshotActionDto,
   CursorPositionActionDto,
+  ApplicationActionDto,
 } from './computer-action.dto';
 
 @Injectable()
@@ -57,6 +59,9 @@ export class ComputerActionValidationPipe implements PipeTransform {
       case 'type_text':
         dto = plainToClass(TypeTextActionDto, value);
         break;
+      case 'paste_text':
+        dto = plainToClass(PasteTextActionDto, value);
+        break;
       case 'wait':
         dto = plainToClass(WaitActionDto, value);
         break;
@@ -65,6 +70,9 @@ export class ComputerActionValidationPipe implements PipeTransform {
         break;
       case 'cursor_position':
         dto = plainToClass(CursorPositionActionDto, value);
+        break;
+      case 'application':
+        dto = plainToClass(ApplicationActionDto, value);
         break;
       default:
         throw new BadRequestException(`Unknown action: ${value.action}`);

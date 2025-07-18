@@ -427,7 +427,8 @@ V, W, X, Y, Z
 
   @Tool({
     name: 'computer_type_text',
-    description: 'Simulates typing a string of text character by character.',
+    description:
+      'Types a string of text character by character. Use this tool for strings less than 25 characters, or passwords/sensitive form fields.',
     parameters: z.object({
       text: z.string().describe('The text string to type.'),
       delay: z
@@ -446,6 +447,30 @@ V, W, X, Y, Z
           {
             type: 'text',
             text: `Error typing text: ${(err as Error).message}`,
+          },
+        ],
+      };
+    }
+  }
+
+  @Tool({
+    name: 'computer_paste_text',
+    description:
+      'Copies text to the clipboard and pastes it. Use this tool for typing long text strings or special characters not on the standard keyboard.',
+    parameters: z.object({
+      text: z.string().describe('The text string to paste.'),
+    }),
+  })
+  async pasteText({ text }: { text: string }) {
+    try {
+      await this.computerUse.action({ action: 'paste_text', text });
+      return { content: [{ type: 'text', text: 'text pasted' }] };
+    } catch (err) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Error pasting text: ${(err as Error).message}`,
           },
         ],
       };
@@ -472,6 +497,49 @@ V, W, X, Y, Z
           {
             type: 'text',
             text: `Error waiting: ${(err as Error).message}`,
+          },
+        ],
+      };
+    }
+  }
+
+  @Tool({
+    name: 'computer_application',
+    description:
+      'Opens or switches to the specified application and maximizes it.',
+    parameters: z.object({
+      application: z.enum([
+        'firefox',
+        '1password',
+        'thunderbird',
+        'vscode',
+        'terminal',
+        'desktop',
+        'directory',
+      ]),
+    }),
+  })
+  async application({
+    application,
+  }: {
+    application:
+      | 'firefox'
+      | '1password'
+      | 'thunderbird'
+      | 'vscode'
+      | 'terminal'
+      | 'desktop'
+      | 'directory';
+  }) {
+    try {
+      await this.computerUse.action({ action: 'application', application });
+      return { content: [{ type: 'text', text: 'application opened' }] };
+    } catch (err) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Error opening application: ${(err as Error).message}`,
           },
         ],
       };

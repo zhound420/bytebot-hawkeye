@@ -50,7 +50,6 @@ export class AgentProcessor {
     private readonly anthropicService: AnthropicService,
     private readonly openaiService: OpenAIService,
     private readonly googleService: GoogleService,
-    private readonly configService: ConfigService,
     private readonly inputCaptureService: InputCaptureService,
   ) {
     this.services = {
@@ -385,6 +384,8 @@ export class AgentProcessor {
 
     // Signal any in-flight async operations to abort
     this.abortController?.abort();
+
+    await this.inputCaptureService.stop();
 
     this.isProcessing = false;
     this.currentTaskId = null;

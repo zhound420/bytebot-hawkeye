@@ -21,7 +21,7 @@ RUN apt-get update && apt-get install -y \
     xvfb x11vnc xauth x11-xserver-utils \
     x11-apps sudo software-properties-common \
     # Desktop environment 
-    xfce4 xfce4-goodies dbus \
+    xfce4 xfce4-goodies dbus wmctrl \
     # Display manager with autologin capability
     lightdm \
     # Development tools
@@ -170,6 +170,7 @@ RUN apt-get update && \
         libxrandr-dev \
         libxkbcommon-dev \
         libxkbcommon-x11-dev \
+        xclip \
         git build-essential && \
     rm -rf /var/lib/apt/lists/*
 

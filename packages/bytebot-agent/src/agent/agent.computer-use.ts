@@ -17,6 +17,8 @@ import {
   isPressKeysToolUseBlock,
   isTypeTextToolUseBlock,
   isWaitToolUseBlock,
+  isApplicationToolUseBlock,
+  isPasteTextToolUseBlock,
 } from '@bytebot/shared';
 import { Logger } from '@nestjs/common';
 
@@ -131,8 +133,14 @@ export async function handleComputerToolUse(
     if (isTypeTextToolUseBlock(block)) {
       await typeText(block.input);
     }
+    if (isPasteTextToolUseBlock(block)) {
+      await pasteText(block.input);
+    }
     if (isWaitToolUseBlock(block)) {
       await wait(block.input);
+    }
+    if (isApplicationToolUseBlock(block)) {
+      await application(block.input);
     }
     logger.debug(`Tool execution successful for tool_use_id: ${block.id}`);
     return {
@@ -391,6 +399,25 @@ async function typeText(input: {
   }
 }
 
+async function pasteText(input: { text: string }): Promise<void> {
+  const { text } = input;
+  console.log(`Pasting text: ${text}`);
+
+  try {
+    await fetch(`${BYTEBOT_DESKTOP_BASE_URL}/computer-use`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'paste_text',
+        text,
+      }),
+    });
+  } catch (error) {
+    console.error('Error in paste_text action:', error);
+    throw error;
+  }
+}
+
 async function wait(input: { duration: number }): Promise<void> {
   const { duration } = input;
   console.log(`Waiting for ${duration}ms`);
@@ -457,6 +484,25 @@ async function screenshot(): Promise<string> {
     return data.image; // Base64 encoded image
   } catch (error) {
     console.error('Error in screenshot action:', error);
+    throw error;
+  }
+}
+
+async function application(input: { application: string }): Promise<void> {
+  const { application } = input;
+  console.log(`Opening application: ${application}`);
+
+  try {
+    await fetch(`${BYTEBOT_DESKTOP_BASE_URL}/computer-use`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'application',
+        application,
+      }),
+    });
+  } catch (error) {
+    console.error('Error in application action:', error);
     throw error;
   }
 }

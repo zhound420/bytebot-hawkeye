@@ -12,6 +12,8 @@ import {
   WaitAction,
   ScreenshotAction,
   CursorPositionAction,
+  ApplicationAction,
+  PasteTextAction,
 } from "../types/computerAction.types";
 import {
   ComputerToolUseContentBlock,
@@ -58,6 +60,8 @@ export const isScreenshotAction =
   createActionTypeGuard<ScreenshotAction>("screenshot");
 export const isCursorPositionAction =
   createActionTypeGuard<CursorPositionAction>("cursor_position");
+export const isApplicationAction =
+  createActionTypeGuard<ApplicationAction>("application");
 
 /**
  * Base converter for creating tool use blocks
@@ -227,6 +231,15 @@ export function convertTypeTextActionToToolUseBlock(
   );
 }
 
+export function convertPasteTextActionToToolUseBlock(
+  action: PasteTextAction,
+  toolUseId: string
+): ComputerToolUseContentBlock {
+  return createToolUseBlock("computer_paste_text", toolUseId, {
+    text: action.text,
+  });
+}
+
 export function convertWaitActionToToolUseBlock(
   action: WaitAction,
   toolUseId: string
@@ -248,6 +261,15 @@ export function convertCursorPositionActionToToolUseBlock(
   toolUseId: string
 ): ComputerToolUseContentBlock {
   return createToolUseBlock("computer_cursor_position", toolUseId, {});
+}
+
+export function convertApplicationActionToToolUseBlock(
+  action: ApplicationAction,
+  toolUseId: string
+): ComputerToolUseContentBlock {
+  return createToolUseBlock("computer_application", toolUseId, {
+    application: action.application,
+  });
 }
 
 /**
@@ -276,12 +298,16 @@ export function convertComputerActionToToolUseBlock(
       return convertPressKeysActionToToolUseBlock(action, toolUseId);
     case "type_text":
       return convertTypeTextActionToToolUseBlock(action, toolUseId);
+    case "paste_text":
+      return convertPasteTextActionToToolUseBlock(action, toolUseId);
     case "wait":
       return convertWaitActionToToolUseBlock(action, toolUseId);
     case "screenshot":
       return convertScreenshotActionToToolUseBlock(action, toolUseId);
     case "cursor_position":
       return convertCursorPositionActionToToolUseBlock(action, toolUseId);
+    case "application":
+      return convertApplicationActionToToolUseBlock(action, toolUseId);
     default:
       const exhaustiveCheck: never = action;
       throw new Error(

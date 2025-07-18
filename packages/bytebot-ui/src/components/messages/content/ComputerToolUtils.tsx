@@ -5,6 +5,8 @@ import {
   TypeCursorIcon,
   MouseRightClick06Icon,
   TimeQuarter02Icon,
+  BrowserIcon,
+  FilePasteIcon,
 } from "@hugeicons/core-free-icons";
 import {
   ComputerToolUseContentBlock,
@@ -20,6 +22,8 @@ import {
   isDragMouseToolUseBlock,
   isPressMouseToolUseBlock,
   isTraceMouseToolUseBlock,
+  isApplicationToolUseBlock,
+  isPasteTextToolUseBlock,
 } from "@bytebot/shared";
 
 // Define the IconType for proper type checking
@@ -29,7 +33,9 @@ export type IconType =
   | typeof Cursor02Icon
   | typeof TypeCursorIcon
   | typeof MouseRightClick06Icon
-  | typeof TimeQuarter02Icon;
+  | typeof TimeQuarter02Icon
+  | typeof BrowserIcon
+  | typeof FilePasteIcon;
 
 export function getIcon(block: ComputerToolUseContentBlock): IconType {
   if (isScreenshotToolUseBlock(block)) {
@@ -48,6 +54,10 @@ export function getIcon(block: ComputerToolUseContentBlock): IconType {
     return TypeCursorIcon;
   }
 
+  if (isPasteTextToolUseBlock(block)) {
+    return FilePasteIcon;
+  }
+
   if (
     isMoveMouseToolUseBlock(block) ||
     isScrollToolUseBlock(block) ||
@@ -62,6 +72,10 @@ export function getIcon(block: ComputerToolUseContentBlock): IconType {
     }
 
     return Cursor02Icon;
+  }
+
+  if (isApplicationToolUseBlock(block)) {
+    return BrowserIcon;
   }
 
   return User03Icon;
@@ -82,6 +96,10 @@ export function getLabel(block: ComputerToolUseContentBlock) {
 
   if (isTypeTextToolUseBlock(block)) {
     return "Type";
+  }
+
+  if (isPasteTextToolUseBlock(block)) {
+    return "Paste";
   }
 
   if (isPressKeysToolUseBlock(block)) {
@@ -129,5 +147,9 @@ export function getLabel(block: ComputerToolUseContentBlock) {
     return "Trace Mouse";
   }
 
+  if (isApplicationToolUseBlock(block)) {
+    return "Open Application";
+  }
+
   return "Unknown";
-} 
+}

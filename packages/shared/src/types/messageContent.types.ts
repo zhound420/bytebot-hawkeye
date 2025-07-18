@@ -126,6 +126,14 @@ export type TypeTextToolUseBlock = ToolUseContentBlock & {
   };
 };
 
+export type PasteTextToolUseBlock = ToolUseContentBlock & {
+  name: "computer_paste_text";
+  input: {
+    text: string;
+    isSensitive?: boolean;
+  };
+};
+
 export type WaitToolUseBlock = ToolUseContentBlock & {
   name: "computer_wait";
   input: {
@@ -141,6 +149,13 @@ export type CursorPositionToolUseBlock = ToolUseContentBlock & {
   name: "computer_cursor_position";
 };
 
+export type ApplicationToolUseBlock = ToolUseContentBlock & {
+  name: "computer_application";
+  input: {
+    application: string;
+  };
+};
+
 export type ComputerToolUseContentBlock =
   | MoveMouseToolUseBlock
   | TraceMouseToolUseBlock
@@ -149,12 +164,13 @@ export type ComputerToolUseContentBlock =
   | TypeKeysToolUseBlock
   | PressKeysToolUseBlock
   | TypeTextToolUseBlock
+  | PasteTextToolUseBlock
   | WaitToolUseBlock
   | ScreenshotToolUseBlock
   | DragMouseToolUseBlock
   | ScrollToolUseBlock
-  | TypeTextToolUseBlock
-  | CursorPositionToolUseBlock;
+  | CursorPositionToolUseBlock
+  | ApplicationToolUseBlock;
 
 export type SetTaskStatusToolUseBlock = ToolUseContentBlock & {
   name: "set_task_status";
