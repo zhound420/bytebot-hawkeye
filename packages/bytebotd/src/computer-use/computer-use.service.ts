@@ -1,12 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { exec } from 'child_process';
+import { exec, spawn } from 'child_process';
 import { promisify } from 'util';
 import { NutService } from '../nut/nut.service';
 import {
   ComputerAction,
-  Coordinates,
-  Button,
-  Press,
   MoveMouseAction,
   TraceMouseAction,
   ClickMouseAction,
@@ -255,8 +252,36 @@ export class ComputerUseService {
 
   private async application(action: ApplicationAction): Promise<void> {
     const execAsync = promisify(exec);
+
+    // Helper to run a command via spawn and resolve on successful exit
+    const spawnAsync = (
+      command: string,
+      args: string[],
+      options: Record<string, any> = {},
+    ): Promise<void> => {
+      return new Promise((resolve, reject) => {
+        const child = spawn(command, args, {
+          env: { ...process.env, DISPLAY: ':0.0' }, // ensure DISPLAY is set for GUI tools
+          stdio: ['ignore', 'ignore', 'inherit'],
+          ...options,
+        });
+
+        child.once('error', reject);
+        child.once('close', (code) => {
+          code === 0
+            ? resolve()
+            : reject(new Error(`${command} exited with code ${code}`));
+        });
+
+        // If detached we need to unref so parent can exit
+        if (options.detached) {
+          child.unref();
+        }
+      });
+    };
+
     if (action.application === 'desktop') {
-      await execAsync(`sudo -u user wmctrl -k on`);
+      await spawnAsync('sudo', ['-u', 'user', 'wmctrl', '-k', 'on']);
       return;
     }
 
@@ -273,10 +298,10 @@ export class ComputerUseService {
       firefox: 'Navigator.firefox-esr',
       '1password': '1password.1Password',
       thunderbird: 'Mail.thunderbird',
-      vscode: 'code',
+      vscode: 'code.Code',
       terminal: 'xfce4-terminal.Xfce4-Terminal',
       directory: 'Thunar',
-      desktop: 'xfce4-desktop.Xfce4-Desktop',
+      desktop: 'xfdesktop.Xfdesktop',
     };
 
     // check if the application is already open using wmctrl -lx
@@ -295,19 +320,53 @@ export class ComputerUseService {
 
     if (appOpen) {
       this.logger.log(`Application ${action.application} is already open`);
-      await execAsync(
-        `sudo -u user wmctrl -xa ${processMap[action.application]} -e 0 -b add,maximized_vert,maximized_horz`,
-      );
+      await spawnAsync('sudo', [
+        '-u',
+        'user',
+        'wmctrl',
+        '-x',
+        '-a',
+        processMap[action.application],
+      ]);
+
+      await spawnAsync('sudo', [
+        '-u',
+        'user',
+        'wmctrl',
+        '-x',
+        '-r',
+        processMap[action.application],
+        '-b',
+        'add,maximized_vert,maximized_horz',
+      ]);
       return;
     }
 
     // application is not open, open it
-    await execAsync(
-      `sudo -u user nohup ${commandMap[action.application]} > /dev/null 2>&1 &`,
+    await spawnAsync(
+      'sudo',
+      ['-u', 'user', 'nohup', commandMap[action.application]],
+      { detached: true },
     );
     this.logger.log(`Application ${action.application} opened`);
-    await execAsync(
-      `sudo -u user wmctrl -xa ${processMap[action.application]} -e 0 -b add,maximized_vert,maximized_horz`,
-    );
+    await spawnAsync('sudo', [
+      '-u',
+      'user',
+      'wmctrl',
+      '-x',
+      '-a',
+      processMap[action.application],
+    ]);
+
+    await spawnAsync('sudo', [
+      '-u',
+      'user',
+      'wmctrl',
+      '-x',
+      '-r',
+      processMap[action.application],
+      '-b',
+      'add,maximized_vert,maximized_horz',
+    ]);
   }
 }

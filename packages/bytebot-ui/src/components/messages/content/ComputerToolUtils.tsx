@@ -6,6 +6,7 @@ import {
   MouseRightClick06Icon,
   TimeQuarter02Icon,
   BrowserIcon,
+  FilePasteIcon,
 } from "@hugeicons/core-free-icons";
 import {
   ComputerToolUseContentBlock,
@@ -22,6 +23,7 @@ import {
   isPressMouseToolUseBlock,
   isTraceMouseToolUseBlock,
   isApplicationToolUseBlock,
+  isPasteTextToolUseBlock,
 } from "@bytebot/shared";
 
 // Define the IconType for proper type checking
@@ -32,7 +34,8 @@ export type IconType =
   | typeof TypeCursorIcon
   | typeof MouseRightClick06Icon
   | typeof TimeQuarter02Icon
-  | typeof BrowserIcon;
+  | typeof BrowserIcon
+  | typeof FilePasteIcon;
 
 export function getIcon(block: ComputerToolUseContentBlock): IconType {
   if (isScreenshotToolUseBlock(block)) {
@@ -49,6 +52,10 @@ export function getIcon(block: ComputerToolUseContentBlock): IconType {
     isPressKeysToolUseBlock(block)
   ) {
     return TypeCursorIcon;
+  }
+
+  if (isPasteTextToolUseBlock(block)) {
+    return FilePasteIcon;
   }
 
   if (
@@ -89,6 +96,10 @@ export function getLabel(block: ComputerToolUseContentBlock) {
 
   if (isTypeTextToolUseBlock(block)) {
     return "Type";
+  }
+
+  if (isPasteTextToolUseBlock(block)) {
+    return "Paste";
   }
 
   if (isPressKeysToolUseBlock(block)) {

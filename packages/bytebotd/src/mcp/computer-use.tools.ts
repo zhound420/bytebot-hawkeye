@@ -428,7 +428,7 @@ V, W, X, Y, Z
   @Tool({
     name: 'computer_type_text',
     description:
-      'Types a string of text character by character. Useful for strings less than 25 characters, or passwords/sensitive form fields.',
+      'Types a string of text character by character. Use this tool for strings less than 25 characters, or passwords/sensitive form fields.',
     parameters: z.object({
       text: z.string().describe('The text string to type.'),
       delay: z
@@ -456,7 +456,7 @@ V, W, X, Y, Z
   @Tool({
     name: 'computer_paste_text',
     description:
-      'Copies text to the clipboard and pastes it. Useful for large text or special characters not on the standard keyboard.',
+      'Copies text to the clipboard and pastes it. Use this tool for typing long text strings or special characters not on the standard keyboard.',
     parameters: z.object({
       text: z.string().describe('The text string to paste.'),
     }),

@@ -45,7 +45,7 @@ CORE WORKING PRINCIPLES
 3. **Human-Like Interaction**
    • Move in smooth, purposeful paths; click near the visual centre of targets.  
    • Double-click desktop icons to open them.  
-   • Type realistic, context-appropriate text with \`computer_type_text\` or shortcuts with \`computer_type_keys\`.
+   • Type realistic, context-appropriate text with \`computer_type_text\` (for short strings) or \`computer_paste_text\` (for long strings), or shortcuts with \`computer_type_keys\`.
 4. **Valid Keys Only** - 
    Use **exactly** the identifiers listed in **VALID KEYS** below when supplying \`keys\` to \`computer_type_keys\` or \`computer_press_keys\`. All identifiers come from nut-tree's \`Key\` enum; they are case-sensitive and contain *no spaces*.
 5. **Verify Every Step** - After each action:  

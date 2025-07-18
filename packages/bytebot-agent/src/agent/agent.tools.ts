@@ -202,7 +202,7 @@ export const _pressKeysTool = {
 export const _typeTextTool = {
   name: 'computer_type_text',
   description:
-    'Types a string of text character by character. Useful for strings less than 25 characters, or passwords/sensitive form fields.',
+    'Types a string of text character by character. Use this tool for strings less than 25 characters, or passwords/sensitive form fields.',
   input_schema: {
     type: 'object' as const,
     properties: {
@@ -228,7 +228,7 @@ export const _typeTextTool = {
 export const _pasteTextTool = {
   name: 'computer_paste_text',
   description:
-    'Copies text to the clipboard and pastes it. Useful for large text or special characters not on the standard keyboard.',
+    'Copies text to the clipboard and pastes it. Use this tool for typing long text strings or special characters not on the standard keyboard.',
   input_schema: {
     type: 'object' as const,
     properties: {

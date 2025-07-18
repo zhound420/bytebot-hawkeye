@@ -9,6 +9,7 @@ import {
   isScrollToolUseBlock,
   isApplicationToolUseBlock,
   Application,
+  isPasteTextToolUseBlock,
 } from "@bytebot/shared";
 import { getIcon, getLabel } from "./ComputerToolUtils";
 
@@ -43,7 +44,7 @@ function ToolDetailsNormal({ block }: { block: ComputerToolUseContentBlock }) {
         <p className={baseClasses}>{String(block.input.keys.join(" + "))}</p>
       )}
 
-      {isTypeTextToolUseBlock(block) && (
+      {(isTypeTextToolUseBlock(block) || isPasteTextToolUseBlock(block)) && (
         <p className={baseClasses}>
           {String(
             block.input.isSensitive
