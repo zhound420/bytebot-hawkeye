@@ -35,7 +35,7 @@
     "@nestjs/websockets": "^11.1.1",
     "@prisma/client": "^6.6.0",
     "@thallesp/nestjs-better-auth": "^1.0.0",
-    "better-auth": "^1.2.9",
+    "better-auth": "^1.2.12",
     "class-validator": "^0.14.2",
     "openai": "^5.8.2",
     "reflect-metadata": "^0.2.2",
