@@ -3,6 +3,7 @@ import {
   MessageContentType,
   TextContentBlock,
   ImageContentBlock,
+  DocumentContentBlock,
   ToolUseContentBlock,
   ComputerToolUseContentBlock,
   ToolResultContentBlock,
@@ -93,6 +94,27 @@ export function isImageContentBlock(obj: unknown): obj is ImageContentBlock {
 }
 
 /**
+ * Type guard to check if an object is a DocumentContentBlock
+ * @param obj The object to validate
+ * @returns Type predicate indicating obj is DocumentContentBlock
+ */
+export function isDocumentContentBlock(obj: unknown): obj is DocumentContentBlock {
+  if (!obj || typeof obj !== "object") {
+    return false;
+  }
+
+  const block = obj as Partial<DocumentContentBlock>;
+  return (
+    block.type === MessageContentType.Document &&
+    block.source !== undefined &&
+    typeof block.source === "object" &&
+    typeof block.source.type === "string" &&
+    typeof block.source.media_type === "string" &&
+    typeof block.source.data === "string"
+  );
+}
+
+/**
  * Type guard to check if an object is a ToolUseContentBlock
  * @param obj The object to validate
  * @returns Type predicate indicating obj is ToolUseContentBlock
@@ -159,8 +181,11 @@ export function isMessageContentBlock(
   return (
     isTextContentBlock(obj) ||
     isImageContentBlock(obj) ||
+    isDocumentContentBlock(obj) ||
     isToolUseContentBlock(obj) ||
-    isToolResultContentBlock(obj)
+    isToolResultContentBlock(obj) ||
+    isThinkingContentBlock(obj) ||
+    isRedactedThinkingContentBlock(obj)
   );
 }
 
@@ -181,6 +206,18 @@ export function getMessageContentBlockType(obj: unknown): string | null {
 
   if (isImageContentBlock(obj)) {
     return "ImageContentBlock";
+  }
+
+  if (isDocumentContentBlock(obj)) {
+    return "DocumentContentBlock";
+  }
+
+  if (isThinkingContentBlock(obj)) {
+    return "ThinkingContentBlock";
+  }
+
+  if (isRedactedThinkingContentBlock(obj)) {
+    return "RedactedThinkingContentBlock";
   }
 
   if (isComputerToolUseContentBlock(obj)) {
