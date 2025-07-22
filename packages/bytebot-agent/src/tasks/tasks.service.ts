@@ -62,46 +62,44 @@ export class TasksService {
 
       // Create the initial system message
       this.logger.debug(`Creating initial message for task ID: ${task.id}`);
-      
-      // Build content blocks array
-      const contentBlocks: any[] = [
-        {
-          type: 'text',
-          text: createTaskDto.description,
-        },
-      ];
-      
-      // Add file content blocks if files are provided
-      if (createTaskDto.files && createTaskDto.files.length > 0) {
-        this.logger.debug(`Adding ${createTaskDto.files.length} file(s) to initial message`);
-        
-        for (const file of createTaskDto.files) {
-          // Extract base64 data without the data URL prefix
-          const base64Data = file.base64.includes('base64,')
-            ? file.base64.split('base64,')[1]
-            : file.base64;
-          
-          contentBlocks.push({
-            type: 'document',
-            source: {
-              type: 'base64',
-              media_type: file.type || 'application/octet-stream',
-              data: base64Data,
-            },
-            name: file.name,
-            size: file.size,
-          });
-        }
-      }
-      
       await prisma.message.create({
         data: {
-          content: contentBlocks as Prisma.InputJsonValue,
+          content: [
+            {
+              type: 'text',
+              text: createTaskDto.description,
+            },
+          ] as Prisma.InputJsonValue,
           role: Role.USER,
           taskId: task.id,
         },
       });
       this.logger.debug(`Initial message created for task ID: ${task.id}`);
+      
+      // Save files if provided
+      if (createTaskDto.files && createTaskDto.files.length > 0) {
+        this.logger.debug(`Saving ${createTaskDto.files.length} file(s) for task ID: ${task.id}`);
+        
+        const filePromises = createTaskDto.files.map(file => {
+          // Extract base64 data without the data URL prefix
+          const base64Data = file.base64.includes('base64,')
+            ? file.base64.split('base64,')[1]
+            : file.base64;
+          
+          return prisma.file.create({
+            data: {
+              name: file.name,
+              type: file.type || 'application/octet-stream',
+              size: file.size,
+              data: base64Data,
+              taskId: task.id,
+            },
+          });
+        });
+        
+        await Promise.all(filePromises);
+        this.logger.debug(`Files saved successfully for task ID: ${task.id}`);
+      }
 
       return task;
     });
@@ -185,6 +183,7 @@ export class TasksService {
               email: true,
             },
           },
+          files: true,
         },
       });
 

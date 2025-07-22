@@ -61,6 +61,7 @@ model Task {
   model         Json
   messages      Message[]
   summaries     Summary[]
+  files         File[]
   user          User?         @relation(fields: [userId], references: [id])
   userId        String?       // Optional foreign key to User for task ownership
 }
@@ -99,6 +100,20 @@ model Message {
   summaryId String?     // Optional foreign key to Summary
   user      User?       @relation(fields: [userId], references: [id])
   userId    String?     // Optional foreign key to User for message ownership
+}
+
+model File {
+  id            String      @id @default(uuid())
+  name          String
+  type          String      // MIME type
+  size          Int         // Size in bytes
+  data          String      // Base64 encoded file data
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  
+  // Relations
+  task          Task        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId        String
 }
 
 // Better Auth Models

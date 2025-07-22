@@ -36,7 +36,7 @@ export function ChatInput({
   const [errorMessage, setErrorMessage] = useState<string>("");
   
   const MAX_FILES = 5;
-  const MAX_TOTAL_SIZE = 100 * 1024 * 1024; // 100MB in bytes
+  const MAX_FILE_SIZE = 30 * 1024 * 1024; // 30MB per file in bytes
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,22 +55,19 @@ export function ChatInput({
       e.target.value = '';
       return;
     }
+    
 
-    // Calculate current total size
-    const currentTotalSize = selectedFiles.reduce((acc, file) => {
-      // Extract size from base64 string (rough estimate)
-      const base64Length = file.base64.split(',')[1]?.length || 0;
-      return acc + (base64Length * 0.75); // Base64 is roughly 33% larger
-    }, 0);
-
-    // Check if new files will exceed size limit
-    let newFilesSize = 0;
+    // Check individual file sizes
+    const oversizedFiles: string[] = [];
     for (let i = 0; i < files.length; i++) {
-      newFilesSize += files[i].size;
+      const file = files[i];
+      if (file.size > MAX_FILE_SIZE) {
+        oversizedFiles.push(`${file.name} (${formatFileSize(file.size)})`);
+      }
     }
-
-    if (currentTotalSize + newFilesSize > MAX_TOTAL_SIZE) {
-      setErrorMessage("Total file size exceeds 100MB limit");
+    
+    if (oversizedFiles.length > 0) {
+      setErrorMessage(`File(s) exceed 30MB limit: ${oversizedFiles.join(', ')}`);
       e.target.value = '';
       return;
     }
@@ -173,14 +170,7 @@ export function ChatInput({
         <div className="mb-2">
           <div className="mb-1 flex items-center justify-between text-xs text-gray-500">
             <span>{selectedFiles.length} / {MAX_FILES} files</span>
-            <span>
-              {formatFileSize(
-                selectedFiles.reduce((acc, file) => {
-                  const base64Length = file.base64.split(',')[1]?.length || 0;
-                  return acc + (base64Length * 0.75);
-                }, 0)
-              )} / 100MB
-            </span>
+            <span>Max 30MB per file</span>
           </div>
           <div className="flex flex-wrap gap-2">
             {selectedFiles.map((file, index) => (

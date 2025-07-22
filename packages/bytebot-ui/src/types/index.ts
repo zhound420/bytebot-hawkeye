@@ -65,6 +65,17 @@ export interface FileWithBase64 {
   size: number;
 }
 
+export interface File {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  data: string;
+  createdAt: string;
+  updatedAt: string;
+  taskId: string;
+}
+
 export interface Task {
   id: string;
   description: string;
@@ -84,4 +95,5 @@ export interface Task {
   model: Model;
   userId?: string;
   user?: User;
+  files?: File[];
 }
