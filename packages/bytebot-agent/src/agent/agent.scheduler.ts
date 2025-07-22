@@ -3,6 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { TasksService } from '../tasks/tasks.service';
 import { AgentProcessor } from './agent.processor';
 import { TaskStatus } from '@prisma/client';
+import { writeFile } from './agent.computer-use';
 
 @Injectable()
 export class AgentScheduler implements OnModuleInit {
@@ -39,6 +40,18 @@ export class AgentScheduler implements OnModuleInit {
     // Find the highest priority task to execute
     const task = await this.tasksService.findNextTask();
     if (task) {
+      if (task.files.length > 0) {
+        this.logger.debug(
+          `Task ID: ${task.id} has files, writing them to the desktop`,
+        );
+        for (const file of task.files) {
+          writeFile({
+            path: file.name,
+            content: file.data,
+          });
+        }
+      }
+
       await this.tasksService.update(task.id, {
         status: TaskStatus.RUNNING,
         executedAt: new Date(),

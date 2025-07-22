@@ -146,7 +146,7 @@ export async function handleComputerToolUse(
     if (isReadFileToolUseBlock(block)) {
       logger.debug(`Reading file: ${block.input.path}`);
       const result = await readFile(block.input);
-      
+
       if (result.success && result.data) {
         // Return document content block
         return {
@@ -545,7 +545,14 @@ async function application(input: { application: string }): Promise<void> {
   }
 }
 
-async function readFile(input: { path: string }): Promise<{ success: boolean; data?: string; name?: string; size?: number; mediaType?: string; message?: string }> {
+async function readFile(input: { path: string }): Promise<{
+  success: boolean;
+  data?: string;
+  name?: string;
+  size?: number;
+  mediaType?: string;
+  message?: string;
+}> {
   const { path } = input;
   console.log(`Reading file: ${path}`);
 
@@ -570,6 +577,39 @@ async function readFile(input: { path: string }): Promise<{ success: boolean; da
     return {
       success: false,
       message: `Error reading file: ${error.message}`,
+    };
+  }
+}
+
+export async function writeFile(input: {
+  path: string;
+  content: string;
+}): Promise<{ success: boolean; message?: string }> {
+  const { path, content } = input;
+  console.log(`Writing file: ${path}`);
+
+  try {
+    const response = await fetch(`${BYTEBOT_DESKTOP_BASE_URL}/computer-use`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'write_file',
+        path,
+        content,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to write file: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error in write_file action:', error);
+    return {
+      success: false,
+      message: `Error writing file: ${error.message}`,
     };
   }
 }

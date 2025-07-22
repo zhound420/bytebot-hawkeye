@@ -16,6 +16,7 @@ import {
   TaskStatus,
   TaskType,
   TaskPriority,
+  File,
 } from '@prisma/client';
 import { AddTaskMessageDto } from './dto/add-task-message.dto';
 import { TasksGateway } from './tasks.gateway';
@@ -75,17 +76,19 @@ export class TasksService {
         },
       });
       this.logger.debug(`Initial message created for task ID: ${task.id}`);
-      
+
       // Save files if provided
       if (createTaskDto.files && createTaskDto.files.length > 0) {
-        this.logger.debug(`Saving ${createTaskDto.files.length} file(s) for task ID: ${task.id}`);
-        
-        const filePromises = createTaskDto.files.map(file => {
+        this.logger.debug(
+          `Saving ${createTaskDto.files.length} file(s) for task ID: ${task.id}`,
+        );
+
+        const filePromises = createTaskDto.files.map((file) => {
           // Extract base64 data without the data URL prefix
           const base64Data = file.base64.includes('base64,')
             ? file.base64.split('base64,')[1]
             : file.base64;
-          
+
           return prisma.file.create({
             data: {
               name: file.name,
@@ -96,7 +99,7 @@ export class TasksService {
             },
           });
         });
-        
+
         await Promise.all(filePromises);
         this.logger.debug(`Files saved successfully for task ID: ${task.id}`);
       }
@@ -121,7 +124,7 @@ export class TasksService {
     });
   }
 
-  async findNextTask(): Promise<Task | null> {
+  async findNextTask(): Promise<(Task & { files: File[] }) | null> {
     const task = await this.prisma.task.findFirst({
       where: {
         status: {
@@ -134,6 +137,9 @@ export class TasksService {
         { queuedAt: 'asc' },
         { createdAt: 'asc' },
       ],
+      include: {
+        files: true,
+      },
     });
 
     if (task) {
