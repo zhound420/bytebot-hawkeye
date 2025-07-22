@@ -19,6 +19,7 @@ import {
   isWaitToolUseBlock,
   isApplicationToolUseBlock,
   isPasteTextToolUseBlock,
+  isReadFileToolUseBlock,
 } from '@bytebot/shared';
 import { Logger } from '@nestjs/common';
 
@@ -141,6 +142,43 @@ export async function handleComputerToolUse(
     }
     if (isApplicationToolUseBlock(block)) {
       await application(block.input);
+    }
+    if (isReadFileToolUseBlock(block)) {
+      logger.debug(`Reading file: ${block.input.path}`);
+      const result = await readFile(block.input);
+      
+      if (result.success && result.data) {
+        // Return document content block
+        return {
+          type: MessageContentType.ToolResult,
+          tool_use_id: block.id,
+          content: [
+            {
+              type: MessageContentType.Document,
+              source: {
+                type: 'base64',
+                media_type: result.mediaType || 'application/octet-stream',
+                data: result.data,
+              },
+              name: result.name || 'file',
+              size: result.size,
+            },
+          ],
+        };
+      } else {
+        // Return error message
+        return {
+          type: MessageContentType.ToolResult,
+          tool_use_id: block.id,
+          content: [
+            {
+              type: MessageContentType.Text,
+              text: result.message || 'Error reading file',
+            },
+          ],
+          is_error: true,
+        };
+      }
     }
     logger.debug(`Tool execution successful for tool_use_id: ${block.id}`);
     return {
@@ -504,5 +542,34 @@ async function application(input: { application: string }): Promise<void> {
   } catch (error) {
     console.error('Error in application action:', error);
     throw error;
+  }
+}
+
+async function readFile(input: { path: string }): Promise<{ success: boolean; data?: string; name?: string; size?: number; mediaType?: string; message?: string }> {
+  const { path } = input;
+  console.log(`Reading file: ${path}`);
+
+  try {
+    const response = await fetch(`${BYTEBOT_DESKTOP_BASE_URL}/computer-use`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'read_file',
+        path,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to read file: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error in read_file action:', error);
+    return {
+      success: false,
+      message: `Error reading file: ${error.message}`,
+    };
   }
 }
