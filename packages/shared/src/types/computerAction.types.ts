@@ -94,6 +94,17 @@ export type ApplicationAction = {
   application: Application;
 };
 
+export type WriteFileAction = {
+  action: "write_file";
+  path: string;
+  data: string; // Base64 encoded data
+};
+
+export type ReadFileAction = {
+  action: "read_file";
+  path: string;
+};
+
 // Define the union type using the individual action types
 export type ComputerAction =
   | MoveMouseAction
@@ -109,4 +120,6 @@ export type ComputerAction =
   | WaitAction
   | ScreenshotAction
   | CursorPositionAction
-  | ApplicationAction;
+  | ApplicationAction
+  | WriteFileAction
+  | ReadFileAction;

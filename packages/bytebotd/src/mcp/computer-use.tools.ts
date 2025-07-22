@@ -604,4 +604,91 @@ V, W, X, Y, Z
       };
     }
   }
+
+  @Tool({
+    name: 'computer_write_file',
+    description: 'Writes a file to the specified path with base64 encoded data.',
+    parameters: z.object({
+      path: z.string().describe('The file path where the file should be written.'),
+      data: z.string().describe('Base64 encoded file data to write.'),
+    }),
+  })
+  async writeFile({ path, data }: { path: string; data: string }) {
+    try {
+      const result = await this.computerUse.action({
+        action: 'write_file',
+        path,
+        data,
+      });
+      return {
+        content: [
+          {
+            type: 'text',
+            text: result.message || 'File written successfully',
+          },
+        ],
+      };
+    } catch (err) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Error writing file: ${(err as Error).message}`,
+          },
+        ],
+      };
+    }
+  }
+
+  @Tool({
+    name: 'computer_read_file',
+    description: 'Reads a file from the specified path and returns it as a document content block with base64 encoded data.',
+    parameters: z.object({
+      path: z.string().describe('The file path to read from.'),
+    }),
+  })
+  async readFile({ path }: { path: string }) {
+    try {
+      const result = await this.computerUse.action({
+        action: 'read_file',
+        path,
+      });
+      
+      if (result.success && result.data) {
+        // Return document content block
+        return {
+          content: [
+            {
+              type: 'document',
+              source: {
+                type: 'base64',
+                media_type: result.mediaType || 'application/octet-stream',
+                data: result.data,
+              },
+              name: result.name || 'file',
+              size: result.size,
+            },
+          ],
+        };
+      } else {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: result.message || 'Error reading file',
+            },
+          ],
+        };
+      }
+    } catch (err) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Error reading file: ${(err as Error).message}`,
+          },
+        ],
+      };
+    }
+  }
 }

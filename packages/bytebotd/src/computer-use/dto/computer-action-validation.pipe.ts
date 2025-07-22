@@ -21,6 +21,8 @@ import {
   ScreenshotActionDto,
   CursorPositionActionDto,
   ApplicationActionDto,
+  WriteFileActionDto,
+  ReadFileActionDto,
 } from './computer-action.dto';
 
 @Injectable()
@@ -73,6 +75,12 @@ export class ComputerActionValidationPipe implements PipeTransform {
         break;
       case 'application':
         dto = plainToClass(ApplicationActionDto, value);
+        break;
+      case 'write_file':
+        dto = plainToClass(WriteFileActionDto, value);
+        break;
+      case 'read_file':
+        dto = plainToClass(ReadFileActionDto, value);
         break;
       default:
         throw new BadRequestException(`Unknown action: ${value.action}`);

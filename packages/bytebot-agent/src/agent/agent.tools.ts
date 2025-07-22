@@ -362,6 +362,24 @@ export const _createTaskTool = {
 };
 
 /**
+ * Tool definition for reading files
+ */
+export const _readFileTool = {
+  name: 'computer_read_file',
+  description: 'Reads a file from the specified path and returns it as a document content block with base64 encoded data',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      path: {
+        type: 'string' as const,
+        description: 'The file path to read from',
+      },
+    },
+    required: ['path'],
+  },
+};
+
+/**
  * Export all tools as an array
  */
 export const agentTools = [
@@ -381,4 +399,5 @@ export const agentTools = [
   _cursorPositionTool,
   _setTaskStatusTool,
   _createTaskTool,
+  _readFileTool,
 ];

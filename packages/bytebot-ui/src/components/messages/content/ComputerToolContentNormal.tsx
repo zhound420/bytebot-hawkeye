@@ -10,6 +10,7 @@ import {
   isApplicationToolUseBlock,
   Application,
   isPasteTextToolUseBlock,
+  isReadFileToolUseBlock,
 } from "@bytebot/shared";
 import { getIcon, getLabel } from "./ComputerToolUtils";
 
@@ -85,6 +86,11 @@ function ToolDetailsNormal({ block }: { block: ComputerToolUseContentBlock }) {
         <p className={baseClasses}>
           {String(block.input.direction)} {Number(block.input.scrollCount)}
         </p>
+      )}
+
+      {/* File information */}
+      {isReadFileToolUseBlock(block) && (
+        <p className={baseClasses}>{block.input.path}</p>
       )}
     </>
   );

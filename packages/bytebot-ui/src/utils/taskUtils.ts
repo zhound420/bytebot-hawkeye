@@ -1,4 +1,4 @@
-import { Message, Task, Model, GroupedMessages } from "@/types";
+import { Message, Task, Model, GroupedMessages, FileWithBase64 } from "@/types";
 
 /**
  * Base configuration for API requests
@@ -124,6 +124,7 @@ export async function fetchTaskById(taskId: string): Promise<Task | null> {
 export async function startTask(data: {
   description: string;
   model: Model;
+  files?: FileWithBase64[];
 }): Promise<Task | null> {
   return apiRequest<Task>("/tasks", {
     method: "POST",

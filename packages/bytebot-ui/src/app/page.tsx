@@ -34,11 +34,19 @@ const StockPhoto: React.FC<StockPhotoProps> = ({
   );
 };
 
+interface FileWithBase64 {
+  name: string;
+  base64: string;
+  type: string;
+  size: number;
+}
+
 export default function Home() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [models, setModels] = useState<Model[]>([]);
   const [selectedModel, setSelectedModel] = useState<Model | null>(null);
+  const [uploadedFiles, setUploadedFiles] = useState<FileWithBase64[]>([]);
   const router = useRouter();
   const [activePopoverIndex, setActivePopoverIndex] = useState<number | null>(
     null,
@@ -94,10 +102,17 @@ export default function Home() {
     try {
       if (!selectedModel) throw new Error("No model selected");
       // Send request to start a new task
-      const task = await startTask({
+      const taskData: any = {
         description: input,
         model: selectedModel,
-      });
+      };
+      
+      // Include files if any are uploaded
+      if (uploadedFiles.length > 0) {
+        taskData.files = uploadedFiles;
+      }
+      
+      const task = await startTask(taskData);
 
       if (task && task.id) {
         // Redirect to the task page
@@ -111,6 +126,10 @@ export default function Home() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleFileUpload = (files: FileWithBase64[]) => {
+    setUploadedFiles(files);
   };
 
   return (
@@ -135,6 +154,7 @@ export default function Home() {
                   isLoading={isLoading}
                   onInputChange={setInput}
                   onSend={handleSend}
+                  onFileUpload={handleFileUpload}
                   minLines={3}
                 />
                 <div className="mt-2">
@@ -192,6 +212,7 @@ export default function Home() {
                   isLoading={isLoading}
                   onInputChange={setInput}
                   onSend={handleSend}
+                  onFileUpload={handleFileUpload}
                   minLines={3}
                 />
                 <div className="mt-2">

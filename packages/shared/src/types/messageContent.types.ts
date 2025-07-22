@@ -4,6 +4,7 @@ import { Button, Coordinates, Press } from "./computerAction.types";
 export enum MessageContentType {
   Text = "text",
   Image = "image",
+  Document = "document",
   ToolUse = "tool_use",
   ToolResult = "tool_result",
   Thinking = "thinking",
@@ -28,6 +29,17 @@ export type ImageContentBlock = {
     type: "base64";
     data: string;
   };
+} & MessageContentBlockBase;
+
+export type DocumentContentBlock = {
+  type: MessageContentType.Document;
+  source: {
+    type: "base64";
+    media_type: string;
+    data: string;
+  };
+  name?: string;
+  size?: number;
 } & MessageContentBlockBase;
 
 export type ThinkingContentBlock = {
@@ -156,6 +168,21 @@ export type ApplicationToolUseBlock = ToolUseContentBlock & {
   };
 };
 
+export type WriteFileToolUseBlock = ToolUseContentBlock & {
+  name: "computer_write_file";
+  input: {
+    path: string;
+    data: string;
+  };
+};
+
+export type ReadFileToolUseBlock = ToolUseContentBlock & {
+  name: "computer_read_file";
+  input: {
+    path: string;
+  };
+};
+
 export type ComputerToolUseContentBlock =
   | MoveMouseToolUseBlock
   | TraceMouseToolUseBlock
@@ -170,7 +197,9 @@ export type ComputerToolUseContentBlock =
   | DragMouseToolUseBlock
   | ScrollToolUseBlock
   | CursorPositionToolUseBlock
-  | ApplicationToolUseBlock;
+  | ApplicationToolUseBlock
+  | WriteFileToolUseBlock
+  | ReadFileToolUseBlock;
 
 export type SetTaskStatusToolUseBlock = ToolUseContentBlock & {
   name: "set_task_status";
@@ -202,6 +231,7 @@ export type ToolResultContentBlock = {
 export type MessageContentBlock =
   | TextContentBlock
   | ImageContentBlock
+  | DocumentContentBlock
   | ToolUseContentBlock
   | ThinkingContentBlock
   | RedactedThinkingContentBlock
