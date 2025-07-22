@@ -58,6 +58,13 @@ export interface User {
   email: string;
 }
 
+export interface FileWithBase64 {
+  name: string;
+  base64: string;
+  type: string;
+  size: number;
+}
+
 export interface Task {
   id: string;
   description: string;

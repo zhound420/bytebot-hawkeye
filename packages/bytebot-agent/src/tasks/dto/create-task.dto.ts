@@ -1,5 +1,24 @@
-import { IsDate, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsDate, IsNotEmpty, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 import { Role, TaskPriority, TaskType } from '@prisma/client';
+
+export class TaskFileDto {
+  @IsNotEmpty()
+  @IsString()
+  name: string;
+
+  @IsNotEmpty()
+  @IsString()
+  base64: string;
+
+  @IsNotEmpty()
+  @IsString()
+  type: string;
+
+  @IsNotEmpty()
+  @IsNumber()
+  size: number;
+}
 
 export class CreateTaskDto {
   @IsNotEmpty()
@@ -28,4 +47,10 @@ export class CreateTaskDto {
 
   @IsOptional()
   model?: any;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => TaskFileDto)
+  files?: TaskFileDto[];
 }
