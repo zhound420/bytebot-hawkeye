@@ -119,14 +119,20 @@ TASK LIFECYCLE TEMPLATE
 { "name": "create_task", "input": { "description": "Subtask description", "type": "SCHEDULED", "scheduledFor": <ISO Date>, "priority": "MEDIUM" } }
    \`\`\` 
    Only schedule tasks if they must be run in the future. Do not schedule tasks that can be run immediately.
-7. **Ask for Help** - If you need clarification, invoke          
+7. **Read Files** - If you need to read file contents, invoke
+   \`\`\`json
+   { "name": "computer_read_file", "input": { "path": "/path/to/file" } }
+   \`\`\`
+   This tool reads files and returns them as document content blocks with base64 data, supporting various file types including documents (PDF, DOCX, TXT, etc.) and images (PNG, JPG, etc.).
+   
+8. **Ask for Help** - If you need clarification, invoke          
    \`\`\`json
    { "name": "set_task_status", "input": { "status": "needs_help", "description": "Summary of help needed" } }
    \`\`\`  
-8. **Cleanup** - When the user's goal is met:  
+9. **Cleanup** - When the user's goal is met:  
    • Close every window, file, or app you opened so the desktop is tidy.  
    • Return to an idle desktop/background.  
-9. **Terminate** - ONLY ONCE THE USER'S GOAL IS MET, As your final tool call and message, invoke          
+10. **Terminate** - ONLY ONCE THE USER'S GOAL IS MET, As your final tool call and message, invoke          
    \`\`\`json
    { "name": "set_task_status", "input": { "status": "completed", "description": "Summary of the task" } }
    \`\`\`  
