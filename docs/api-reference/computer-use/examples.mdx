@@ -254,6 +254,150 @@ compareScreenshots();
 
 </CodeGroup>
 
+## File Operations
+
+### Writing Files
+
+These examples show how to write files to the desktop environment:
+
+<CodeGroup>
+```python Python
+import requests
+import base64
+
+def write_file(path, content):
+    url = "http://localhost:9990/computer-use"
+    
+    # Encode content to base64
+    encoded_content = base64.b64encode(content.encode('utf-8')).decode('utf-8')
+    
+    data = {
+        "action": "write_file",
+        "path": path,
+        "data": encoded_content
+    }
+    
+    response = requests.post(url, json=data)
+    return response.json()
+
+# Write a text file
+result = write_file("/home/user/hello.txt", "Hello, Bytebot!")
+print(result)  # {'success': True, 'message': 'File written successfully...'}
+
+# Write to desktop (relative path)
+result = write_file("report.txt", "Daily report content")
+print(result)  # File will be written to /home/user/Desktop/report.txt
+```
+
+```javascript JavaScript
+const axios = require('axios');
+
+async function writeFile(path, content) {
+  const url = "http://localhost:9990/computer-use";
+  
+  // Encode content to base64
+  const encodedContent = Buffer.from(content, 'utf-8').toString('base64');
+  
+  const data = {
+    action: "write_file",
+    path: path,
+    data: encodedContent
+  };
+  
+  const response = await axios.post(url, data);
+  return response.data;
+}
+
+// Write a text file
+writeFile("/home/user/notes.txt", "Meeting notes...")
+  .then(result => console.log(result))
+  .catch(error => console.error(error));
+
+// Write HTML file to desktop
+const htmlContent = '<html><body><h1>Hello</h1></body></html>';
+writeFile("index.html", htmlContent)
+  .then(result => console.log("HTML file created"));
+```
+</CodeGroup>
+
+### Reading Files
+
+These examples show how to read files from the desktop environment:
+
+<CodeGroup>
+```python Python
+import requests
+import base64
+
+def read_file(path):
+    url = "http://localhost:9990/computer-use"
+    
+    data = {
+        "action": "read_file",
+        "path": path
+    }
+    
+    response = requests.post(url, json=data)
+    result = response.json()
+    
+    if result['success']:
+        # Decode the base64 content
+        content = base64.b64decode(result['data']).decode('utf-8')
+        return {
+            'content': content,
+            'name': result['name'],
+            'size': result['size'],
+            'mediaType': result['mediaType']
+        }
+    else:
+        return result
+
+# Read a text file
+file_data = read_file("/home/user/hello.txt")
+print(f"Content: {file_data['content']}")
+print(f"Size: {file_data['size']} bytes")
+print(f"Type: {file_data['mediaType']}")
+```
+
+```javascript JavaScript
+const axios = require('axios');
+
+async function readFile(path) {
+  const url = "http://localhost:9990/computer-use";
+  
+  const data = {
+    action: "read_file",
+    path: path
+  };
+  
+  const response = await axios.post(url, data);
+  const result = response.data;
+  
+  if (result.success) {
+    // Decode the base64 content
+    const content = Buffer.from(result.data, 'base64').toString('utf-8');
+    return {
+      content: content,
+      name: result.name,
+      size: result.size,
+      mediaType: result.mediaType
+    };
+  } else {
+    throw new Error(result.message);
+  }
+}
+
+// Read a file from desktop
+readFile("report.txt")
+  .then(fileData => {
+    console.log(`Content: ${fileData.content}`);
+    console.log(`Size: ${fileData.size} bytes`);
+    console.log(`Type: ${fileData.mediaType}`);
+  })
+  .catch(error => console.error("Error reading file:", error));
+```
+</CodeGroup>
+
 ## Automation Recipes
 
 ### Browser Automation

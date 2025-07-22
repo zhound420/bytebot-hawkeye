@@ -334,6 +334,21 @@ POST http://localhost:9990/computer-use
   "action": "application",
   "application": "firefox"  // Options: firefox, 1password, thunderbird, vscode, terminal, desktop, directory
 }
+
+// Write a file
+POST http://localhost:9990/computer-use
+{
+  "action": "write_file",
+  "path": "/home/user/example.txt",  // Absolute path or relative to /home/user/Desktop
+  "data": "SGVsbG8gV29ybGQh"  // Base64 encoded content
+}
+
+// Read a file
+POST http://localhost:9990/computer-use
+{
+  "action": "read_file",
+  "path": "/home/user/example.txt"  // Returns base64 encoded content
+}
 ```
 
 ## 🤝 Contributing

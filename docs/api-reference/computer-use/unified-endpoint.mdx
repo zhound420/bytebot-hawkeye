@@ -345,6 +345,46 @@ Switch between different applications or navigate to the desktop/directory.
 }
 ```
 
+### write_file
+
+Write a file to the desktop environment filesystem.
+
+**Parameters:**
+
+| Parameter | Type   | Required | Description                                                    |
+| --------- | ------ | -------- | -------------------------------------------------------------- |
+| `path`    | String | Yes      | File path (absolute or relative to /home/user/Desktop)        |
+| `data`    | String | Yes      | Base64 encoded file content                                    |
+
+**Example:**
+
+```json
+{
+  "action": "write_file",
+  "path": "/home/user/documents/example.txt",
+  "data": "SGVsbG8gV29ybGQh"
+}
+```
+
+### read_file
+
+Read a file from the desktop environment filesystem.
+
+**Parameters:**
+
+| Parameter | Type   | Required | Description                                                    |
+| --------- | ------ | -------- | -------------------------------------------------------------- |
+| `path`    | String | Yes      | File path (absolute or relative to /home/user/Desktop)        |
+
+**Example:**
+
+```json
+{
+  "action": "read_file",
+  "path": "/home/user/documents/example.txt"
+}
+```
+
 ## Response Format
 
 The response format varies depending on the action performed.
@@ -379,6 +419,27 @@ Most actions return a simple success response:
     "x": 123,
     "y": 456
   }
+}
+```
+
+### Write File Response
+
+```json
+{
+  "success": true,
+  "message": "File written successfully to: /home/user/documents/example.txt"
+}
+```
+
+### Read File Response
+
+```json
+{
+  "success": true,
+  "data": "SGVsbG8gV29ybGQh",
+  "name": "example.txt",
+  "size": 12,
+  "mediaType": "text/plain"
 }
 ```
 
