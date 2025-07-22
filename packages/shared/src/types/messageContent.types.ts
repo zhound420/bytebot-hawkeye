@@ -4,6 +4,7 @@ import { Button, Coordinates, Press } from "./computerAction.types";
 export enum MessageContentType {
   Text = "text",
   Image = "image",
+  Document = "document",
   ToolUse = "tool_use",
   ToolResult = "tool_result",
   Thinking = "thinking",
@@ -28,6 +29,17 @@ export type ImageContentBlock = {
     type: "base64";
     data: string;
   };
+} & MessageContentBlockBase;
+
+export type DocumentContentBlock = {
+  type: MessageContentType.Document;
+  source: {
+    type: "base64";
+    media_type: string;
+    data: string;
+  };
+  name?: string;
+  size?: number;
 } & MessageContentBlockBase;
 
 export type ThinkingContentBlock = {
@@ -202,6 +214,7 @@ export type ToolResultContentBlock = {
 export type MessageContentBlock =
   | TextContentBlock
   | ImageContentBlock
+  | DocumentContentBlock
   | ToolUseContentBlock
   | ThinkingContentBlock
   | RedactedThinkingContentBlock
