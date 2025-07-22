@@ -589,13 +589,16 @@ export async function writeFile(input: {
   console.log(`Writing file: ${path}`);
 
   try {
+    // Content is always base64 encoded
+    const base64Data = content;
+    
     const response = await fetch(`${BYTEBOT_DESKTOP_BASE_URL}/computer-use`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action: 'write_file',
         path,
-        content,
+        data: base64Data,
       }),
     });
 

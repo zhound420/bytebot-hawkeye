@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { webcrypto } from 'crypto';
+import { json, urlencoded } from 'express';
 
 // Polyfill for crypto global (required by @nestjs/schedule)
 if (!globalThis.crypto) {
@@ -12,6 +13,10 @@ async function bootstrap() {
 
   try {
     const app = await NestFactory.create(AppModule);
+
+    // Configure body parser with increased payload size limit (50MB)
+    app.use(json({ limit: '50mb' }));
+    app.use(urlencoded({ limit: '50mb', extended: true }));
 
     // Set global prefix for all routes
     app.setGlobalPrefix('api');

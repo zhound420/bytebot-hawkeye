@@ -21,7 +21,12 @@ export class ComputerUseController {
     @Body(new ComputerActionValidationPipe()) params: ComputerActionDto,
   ) {
     try {
-      this.logger.log(`Computer action request: ${JSON.stringify(params)}`);
+      // don't log base64 data
+      const paramsCopy = { ...params };
+      if (paramsCopy.action === 'write_file') {
+        paramsCopy.data = 'base64 data';
+      }
+      this.logger.log(`Computer action request: ${JSON.stringify(paramsCopy)}`);
       return await this.computerUseService.action(params);
     } catch (error) {
       this.logger.error(

@@ -365,20 +365,47 @@ export class ComputerUseService {
     action: WriteFileAction,
   ): Promise<{ success: boolean; message: string }> {
     try {
+      const execAsync = promisify(exec);
+
       // Decode base64 data
       const buffer = Buffer.from(action.data, 'base64');
 
-      // Ensure directory exists
-      const dir = path.dirname(action.path);
-      await fs.mkdir(dir, { recursive: true });
+      // Resolve path - if relative, make it relative to user's home directory
+      let targetPath = action.path;
+      if (!path.isAbsolute(targetPath)) {
+        targetPath = path.join('/home/user/Desktop', targetPath);
+      }
 
-      // Write file
-      await fs.writeFile(action.path, buffer);
+      // Ensure directory exists using sudo
+      const dir = path.dirname(targetPath);
+      try {
+        await execAsync(`sudo mkdir -p "${dir}"`);
+      } catch (error) {
+        // Directory might already exist, which is fine
+        this.logger.debug(`Directory creation: ${error.message}`);
+      }
 
-      this.logger.log(`File written successfully to: ${action.path}`);
+      // Write to a temporary file first
+      const tempFile = `/tmp/bytebot_temp_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+      await fs.writeFile(tempFile, buffer);
+
+      // Move the file to the target location using sudo
+      try {
+        await execAsync(`sudo cp "${tempFile}" "${targetPath}"`);
+        await execAsync(`sudo chown user:user "${targetPath}"`);
+        await execAsync(`sudo chmod 644 "${targetPath}"`);
+        // Clean up temp file
+        await fs.unlink(tempFile).catch(() => {});
+      } catch (error) {
+        // Clean up temp file on error
+        await fs.unlink(tempFile).catch(() => {});
+        throw error;
+      }
+
+      this.logger.log(`File written successfully to: ${targetPath}`);
       return {
         success: true,
-        message: `File written successfully to: ${action.path}`,
+        message: `File written successfully to: ${targetPath}`,
       };
     } catch (error) {
       this.logger.error(`Error writing file: ${error.message}`, error.stack);
@@ -398,50 +425,77 @@ export class ComputerUseService {
     message?: string;
   }> {
     try {
-      // Read file as buffer
-      const buffer = await fs.readFile(action.path);
+      const execAsync = promisify(exec);
 
-      // Get file stats for size
-      const stats = await fs.stat(action.path);
+      // Resolve path - if relative, make it relative to user's home directory
+      let targetPath = action.path;
+      if (!path.isAbsolute(targetPath)) {
+        targetPath = path.join('/home/user/Desktop', targetPath);
+      }
 
-      // Convert to base64
-      const base64Data = buffer.toString('base64');
+      // Copy file to temp location using sudo to read it
+      const tempFile = `/tmp/bytebot_read_${Date.now()}_${Math.random().toString(36).substring(7)}`;
 
-      // Extract filename from path
-      const fileName = path.basename(action.path);
+      try {
+        // Copy the file to a temporary location we can read
+        await execAsync(`sudo cp "${targetPath}" "${tempFile}"`);
+        await execAsync(`sudo chmod 644 "${tempFile}"`);
 
-      // Determine media type based on file extension
-      const ext = path.extname(action.path).toLowerCase().slice(1);
-      const mimeTypes: Record<string, string> = {
-        pdf: 'application/pdf',
-        docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        doc: 'application/msword',
-        txt: 'text/plain',
-        html: 'text/html',
-        json: 'application/json',
-        xml: 'text/xml',
-        csv: 'text/csv',
-        rtf: 'application/rtf',
-        odt: 'application/vnd.oasis.opendocument.text',
-        epub: 'application/epub+zip',
-        png: 'image/png',
-        jpg: 'image/jpeg',
-        jpeg: 'image/jpeg',
-        webp: 'image/webp',
-        gif: 'image/gif',
-        svg: 'image/svg+xml',
-      };
+        // Read file as buffer from temp location
+        const buffer = await fs.readFile(tempFile);
 
-      const mediaType = mimeTypes[ext] || 'application/octet-stream';
+        // Get file stats for size using sudo
+        const { stdout: statOutput } = await execAsync(
+          `sudo stat -c "%s" "${targetPath}"`,
+        );
+        const fileSize = parseInt(statOutput.trim(), 10);
 
-      this.logger.log(`File read successfully from: ${action.path}`);
-      return {
-        success: true,
-        data: base64Data,
-        name: fileName,
-        size: stats.size,
-        mediaType: mediaType,
-      };
+        // Clean up temp file
+        await fs.unlink(tempFile).catch(() => {});
+
+        // Convert to base64
+        const base64Data = buffer.toString('base64');
+
+        // Extract filename from path
+        const fileName = path.basename(targetPath);
+
+        // Determine media type based on file extension
+        const ext = path.extname(targetPath).toLowerCase().slice(1);
+        const mimeTypes: Record<string, string> = {
+          pdf: 'application/pdf',
+          docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          doc: 'application/msword',
+          txt: 'text/plain',
+          html: 'text/html',
+          json: 'application/json',
+          xml: 'text/xml',
+          csv: 'text/csv',
+          rtf: 'application/rtf',
+          odt: 'application/vnd.oasis.opendocument.text',
+          epub: 'application/epub+zip',
+          png: 'image/png',
+          jpg: 'image/jpeg',
+          jpeg: 'image/jpeg',
+          webp: 'image/webp',
+          gif: 'image/gif',
+          svg: 'image/svg+xml',
+        };
+
+        const mediaType = mimeTypes[ext] || 'application/octet-stream';
+
+        this.logger.log(`File read successfully from: ${targetPath}`);
+        return {
+          success: true,
+          data: base64Data,
+          name: fileName,
+          size: fileSize,
+          mediaType: mediaType,
+        };
+      } catch (error) {
+        // Clean up temp file on error
+        await fs.unlink(tempFile).catch(() => {});
+        throw error;
+      }
     } catch (error) {
       this.logger.error(`Error reading file: ${error.message}`, error.stack);
       return {

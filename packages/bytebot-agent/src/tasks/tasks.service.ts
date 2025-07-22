@@ -61,33 +61,22 @@ export class TasksService {
       });
       this.logger.log(`Task created successfully with ID: ${task.id}`);
 
-      // Create the initial system message
-      this.logger.debug(`Creating initial message for task ID: ${task.id}`);
-      await prisma.message.create({
-        data: {
-          content: [
-            {
-              type: 'text',
-              text: createTaskDto.description,
-            },
-          ] as Prisma.InputJsonValue,
-          role: Role.USER,
-          taskId: task.id,
-        },
-      });
-      this.logger.debug(`Initial message created for task ID: ${task.id}`);
+      let filesDescription = '';
 
       // Save files if provided
       if (createTaskDto.files && createTaskDto.files.length > 0) {
         this.logger.debug(
           `Saving ${createTaskDto.files.length} file(s) for task ID: ${task.id}`,
         );
+        filesDescription += `\n`;
 
         const filePromises = createTaskDto.files.map((file) => {
           // Extract base64 data without the data URL prefix
           const base64Data = file.base64.includes('base64,')
             ? file.base64.split('base64,')[1]
             : file.base64;
+
+          filesDescription += `\nFile ${file.name} written to desktop.`;
 
           return prisma.file.create({
             data: {
@@ -103,6 +92,22 @@ export class TasksService {
         await Promise.all(filePromises);
         this.logger.debug(`Files saved successfully for task ID: ${task.id}`);
       }
+
+      // Create the initial system message
+      this.logger.debug(`Creating initial message for task ID: ${task.id}`);
+      await prisma.message.create({
+        data: {
+          content: [
+            {
+              type: 'text',
+              text: `${createTaskDto.description} ${filesDescription}`,
+            },
+          ] as Prisma.InputJsonValue,
+          role: Role.USER,
+          taskId: task.id,
+        },
+      });
+      this.logger.debug(`Initial message created for task ID: ${task.id}`);
 
       return task;
     });
