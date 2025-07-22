@@ -29,7 +29,11 @@ export function MessageContent({
     ) {
       return true;
     }
-    if (isToolResultContentBlock(block) && !block.is_error) {
+    if (
+      isToolResultContentBlock(block) &&
+      block.tool_use_id !== "set_task_status" &&
+      !block.is_error
+    ) {
       return false;
     }
     return true;
@@ -57,6 +61,13 @@ export function MessageContent({
           {isToolResultContentBlock(block) && block.is_error && (
             <ErrorContent block={block} />
           )}
+
+          {isToolResultContentBlock(block) &&
+            !block.is_error &&
+            block.tool_use_id === "set_task_status" &&
+            block.content?.[0].type === "text" && (
+              <TextContent block={block.content?.[0]} />
+            )}
         </div>
       ))}
     </div>

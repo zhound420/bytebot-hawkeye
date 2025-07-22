@@ -14,6 +14,7 @@ import {
   isComputerToolUseContentBlock,
   isSetTaskStatusToolUseBlock,
   isCreateTaskToolUseBlock,
+  SetTaskStatusToolUseBlock,
 } from '@bytebot/shared';
 
 import {
@@ -281,6 +282,8 @@ export class AgentProcessor {
 
       const generatedToolResults: ToolResultContentBlock[] = [];
 
+      let setTaskStatusToolUseBlock: SetTaskStatusToolUseBlock | null = null;
+
       for (const block of messageContentBlocks) {
         if (isComputerToolUseContentBlock(block)) {
           const result = await handleComputerToolUse(block, this.logger);
@@ -315,6 +318,20 @@ export class AgentProcessor {
         }
 
         if (isSetTaskStatusToolUseBlock(block)) {
+          setTaskStatusToolUseBlock = block;
+
+          generatedToolResults.push({
+            type: MessageContentType.ToolResult,
+            tool_use_id: block.id,
+            is_error: block.input.status === 'failed',
+            content: [
+              {
+                type: MessageContentType.Text,
+                text: block.input.description,
+              },
+            ],
+          });
+
           switch (block.input.status) {
             case 'completed':
               await this.tasksService.update(taskId, {
@@ -328,16 +345,6 @@ export class AgentProcessor {
               });
               break;
             case 'needs_help':
-              generatedToolResults.push({
-                type: MessageContentType.ToolResult,
-                tool_use_id: block.id,
-                content: [
-                  {
-                    type: MessageContentType.Text,
-                    text: 'The task has been set to needs help',
-                  },
-                ],
-              });
               await this.tasksService.update(taskId, {
                 status: TaskStatus.NEEDS_HELP,
               });
@@ -352,6 +359,28 @@ export class AgentProcessor {
           role: Role.USER,
           taskId,
         });
+      }
+
+      // Update the task status after all tool results have been generated if we have a set task status tool use block
+      if (setTaskStatusToolUseBlock) {
+        switch (setTaskStatusToolUseBlock.input.status) {
+          case 'completed':
+            await this.tasksService.update(taskId, {
+              status: TaskStatus.COMPLETED,
+              completedAt: new Date(),
+            });
+            break;
+          case 'failed':
+            await this.tasksService.update(taskId, {
+              status: TaskStatus.FAILED,
+            });
+            break;
+          case 'needs_help':
+            await this.tasksService.update(taskId, {
+              status: TaskStatus.NEEDS_HELP,
+            });
+            break;
+        }
       }
 
       // Schedule the next iteration without blocking

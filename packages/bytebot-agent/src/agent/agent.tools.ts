@@ -321,8 +321,13 @@ export const _setTaskStatusTool = {
         enum: ['completed', 'failed', 'needs_help'],
         description: 'The status of the task',
       },
+      description: {
+        type: 'string' as const,
+        description:
+          'If the task is completed, a summary of the task. If the task is failed, a description of the failure.',
+      },
     },
-    required: ['status'],
+    required: ['status', 'description'],
   },
 };
 

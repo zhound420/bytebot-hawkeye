@@ -176,6 +176,7 @@ export type SetTaskStatusToolUseBlock = ToolUseContentBlock & {
   name: "set_task_status";
   input: {
     status: "completed" | "failed" | "needs_help";
+    description: string;
   };
 };
 

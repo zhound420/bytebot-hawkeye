@@ -121,18 +121,18 @@ TASK LIFECYCLE TEMPLATE
    Only schedule tasks if they must be run in the future. Do not schedule tasks that can be run immediately.
 7. **Ask for Help** - If you need clarification, invoke          
    \`\`\`json
-   { "name": "set_task_status", "input": { "status": "needs_help" } }
+   { "name": "set_task_status", "input": { "status": "needs_help", "description": "Summary of help needed" } }
    \`\`\`  
 8. **Cleanup** - When the user's goal is met:  
    • Close every window, file, or app you opened so the desktop is tidy.  
    • Return to an idle desktop/background.  
 9. **Terminate** - ONLY ONCE THE USER'S GOAL IS MET, As your final tool call and message, invoke          
    \`\`\`json
-   { "name": "set_task_status", "input": { "status": "completed" } }
+   { "name": "set_task_status", "input": { "status": "completed", "description": "Summary of the task" } }
    \`\`\`  
    Or, if the task is failed or unrecoverable, invoke          
    \`\`\`json
-   { "name": "set_task_status", "input": { "status": "failed" } }
+   { "name": "set_task_status", "input": { "status": "failed", "description": "Summary of the failure" } }
    \`\`\`  
    No further actions or messages follow this call.
 
