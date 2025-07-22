@@ -200,6 +200,25 @@ export class ApplicationActionDto extends BaseActionDto {
   application: ApplicationName;
 }
 
+export class WriteFileActionDto extends BaseActionDto {
+  @IsIn(['write_file'])
+  action: 'write_file';
+
+  @IsString()
+  path: string;
+
+  @IsString()
+  data: string; // Base64 encoded data
+}
+
+export class ReadFileActionDto extends BaseActionDto {
+  @IsIn(['read_file'])
+  action: 'read_file';
+
+  @IsString()
+  path: string;
+}
+
 // Union type for all computer actions
 export type ComputerActionDto =
   | MoveMouseActionDto
@@ -211,7 +230,10 @@ export type ComputerActionDto =
   | TypeKeysActionDto
   | PressKeysActionDto
   | TypeTextActionDto
+  | PasteTextActionDto
   | WaitActionDto
   | ScreenshotActionDto
   | CursorPositionActionDto
-  | ApplicationActionDto;
+  | ApplicationActionDto
+  | WriteFileActionDto
+  | ReadFileActionDto;

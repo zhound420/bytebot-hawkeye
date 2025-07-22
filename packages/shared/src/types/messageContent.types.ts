@@ -168,6 +168,21 @@ export type ApplicationToolUseBlock = ToolUseContentBlock & {
   };
 };
 
+export type WriteFileToolUseBlock = ToolUseContentBlock & {
+  name: "computer_write_file";
+  input: {
+    path: string;
+    data: string;
+  };
+};
+
+export type ReadFileToolUseBlock = ToolUseContentBlock & {
+  name: "computer_read_file";
+  input: {
+    path: string;
+  };
+};
+
 export type ComputerToolUseContentBlock =
   | MoveMouseToolUseBlock
   | TraceMouseToolUseBlock
@@ -182,7 +197,9 @@ export type ComputerToolUseContentBlock =
   | DragMouseToolUseBlock
   | ScrollToolUseBlock
   | CursorPositionToolUseBlock
-  | ApplicationToolUseBlock;
+  | ApplicationToolUseBlock
+  | WriteFileToolUseBlock
+  | ReadFileToolUseBlock;
 
 export type SetTaskStatusToolUseBlock = ToolUseContentBlock & {
   name: "set_task_status";

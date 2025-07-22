@@ -25,6 +25,8 @@ import {
   ThinkingContentBlock,
   RedactedThinkingContentBlock,
   PasteTextToolUseBlock,
+  WriteFileToolUseBlock,
+  ReadFileToolUseBlock,
 } from "../types/messageContent.types";
 
 /**
@@ -472,4 +474,26 @@ export function isCreateTaskToolUseBlock(
 
   const block = obj as Record<string, any>;
   return block.name === "create_task";
+}
+
+export function isWriteFileToolUseBlock(
+  obj: unknown
+): obj is WriteFileToolUseBlock {
+  if (!isComputerToolUseContentBlock(obj)) {
+    return false;
+  }
+
+  const block = obj as Record<string, any>;
+  return block.name === "computer_write_file";
+}
+
+export function isReadFileToolUseBlock(
+  obj: unknown
+): obj is ReadFileToolUseBlock {
+  if (!isComputerToolUseContentBlock(obj)) {
+    return false;
+  }
+
+  const block = obj as Record<string, any>;
+  return block.name === "computer_read_file";
 }

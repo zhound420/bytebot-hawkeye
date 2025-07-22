@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { exec, spawn } from 'child_process';
 import { promisify } from 'util';
+import * as fs from 'fs/promises';
+import * as path from 'path';
 import { NutService } from '../nut/nut.service';
 import {
   ComputerAction,
@@ -17,6 +19,8 @@ import {
   ApplicationAction,
   Application,
   PasteTextAction,
+  WriteFileAction,
+  ReadFileAction,
 } from '@bytebot/shared';
 
 @Injectable()
@@ -84,6 +88,14 @@ export class ComputerUseService {
       case 'application': {
         await this.application(params as ApplicationAction);
         break;
+      }
+
+      case 'write_file': {
+        return this.writeFile(params as WriteFileAction);
+      }
+
+      case 'read_file': {
+        return this.readFile(params as ReadFileAction);
       }
 
       default:
@@ -368,5 +380,61 @@ export class ComputerUseService {
       '-b',
       'add,maximized_vert,maximized_horz',
     ]);
+  }
+
+  private async writeFile(action: WriteFileAction): Promise<{ success: boolean; message: string }> {
+    try {
+      // Decode base64 data
+      const buffer = Buffer.from(action.data, 'base64');
+      
+      // Ensure directory exists
+      const dir = path.dirname(action.path);
+      await fs.mkdir(dir, { recursive: true });
+      
+      // Write file
+      await fs.writeFile(action.path, buffer);
+      
+      this.logger.log(`File written successfully to: ${action.path}`);
+      return {
+        success: true,
+        message: `File written successfully to: ${action.path}`
+      };
+    } catch (error) {
+      this.logger.error(`Error writing file: ${error.message}`, error.stack);
+      return {
+        success: false,
+        message: `Error writing file: ${error.message}`
+      };
+    }
+  }
+
+  private async readFile(action: ReadFileAction): Promise<{ success: boolean; data?: string; name?: string; size?: number; message?: string }> {
+    try {
+      // Read file as buffer
+      const buffer = await fs.readFile(action.path);
+      
+      // Get file stats for size
+      const stats = await fs.stat(action.path);
+      
+      // Convert to base64
+      const base64Data = buffer.toString('base64');
+      
+      // Extract filename from path
+      const fileName = path.basename(action.path);
+      
+      this.logger.log(`File read successfully from: ${action.path}`);
+      return {
+        success: true,
+        data: base64Data,
+        name: fileName,
+        size: stats.size
+      };
+    } catch (error) {
+      this.logger.error(`Error reading file: ${error.message}`, error.stack);
+      return {
+        success: false,
+        message: `Error reading file: ${error.message}`
+      };
+    }
   }
 }
