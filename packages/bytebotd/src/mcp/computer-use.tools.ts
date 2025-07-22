@@ -655,30 +655,6 @@ V, W, X, Y, Z
       });
       
       if (result.success && result.data) {
-        // Determine media type based on file extension
-        const ext = path.split('.').pop()?.toLowerCase() || '';
-        const mimeTypes: Record<string, string> = {
-          'pdf': 'application/pdf',
-          'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-          'doc': 'application/msword',
-          'txt': 'text/plain',
-          'html': 'text/html',
-          'json': 'application/json',
-          'xml': 'text/xml',
-          'csv': 'text/csv',
-          'rtf': 'application/rtf',
-          'odt': 'application/vnd.oasis.opendocument.text',
-          'epub': 'application/epub+zip',
-          'png': 'image/png',
-          'jpg': 'image/jpeg',
-          'jpeg': 'image/jpeg',
-          'webp': 'image/webp',
-          'gif': 'image/gif',
-          'svg': 'image/svg+xml',
-        };
-        
-        const mediaType = mimeTypes[ext] || 'application/octet-stream';
-        
         // Return document content block
         return {
           content: [
@@ -686,10 +662,10 @@ V, W, X, Y, Z
               type: 'document',
               source: {
                 type: 'base64',
-                media_type: mediaType,
+                media_type: result.mediaType || 'application/octet-stream',
                 data: result.data,
               },
-              name: result.name || path.split('/').pop() || 'file',
+              name: result.name || 'file',
               size: result.size,
             },
           ],

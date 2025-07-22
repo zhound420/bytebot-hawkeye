@@ -14,6 +14,8 @@ import {
   CursorPositionAction,
   ApplicationAction,
   PasteTextAction,
+  WriteFileAction,
+  ReadFileAction,
 } from "../types/computerAction.types";
 import {
   ComputerToolUseContentBlock,
@@ -272,6 +274,25 @@ export function convertApplicationActionToToolUseBlock(
   });
 }
 
+export function convertWriteFileActionToToolUseBlock(
+  action: WriteFileAction,
+  toolUseId: string
+): ComputerToolUseContentBlock {
+  return createToolUseBlock("computer_write_file", toolUseId, {
+    path: action.path,
+    data: action.data,
+  });
+}
+
+export function convertReadFileActionToToolUseBlock(
+  action: ReadFileAction,
+  toolUseId: string
+): ComputerToolUseContentBlock {
+  return createToolUseBlock("computer_read_file", toolUseId, {
+    path: action.path,
+  });
+}
+
 /**
  * Generic converter that handles all action types
  */
@@ -308,6 +329,10 @@ export function convertComputerActionToToolUseBlock(
       return convertCursorPositionActionToToolUseBlock(action, toolUseId);
     case "application":
       return convertApplicationActionToToolUseBlock(action, toolUseId);
+    case "write_file":
+      return convertWriteFileActionToToolUseBlock(action, toolUseId);
+    case "read_file":
+      return convertReadFileActionToToolUseBlock(action, toolUseId);
     default:
       const exhaustiveCheck: never = action;
       throw new Error(

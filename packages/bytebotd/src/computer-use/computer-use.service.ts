@@ -408,7 +408,7 @@ export class ComputerUseService {
     }
   }
 
-  private async readFile(action: ReadFileAction): Promise<{ success: boolean; data?: string; name?: string; size?: number; message?: string }> {
+  private async readFile(action: ReadFileAction): Promise<{ success: boolean; data?: string; name?: string; size?: number; mediaType?: string; message?: string }> {
     try {
       // Read file as buffer
       const buffer = await fs.readFile(action.path);
@@ -422,12 +422,37 @@ export class ComputerUseService {
       // Extract filename from path
       const fileName = path.basename(action.path);
       
+      // Determine media type based on file extension
+      const ext = path.extname(action.path).toLowerCase().slice(1);
+      const mimeTypes: Record<string, string> = {
+        'pdf': 'application/pdf',
+        'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'doc': 'application/msword',
+        'txt': 'text/plain',
+        'html': 'text/html',
+        'json': 'application/json',
+        'xml': 'text/xml',
+        'csv': 'text/csv',
+        'rtf': 'application/rtf',
+        'odt': 'application/vnd.oasis.opendocument.text',
+        'epub': 'application/epub+zip',
+        'png': 'image/png',
+        'jpg': 'image/jpeg',
+        'jpeg': 'image/jpeg',
+        'webp': 'image/webp',
+        'gif': 'image/gif',
+        'svg': 'image/svg+xml',
+      };
+      
+      const mediaType = mimeTypes[ext] || 'application/octet-stream';
+      
       this.logger.log(`File read successfully from: ${action.path}`);
       return {
         success: true,
         data: base64Data,
         name: fileName,
-        size: stats.size
+        size: stats.size,
+        mediaType: mediaType
       };
     } catch (error) {
       this.logger.error(`Error reading file: ${error.message}`, error.stack);
