@@ -15,7 +15,6 @@ import {
   TypeKeysAction,
   PressKeysAction,
   TypeTextAction,
-  WaitAction,
   ApplicationAction,
   Application,
   PasteTextAction,
@@ -34,48 +33,48 @@ export class ComputerUseService {
 
     switch (params.action) {
       case 'move_mouse': {
-        await this.moveMouse(params as MoveMouseAction);
+        await this.moveMouse(params);
         break;
       }
       case 'trace_mouse': {
-        await this.traceMouse(params as TraceMouseAction);
+        await this.traceMouse(params);
         break;
       }
       case 'click_mouse': {
-        await this.clickMouse(params as ClickMouseAction);
+        await this.clickMouse(params);
         break;
       }
       case 'press_mouse': {
-        await this.pressMouse(params as PressMouseAction);
+        await this.pressMouse(params);
         break;
       }
       case 'drag_mouse': {
-        await this.dragMouse(params as DragMouseAction);
+        await this.dragMouse(params);
         break;
       }
 
       case 'scroll': {
-        await this.scroll(params as ScrollAction);
+        await this.scroll(params);
         break;
       }
       case 'type_keys': {
-        await this.typeKeys(params as TypeKeysAction);
+        await this.typeKeys(params);
         break;
       }
       case 'press_keys': {
-        await this.pressKeys(params as PressKeysAction);
+        await this.pressKeys(params);
         break;
       }
       case 'type_text': {
-        await this.typeText(params as TypeTextAction);
+        await this.typeText(params);
         break;
       }
       case 'paste_text': {
-        await this.pasteText(params as PasteTextAction);
+        await this.pasteText(params);
         break;
       }
       case 'wait': {
-        const waitParams = params as WaitAction;
+        const waitParams = params;
         await this.delay(waitParams.duration);
         break;
       }
@@ -86,16 +85,16 @@ export class ComputerUseService {
         return this.cursor_position();
 
       case 'application': {
-        await this.application(params as ApplicationAction);
+        await this.application(params);
         break;
       }
 
       case 'write_file': {
-        return this.writeFile(params as WriteFileAction);
+        return this.writeFile(params);
       }
 
       case 'read_file': {
-        return this.readFile(params as ReadFileAction);
+        return this.readFile(params);
       }
 
       default:
@@ -265,35 +264,23 @@ export class ComputerUseService {
   private async application(action: ApplicationAction): Promise<void> {
     const execAsync = promisify(exec);
 
-    // Helper to run a command via spawn and resolve on successful exit
-    const spawnAsync = (
+    // Helper to spawn a command and forget about it
+    const spawnAndForget = (
       command: string,
       args: string[],
       options: Record<string, any> = {},
-    ): Promise<void> => {
-      return new Promise((resolve, reject) => {
-        const child = spawn(command, args, {
-          env: { ...process.env, DISPLAY: ':0.0' }, // ensure DISPLAY is set for GUI tools
-          stdio: ['ignore', 'ignore', 'inherit'],
-          ...options,
-        });
-
-        child.once('error', reject);
-        child.once('close', (code) => {
-          code === 0
-            ? resolve()
-            : reject(new Error(`${command} exited with code ${code}`));
-        });
-
-        // If detached we need to unref so parent can exit
-        if (options.detached) {
-          child.unref();
-        }
+    ): void => {
+      const child = spawn(command, args, {
+        env: { ...process.env, DISPLAY: ':0.0' }, // ensure DISPLAY is set for GUI tools
+        stdio: 'ignore',
+        detached: true,
+        ...options,
       });
+      child.unref(); // Allow the parent process to exit independently
     };
 
     if (action.application === 'desktop') {
-      await spawnAsync('sudo', ['-u', 'user', 'wmctrl', '-k', 'on']);
+      spawnAndForget('sudo', ['-u', 'user', 'wmctrl', '-k', 'on']);
       return;
     }
 
@@ -321,18 +308,22 @@ export class ComputerUseService {
     try {
       const { stdout } = await execAsync(
         `sudo -u user wmctrl -lx | grep ${processMap[action.application]}`,
+        { timeout: 5000 }, // 5 second timeout
       );
       appOpen = stdout.trim().length > 0;
     } catch (error: any) {
       // grep returns exit code 1 when no match is found – treat as "not open"
-      if (error.code !== 1) {
+      // Also handle timeout errors
+      if (error.code !== 1 && !error.message?.includes('timeout')) {
         throw error;
       }
     }
 
     if (appOpen) {
       this.logger.log(`Application ${action.application} is already open`);
-      await spawnAsync('sudo', [
+
+      // Fire and forget - activate window
+      spawnAndForget('sudo', [
         '-u',
         'user',
         'wmctrl',
@@ -341,7 +332,8 @@ export class ComputerUseService {
         processMap[action.application],
       ]);
 
-      await spawnAsync('sudo', [
+      // Fire and forget - maximize window
+      spawnAndForget('sudo', [
         '-u',
         'user',
         'wmctrl',
@@ -351,114 +343,110 @@ export class ComputerUseService {
         '-b',
         'add,maximized_vert,maximized_horz',
       ]);
+
       return;
     }
 
-    // application is not open, open it
-    await spawnAsync(
-      'sudo',
-      ['-u', 'user', 'nohup', commandMap[action.application]],
-      { detached: true },
-    );
-    this.logger.log(`Application ${action.application} opened`);
-    await spawnAsync('sudo', [
+    // application is not open, open it - fire and forget
+    spawnAndForget('sudo', [
       '-u',
       'user',
-      'wmctrl',
-      '-x',
-      '-a',
-      processMap[action.application],
+      'nohup',
+      commandMap[action.application],
     ]);
 
-    await spawnAsync('sudo', [
-      '-u',
-      'user',
-      'wmctrl',
-      '-x',
-      '-r',
-      processMap[action.application],
-      '-b',
-      'add,maximized_vert,maximized_horz',
-    ]);
+    this.logger.log(`Application ${action.application} launched`);
+
+    // Just return immediately
+    return;
   }
 
-  private async writeFile(action: WriteFileAction): Promise<{ success: boolean; message: string }> {
+  private async writeFile(
+    action: WriteFileAction,
+  ): Promise<{ success: boolean; message: string }> {
     try {
       // Decode base64 data
       const buffer = Buffer.from(action.data, 'base64');
-      
+
       // Ensure directory exists
       const dir = path.dirname(action.path);
       await fs.mkdir(dir, { recursive: true });
-      
+
       // Write file
       await fs.writeFile(action.path, buffer);
-      
+
       this.logger.log(`File written successfully to: ${action.path}`);
       return {
         success: true,
-        message: `File written successfully to: ${action.path}`
+        message: `File written successfully to: ${action.path}`,
       };
     } catch (error) {
       this.logger.error(`Error writing file: ${error.message}`, error.stack);
       return {
         success: false,
-        message: `Error writing file: ${error.message}`
+        message: `Error writing file: ${error.message}`,
       };
     }
   }
 
-  private async readFile(action: ReadFileAction): Promise<{ success: boolean; data?: string; name?: string; size?: number; mediaType?: string; message?: string }> {
+  private async readFile(action: ReadFileAction): Promise<{
+    success: boolean;
+    data?: string;
+    name?: string;
+    size?: number;
+    mediaType?: string;
+    message?: string;
+  }> {
     try {
       // Read file as buffer
       const buffer = await fs.readFile(action.path);
-      
+
       // Get file stats for size
       const stats = await fs.stat(action.path);
-      
+
       // Convert to base64
       const base64Data = buffer.toString('base64');
-      
+
       // Extract filename from path
       const fileName = path.basename(action.path);
-      
+
       // Determine media type based on file extension
       const ext = path.extname(action.path).toLowerCase().slice(1);
       const mimeTypes: Record<string, string> = {
-        'pdf': 'application/pdf',
-        'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'doc': 'application/msword',
-        'txt': 'text/plain',
-        'html': 'text/html',
-        'json': 'application/json',
-        'xml': 'text/xml',
-        'csv': 'text/csv',
-        'rtf': 'application/rtf',
-        'odt': 'application/vnd.oasis.opendocument.text',
-        'epub': 'application/epub+zip',
-        'png': 'image/png',
-        'jpg': 'image/jpeg',
-        'jpeg': 'image/jpeg',
-        'webp': 'image/webp',
-        'gif': 'image/gif',
-        'svg': 'image/svg+xml',
+        pdf: 'application/pdf',
+        docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        doc: 'application/msword',
+        txt: 'text/plain',
+        html: 'text/html',
+        json: 'application/json',
+        xml: 'text/xml',
+        csv: 'text/csv',
+        rtf: 'application/rtf',
+        odt: 'application/vnd.oasis.opendocument.text',
+        epub: 'application/epub+zip',
+        png: 'image/png',
+        jpg: 'image/jpeg',
+        jpeg: 'image/jpeg',
+        webp: 'image/webp',
+        gif: 'image/gif',
+        svg: 'image/svg+xml',
       };
-      
+
       const mediaType = mimeTypes[ext] || 'application/octet-stream';
-      
+
       this.logger.log(`File read successfully from: ${action.path}`);
       return {
         success: true,
         data: base64Data,
         name: fileName,
         size: stats.size,
-        mediaType: mediaType
+        mediaType: mediaType,
       };
     } catch (error) {
       this.logger.error(`Error reading file: ${error.message}`, error.stack);
       return {
         success: false,
-        message: `Error reading file: ${error.message}`
+        message: `Error reading file: ${error.message}`,
       };
     }
   }

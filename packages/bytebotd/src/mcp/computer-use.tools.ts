@@ -607,9 +607,12 @@ V, W, X, Y, Z
 
   @Tool({
     name: 'computer_write_file',
-    description: 'Writes a file to the specified path with base64 encoded data.',
+    description:
+      'Writes a file to the specified path with base64 encoded data.',
     parameters: z.object({
-      path: z.string().describe('The file path where the file should be written.'),
+      path: z
+        .string()
+        .describe('The file path where the file should be written.'),
       data: z.string().describe('Base64 encoded file data to write.'),
     }),
   })
@@ -642,7 +645,8 @@ V, W, X, Y, Z
 
   @Tool({
     name: 'computer_read_file',
-    description: 'Reads a file from the specified path and returns it as a document content block with base64 encoded data.',
+    description:
+      'Reads a file from the specified path and returns it as a document content block with base64 encoded data.',
     parameters: z.object({
       path: z.string().describe('The file path to read from.'),
     }),
@@ -653,7 +657,7 @@ V, W, X, Y, Z
         action: 'read_file',
         path,
       });
-      
+
       if (result.success && result.data) {
         // Return document content block
         return {

@@ -16,5 +16,4 @@ export class InputTrackingController {
     this.inputTrackingService.stopTracking();
     return { status: 'stopped' };
   }
-
 }

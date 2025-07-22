@@ -97,7 +97,7 @@ class Base64ImageCompressor {
     quality: number,
     format: 'png' | 'jpeg' | 'webp',
   ): Promise<Buffer> {
-    let sharpInstance = sharp(inputBuffer);
+    const sharpInstance = sharp(inputBuffer);
 
     switch (format) {
       case 'png':
