@@ -44,22 +44,23 @@ export function AssistantMessage({
                     block.content &&
                     block.content.length > 0
                   ) {
-                    const imageBlock = block.content[0];
-                    if (isImageContentBlock(imageBlock)) {
-                      return (
-                        <div
-                          key={blockIndex}
-                          data-message-index={messageIdToIndex[message.id]}
-                          data-block-index={blockIndex}
-                          style={{
-                            position: "absolute",
-                            width: 0,
-                            height: 0,
-                            overflow: "hidden",
-                          }}
-                        />
-                      );
-                    }
+                    block.content.map((contentBlock) => {
+                      if (isImageContentBlock(contentBlock)) {
+                        return (
+                          <div
+                            key={blockIndex}
+                            data-message-index={messageIdToIndex[message.id]}
+                            data-block-index={blockIndex}
+                            style={{
+                              position: "absolute",
+                              width: 0,
+                              height: 0,
+                              overflow: "hidden",
+                            }}
+                          />
+                        );
+                      }
+                    });
                   }
                   return null;
                 })}

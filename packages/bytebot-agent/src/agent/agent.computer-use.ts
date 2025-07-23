@@ -180,8 +180,18 @@ export async function handleComputerToolUse(
         };
       }
     }
+
+    let image: string | null = null;
+    try {
+      logger.debug('Taking screenshot');
+      image = await screenshot();
+      logger.debug('Screenshot captured successfully');
+    } catch (error) {
+      logger.error('Failed to take screenshot', error);
+    }
+
     logger.debug(`Tool execution successful for tool_use_id: ${block.id}`);
-    return {
+    const toolResult: ToolResultContentBlock = {
       type: MessageContentType.ToolResult,
       tool_use_id: block.id,
       content: [
@@ -191,6 +201,19 @@ export async function handleComputerToolUse(
         },
       ],
     };
+
+    if (image) {
+      toolResult.content.push({
+        type: MessageContentType.Image,
+        source: {
+          data: image,
+          media_type: 'image/png',
+          type: 'base64',
+        },
+      });
+    }
+
+    return toolResult;
   } catch (error) {
     logger.error(
       `Error executing ${block.name} tool: ${error.message}`,
@@ -591,7 +614,7 @@ export async function writeFile(input: {
   try {
     // Content is always base64 encoded
     const base64Data = content;
-    
+
     const response = await fetch(`${BYTEBOT_DESKTOP_BASE_URL}/computer-use`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
