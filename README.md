@@ -62,7 +62,7 @@ cd bytebot
 # Configure your AI provider (choose one):
 echo "ANTHROPIC_API_KEY=your_api_key_here" > docker/.env    # For Claude
 # echo "OPENAI_API_KEY=your_api_key_here" > docker/.env     # For OpenAI
-# echo "GOOGLE_API_KEY=your_api_key_here" > docker/.env     # For Gemini
+# echo "GEMINI_API_KEY=your_api_key_here" > docker/.env     # For Gemini
 ```
 
 2. **Start the agent stack:**
@@ -178,7 +178,7 @@ Create `docker/.env`:
 # Required - Choose one of these AI providers:
 ANTHROPIC_API_KEY=sk-ant-...      # For Claude models
 # OPENAI_API_KEY=sk-...           # For OpenAI models
-# GOOGLE_API_KEY=...              # For Google Gemini models
+# GEMINI_API_KEY=...              # For Google Gemini models
 ```
 
 ### Desktop Customization

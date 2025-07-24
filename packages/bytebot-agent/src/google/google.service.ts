@@ -27,11 +27,11 @@ export class GoogleService implements BytebotAgentService {
   private readonly logger = new Logger(GoogleService.name);
 
   constructor(private readonly configService: ConfigService) {
-    const apiKey = this.configService.get<string>('GOOGLE_API_KEY');
+    const apiKey = this.configService.get<string>('GEMINI_API_KEY');
 
     if (!apiKey) {
       this.logger.warn(
-        'GOOGLE_API_KEY is not set. GoogleService will not work properly.',
+        'GEMINI_API_KEY is not set. GoogleService will not work properly.',
       );
     }
 
