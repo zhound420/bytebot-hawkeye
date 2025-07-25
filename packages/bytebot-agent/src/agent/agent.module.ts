@@ -9,6 +9,7 @@ import { InputCaptureService } from './input-capture.service';
 import { OpenAIModule } from '../openai/openai.module';
 import { GoogleModule } from '../google/google.module';
 import { SummariesModule } from 'src/summaries/summaries.modue';
+import { AgentAnalyticsService } from './agent.analytics';
 
 @Module({
   imports: [
@@ -20,7 +21,12 @@ import { SummariesModule } from 'src/summaries/summaries.modue';
     OpenAIModule,
     GoogleModule,
   ],
-  providers: [AgentProcessor, AgentScheduler, InputCaptureService],
+  providers: [
+    AgentProcessor,
+    AgentScheduler,
+    InputCaptureService,
+    AgentAnalyticsService,
+  ],
   exports: [AgentProcessor],
 })
 export class AgentModule {}

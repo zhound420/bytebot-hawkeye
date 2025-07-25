@@ -102,16 +102,20 @@ export default function Home() {
     try {
       if (!selectedModel) throw new Error("No model selected");
       // Send request to start a new task
-      const taskData: any = {
+      const taskData: {
+        description: string;
+        model: Model;
+        files?: FileWithBase64[];
+      } = {
         description: input,
         model: selectedModel,
       };
-      
+
       // Include files if any are uploaded
       if (uploadedFiles.length > 0) {
         taskData.files = uploadedFiles;
       }
-      
+
       const task = await startTask(taskData);
 
       if (task && task.id) {

@@ -228,6 +228,12 @@ export class TasksService {
       data: updateTaskDto,
     });
 
+    if (updateTaskDto.status === TaskStatus.COMPLETED) {
+      this.eventEmitter.emit('task.completed', { taskId: id });
+    } else if (updateTaskDto.status === TaskStatus.FAILED) {
+      this.eventEmitter.emit('task.failed', { taskId: id });
+    }
+
     this.logger.log(`Successfully updated task ID: ${id}`);
     this.logger.debug(`Updated task: ${JSON.stringify(updatedTask)}`);
 
