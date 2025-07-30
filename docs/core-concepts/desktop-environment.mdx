@@ -1,11 +1,11 @@
 ---
-title: "Desktop Environment"
-description: "The containerized Linux desktop that serves as your AI agent's workspace"
+title: "Desktop Environment" 
+description: "The virtual Linux desktop where Bytebot performs tasks"
 ---
 
 ## Overview
 
-The Bytebot Desktop Environment is a fully functional Linux desktop running inside a Docker container. It's the workspace where your AI agent performs tasks - clicking, typing, browsing, and working with applications just like a human would at a physical computer.
+The Bytebot Desktop Environment (also called Bytebot Core) is a complete Linux desktop that runs in a Docker container. This is where Bytebot does its work - clicking buttons, typing text, browsing websites, and using applications just like you would.
 
 <img
   src="/images/core-container.png"
@@ -13,13 +13,13 @@ The Bytebot Desktop Environment is a fully functional Linux desktop running insi
   className="w-full max-w-4xl"
 />
 
-## Why a Containerized Desktop?
+## Why a Virtual Desktop?
 
 ### Complete Isolation
 - **No Risk to Host**: All actions happen inside the container
 - **Sandboxed Environment**: Desktop can't access your host system
 - **Easy Reset**: Destroy and recreate in seconds
-- **Multiple Instances**: Run several agents simultaneously
+- **Clean Workspace**: Each restart provides a fresh environment
 
 ### Consistency Everywhere
 - **Platform Independent**: Same environment on Mac, Windows, or Linux
@@ -44,27 +44,26 @@ The Bytebot Desktop Environment is a fully functional Linux desktop running insi
 ### Pre-installed Software
 
 <CardGroup cols={2}>
-  <Card title="Web Browsers" icon="globe">
+  <Card title="Web Browser" icon="globe">
     - Firefox ESR (Extended Support Release)
     - Pre-configured for automation
-    - Ad blocker extensions
+    - Clean profile without distractions
   </Card>
-  <Card title="Office Tools" icon="file-lines">
-    - Text editors (nano, vim, gedit)
+  <Card title="Productivity Tools" icon="file-lines">
+    - Text editor
+    - Office tools
     - PDF viewer
-    - File managers
+    - File manager
   </Card>
   <Card title="Communication" icon="envelope">
     - Thunderbird email client
-    - Chat applications
-    - Terminal emulators
+    - Terminal emulator
   </Card>
-  <Card title="Development" icon="code">
+  <Card title="Security & Development" icon="shield">
+    - 1Password password manager
     - Visual Studio Code (VSCode)
     - Git version control
     - Python 3 environment
-    - Node.js runtime
-    - Common dev tools
   </Card>
 </CardGroup>
 
@@ -91,13 +90,8 @@ The Bytebot Desktop Environment is a fully functional Linux desktop running insi
 
 ### Display Configuration
 ```bash
-# Default resolution
+# Resolution
 1920x1080 @ 24-bit color
-
-# Configurable via environment
-DISPLAY_WIDTH=1920
-DISPLAY_HEIGHT=1080
-DISPLAY_DEPTH=24
 ```
 
 ### User Environment
@@ -150,12 +144,12 @@ Connect your MCP client to `http://localhost:9990/mcp` to invoke these tools ove
 Most efficient for automation:
 ```bash
 # Take a screenshot
-curl -X POST http://localhost:9990/api/computer \
+curl -X POST http://localhost:9990/computer-use \
   -H "Content-Type: application/json" \
   -d '{"action": "screenshot"}'
 
 # Move mouse
-curl -X POST http://localhost:9990/api/computer \
+curl -X POST http://localhost:9990/computer-use \
   -H "Content-Type: application/json" \
   -d '{"action": "move_mouse", "coordinate": {"x": 500, "y": 300}}'
 ```
@@ -178,15 +172,6 @@ RUN apt-get update && apt-get install -y \
 COPY configs/ /home/user/.config/
 ```
 
-### Environment Variables
-
-Configure behavior via environment:
-```yaml
-# docker-compose.yml
-environment:
-  - DISPLAY_WIDTH=1920
-  - DISPLAY_HEIGHT=1080
-```
 
 ## Performance Optimization
 
@@ -217,27 +202,15 @@ deploy:
    passwd bytebot
    ```
 
-2. **Restrict Network Access**
+2. **Limit Network Access**
    ```yaml
-   # Only expose to localhost
+   # Whitelist specific domains
+   environment:
+     - ALLOWED_DOMAINS=company.com,trusted-site.com
+   
+   # Or restrict to local network only
    ports:
-     - "127.0.0.1:9990:9990"
-   ```
-
-3. **Remove Sudo Access**
-   ```dockerfile
-   # In custom Dockerfile
-   RUN deluser bytebot sudo
-   ```
-
-4. **Enable Authentication**
-   ```nginx
-   # Add nginx proxy with auth
-   location / {
-     auth_basic "Restricted";
-     auth_basic_user_file /etc/nginx/.htpasswd;
-     proxy_pass http://bytebot:9990;
-   }
+     - "10.0.0.0/8:9990:9990"
    ```
 
 ## Troubleshooting
@@ -286,7 +259,7 @@ deploy:
   <Card title="Agent System" icon="robot" href="/core-concepts/agent-system">
     Add AI capabilities
   </Card>
-  <Card title="Security Guide" icon="shield" href="/deployment/security">
-    Harden for production
+  <Card title="Password Management" icon="key" href="/guides/password-management">
+    Set up authentication
   </Card>
 </CardGroup>

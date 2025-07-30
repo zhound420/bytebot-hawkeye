@@ -5,7 +5,7 @@ description: "How Bytebot's desktop agent works under the hood"
 
 ## Overview
 
-Bytebot is a self-hosted AI desktop agent built with a modular, containerized architecture. It combines a Linux desktop environment with Claude AI to create an autonomous computer user that can perform tasks through natural language instructions.
+Bytebot is a self-hosted AI desktop agent built with a modular architecture. It combines a Linux desktop environment with AI to create an autonomous computer user that can perform tasks through natural language instructions.
 
 <img
   src="/images/agent-architecture.png"
@@ -18,7 +18,7 @@ Bytebot is a self-hosted AI desktop agent built with a modular, containerized ar
 The system consists of four main components that work together:
 
 ### 1. Bytebot Desktop Container
-The foundation of the system - a containerized Linux desktop that provides:
+The foundation of the system - a virtual Linux desktop that provides:
 
 - **Ubuntu 22.04 LTS** base for stability and compatibility
 - **XFCE4 Desktop** for a lightweight, responsive UI
@@ -38,7 +38,7 @@ The foundation of the system - a containerized Linux desktop that provides:
 The brain of the system - orchestrates tasks using an LLM:
 
 - **NestJS Framework** for robust, scalable backend
-- **LLM Integration** via Anthropic Claude API for understanding and planning
+- **LLM Integration** supporting Anthropic Claude, OpenAI GPT, and Google Gemini models
 - **WebSocket Support** for real-time updates
 - **Computer Use API Client** to control the desktop
 - **Prisma ORM** for database operations
@@ -62,11 +62,11 @@ The user interface for interacting with your AI agent:
 - **API utilities** for streamlined server communication
 
 **Features:**
-- Intuitive chat interface
-- Visual feedback of desktop actions
-- Task history with filtering
-- Real-time status updates
-- Responsive design
+- Task creation and management interface
+- Desktop tab for direct manual control
+- Real-time desktop viewer with takeover mode
+- Task history and status tracking
+- Responsive design for all devices
 
 ### 4. PostgreSQL Database
 Persistent storage for the agent system:
@@ -87,7 +87,7 @@ Persistent storage for the agent system:
     Agent service creates a task record and adds it to the processing queue
   </Step>
   <Step title="AI Planning">
-    Claude AI analyzes the task and generates a plan of computer actions
+    The LLM analyzes the task and generates a plan of computer actions
   </Step>
   <Step title="Action Execution">
     Agent sends computer actions to bytebotd via REST API or MCP
@@ -111,7 +111,7 @@ graph LR
     A -->|HTTP Proxy| C[Desktop VNC]
     B -->|REST/MCP| D[Desktop API]
     B -->|SQL| E[PostgreSQL]
-    B -->|HTTPS| F[Claude AI]
+    B -->|HTTPS| F[LLM Provider]
     D -->|IPC| G[bytebotd]
 ```
 
@@ -158,20 +158,20 @@ Use Case: Personal automation, development
 Resources: 4GB RAM, 2 CPU cores
 ```
 
-### Team Deployment
+### Production Deployment
 ```yaml
-Services: Separate agent and desktop hosts
-Scale: Multiple desktop containers
-Use Case: Shared automation platform
+Services: All services on dedicated hardware
+Scale: Single instance (1 agent, 1 desktop)
+Use Case: Business automation
 Resources: 8GB+ RAM, 4+ CPU cores
 ```
 
 ### Enterprise Deployment
 ```yaml
 Services: Kubernetes orchestration
-Scale: Auto-scaling based on load
+Scale: Single instance with high availability
 Use Case: Organization-wide automation
-Resources: Dedicated cluster
+Resources: Dedicated nodes
 ```
 
 ## Extension Points
@@ -200,10 +200,10 @@ Extend agent capabilities:
 - **Database**: ~256MB RAM
 
 ### Optimization Tips
-1. Use lightweight desktop environments
-2. Limit concurrent tasks
-3. Monitor resource usage
-4. Scale horizontally for more capacity
+1. Allocate sufficient resources to containers
+2. Limit concurrent tasks to prevent overload
+3. Monitor resource usage regularly
+4. Use LiteLLM proxy for provider flexibility
 
 ## Next Steps
 
@@ -212,7 +212,7 @@ Extend agent capabilities:
     Learn about the AI agent capabilities
   </Card>
   <Card title="Desktop Environment" icon="desktop" href="/core-concepts/desktop-environment">
-    Explore the containerized desktop
+    Explore the virtual desktop environment
   </Card>
   <Card title="API Reference" icon="code" href="/api-reference/introduction">
     Integrate with your applications

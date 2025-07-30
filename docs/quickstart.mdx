@@ -3,9 +3,13 @@ title: "Quick Start"
 description: "Get your AI desktop agent running in 2 minutes"
 ---
 
-# Host Bytebot on Railway
+# Choose Your Deployment Method
 
-## ☁️ One-click Deploy on Railway
+Bytebot can be deployed in several ways depending on your needs:
+
+<Tabs>
+  <Tab title="Railway (Easiest)">
+    ## ☁️ One-click Deploy on Railway
 
 [![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/bytebot?referralCode=L9lKXQ)
 
@@ -25,9 +29,9 @@ description: "Get your AI desktop agent running in 2 minutes"
   Need more details? See the full <a href="/deployment/railway">Railway deployment guide</a>.
 </Note>
 
----
-
-# Self-host Bytebot
+  </Tab>
+  <Tab title="Docker Compose">
+    ## 🐳 Self-host with Docker Compose
 
 ## Prerequisites
 
@@ -64,14 +68,18 @@ Get your self-hosted AI desktop agent running with just three commands:
 This starts all four services:
 
 - **Bytebot Desktop**: Containerized Linux environment
-- **AI Agent**: Claude-powered task processor
+- **AI Agent**: LLM-powered task processor (supports Claude, GPT, or Gemini)
 - **Chat UI**: Web interface for interaction
 - **Database**: PostgreSQL for persistence
 
 </Step>
 
 <Step title="Open the Chat Interface">
-Navigate to [http://localhost:9992](http://localhost:9992) and start chatting!
+Navigate to [http://localhost:9992](http://localhost:9992) to access the Bytebot UI.
+
+**Two ways to interact:**
+1. **Tasks**: Enter task descriptions to have Bytebot work autonomously
+2. **Desktop**: Direct access to the virtual desktop for manual control
 
 Try asking:
 
@@ -87,32 +95,74 @@ Try asking:
   the images. Subsequent starts will be much faster.
 </Note>
 
-## What Just Happened?
+## 🎯 What You Just Deployed
 
-You now have a fully functional AI agent that can:
+You now have a complete AI desktop automation system with:
 
-- 🖱️ Control mouse and keyboard
-- 🌐 Browse the web
-- 📄 Create and edit documents
-- 📧 Manage emails
-- 🔄 Automate any desktop task
-
-Watch it work in real-time through the embedded VNC viewer in the tasks interface!
-
-## Try These Example Tasks
+<Note>
+  **🔐 Password Manager Support**: Bytebot can handle authentication automatically when you install a password manager extension. See our [password management guide](/guides/password-management) for setup instructions.
+</Note>
 
 <CardGroup cols={2}>
+  <Card title="AI Agent" icon="brain">
+    - Understands natural language
+    - Plans and executes tasks
+    - Adapts to errors
+    - Works autonomously
+  </Card>
+  <Card title="Virtual Desktop" icon="desktop">
+    - Full Ubuntu environment
+    - Browser, office tools
+    - File system access
+    - Application support
+  </Card>
+  <Card title="Task Interface" icon="window">
+    - Create and manage tasks
+    - Real-time desktop view
+    - Conversation history
+    - Takeover mode
+  </Card>
+  <Card title="REST APIs" icon="code">
+    - Programmatic control
+    - Task management API
+    - Direct desktop access
+    - MCP protocol support
+  </Card>
+</CardGroup>
+
+## 🚀 Your First Tasks
+
+Now let's see Bytebot in action! Try these example tasks:
+
+### Simple Tasks (Test the Basics)
+<CardGroup cols={2}>
+  <Card title="Take a Screenshot" icon="camera">
+    "Take a screenshot of the desktop"
+  </Card>
+  <Card title="Open Browser" icon="globe">
+    "Open Firefox and go to google.com"
+  </Card>
+  <Card title="Create File" icon="file">
+    "Create a text file called 'hello.txt' with today's date"
+  </Card>
+  <Card title="System Info" icon="info">
+    "Check the system information and tell me the OS version"
+  </Card>
+</CardGroup>
+
+### Advanced Tasks (See the Power)
+<CardGroup cols={2}>
   <Card title="Web Research" icon="magnifying-glass">
-    "Find the top 5 news stories about AI today and summarize them"
+    "Find the top 5 AI news stories today and create a summary document"
   </Card>
-  <Card title="Data Collection" icon="table">
-    "Go to example.com and extract all email addresses into a list"
+  <Card title="Data Extraction" icon="table">
+    "Go to hacker news, find the top 10 stories, and save them to a CSV file"
   </Card>
-  <Card title="File Management" icon="folder">
-    "Create a folder called 'reports' and organize files by date"
+  <Card title="Multi-Step Workflow" icon="layers">
+    "Search for 'machine learning tutorials', open the first 3 results in tabs, and take screenshots of each"
   </Card>
-  <Card title="Testing" icon="vial">
-    "Test the login flow on our staging site"
+  <Card title="Form Automation" icon="list-check">
+    "Go to a contact form and fill it out with test data"
   </Card>
 </CardGroup>
 
@@ -122,17 +172,22 @@ Watch it work in real-time through the embedded VNC viewer in the tasks interfac
 | ---------------- | ------------------------------------------------------------------------ | --------------------------------------------- |
 | **Tasks UI**     | [http://localhost:9992](http://localhost:9992)                           | Main interface for interacting with the agent |
 | **Agent API**    | [http://localhost:9991/tasks](http://localhost:9991/tasks)               | REST API for programmatic task creation       |
-| **Computer API** | [http://localhost:9990/computer-use](http://localhost:9990/computer-use) | Low-level desktop control API                 |
+| **Desktop API** | [http://localhost:9990/computer-use](http://localhost:9990/computer-use) | Low-level desktop control API                 |
 | **MCP SSE**      | [http://localhost:9990/mcp](http://localhost:9990/mcp)                 | Connect MCP clients for tool access           |
 
-## Alternative Deployment Options
-
-<Tabs>
-  <Tab title="Desktop Container Only">
-    If you just want the containerized desktop without the AI agent:
+  </Tab>
+  <Tab title="Kubernetes/Helm">
+    ## ☸️ Deploy with Helm
+    
+    See our [Helm deployment guide](/deployment/helm) for Kubernetes installation.
+  </Tab>
+  <Tab title="Desktop Only">
+    ## 🖥️ Desktop Container Only
+    
+    If you just want the virtual desktop without the AI agent:
 
     ```bash
-    #Using pre-built image (recommended)
+    # Using pre-built image (recommended)
     docker-compose -f docker/docker-compose.core.yml pull
     docker-compose -f docker/docker-compose.core.yml up -d
     ```
@@ -142,9 +197,7 @@ Watch it work in real-time through the embedded VNC viewer in the tasks interfac
     docker-compose -f docker/docker-compose.core.yml up -d --build
     ```
 
-    Access the desktop at
-    [http://localhost:9990/vnc](http://localhost:9990/vnc)
-
+    Access the desktop at [http://localhost:9990/vnc](http://localhost:9990/vnc)
   </Tab>
 </Tabs>
 
@@ -192,7 +245,7 @@ curl -X POST http://localhost:9991/tasks \
   -H "Content-Type: application/json" \
   -d '{
     "description": "Search for flights from NYC to London next month",
-    "type": "browser_task"
+    "priority": "MEDIUM"
   }'
 ```
 
@@ -200,12 +253,12 @@ curl -X POST http://localhost:9991/tasks \
 
 ```bash
 # Take a screenshot
-curl -X POST http://localhost:9990/api/computer \
+curl -X POST http://localhost:9990/computer-use \
   -H "Content-Type: application/json" \
   -d '{"action": "screenshot"}'
 
 # Type text
-curl -X POST http://localhost:9990/api/computer \
+curl -X POST http://localhost:9990/computer-use \
   -H "Content-Type: application/json" \
   -d '{"action": "type_text", "text": "Hello, Bytebot!"}'
 ```
@@ -237,30 +290,63 @@ curl -X POST http://localhost:9990/api/computer \
   </Accordion>
 </AccordionGroup>
 
-## Next Steps
+## 📚 Next Steps
 
 <CardGroup cols={2}>
   <Card
-    title="Architecture Overview"
-    icon="sitemap"
-    href="/core-concepts/architecture"
+    title="Using the UI"
+    icon="window"
+    href="/guides/task-creation"
   >
-    Understand how all the components work together
+    Learn how to create and manage tasks effectively
   </Card>
-  <Card title="Agent System" icon="robot" href="/core-concepts/agent-system">
-    Deep dive into the AI agent capabilities
+  <Card title="Takeover Mode" icon="hand" href="/guides/takeover-mode">
+    Take control when you need to guide Bytebot
   </Card>
-  <Card title="API Reference" icon="code" href="/api-reference/introduction">
-    Build integrations with the REST APIs
+  <Card title="LiteLLM Integration" icon="plug" href="/deployment/litellm">
+    Use any LLM provider with Bytebot
   </Card>
-  <Card
-    title="Use Cases"
-    icon="lightbulb"
-    href="/core-concepts/agent-system#use-cases"
-  >
-    Explore what others are building
+  <Card title="API Integration" icon="code" href="/api-reference/introduction">
+    Automate Bytebot with your applications
   </Card>
 </CardGroup>
+
+## 🔧 Configuration Options
+
+### Environment Variables
+
+<AccordionGroup>
+  <Accordion title="AI Provider Settings">
+    ```bash
+    # Choose one AI provider:
+    ANTHROPIC_API_KEY=sk-ant-...    # For Claude models
+    OPENAI_API_KEY=sk-...           # For GPT models  
+    GEMINI_API_KEY=...              # For Gemini models
+    
+    # Optional: Use specific models
+    ANTHROPIC_MODEL=claude-3-5-sonnet-20241022  # Default
+    OPENAI_MODEL=gpt-4o
+    GEMINI_MODEL=gemini-1.5-flash
+    ```
+  </Accordion>
+  <Accordion title="Port Configuration">
+    ```bash
+    # Change default ports if needed
+    # Edit docker-compose.yml ports section:
+    # bytebot-ui:
+    #   ports:
+    #     - "8080:9992"  # Change 8080 to your desired port
+    ```
+  </Accordion>
+  <Accordion title="Using LiteLLM Proxy">
+    ```bash
+    # To use multiple LLM providers, use the proxy setup:
+    docker-compose -f docker/docker-compose.proxy.yml up -d
+    
+    # This includes a pre-configured LiteLLM proxy
+    ```
+  </Accordion>
+</AccordionGroup>
 
 <Note>
   **Need help?** Join our [Discord
