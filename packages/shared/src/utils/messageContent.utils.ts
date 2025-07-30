@@ -27,6 +27,7 @@ import {
   PasteTextToolUseBlock,
   WriteFileToolUseBlock,
   ReadFileToolUseBlock,
+  UserActionContentBlock,
 } from "../types/messageContent.types";
 
 /**
@@ -95,12 +96,26 @@ export function isImageContentBlock(obj: unknown): obj is ImageContentBlock {
   );
 }
 
+export function isUserActionContentBlock(
+  obj: unknown
+): obj is UserActionContentBlock {
+  if (!obj || typeof obj !== "object") {
+    return false;
+  }
+
+  const block = obj as Partial<UserActionContentBlock>;
+
+  return block.type === MessageContentType.UserAction;
+}
+
 /**
  * Type guard to check if an object is a DocumentContentBlock
  * @param obj The object to validate
  * @returns Type predicate indicating obj is DocumentContentBlock
  */
-export function isDocumentContentBlock(obj: unknown): obj is DocumentContentBlock {
+export function isDocumentContentBlock(
+  obj: unknown
+): obj is DocumentContentBlock {
   if (!obj || typeof obj !== "object") {
     return false;
   }
@@ -187,7 +202,8 @@ export function isMessageContentBlock(
     isToolUseContentBlock(obj) ||
     isToolResultContentBlock(obj) ||
     isThinkingContentBlock(obj) ||
-    isRedactedThinkingContentBlock(obj)
+    isRedactedThinkingContentBlock(obj) ||
+    isUserActionContentBlock(obj)
   );
 }
 

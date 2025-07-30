@@ -8,6 +8,8 @@ import {
   ToolUseContentBlock,
   ThinkingContentBlock,
   RedactedThinkingContentBlock,
+  isUserActionContentBlock,
+  isComputerToolUseContentBlock,
 } from '@bytebot/shared';
 import { DEFAULT_MODEL } from './anthropic.constants';
 import { Message, Role } from '@prisma/client';
@@ -102,19 +104,31 @@ export class AnthropicService implements BytebotAgentService {
     for (const [index, message] of messages.entries()) {
       const messageContentBlocks = message.content as MessageContentBlock[];
 
-      // Don't include user messages that have tool use
-      if (
-        message.role === Role.USER &&
-        messageContentBlocks.some(
-          (block) => block.type === MessageContentType.ToolUse,
-        )
-      ) {
-        continue;
-      }
+      const content: Anthropic.ContentBlockParam[] = [];
 
-      const content: Anthropic.ContentBlockParam[] = messageContentBlocks.map(
-        (block) => block as Anthropic.ContentBlockParam,
-      );
+      if (
+        messageContentBlocks.every((block) => isUserActionContentBlock(block))
+      ) {
+        const userActionContentBlocks = messageContentBlocks.flatMap(
+          (block) => block.content,
+        );
+        for (const block of userActionContentBlocks) {
+          if (isComputerToolUseContentBlock(block)) {
+            content.push({
+              type: 'text',
+              text: `User performed action: ${block.name}\n${JSON.stringify(block.input, null, 2)}`,
+            });
+          } else {
+            content.push(block as Anthropic.ContentBlockParam);
+          }
+        }
+      } else {
+        content.push(
+          ...messageContentBlocks.map(
+            (block) => block as Anthropic.ContentBlockParam,
+          ),
+        );
+      }
 
       if (index === messages.length - 1) {
         content[content.length - 1]['cache_control'] = {

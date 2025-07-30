@@ -8,6 +8,9 @@ import {
   ToolUseContentBlock,
   ToolResultContentBlock,
   ThinkingContentBlock,
+  isUserActionContentBlock,
+  isComputerToolUseContentBlock,
+  isImageContentBlock,
 } from '@bytebot/shared';
 import { DEFAULT_MODEL } from './openai.constants';
 import { Message, Role } from '@prisma/client';
@@ -87,116 +90,140 @@ export class OpenAIService implements BytebotAgentService {
     for (const message of messages) {
       const messageContentBlocks = message.content as MessageContentBlock[];
 
-      // Skip user messages that contain tool use
       if (
-        message.role === Role.USER &&
-        messageContentBlocks.some(
-          (block) => block.type === MessageContentType.ToolUse,
-        )
+        messageContentBlocks.every((block) => isUserActionContentBlock(block))
       ) {
-        continue;
-      }
-
-      // Convert content blocks to OpenAI format
-      for (const block of messageContentBlocks) {
-        switch (block.type) {
-          case MessageContentType.Text: {
-            if (message.role === Role.USER) {
-              openaiMessages.push({
-                type: 'message',
-                role: 'user',
-                content: [
-                  {
-                    type: 'input_text',
-                    text: (block as TextContentBlock).text,
-                  },
-                ],
-              } as OpenAI.Responses.ResponseInputItem.Message);
-            } else {
-              openaiMessages.push({
-                type: 'message',
-                role: 'assistant',
-                content: [
-                  {
-                    type: 'output_text',
-                    text: (block as TextContentBlock).text,
-                  },
-                ],
-              } as OpenAI.Responses.ResponseOutputMessage);
-            }
-            break;
-          }
-          case MessageContentType.ToolUse:
-            // For assistant messages with tool use, convert to function call
-            if (message.role === Role.ASSISTANT) {
-              const toolBlock = block as ToolUseContentBlock;
-              openaiMessages.push({
-                type: 'function_call',
-                call_id: toolBlock.id,
-                name: toolBlock.name,
-                arguments: JSON.stringify(toolBlock.input),
-              } as OpenAI.Responses.ResponseFunctionToolCall);
-            }
-            break;
-
-          case MessageContentType.Thinking: {
-            const thinkingBlock = block as ThinkingContentBlock;
+        const userActionContentBlocks = messageContentBlocks.flatMap(
+          (block) => block.content,
+        );
+        for (const block of userActionContentBlocks) {
+          if (isComputerToolUseContentBlock(block)) {
             openaiMessages.push({
-              type: 'reasoning',
-              id: thinkingBlock.signature,
-              encrypted_content: thinkingBlock.thinking,
-              summary: [],
-            } as OpenAI.Responses.ResponseReasoningItem);
-            break;
-          }
-          case MessageContentType.ToolResult: {
-            // Handle tool results as function call outputs
-            const toolResult = block as ToolResultContentBlock;
-            // Tool results should be added as separate items in the response
-
-            toolResult.content.forEach((content) => {
-              if (content.type === MessageContentType.Text) {
-                openaiMessages.push({
-                  type: 'function_call_output',
-                  call_id: toolResult.tool_use_id,
-                  output: content.text,
-                } as OpenAI.Responses.ResponseInputItem.FunctionCallOutput);
-              }
-
-              if (content.type === MessageContentType.Image) {
-                openaiMessages.push({
-                  type: 'function_call_output',
-                  call_id: toolResult.tool_use_id,
-                  output: 'screenshot',
-                } as OpenAI.Responses.ResponseInputItem.FunctionCallOutput);
-                openaiMessages.push({
-                  role: 'user',
-                  type: 'message',
-                  content: [
-                    {
-                      type: 'input_image',
-                      detail: 'high',
-                      image_url: `data:${content.source.media_type};base64,${content.source.data}`,
-                    },
-                  ],
-                } as OpenAI.Responses.ResponseInputItem.Message);
-              }
+              type: 'message',
+              role: 'user',
+              content: [
+                {
+                  type: 'input_text',
+                  text: `User performed action: ${block.name}\n${JSON.stringify(block.input, null, 2)}`,
+                },
+              ],
             });
-            break;
-          }
-
-          default:
-            // Handle unknown content types as text
+          } else if (isImageContentBlock(block)) {
             openaiMessages.push({
               role: 'user',
               type: 'message',
               content: [
                 {
-                  type: 'input_text',
-                  text: JSON.stringify(block),
+                  type: 'input_image',
+                  detail: 'high',
+                  image_url: `data:${block.source.media_type};base64,${block.source.data}`,
                 },
               ],
             } as OpenAI.Responses.ResponseInputItem.Message);
+          }
+        }
+      } else {
+        // Convert content blocks to OpenAI format
+        for (const block of messageContentBlocks) {
+          switch (block.type) {
+            case MessageContentType.Text: {
+              if (message.role === Role.USER) {
+                openaiMessages.push({
+                  type: 'message',
+                  role: 'user',
+                  content: [
+                    {
+                      type: 'input_text',
+                      text: (block as TextContentBlock).text,
+                    },
+                  ],
+                } as OpenAI.Responses.ResponseInputItem.Message);
+              } else {
+                openaiMessages.push({
+                  type: 'message',
+                  role: 'assistant',
+                  content: [
+                    {
+                      type: 'output_text',
+                      text: (block as TextContentBlock).text,
+                    },
+                  ],
+                } as OpenAI.Responses.ResponseOutputMessage);
+              }
+              break;
+            }
+            case MessageContentType.ToolUse:
+              // For assistant messages with tool use, convert to function call
+              if (message.role === Role.ASSISTANT) {
+                const toolBlock = block as ToolUseContentBlock;
+                openaiMessages.push({
+                  type: 'function_call',
+                  call_id: toolBlock.id,
+                  name: toolBlock.name,
+                  arguments: JSON.stringify(toolBlock.input),
+                } as OpenAI.Responses.ResponseFunctionToolCall);
+              }
+              break;
+
+            case MessageContentType.Thinking: {
+              const thinkingBlock = block as ThinkingContentBlock;
+              openaiMessages.push({
+                type: 'reasoning',
+                id: thinkingBlock.signature,
+                encrypted_content: thinkingBlock.thinking,
+                summary: [],
+              } as OpenAI.Responses.ResponseReasoningItem);
+              break;
+            }
+            case MessageContentType.ToolResult: {
+              // Handle tool results as function call outputs
+              const toolResult = block as ToolResultContentBlock;
+              // Tool results should be added as separate items in the response
+
+              toolResult.content.forEach((content) => {
+                if (content.type === MessageContentType.Text) {
+                  openaiMessages.push({
+                    type: 'function_call_output',
+                    call_id: toolResult.tool_use_id,
+                    output: content.text,
+                  } as OpenAI.Responses.ResponseInputItem.FunctionCallOutput);
+                }
+
+                if (content.type === MessageContentType.Image) {
+                  openaiMessages.push({
+                    type: 'function_call_output',
+                    call_id: toolResult.tool_use_id,
+                    output: 'screenshot',
+                  } as OpenAI.Responses.ResponseInputItem.FunctionCallOutput);
+                  openaiMessages.push({
+                    role: 'user',
+                    type: 'message',
+                    content: [
+                      {
+                        type: 'input_image',
+                        detail: 'high',
+                        image_url: `data:${content.source.media_type};base64,${content.source.data}`,
+                      },
+                    ],
+                  } as OpenAI.Responses.ResponseInputItem.Message);
+                }
+              });
+              break;
+            }
+
+            default:
+              // Handle unknown content types as text
+              openaiMessages.push({
+                role: 'user',
+                type: 'message',
+                content: [
+                  {
+                    type: 'input_text',
+                    text: JSON.stringify(block),
+                  },
+                ],
+              } as OpenAI.Responses.ResponseInputItem.Message);
+          }
         }
       }
     }

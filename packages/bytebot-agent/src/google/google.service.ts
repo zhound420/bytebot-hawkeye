@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
+  isComputerToolUseContentBlock,
+  isImageContentBlock,
+  isUserActionContentBlock,
   MessageContentBlock,
   MessageContentType,
   TextContentBlock,
@@ -112,69 +115,93 @@ export class GoogleService implements BytebotAgentService {
 
       const parts: Part[] = [];
 
-      for (const block of messageContentBlocks) {
-        switch (block.type) {
-          case MessageContentType.Text:
+      if (
+        messageContentBlocks.every((block) => isUserActionContentBlock(block))
+      ) {
+        const userActionContentBlocks = messageContentBlocks.flatMap(
+          (block) => block.content,
+        );
+        for (const block of userActionContentBlocks) {
+          if (isComputerToolUseContentBlock(block)) {
             parts.push({
-              text: block.text,
+              text: `User performed action: ${block.name}\n${JSON.stringify(block.input, null, 2)}`,
             });
-            break;
-          case MessageContentType.ToolUse:
-            parts.push({
-              functionCall: {
-                id: block.id,
-                name: block.name,
-                args: block.input,
-              },
-            });
-            break;
-          case MessageContentType.Image:
+          } else if (isImageContentBlock(block)) {
             parts.push({
               inlineData: {
                 data: block.source.data,
                 mimeType: block.source.media_type,
               },
             });
-            break;
-          case MessageContentType.ToolResult: {
-            const toolResultContentBlock = block.content[0];
-            if (toolResultContentBlock.type === MessageContentType.Image) {
+          }
+        }
+      } else {
+        for (const block of messageContentBlocks) {
+          switch (block.type) {
+            case MessageContentType.Text:
+              parts.push({
+                text: block.text,
+              });
+              break;
+            case MessageContentType.ToolUse:
+              parts.push({
+                functionCall: {
+                  id: block.id,
+                  name: block.name,
+                  args: block.input,
+                },
+              });
+              break;
+            case MessageContentType.Image:
+              parts.push({
+                inlineData: {
+                  data: block.source.data,
+                  mimeType: block.source.media_type,
+                },
+              });
+              break;
+            case MessageContentType.ToolResult: {
+              const toolResultContentBlock = block.content[0];
+              if (toolResultContentBlock.type === MessageContentType.Image) {
+                parts.push({
+                  functionResponse: {
+                    id: block.tool_use_id,
+                    name: 'screenshot',
+                    response: {
+                      ...(!block.is_error && {
+                        output: 'screenshot successful',
+                      }),
+                      ...(block.is_error && { error: block.content[0] }),
+                    },
+                  },
+                });
+                parts.push({
+                  inlineData: {
+                    data: toolResultContentBlock.source.data,
+                    mimeType: toolResultContentBlock.source.media_type,
+                  },
+                });
+                break;
+              }
+
               parts.push({
                 functionResponse: {
                   id: block.tool_use_id,
-                  name: 'screenshot',
+                  name: this.getToolName(block.tool_use_id, messages),
                   response: {
-                    ...(!block.is_error && { output: 'screenshot successful' }),
+                    ...(!block.is_error && { output: block.content[0] }),
                     ...(block.is_error && { error: block.content[0] }),
                   },
                 },
               });
-              parts.push({
-                inlineData: {
-                  data: toolResultContentBlock.source.data,
-                  mimeType: toolResultContentBlock.source.media_type,
-                },
-              });
               break;
             }
-
-            parts.push({
-              functionResponse: {
-                id: block.tool_use_id,
-                name: this.getToolName(block.tool_use_id, messages),
-                response: {
-                  ...(!block.is_error && { output: block.content[0] }),
-                  ...(block.is_error && { error: block.content[0] }),
-                },
-              },
-            });
-            break;
+            default:
+              parts.push({
+                text: JSON.stringify(block),
+              });
+              break;
           }
-          default:
-            parts.push({
-              text: JSON.stringify(block),
-            });
-            break;
         }
       }
 
