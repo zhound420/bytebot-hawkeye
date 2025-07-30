@@ -82,6 +82,11 @@ bytebot-ui:
       memory: "512Mi"
       cpu: "250m"
 
+# LiteLLM proxy is disabled by default
+# Enable it by using -f values-proxy.yaml or --set bytebot-llm-proxy.enabled=true
+bytebot-llm-proxy:
+  enabled: false
+
 ingress:
   enabled: false
   className: "nginx"

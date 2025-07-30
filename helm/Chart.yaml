@@ -18,6 +18,10 @@ dependencies:
   - name: bytebot-ui
     version: 0.1.0
     repository: file://./charts/bytebot-ui
+  - name: bytebot-llm-proxy
+    version: 0.1.0
+    repository: file://./charts/bytebot-llm-proxy
+    condition: bytebot-llm-proxy.enabled
 keywords:
   - bytebot
   - automation
