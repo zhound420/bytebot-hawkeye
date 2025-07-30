@@ -76,43 +76,49 @@ export function ChatContainer({
   };
 
   return (
-    <div className="bg-bytebot-bronze-light-2">
+    <div className="h-full flex flex-col bg-bytebot-bronze-light-3">
       {isLoadingSession ? (
-        <div className="flex h-full items-center justify-center min-h-80 bg-bytebot-bronze-light-3">
+        <div className="flex h-full items-center justify-center min-h-80 bg-bytebot-bronze-light-3 border border-bytebot-bronze-light-7 rounded-lg overflow-hidden">
           <Loader size={32} />
         </div>
       ) : groupedMessages.length > 0 ? (
         <>
-          {groupedMessages.map((group, groupIndex) => (
-            <Fragment key={groupIndex}>
-              <MessageGroup group={group} taskStatus={taskStatus} messageIdToIndex={messageIdToIndex} />
-            </Fragment>
-          ))}
+          {/* Scrollable content area */}
+          <div className="flex-1 overflow-y-auto">
+            {groupedMessages.map((group, groupIndex) => (
+              <Fragment key={groupIndex}>
+                <MessageGroup group={group} messageIdToIndex={messageIdToIndex} taskStatus={taskStatus} />
+              </Fragment>
+            ))}
 
-          {taskStatus === TaskStatus.RUNNING && control === Role.ASSISTANT && (
-            <div className="flex items-center justify-start gap-4 px-4 py-3 bg-bytebot-bronze-light-3 border-x border-bytebot-bronze-light-7">
-              <MessageAvatar role={Role.ASSISTANT} />
-              <div className="flex items-center justify-start gap-2">
-                <div className="flex h-full items-center justify-center py-2">
-                  <Loader size={20} />
+            {taskStatus === TaskStatus.RUNNING && control === Role.ASSISTANT && (
+              <div className="flex items-center justify-start gap-4 px-4 py-3 bg-bytebot-bronze-light-3 border-x border-bytebot-bronze-light-7">
+                <MessageAvatar role={Role.ASSISTANT} />
+                <div className="flex items-center justify-start gap-2">
+                  <div className="flex h-full items-center justify-center py-2">
+                    <Loader size={20} />
+                  </div>
+                  <TextShimmer className="text-sm" duration={2}>
+                    Bytebot is working...
+                  </TextShimmer>
                 </div>
-                <TextShimmer className="text-sm" duration={2}>
-                  Bytebot is working...
-                </TextShimmer>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Loading indicator for infinite scroll at bottom */}
-          {isLoadingMoreMessages && (
-            <div className="flex justify-center py-4">
-              <Loader size={24} />
-            </div>
-          )}
+            {/* Loading indicator for infinite scroll at bottom */}
+            {isLoadingMoreMessages && (
+              <div className="flex justify-center py-4">
+                <Loader size={24} />
+              </div>
+            )}
 
-          {/* Fixed chat input */}
+            {/* This empty div is the target for scrolling */}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Fixed chat input at bottom */}
           {[TaskStatus.RUNNING, TaskStatus.NEEDS_HELP].includes(taskStatus) && (
-            <div className="sticky bottom-0 z-10 bg-bytebot-bronze-light-3">
+            <div className="flex-shrink-0 z-10 bg-bytebot-bronze-light-3">
               <div className="p-2 border-x border-b border-bytebot-bronze-light-7 rounded-b-lg">
                 <div className="bg-bytebot-bronze-light-2 border border-bytebot-bronze-light-7 rounded-lg p-2">
                     <ChatInput
@@ -133,8 +139,6 @@ export function ChatContainer({
           <p className="">No messages yet...</p>
         </div>
       )}
-      {/* This empty div is the target for scrolling */}
-      <div ref={messagesEndRef} />
     </div>
   );
 }
