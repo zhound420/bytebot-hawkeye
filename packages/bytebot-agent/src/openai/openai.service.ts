@@ -18,6 +18,7 @@ import { openaiTools } from './openai.tools';
 import {
   BytebotAgentService,
   BytebotAgentInterrupt,
+  BytebotAgentResponse,
 } from '../agent/agent.types';
 
 @Injectable()
@@ -45,7 +46,7 @@ export class OpenAIService implements BytebotAgentService {
     model: string = DEFAULT_MODEL.name,
     useTools: boolean = true,
     signal?: AbortSignal,
-  ): Promise<MessageContentBlock[]> {
+  ): Promise<BytebotAgentResponse> {
     const isReasoning = model.startsWith('o');
     try {
       const openaiMessages = this.formatMessagesForOpenAI(messages);
@@ -65,7 +66,14 @@ export class OpenAIService implements BytebotAgentService {
         { signal },
       );
 
-      return this.formatOpenAIResponse(response.output);
+      return {
+        contentBlocks: this.formatOpenAIResponse(response.output),
+        tokenUsage: {
+          inputTokens: response.usage?.input_tokens || 0,
+          outputTokens: response.usage?.output_tokens || 0,
+          totalTokens: response.usage?.total_tokens || 0,
+        },
+      };
     } catch (error: any) {
       console.log('error', error);
       console.log('error name', error.name);
@@ -134,7 +142,7 @@ export class OpenAIService implements BytebotAgentService {
                   content: [
                     {
                       type: 'input_text',
-                      text: (block as TextContentBlock).text,
+                      text: block.text,
                     },
                   ],
                 } as OpenAI.Responses.ResponseInputItem.Message);
@@ -145,7 +153,7 @@ export class OpenAIService implements BytebotAgentService {
                   content: [
                     {
                       type: 'output_text',
-                      text: (block as TextContentBlock).text,
+                      text: block.text,
                     },
                   ],
                 } as OpenAI.Responses.ResponseOutputMessage);
@@ -166,7 +174,7 @@ export class OpenAIService implements BytebotAgentService {
               break;
 
             case MessageContentType.Thinking: {
-              const thinkingBlock = block as ThinkingContentBlock;
+              const thinkingBlock = block;
               openaiMessages.push({
                 type: 'reasoning',
                 id: thinkingBlock.signature,
@@ -177,7 +185,7 @@ export class OpenAIService implements BytebotAgentService {
             }
             case MessageContentType.ToolResult: {
               // Handle tool results as function call outputs
-              const toolResult = block as ToolResultContentBlock;
+              const toolResult = block;
               // Tool results should be added as separate items in the response
 
               toolResult.content.forEach((content) => {
@@ -241,7 +249,7 @@ export class OpenAIService implements BytebotAgentService {
       switch (item.type) {
         case 'message':
           // Handle ResponseOutputMessage
-          const message = item as OpenAI.Responses.ResponseOutputMessage;
+          const message = item;
           for (const content of message.content) {
             if ('text' in content) {
               // ResponseOutputText
@@ -261,7 +269,7 @@ export class OpenAIService implements BytebotAgentService {
 
         case 'function_call':
           // Handle ResponseFunctionToolCall
-          const toolCall = item as OpenAI.Responses.ResponseFunctionToolCall;
+          const toolCall = item;
           contentBlocks.push({
             type: MessageContentType.ToolUse,
             id: toolCall.call_id,

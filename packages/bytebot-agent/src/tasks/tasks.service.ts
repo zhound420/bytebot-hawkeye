@@ -156,15 +156,22 @@ export class TasksService {
     return task;
   }
 
-  async findAll(page = 1, limit = 10, statuses?: string[]): Promise<{ tasks: Task[]; total: number; totalPages: number }> {
-    this.logger.log(`Retrieving tasks - page: ${page}, limit: ${limit}, statuses: ${statuses?.join(',')}`);
-    
+  async findAll(
+    page = 1,
+    limit = 10,
+    statuses?: string[],
+  ): Promise<{ tasks: Task[]; total: number; totalPages: number }> {
+    this.logger.log(
+      `Retrieving tasks - page: ${page}, limit: ${limit}, statuses: ${statuses?.join(',')}`,
+    );
+
     const skip = (page - 1) * limit;
-    
-    const whereClause: Prisma.TaskWhereInput = statuses && statuses.length > 0 
-      ? { status: { in: statuses as TaskStatus[] } } 
-      : {};
-    
+
+    const whereClause: Prisma.TaskWhereInput =
+      statuses && statuses.length > 0
+        ? { status: { in: statuses as TaskStatus[] } }
+        : {};
+
     const [tasks, total] = await Promise.all([
       this.prisma.task.findMany({
         where: whereClause,
@@ -185,7 +192,7 @@ export class TasksService {
       }),
       this.prisma.task.count({ where: whereClause }),
     ]);
-    
+
     const totalPages = Math.ceil(total / limit);
     this.logger.debug(`Retrieved ${tasks.length} tasks out of ${total} total`);
 
@@ -321,7 +328,7 @@ export class TasksService {
         { method: 'POST' },
       );
     } catch (error) {
-      this.logger.error('Failed to stop input tracking', error as any);
+      this.logger.error('Failed to stop input tracking', error);
     }
 
     // Broadcast resume event so AgentProcessor can react
@@ -360,7 +367,7 @@ export class TasksService {
         { method: 'POST' },
       );
     } catch (error) {
-      this.logger.error('Failed to start input tracking', error as any);
+      this.logger.error('Failed to start input tracking', error);
     }
 
     // Broadcast takeover event so AgentProcessor can react

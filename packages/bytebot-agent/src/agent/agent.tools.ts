@@ -366,7 +366,8 @@ export const _createTaskTool = {
  */
 export const _readFileTool = {
   name: 'computer_read_file',
-  description: 'Reads a file from the specified path and returns it as a document content block with base64 encoded data',
+  description:
+    'Reads a file from the specified path and returns it as a document content block with base64 encoded data',
   input_schema: {
     type: 'object' as const,
     properties: {

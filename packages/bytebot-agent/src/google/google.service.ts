@@ -12,6 +12,7 @@ import {
 import {
   BytebotAgentService,
   BytebotAgentInterrupt,
+  BytebotAgentResponse,
 } from '../agent/agent.types';
 import { Message, Role } from '@prisma/client';
 import { googleTools } from './google.tools';
@@ -49,7 +50,7 @@ export class GoogleService implements BytebotAgentService {
     model: string = DEFAULT_MODEL.name,
     useTools: boolean = true,
     signal?: AbortSignal,
-  ): Promise<MessageContentBlock[]> {
+  ): Promise<BytebotAgentResponse> {
     try {
       const maxTokens = 8192;
 
@@ -90,7 +91,14 @@ export class GoogleService implements BytebotAgentService {
         throw new Error('No parts found in content');
       }
 
-      return this.formatGoogleResponse(content.parts);
+      return {
+        contentBlocks: this.formatGoogleResponse(content.parts),
+        tokenUsage: {
+          inputTokens: response.usageMetadata?.promptTokenCount || 0,
+          outputTokens: response.usageMetadata?.candidatesTokenCount || 0,
+          totalTokens: response.usageMetadata?.totalTokenCount || 0,
+        },
+      };
     } catch (error) {
       if (error.message.includes('AbortError')) {
         throw new BytebotAgentInterrupt();

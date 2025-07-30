@@ -17,6 +17,7 @@ import { anthropicTools } from './anthropic.tools';
 import {
   BytebotAgentService,
   BytebotAgentInterrupt,
+  BytebotAgentResponse,
 } from '../agent/agent.types';
 
 @Injectable()
@@ -44,7 +45,7 @@ export class AnthropicService implements BytebotAgentService {
     model: string = DEFAULT_MODEL.name,
     useTools: boolean = true,
     signal?: AbortSignal,
-  ): Promise<MessageContentBlock[]> {
+  ): Promise<BytebotAgentResponse> {
     try {
       const maxTokens = 8192;
 
@@ -76,7 +77,15 @@ export class AnthropicService implements BytebotAgentService {
       );
 
       // Convert Anthropic's response to our message content blocks format
-      return this.formatAnthropicResponse(response.content);
+      return {
+        contentBlocks: this.formatAnthropicResponse(response.content),
+        tokenUsage: {
+          inputTokens: response.usage.input_tokens,
+          outputTokens: response.usage.output_tokens,
+          totalTokens:
+            response.usage.input_tokens + response.usage.output_tokens,
+        },
+      };
     } catch (error) {
       this.logger.log(error);
 

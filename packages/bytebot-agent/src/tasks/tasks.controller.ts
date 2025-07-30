@@ -70,7 +70,7 @@ export class TasksController {
   ): Promise<{ tasks: Task[]; total: number; totalPages: number }> {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
-    
+
     // Handle both single status and multiple statuses
     let statusFilter: string[] | undefined;
     if (statuses) {
@@ -78,7 +78,7 @@ export class TasksController {
     } else if (status) {
       statusFilter = [status];
     }
-    
+
     return this.tasksService.findAll(pageNum, limitNum, statusFilter);
   }
 
