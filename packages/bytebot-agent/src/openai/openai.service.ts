@@ -7,14 +7,11 @@ import {
   TextContentBlock,
   ToolUseContentBlock,
   ToolResultContentBlock,
+  ThinkingContentBlock,
 } from '@bytebot/shared';
 import { DEFAULT_MODEL } from './openai.constants';
 import { Message, Role } from '@prisma/client';
 import { openaiTools } from './openai.tools';
-import {
-  AGENT_SYSTEM_PROMPT,
-  SUMMARIZATION_SYSTEM_PROMPT,
-} from '../agent/agent.constants';
 import {
   BytebotAgentService,
   BytebotAgentInterrupt,
@@ -46,6 +43,7 @@ export class OpenAIService implements BytebotAgentService {
     useTools: boolean = true,
     signal?: AbortSignal,
   ): Promise<MessageContentBlock[]> {
+    const isReasoning = model.startsWith('o');
     try {
       const openaiMessages = this.formatMessagesForOpenAI(messages);
 
@@ -57,7 +55,9 @@ export class OpenAIService implements BytebotAgentService {
           input: openaiMessages,
           instructions: systemPrompt,
           tools: useTools ? openaiTools : [],
-          reasoning: null,
+          reasoning: isReasoning ? { effort: 'medium' } : null,
+          store: false,
+          include: isReasoning ? ['reasoning.encrypted_content'] : [],
         },
         { signal },
       );
@@ -139,6 +139,16 @@ export class OpenAIService implements BytebotAgentService {
             }
             break;
 
+          case MessageContentType.Thinking: {
+            const thinkingBlock = block as ThinkingContentBlock;
+            openaiMessages.push({
+              type: 'reasoning',
+              id: thinkingBlock.signature,
+              encrypted_content: thinkingBlock.thinking,
+              summary: [],
+            } as OpenAI.Responses.ResponseReasoningItem);
+            break;
+          }
           case MessageContentType.ToolResult: {
             // Handle tool results as function call outputs
             const toolResult = block as ToolResultContentBlock;
@@ -237,6 +247,15 @@ export class OpenAIService implements BytebotAgentService {
         case 'web_search_call':
         case 'computer_call':
         case 'reasoning':
+          const reasoning = item as OpenAI.Responses.ResponseReasoningItem;
+          if (reasoning.encrypted_content) {
+            contentBlocks.push({
+              type: MessageContentType.Thinking,
+              thinking: reasoning.encrypted_content,
+              signature: reasoning.id,
+            } as ThinkingContentBlock);
+          }
+          break;
         case 'image_generation_call':
         case 'code_interpreter_call':
         case 'local_shell_call':
