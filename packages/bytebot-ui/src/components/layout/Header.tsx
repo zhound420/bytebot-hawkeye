@@ -76,7 +76,7 @@ export function Header() {
               className="h-8 w-auto"
             />
           ) : (
-            <div className="h-10 w-[100px]" />
+            <div className="h-8 w-[110px]" />
           )}
         </div>
         <div className="border-bytebot-bronze-dark-11 h-5 border border-l-[0.5px]"></div>
