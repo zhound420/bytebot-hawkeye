@@ -18,15 +18,28 @@
             "pages": ["introduction", "quickstart"]
           },
           {
+            "group": "User Guides",
+            "pages": [
+              "guides/task-creation",
+              "guides/password-management",
+              "guides/takeover-mode"
+            ]
+          },
+          {
             "group": "Deployment",
-            "pages": ["deployment/railway"]
+            "pages": [
+              "deployment/railway",
+              "deployment/helm",
+              "deployment/litellm"
+            ]
           },
           {
             "group": "Core Concepts",
             "pages": [
               "core-concepts/architecture",
               "core-concepts/agent-system",
-              "core-concepts/desktop-environment"
+              "core-concepts/desktop-environment",
+              "core-concepts/rpa-comparison"
             ]
           }
         ]
@@ -88,7 +101,7 @@
     "links": [
       {
         "label": "Support",
-        "href": "mailto:support@bytebot.ai"
+        "href": "https://discord.gg/zcb5wA2t4u"
       }
     ],
     "primary": {

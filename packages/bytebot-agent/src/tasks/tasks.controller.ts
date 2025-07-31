@@ -11,6 +11,7 @@ import {
   UseGuards,
   Query,
   Req,
+  HttpException,
 } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
@@ -22,18 +23,21 @@ import { AuthGuard } from '@thallesp/nestjs-better-auth';
 import { Request } from 'express';
 import { ANTHROPIC_MODELS } from '../anthropic/anthropic.constants';
 import { OPENAI_MODELS } from '../openai/openai.constants';
-import { GOOGLE_MODELS } from 'src/google/google.constants';
+import { GOOGLE_MODELS } from '../google/google.constants';
+import { BytebotAgentModel } from 'src/agent/agent.types';
 
 const authEnabled = process.env.AUTH_ENABLED === 'true';
 
-const googleApiKey = process.env.GOOGLE_API_KEY;
+const geminiApiKey = process.env.GEMINI_API_KEY;
 const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
 const openaiApiKey = process.env.OPENAI_API_KEY;
+
+const proxyUrl = process.env.BYTEBOT_LLM_PROXY_URL;
 
 const models = [
   ...(anthropicApiKey ? ANTHROPIC_MODELS : []),
   ...(openaiApiKey ? OPENAI_MODELS : []),
-  ...(googleApiKey ? GOOGLE_MODELS : []),
+  ...(geminiApiKey ? GOOGLE_MODELS : []),
 ];
 
 @Controller('tasks')
@@ -58,12 +62,66 @@ export class TasksController {
   }
 
   @Get()
-  async findAll(): Promise<Task[]> {
-    return this.tasksService.findAll();
+  async findAll(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('status') status?: string,
+    @Query('statuses') statuses?: string,
+  ): Promise<{ tasks: Task[]; total: number; totalPages: number }> {
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const limitNum = limit ? parseInt(limit, 10) : 10;
+
+    // Handle both single status and multiple statuses
+    let statusFilter: string[] | undefined;
+    if (statuses) {
+      statusFilter = statuses.split(',');
+    } else if (status) {
+      statusFilter = [status];
+    }
+
+    return this.tasksService.findAll(pageNum, limitNum, statusFilter);
   }
 
   @Get('models')
   async getModels() {
+    if (proxyUrl) {
+      try {
+        const response = await fetch(`${proxyUrl}/model/info`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          throw new HttpException(
+            `Failed to fetch models from proxy: ${response.statusText}`,
+            HttpStatus.BAD_GATEWAY,
+          );
+        }
+
+        const proxyModels = await response.json();
+
+        // Map proxy response to BytebotAgentModel format
+        const models: BytebotAgentModel[] = proxyModels.data.map(
+          (model: any) => ({
+            provider: 'anthropic',
+            name: model.model_name,
+            title: model.model_name,
+          }),
+        );
+
+        return models;
+      } catch (error) {
+        if (error instanceof HttpException) {
+          throw error;
+        }
+        throw new HttpException(
+          `Error fetching models: ${error.message}`,
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
+    }
     return models;
   }
 

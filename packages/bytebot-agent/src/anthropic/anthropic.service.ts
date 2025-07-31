@@ -8,6 +8,8 @@ import {
   ToolUseContentBlock,
   ThinkingContentBlock,
   RedactedThinkingContentBlock,
+  isUserActionContentBlock,
+  isComputerToolUseContentBlock,
 } from '@bytebot/shared';
 import { DEFAULT_MODEL } from './anthropic.constants';
 import { Message, Role } from '@prisma/client';
@@ -15,6 +17,7 @@ import { anthropicTools } from './anthropic.tools';
 import {
   BytebotAgentService,
   BytebotAgentInterrupt,
+  BytebotAgentResponse,
 } from '../agent/agent.types';
 
 @Injectable()
@@ -42,7 +45,7 @@ export class AnthropicService implements BytebotAgentService {
     model: string = DEFAULT_MODEL.name,
     useTools: boolean = true,
     signal?: AbortSignal,
-  ): Promise<MessageContentBlock[]> {
+  ): Promise<BytebotAgentResponse> {
     try {
       const maxTokens = 8192;
 
@@ -74,7 +77,15 @@ export class AnthropicService implements BytebotAgentService {
       );
 
       // Convert Anthropic's response to our message content blocks format
-      return this.formatAnthropicResponse(response.content);
+      return {
+        contentBlocks: this.formatAnthropicResponse(response.content),
+        tokenUsage: {
+          inputTokens: response.usage.input_tokens,
+          outputTokens: response.usage.output_tokens,
+          totalTokens:
+            response.usage.input_tokens + response.usage.output_tokens,
+        },
+      };
     } catch (error) {
       this.logger.log(error);
 
@@ -102,19 +113,31 @@ export class AnthropicService implements BytebotAgentService {
     for (const [index, message] of messages.entries()) {
       const messageContentBlocks = message.content as MessageContentBlock[];
 
-      // Don't include user messages that have tool use
-      if (
-        message.role === Role.USER &&
-        messageContentBlocks.some(
-          (block) => block.type === MessageContentType.ToolUse,
-        )
-      ) {
-        continue;
-      }
+      const content: Anthropic.ContentBlockParam[] = [];
 
-      const content: Anthropic.ContentBlockParam[] = messageContentBlocks.map(
-        (block) => block as Anthropic.ContentBlockParam,
-      );
+      if (
+        messageContentBlocks.every((block) => isUserActionContentBlock(block))
+      ) {
+        const userActionContentBlocks = messageContentBlocks.flatMap(
+          (block) => block.content,
+        );
+        for (const block of userActionContentBlocks) {
+          if (isComputerToolUseContentBlock(block)) {
+            content.push({
+              type: 'text',
+              text: `User performed action: ${block.name}\n${JSON.stringify(block.input, null, 2)}`,
+            });
+          } else {
+            content.push(block as Anthropic.ContentBlockParam);
+          }
+        }
+      } else {
+        content.push(
+          ...messageContentBlocks.map(
+            (block) => block as Anthropic.ContentBlockParam,
+          ),
+        );
+      }
 
       if (index === messages.length - 1) {
         content[content.length - 1]['cache_control'] = {

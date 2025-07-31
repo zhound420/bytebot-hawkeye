@@ -28,7 +28,11 @@ import { InputCaptureService } from './input-capture.service';
 import { OnEvent } from '@nestjs/event-emitter';
 import { OpenAIService } from '../openai/openai.service';
 import { GoogleService } from '../google/google.service';
-import { BytebotAgentModel, BytebotAgentService } from './agent.types';
+import {
+  BytebotAgentModel,
+  BytebotAgentService,
+  BytebotAgentResponse,
+} from './agent.types';
 import {
   AGENT_SYSTEM_PROMPT,
   SUMMARIZATION_SYSTEM_PROMPT,
@@ -178,7 +182,7 @@ export class AgentProcessor {
       );
 
       const model = task.model as unknown as BytebotAgentModel;
-      let messageContentBlocks: MessageContentBlock[] = [];
+      let agentResponse: BytebotAgentResponse;
 
       const service = this.services[model.provider];
       if (!service) {
@@ -193,13 +197,15 @@ export class AgentProcessor {
         return;
       }
 
-      messageContentBlocks = await service.generateMessage(
+      agentResponse = await service.generateMessage(
         AGENT_SYSTEM_PROMPT,
         messages,
         model.name,
         true,
         this.abortController.signal,
       );
+
+      const messageContentBlocks = agentResponse.contentBlocks;
 
       this.logger.debug(
         `Received ${messageContentBlocks.length} content blocks from LLM`,
@@ -223,10 +229,16 @@ export class AgentProcessor {
         taskId,
       });
 
-      if (messages.length >= 100) {
+      // Calculate if we need to summarize based on token usage
+      const contextWindow = model.contextWindow || 200000; // Default to 200k if not specified
+      const contextThreshold = contextWindow * 0.75;
+      const shouldSummarize =
+        agentResponse.tokenUsage.totalTokens >= contextThreshold;
+
+      if (shouldSummarize) {
         try {
           // After we've successfully generated a response, we can summarize the unsummarized messages
-          const summaryContentBlocks = await service.generateMessage(
+          const summaryResponse = await service.generateMessage(
             SUMMARIZATION_SYSTEM_PROMPT,
             [
               ...messages,
@@ -251,6 +263,8 @@ export class AgentProcessor {
             this.abortController.signal,
           );
 
+          const summaryContentBlocks = summaryResponse.contentBlocks;
+
           this.logger.debug(
             `Received ${summaryContentBlocks.length} summary content blocks from LLM`,
           );
@@ -272,6 +286,10 @@ export class AgentProcessor {
               return message.id;
             }),
           ]);
+
+          this.logger.log(
+            `Generated summary for task ${taskId} due to token usage (${agentResponse.tokenUsage.totalTokens}/${contextWindow})`,
+          );
         } catch (error: any) {
           this.logger.error(
             `Error summarizing messages for task ID: ${taskId}`,
@@ -279,6 +297,10 @@ export class AgentProcessor {
           );
         }
       }
+
+      this.logger.debug(
+        `Token usage for task ${taskId}: ${agentResponse.tokenUsage.totalTokens}/${contextWindow} (${Math.round((agentResponse.tokenUsage.totalTokens / contextWindow) * 100)}%)`,
+      );
 
       const generatedToolResults: ToolResultContentBlock[] = [];
 

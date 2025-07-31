@@ -10,6 +10,7 @@ import {
   MessageContentBlock,
   isComputerToolUseContentBlock,
   isToolResultContentBlock,
+  isUserActionContentBlock,
 } from '@bytebot/shared';
 import { TasksGateway } from '../tasks/tasks.gateway';
 
@@ -173,16 +174,14 @@ export class MessagesService {
           // Pure tool results should be shown as assistant messages
           processedMessage.role = Role.ASSISTANT;
         } else if (
-          contentBlocks.every(
-            (block) =>
-              isToolResultContentBlock(block) ||
-              isComputerToolUseContentBlock(block),
-          )
+          contentBlocks.every((block) => isUserActionContentBlock(block))
         ) {
-          // Computer tool use (take over actions) should be shown as assistant messages with take_over flag
-          processedMessage.content = contentBlocks.filter((block) =>
-            isComputerToolUseContentBlock(block),
-          );
+          // Extract computer tool use (take over actions) from the user action content blocks and show them as assistant messages with take_over flag
+          processedMessage.content = contentBlocks
+            .flatMap((block) => {
+              return block.content;
+            })
+            .filter((block) => isComputerToolUseContentBlock(block));
           processedMessage.role = Role.ASSISTANT;
           processedMessage.take_over = true;
         }

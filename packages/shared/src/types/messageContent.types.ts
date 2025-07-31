@@ -9,6 +9,7 @@ export enum MessageContentType {
   ToolResult = "tool_result",
   Thinking = "thinking",
   RedactedThinking = "redacted_thinking",
+  UserAction = "user_action",
 }
 
 // Base type with only the discriminator
@@ -201,6 +202,22 @@ export type ComputerToolUseContentBlock =
   | WriteFileToolUseBlock
   | ReadFileToolUseBlock;
 
+export type UserActionContentBlock = MessageContentBlockBase & {
+  type: MessageContentType.UserAction;
+  content: (
+    | ImageContentBlock
+    | MoveMouseToolUseBlock
+    | TraceMouseToolUseBlock
+    | ClickMouseToolUseBlock
+    | PressMouseToolUseBlock
+    | TypeKeysToolUseBlock
+    | PressKeysToolUseBlock
+    | TypeTextToolUseBlock
+    | DragMouseToolUseBlock
+    | ScrollToolUseBlock
+  )[];
+};
+
 export type SetTaskStatusToolUseBlock = ToolUseContentBlock & {
   name: "set_task_status";
   input: {
@@ -235,5 +252,6 @@ export type MessageContentBlock =
   | ToolUseContentBlock
   | ThinkingContentBlock
   | RedactedThinkingContentBlock
+  | UserActionContentBlock
   | ComputerToolUseContentBlock
   | ToolResultContentBlock;

@@ -1,4 +1,12 @@
-import { IsArray, IsDate, IsNotEmpty, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
+import {
+  IsArray,
+  IsDate,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { Role, TaskPriority, TaskType } from '@prisma/client';
 

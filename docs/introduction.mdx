@@ -1,6 +1,6 @@
 ---
 title: Introduction
-description: "Self-hosted AI desktop agent that automates any computer task through natural language"
+description: "Open source AI desktop agent that automates any computer task"
 ---
 
 <p align="center">
@@ -20,7 +20,33 @@ description: "Self-hosted AI desktop agent that automates any computer task thro
 
 ## What is Bytebot?
 
-Bytebot is a self-hosted AI desktop agent that transforms how you interact with computers. By combining powerful AI with a containerized Linux desktop, Bytebot performs complex computer tasks. Think of it as your virtual employee that can actually use a computer – clicking, typing, browsing, and completing workflows just like a human would.
+Bytebot is an open-source AI agent that can control a computer desktop to complete tasks for you. It runs in Docker containers on your own infrastructure, giving you a virtual assistant that can:
+
+- Use any desktop application (browser, email, office tools, etc.)
+- Process uploaded files including PDFs, spreadsheets, and documents
+- Read entire files directly into the LLM context for rapid analysis
+- Automate repetitive tasks like data entry and form filling
+- Handle complex workflows that span multiple applications
+- Work 24/7 without human supervision
+
+Simply describe what you need done in plain English, and Bytebot will figure out how to do it – clicking buttons, typing text, navigating websites, reading documents, and completing tasks just like a human would.
+
+## Why Bytebot Over Traditional RPA?
+
+<CardGroup cols={2}>
+  <Card title="No Complex Scripting" icon="code-branch">
+    Unlike UiPath or similar tools, no need to design flowcharts or write scripts - just describe tasks naturally
+  </Card>
+  <Card title="Adaptive Intelligence" icon="brain">
+    AI-powered understanding means Bytebot adapts to UI changes without breaking
+  </Card>
+  <Card title="Visual Understanding" icon="eye">
+    Can read and understand any interface, not just pre-mapped elements
+  </Card>
+  <Card title="Human-Like Problem Solving" icon="lightbulb">
+    Handles unexpected popups, errors, and variations automatically
+  </Card>
+</CardGroup>
 
 ## Why Self-Host Bytebot?
 
@@ -42,18 +68,29 @@ Bytebot is a self-hosted AI desktop agent that transforms how you interact with 
   </Card>
 </CardGroup>
 
-## Example Tasks You Can Delegate
+## Real-World Use Cases
 
-- **Data Processing**: "Fill out this web form with the data from my CSV file"
-- **Email Management**: "Check my email and summarize important messages"
-- **Web Automation**: "Download all PDFs from this website and organize them by date"
-- **Testing**: "Test our checkout flow and take screenshots of each step"
-- **Invoice Processing**: "Download invoices from email, extract data, and update the accounting spreadsheet"
-- **Data Entry**: "Transfer customer information from PDF forms into our CRM system"
-- **Report Generation**: "Collect weekly metrics from different dashboards and compile the team report"
-- **Account Management**: "Update user permissions across our various SaaS tools"
-- **Document Processing**: "Download attachments from emails, rename them according to our convention, and file them"
-- **Compliance Tasks**: "Verify all employee records are updated in both HR systems"
+### Enterprise Automation (RPA Replacement)
+Bytebot is the next generation of RPA (Robotic Process Automation). It handles the same complex workflows as traditional tools like UiPath, but with AI-powered adaptability and automatic authentication:
+
+- **Financial Operations**: Automate banking portal access (including 2FA when password manager extensions are configured), download transaction files, and process them through multiple systems
+- **Compliance Workflows**: Navigate government websites, download regulatory documents, extract data, and update compliance tracking systems
+- **Multi-System Integration**: Bridge legacy systems that lack APIs by automating the UI interactions between them
+- **Vendor Management**: Log into supplier portals, download invoices, reconcile with internal systems, and process payments
+
+### Business Process Automation
+- **Data Reconciliation**: Pull reports from multiple SaaS platforms, cross-reference data, and generate consolidated reports
+- **Customer Onboarding**: Navigate between CRM, banking, and verification systems to complete new customer setup
+- **Purchase Order Processing**: Extract POs from webmail portals, enter into ERP systems, and update inventory databases
+- **HR Operations**: Collect employee data from various systems, update records, and ensure consistency across platforms
+
+### Development & QA Integration
+Bytebot becomes even more powerful when combined with coding agents:
+
+- **Full-Stack Testing**: Use a coding agent to generate code, then have Bytebot visually test and validate the output
+- **Automated Debugging**: Let Bytebot reproduce user-reported issues while a coding agent analyzes and fixes the code
+- **End-to-End Development**: Code agents write features, Bytebot tests them, creating a complete development loop
+- **Visual Regression Testing**: Automatically detect UI changes across deployments with screenshot comparisons
 
 ## How It Works
 
@@ -67,11 +104,11 @@ Bytebot is a self-hosted AI desktop agent that transforms how you interact with 
     actions
   </Step>
   <Step title="Executes Actions">
-    Bytebot executes the task on the containerized desktop using the keyboard
+    Bytebot executes the task on its virtual desktop using the keyboard
     and mouse
   </Step>
   <Step title="Watch or Walk Away">
-    Monitor it working in real-time through the desktop viewer, or let it
+    Monitor it working in real-time through the task detail view, or let it
     complete tasks independently.
   </Step>
   <Step title="Get Results">
@@ -92,15 +129,15 @@ Bytebot consists of four integrated components working together:
     icon="desktop"
     href="/core-concepts/desktop-environment"
   >
-    Ubuntu 22.04 with XFCE4, VSCode, browser, email, and automation daemon
+    Ubuntu 22.04 with XFCE4, VSCode, Firefox, Thunderbird email client, and automation daemon (bytebotd)
   </Card>
   <Card title="AI Agent" icon="brain" href="/core-concepts/agent-system">
-    NestJS service that uses an LLM (Claude, GPT, or Gemini) to plan and execute tasks
+    NestJS service that uses LLMs (Anthropic Claude, OpenAI GPT, Google Gemini) to plan and execute tasks
   </Card>
   <Card
     title="Task Interface"
     icon="window"
-    href="/core-concepts/agent-system#task-ui"
+    href="/api-reference/agent/ui"
   >
     Next.js web app for creating and managing tasks
   </Card>
@@ -123,28 +160,35 @@ Bytebot consists of four integrated components working together:
   </Card>
 </CardGroup>
 
-## Use Cases
+## Key Features
 
-### Personal Productivity
+### 🤖 Natural Language Control
+Just tell Bytebot what you need done. No coding or complex automation tools required.
 
-- Automate repetitive tasks
-- Manage emails and calendars
-- Organize documents and files
-- Conduct web research
+### 🖥️ Full Desktop Access
+Bytebot can use any application you can install - browsers, office tools, custom software.
 
-### Business Automation
+### 🔒 Complete Privacy
+Runs entirely on your infrastructure. Your data never leaves your servers.
 
-- Data entry and form filling
-- Report generation
-- Competitive analysis
-- Customer support workflows
+### 🔄 Two Operating Modes
+- **Autonomous Mode**: Bytebot completes tasks independently
+- **Takeover Mode**: You can step in and take control when needed
 
-### Development & Testing
+### 🖱️ Direct Desktop Access
+- **Desktop Tab**: Free-form access to the virtual desktop for setup, installing programs, or manual operations
+- **Task View**: Watch and interact with Bytebot during task execution
 
-- UI test automation
-- Cross-browser testing
-- Documentation generation
-- API integration testing
+### 🚀 Easy Deployment
+- One-click deployment on Railway
+- Docker Compose for self-hosting
+- Helm charts for Kubernetes
+
+### 🔌 Developer-Friendly
+- REST APIs for programmatic control
+- Task management API
+- Extensible architecture
+- MCP (Model Context Protocol) support
 
 ## Community & Support
 
@@ -152,7 +196,7 @@ Bytebot consists of four integrated components working together:
   <Card
     title="Discord Community"
     icon="discord"
-    href="https://discord.com/invite/zcb5wA2t4u"
+    href="https://discord.com/invite/d9ewZkWPTP"
   >
     Join our community for help, tips, and discussions
   </Card>

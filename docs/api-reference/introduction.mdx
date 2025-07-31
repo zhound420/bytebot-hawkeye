@@ -1,50 +1,110 @@
 ---
 title: "API Reference"
-description: "Overview of the Bytebot API endpoints"
+description: "Overview of the Bytebot API endpoints for programmatic control"
 ---
 
-## Computer Use API
+# Bytebot API Overview
 
-Bytebot's core functionality is exposed through its Computer Use API, which provides a unified endpoint for all interactions with the desktop environment. The API allows for programmatic control of mouse movement, keyboard input, and screen capture.
+Bytebot provides two main APIs for programmatic control:
 
-### Authentication
+## 1. Agent API (Task Management)
 
-The Bytebot API does not require authentication by default when accessed locally. For remote access, standard network security practices should be implemented.
-
-### Base URL
-
-All API endpoints are relative to the base URL:
-
-```
-http://localhost:9990
-```
-
-The port can be configured when running the container.
-
-### API Endpoints
+The Agent API runs on port 9991 and provides high-level task management:
 
 <CardGroup cols={2}>
   <Card
-    title="Unified Computer Actions"
+    title="Task Management"
+    icon="list-check"
+    href="/api-reference/agent/tasks"
+  >
+    Create, manage, and monitor AI-powered tasks programmatically
+  </Card>
+  <Card
+    title="UI Integration"
+    icon="window"
+    href="/api-reference/agent/ui"
+  >
+    WebSocket connections and real-time updates for custom UIs
+  </Card>
+</CardGroup>
+
+### Agent API Base URL
+```
+http://localhost:9991
+```
+
+### Example Task Creation
+```bash
+curl -X POST http://localhost:9991/tasks \
+  -H "Content-Type: application/json" \
+  -d '{
+    "description": "Download invoices from webmail and organize by date",
+    "priority": "HIGH"
+  }'
+```
+
+## 2. Desktop API (Direct Control)
+
+The Desktop API runs on port 9990 and provides low-level desktop control:
+
+<CardGroup cols={2}>
+  <Card
+    title="Computer Control"
     icon="keyboard"
     href="/api-reference/computer-use/unified-endpoint"
   >
-    Single endpoint for all desktop interactions including mouse, keyboard, and
-    screen operations
+    Direct control of mouse, keyboard, and screen capture
   </Card>
   <Card
     title="Usage Examples"
     icon="code"
     href="/api-reference/computer-use/examples"
   >
-    Code examples and snippets for common automation scenarios
+    Code examples for common automation scenarios
   </Card>
 </CardGroup>
 
-### Response Format
+### Desktop API Base URL
+```
+http://localhost:9990
+```
 
-All API responses follow a standard JSON format:
+### Example Desktop Control
+```bash
+curl -X POST http://localhost:9990/computer-use \
+  -H "Content-Type: application/json" \
+  -d '{"action": "screenshot"}'
+```
 
+### MCP Support
+
+The Desktop API also exposes an MCP (Model Context Protocol) endpoint:
+```
+http://localhost:9990/mcp
+```
+
+Connect your MCP client to access desktop control tools over SSE.
+
+## Authentication
+
+- **Local Access**: No authentication required by default
+- **Remote Access**: Configure authentication based on your security requirements
+- **Production**: Implement API keys, OAuth, or other authentication methods
+
+## Response Formats
+
+### Agent API Response
+```json
+{
+  "id": "task-123",
+  "status": "RUNNING",
+  "description": "Your task description",
+  "messages": [...],
+  "createdAt": "2024-01-01T00:00:00Z"
+}
+```
+
+### Desktop API Response
 ```json
 {
   "success": true,
@@ -53,26 +113,39 @@ All API responses follow a standard JSON format:
 }
 ```
 
-### Error Handling
+## Error Handling
 
-When an error occurs, the API returns:
+Both APIs use standard HTTP status codes:
 
-```json
-{
-  "success": false,
-  "data": null,
-  "error": "Detailed error message"
-}
-```
+| Status Code | Description                          |
+| ----------- | ------------------------------------ |
+| 200         | Success                              |
+| 201         | Created (new resource)               |
+| 400         | Bad Request - Invalid parameters     |
+| 401         | Unauthorized - Authentication failed |
+| 404         | Not Found - Resource doesn't exist   |
+| 500         | Internal Server Error                |
 
-Common HTTP status codes:
+## Rate Limiting
 
-| Status Code | Description                      |
-| ----------- | -------------------------------- |
-| 200         | Success                          |
-| 400         | Bad Request - Invalid parameters |
-| 500         | Internal Server Error            |
+- **Agent API**: No hard limits, but consider task queue capacity
+- **Desktop API**: No rate limiting, but rapid actions may impact desktop performance
 
-### Rate Limiting
+## Best Practices
 
-The API currently does not implement rate limiting, but excessive requests may impact performance of the virtual desktop environment.
+1. **Use Agent API for high-level automation** - Let the AI handle complexity
+2. **Use Desktop API for precise control** - When you need exact actions
+3. **Combine both APIs** - Create tasks via Agent API, monitor via Desktop API
+4. **Handle errors gracefully** - Implement retry logic for transient failures
+5. **Monitor resource usage** - Both APIs can be resource-intensive
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Get your APIs running
+  </Card>
+  <Card title="Task Examples" icon="code" href="/guides/task-creation">
+    See the APIs in action
+  </Card>
+</CardGroup>

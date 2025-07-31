@@ -1,34 +1,38 @@
-import React, { useRef, useEffect, useCallback } from "react";
+import React, { useRef, useEffect, useCallback, Fragment } from "react";
 import { Role, TaskStatus, GroupedMessages } from "@/types";
 import { MessageGroup } from "./MessageGroup";
 import { TextShimmer } from "../ui/text-shimmer";
 import { MessageAvatar } from "./MessageAvatar";
 import { Loader } from "../ui/loader";
+import { useChatSession } from "@/hooks/useChatSession";
+import { ChatInput } from "./ChatInput";
 
 interface ChatContainerProps {
-  taskStatus: TaskStatus;
-  control: Role;
-  groupedMessages: GroupedMessages[];
-  isLoadingSession: boolean;
-  isLoadingMoreMessages?: boolean;
-  hasMoreMessages?: boolean;
-  loadMoreMessages?: () => void;
   scrollRef?: React.RefObject<HTMLDivElement | null>;
   messageIdToIndex: Record<string, number>;
+  taskId: string;
 }
 
 
 export function ChatContainer({
-  taskStatus,
-  control,
-  groupedMessages,
-  isLoadingSession,
-  isLoadingMoreMessages = false,
-  hasMoreMessages = false,
-  loadMoreMessages,
   scrollRef,
+  taskId,
   messageIdToIndex,
 }: ChatContainerProps) {
+  const {
+    input,
+    setInput,
+    isLoading,
+    handleAddMessage,
+    groupedMessages,
+    taskStatus,
+    control,
+    isLoadingSession,
+    isLoadingMoreMessages,
+    hasMoreMessages,
+    loadMoreMessages,
+  } = useChatSession({ initialTaskId: taskId });
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Infinite scroll handler
@@ -72,37 +76,61 @@ export function ChatContainer({
   };
 
   return (
-    <div className="bg-bytebot-bronze-light-2 border border-bytebot-bronze-light-7 rounded-lg overflow-hidden">
+    <div className="h-full flex flex-col bg-bytebot-bronze-light-3">
       {isLoadingSession ? (
-        <div className="flex h-full items-center justify-center min-h-80 bg-bytebot-bronze-light-3">
+        <div className="flex h-full items-center justify-center min-h-80 bg-bytebot-bronze-light-3 border border-bytebot-bronze-light-7 rounded-lg overflow-hidden">
           <Loader size={32} />
         </div>
       ) : groupedMessages.length > 0 ? (
         <>
-          {groupedMessages.map((group, groupIndex) => (
-            <div key={groupIndex}>
-              <MessageGroup group={group} messageIdToIndex={messageIdToIndex} />
-            </div>
-          ))}
+          {/* Scrollable content area */}
+          <div className="flex-1 overflow-y-auto">
+            {groupedMessages.map((group, groupIndex) => (
+              <Fragment key={groupIndex}>
+                <MessageGroup group={group} messageIdToIndex={messageIdToIndex} taskStatus={taskStatus} />
+              </Fragment>
+            ))}
 
-          {taskStatus === TaskStatus.RUNNING && control === Role.ASSISTANT && (
-            <div className="flex items-center justify-start gap-4 px-4 py-3 bg-bytebot-bronze-light-3">
-              <MessageAvatar role={Role.ASSISTANT} />
-              <div className="flex items-center justify-start gap-2">
-                <div className="flex h-full items-center justify-center py-2">
-                  <Loader size={20} />
+            {taskStatus === TaskStatus.RUNNING && control === Role.ASSISTANT && (
+              <div className="flex items-center justify-start gap-4 px-4 py-3 bg-bytebot-bronze-light-3 border-x border-bytebot-bronze-light-7">
+                <MessageAvatar role={Role.ASSISTANT} />
+                <div className="flex items-center justify-start gap-2">
+                  <div className="flex h-full items-center justify-center py-2">
+                    <Loader size={20} />
+                  </div>
+                  <TextShimmer className="text-sm" duration={2}>
+                    Bytebot is working...
+                  </TextShimmer>
                 </div>
-                <TextShimmer className="text-sm" duration={2}>
-                  Bytebot is working...
-                </TextShimmer>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Loading indicator for infinite scroll at bottom */}
-          {isLoadingMoreMessages && (
-            <div className="flex justify-center py-4">
-              <Loader size={24} />
+            {/* Loading indicator for infinite scroll at bottom */}
+            {isLoadingMoreMessages && (
+              <div className="flex justify-center py-4">
+                <Loader size={24} />
+              </div>
+            )}
+
+            {/* This empty div is the target for scrolling */}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Fixed chat input at bottom */}
+          {[TaskStatus.RUNNING, TaskStatus.NEEDS_HELP].includes(taskStatus) && (
+            <div className="flex-shrink-0 z-10 bg-bytebot-bronze-light-3">
+              <div className="p-2 border-x border-b border-bytebot-bronze-light-7 rounded-b-lg">
+                <div className="bg-bytebot-bronze-light-2 border border-bytebot-bronze-light-7 rounded-lg p-2">
+                    <ChatInput
+                      input={input}
+                      isLoading={isLoading}
+                      onInputChange={setInput}
+                      onSend={handleAddMessage}
+                      minLines={1}
+                      placeholder="Add more details to your task..."
+                    />
+                </div>
+              </div>
             </div>
           )}
         </>
@@ -111,8 +139,6 @@ export function ChatContainer({
           <p className="">No messages yet...</p>
         </div>
       )}
-      {/* This empty div is the target for scrolling */}
-      <div ref={messagesEndRef} />
     </div>
   );
 }

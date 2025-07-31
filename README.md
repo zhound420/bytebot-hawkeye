@@ -1,390 +1,291 @@
 <div align="center">
 
-<img src="static/bytebot-logo.png" width="500" alt="Bytebot Logo">
+<img src="docs/images/bytebot-logo.png" width="500" alt="Bytebot Logo">
 
-# Bytebot – Self-Hosted AI Desktop Agent
+# Bytebot: Open-Source AI Desktop Agent
 
-**Automate any computer task with natural language**
+**An AI that has its own computer to complete tasks for you**
 
-[🌐 Website](https://bytebot.ai) • [📚 Docs](https://docs.bytebot.ai) • [💬 Discord](https://discord.com/invite/zcb5wA2t4u) • [𝕏 Twitter](https://x.com/bytebot_ai)
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/bytebot?referralCode=L9lKXQ)
+[![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](https://github.com/bytebot-ai/bytebot/tree/main/docker)
+[![License](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
+[![Discord](https://img.shields.io/discord/1234567890?color=7289da&label=discord)](https://discord.com/invite/d9ewZkWPTP)
+
+[🌐 Website](https://bytebot.ai) • [📚 Documentation](https://docs.bytebot.ai) • [💬 Discord](https://discord.com/invite/d9ewZkWPTP) • [𝕏 Twitter](https://x.com/bytebot_ai)
 
 </div>
 
-## What is Bytebot?
-
-Bytebot is a self-hosted AI desktop agent that transforms how you interact with computers. By combining powerful AI with a containerized Linux desktop, Bytebot can perform complex computer tasks. Think of it as your virtual employee that can actually use a computer – clicking, typing, browsing, and completing workflows just like a human would.
-
-## Why Self-Host Bytebot?
-
-- **Complete Privacy**: Your tasks and data never leave your infrastructure
-- **Full Control**: Customize the desktop environment and installed applications
-- **No Usage Limits**: Use your own LLM API keys without platform restrictions
-- **Secure Isolation**: Each desktop runs in its own container, isolated from your host
-
-## Examples
-
-https://github.com/user-attachments/assets/32a76e83-ea3a-4d5e-b34b-3b57f3604948
-
-https://github.com/user-attachments/assets/5f946df9-9161-4e7e-8262-9eda83ee7d22
-
-## ☁️ Deploy on Railway (1-Click)
-
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/bytebot?referralCode=L9lKXQ)
-
-1. Click the Deploy Now button in the Bytebot Railway template.
-2. Paste your `ANTHROPIC_API_KEY` in the single required environment variable.
-3. Press **Deploy**. Railway will spin up the Desktop, Agent, UI and Postgres services using pre-built container images, connect them via [private networking](https://docs.railway.com/guides/private-networking) and expose only the UI publicly.
-4. In about two minutes your agent will be live at your project's public URL.
-
-_For an in-depth guide see [here](https://docs.bytebot.ai/deployment/railway)._
-
 ---
 
-## 🚀 Quick Start
+## What is a Desktop Agent?
 
-### Prerequisites
+A desktop agent is an AI that has its own computer. Unlike browser-only agents or traditional RPA tools, Bytebot comes with a full virtual desktop where it can:
 
-- Docker ≥ 20.10
-- Docker Compose
-- AI API key from one of these providers:
-  - Anthropic ([get one here](https://console.anthropic.com)) - Claude models
-  - OpenAI ([get one here](https://platform.openai.com/api-keys)) - GPT models
-  - Google ([get one here](https://makersuite.google.com/app/apikey)) - Gemini models
+- Use any application (browsers, email clients, office tools, IDEs)
+- Download and organize files with its own file system
+- Log into websites and applications using password managers
+- Read and process documents, PDFs, and spreadsheets
+- Complete complex multi-step workflows across different programs
 
-### Start Your Desktop Agent (2 minutes)
+Think of it as a virtual employee with their own computer who can see the screen, move the mouse, type on the keyboard, and complete tasks just like a human would.
 
-1. **Clone and configure:**
+## Why Give AI Its Own Computer?
+
+When AI has access to a complete desktop environment, it unlocks capabilities that aren't possible with browser-only agents or API integrations:
+
+### Complete Task Autonomy
+
+Give Bytebot a task like "Download all invoices from our vendor portals and organize them by date" and it will:
+
+- Open the browser
+- Navigate to each portal
+- Handle authentication (including 2FA via password managers)
+- Download the files to its local file system
+- Organize them into folders
+- Generate reports or summaries as needed
+
+### Process Any Document
+
+Upload files directly to Bytebot's desktop and it can:
+
+- Read entire PDFs into its context
+- Extract data from complex documents
+- Cross-reference information across multiple files
+- Create new documents based on analysis
+- Handle formats that APIs can't access
+
+### Use Real Applications
+
+Bytebot isn't limited to web interfaces. It can:
+
+- Use desktop applications like text editors, VS Code, or email clients
+- Run scripts and command-line tools
+- Install new software as needed
+- Configure applications for specific workflows
+
+## Quick Start
+
+### Deploy in 2 Minutes
+
+**Option 1: Railway (Easiest)**
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/bytebot?referralCode=L9lKXQ)
+
+Just click and add your AI provider API key.
+
+**Option 2: Docker Compose**
 
 ```bash
 git clone https://github.com/bytebot-ai/bytebot.git
 cd bytebot
 
-# Configure your AI provider (choose one):
-echo "ANTHROPIC_API_KEY=your_api_key_here" > docker/.env    # For Claude
-# echo "OPENAI_API_KEY=your_api_key_here" > docker/.env     # For OpenAI
-# echo "GOOGLE_API_KEY=your_api_key_here" > docker/.env     # For Gemini
-```
+# Add your AI provider key (choose one)
+echo "ANTHROPIC_API_KEY=sk-ant-..." > docker/.env
+# Or: echo "OPENAI_API_KEY=sk-..." > docker/.env
+# Or: echo "GEMINI_API_KEY=..." > docker/.env
 
-2. **Start the agent stack:**
-
-```bash
 docker-compose -f docker/docker-compose.yml up -d
+
+# Open http://localhost:9992
 ```
 
-3. **Open the chat interface:**
+[Full deployment guide →](https://docs.bytebot.ai/quickstart)
+
+## How It Works
+
+Bytebot consists of four integrated components:
+
+1. **Virtual Desktop**: A complete Ubuntu Linux environment with pre-installed applications
+2. **AI Agent**: Understands your tasks and controls the desktop to complete them
+3. **Task Interface**: Web UI where you create tasks and watch Bytebot work
+4. **APIs**: REST endpoints for programmatic task creation and desktop control
+
+### Key Features
+
+- **Natural Language Tasks**: Just describe what you need done
+- **File Uploads**: Drop files onto tasks for Bytebot to process
+- **Live Desktop View**: Watch Bytebot work in real-time
+- **Takeover Mode**: Take control when you need to help or configure something
+- **Password Manager Support**: Install 1Password, Bitwarden, etc. for automatic authentication
+- **Persistent Environment**: Install programs and they stay available for future tasks
+
+## Example Tasks
+
+### Basic Examples
 
 ```
-http://localhost:9992
+"Go to Wikipedia and create a summary of quantum computing"
+"Research flights from NYC to London and create a comparison document"
+"Take screenshots of the top 5 news websites"
 ```
 
-That's it! Start chatting with your AI desktop agent. Watch it work in real-time through the embedded desktop viewer.
-
-### Example Tasks You Can Delegate
-
-- "Research the top 5 competitors for [product] and create a comparison spreadsheet"
-- "Fill out this web form with the data from my CSV file"
-- "Check my email and summarize important messages"
-- "Download all PDFs from this website and organize them by date"
-- "Monitor this webpage and alert me when the price drops below $50"
-
-## 🤖 Supported AI Models
-
-Bytebot supports multiple AI providers to power your desktop agent:
-
-- **Anthropic Claude**: Claude 3.5 Sonnet (default) - Best for complex reasoning and visual tasks
-- **OpenAI**: GPT-4, GPT-4o - Excellent for general automation tasks
-- **Google Gemini**: Gemini 1.5 Pro, Flash - Fast and efficient for routine tasks
-
-Choose the model that best fits your needs and budget. Simply set the appropriate API key in your environment configuration.
-
-## 🏗️ Architecture Overview
-
-Bytebot consists of four main components working together:
+### Document Processing
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        Your Browser                          │
-│                    http://localhost:9992                     │
-└─────────────────────┬───────────────────────────────────────┘
-                      │
-┌─────────────────────▼───────────────────────────────────────┐
-│                    Bytebot UI (Next.js)                      │
-│              • Task interface                                │
-│              • Desktop viewer (VNC)                          │
-│              • Task management                               │
-└─────────────────────┬───────────────────────────────────────┘
-                      │ WebSocket
-┌─────────────────────▼───────────────────────────────────────┐
-│                 Bytebot Agent (NestJS)                       │
-│              • Multi-LLM integration (Claude/GPT/Gemini)     │
-│              • Task orchestration                            │
-│              • Action planning                               │
-└─────────────────────┬───────────────────────────────────────┘
-                      │ REST API
-┌─────────────────────▼───────────────────────────────────────┐
-│              Bytebot Desktop (Ubuntu + XFCE)                 │
-│              • Full Linux desktop                            │
-│              • Browser, email, VSCode, office apps           │
-│              • Automation daemon (bytebotd)                  │
-└─────────────────────────────────────────────────────────────┘
+"Read the uploaded contracts.pdf and extract all payment terms and deadlines"
+"Process these 50 invoice PDFs and create a summary report"
+"Analyze this financial report and answer: What were the key risks mentioned?"
 ```
 
-## 🛠️ Key Features
+### Multi-Application Workflows
 
-### For End Users
-
-- **Natural Language Control**: Just describe what you want done
-- **Visual Feedback**: Watch the AI work in real-time
-- **Task History**: Review and replay previous automations
-- **Browser-Based**: No software to install on your machine
-
-### For Developers
-
-- **REST API**: Integrate desktop automation into your applications
-- **Extensible**: Add custom tools and applications to the desktop
-- **Scriptable**: Create complex workflows with the automation API
-- **Observable**: Full logging and debugging capabilities
-
-### For IT Teams
-
-- **Container-Based**: Easy deployment with Docker
-- **Resource Efficient**: Minimal overhead compared to VMs
-- **Network Isolated**: Secure by default with customizable access
-- **Scalable**: Run multiple instances for team use
-
-## 📊 System Requirements
-
-### Minimum (Single Agent)
-
-- 2 CPU cores
-- 4GB RAM
-- 10GB storage
-- Docker & Docker Compose
-
-### Recommended (Production)
-
-- 4+ CPU cores
-- 8GB+ RAM
-- 20GB+ storage
-- Linux host OS for best performance
-
-## 🔧 Configuration
-
-### Environment Variables
-
-Create `docker/.env`:
-
-```bash
-# Required - Choose one of these AI providers:
-ANTHROPIC_API_KEY=sk-ant-...      # For Claude models
-# OPENAI_API_KEY=sk-...           # For OpenAI models
-# GOOGLE_API_KEY=...              # For Google Gemini models
+```
+"Download last month's bank statements from our three banks and consolidate them"
+"Check all our vendor portals for new invoices and create a summary report"
+"Log into our CRM, export the customer list, and update records in the ERP system"
 ```
 
-### Desktop Customization
+## Programmatic Control
 
-Add applications or configurations by extending the Dockerfile:
-
-```dockerfile
-# docker/desktop/Dockerfile.custom
-FROM bytebot/desktop:latest
-
-# Install additional software
-RUN apt-get update && apt-get install -y \
-    libreoffice \
-    gimp \
-    your-custom-app
-
-# Copy custom configs
-COPY configs/.config /home/user/.config
-```
-
-## 🔒 Security Considerations
-
-- **API Keys**: Keep your AI provider API keys secure and never commit them
-- **Network**: By default, services are only accessible from localhost
-- **VNC**: Change the default VNC password for production use
-- **Updates**: Regularly update the container images for security patches
-
-## 🎯 Common Use Cases
-
-### Personal Productivity
-
-- Email management and responses
-- Calendar scheduling
-- Document organization
-- Web research and data collection
-
-### Business Automation
-
-- Form filling and data entry
-- Report generation
-- Competitive analysis
-- Customer support tasks
-
-### Development & Testing
-
-- UI testing automation
-- Cross-browser testing
-- API integration testing
-- Documentation screenshots
-
-## 🚦 Managing Your Agent
-
-### View Logs
-
-```bash
-docker-compose -f docker/docker-compose.yml logs -f
-```
-
-### Stop Services
-
-```bash
-docker-compose -f docker/docker-compose.yml down
-```
-
-### Update to Latest Version
-
-```bash
-docker-compose -f docker/docker-compose.yml pull
-docker-compose -f docker/docker-compose.yml up -d
-```
-
-### Reset Everything
-
-```bash
-docker-compose -f docker/docker-compose.yml down -v
-```
-
-## 📚 Advanced Usage
-
-### Programmatic Control
-
-Control Bytebot via REST API:
+### Create Tasks via API
 
 ```python
 import requests
 
-# Create a task
+# Simple task
 response = requests.post('http://localhost:9991/tasks', json={
-    'description': 'Search for flights from NYC to London next month',
+    'description': 'Download the latest sales report and create a summary'
 })
 
-task_id = response.json()['id']
-
-# Check task status
-status = requests.get(f'http://localhost:9991/tasks/{task_id}')
-print(status.json())
+# Task with file upload
+files = {'files': open('contracts.pdf', 'rb')}
+response = requests.post('http://localhost:9991/tasks',
+    data={'description': 'Review these contracts for important dates'},
+    files=files
+)
 ```
 
-### Direct Desktop Automation
+### Direct Desktop Control
 
-Use the computer control API for precise automation:
+```bash
+# Take a screenshot
+curl -X POST http://localhost:9990/computer-use \
+  -H "Content-Type: application/json" \
+  -d '{"action": "screenshot"}'
 
-The core container also exposes an [MCP](https://github.com/rekog-labs/MCP-Nest) endpoint.
-Connect your MCP client to `http://localhost:9990/mcp` to invoke these tools over SSE.
-
-```json
-{
-  "mcpServers": {
-    "bytebot": {
-      "command": "npx",
-      "args": [
-        "mcp-remote",
-        "http://127.0.0.1:9990/mcp",
-        "--transport",
-        "http-first"
-      ]
-    }
-  }
-}
+# Click at specific coordinates
+curl -X POST http://localhost:9990/computer-use \
+  -H "Content-Type: application/json" \
+  -d '{"action": "click_mouse", "coordinate": [500, 300]}'
 ```
 
-```javascript
-// Take screenshot
-POST http://localhost:9990/computer-use
-{
-  "action": "screenshot"
-}
+[Full API documentation →](https://docs.bytebot.ai/api-reference/introduction)
 
-// Click at coordinates
-POST http://localhost:9990/computer-use
-{
-  "action": "click_mouse",
-  "coordinate": [500, 300]
-}
+## Setting Up Your Desktop Agent
 
-// Type text
-POST http://localhost:9990/computer-use
-{
-  "action": "type_text",
-  "text": "Hello, Bytebot!"
-}
+### 1. Deploy Bytebot
 
-// Paste text (useful for special characters)
-POST http://localhost:9990/computer-use
-{
-  "action": "paste_text",
-  "text": "Special characters: ©®™€¥£"
-}
+Use one of the deployment methods above to get Bytebot running.
 
-// Switch applications
-POST http://localhost:9990/computer-use
-{
-  "action": "application",
-  "application": "firefox"  // Options: firefox, 1password, thunderbird, vscode, terminal, desktop, directory
-}
+### 2. Configure the Desktop
 
-// Write a file
-POST http://localhost:9990/computer-use
-{
-  "action": "write_file",
-  "path": "/home/user/example.txt",  // Absolute path or relative to /home/user/Desktop
-  "data": "SGVsbG8gV29ybGQh"  // Base64 encoded content
-}
+Use the Desktop tab in the UI to:
 
-// Read a file
-POST http://localhost:9990/computer-use
-{
-  "action": "read_file",
-  "path": "/home/user/example.txt"  // Returns base64 encoded content
-}
+- Install additional programs you need
+- Set up password managers for authentication
+- Configure applications with your preferences
+- Log into websites you want Bytebot to access
+
+### 3. Start Giving Tasks
+
+Create tasks in natural language and watch Bytebot complete them using the configured desktop.
+
+## Use Cases
+
+### Business Process Automation
+
+- Invoice processing and data extraction
+- Multi-system data synchronization
+- Report generation from multiple sources
+- Compliance checking across platforms
+
+### Development & Testing
+
+- Automated UI testing
+- Cross-browser compatibility checks
+- Documentation generation with screenshots
+- Code deployment verification
+
+### Research & Analysis
+
+- Competitive analysis across websites
+- Data gathering from multiple sources
+- Document analysis and summarization
+- Market research compilation
+
+## Architecture
+
+Bytebot is built with:
+
+- **Desktop**: Ubuntu 22.04 with XFCE, Firefox, VS Code, and other tools
+- **Agent**: NestJS service that coordinates AI and desktop actions
+- **UI**: Next.js application for task management
+- **AI Support**: Works with Anthropic Claude, OpenAI GPT, Google Gemini
+- **Deployment**: Docker containers for easy self-hosting
+
+## Why Self-Host?
+
+- **Data Privacy**: Everything runs on your infrastructure
+- **Full Control**: Customize the desktop environment as needed
+- **No Limits**: Use your own AI API keys without platform restrictions
+- **Flexibility**: Install any software, access any systems
+
+## Advanced Features
+
+### Multiple AI Providers
+
+Use any AI provider through our [LiteLLM integration](https://docs.bytebot.ai/deployment/litellm):
+
+- Azure OpenAI
+- AWS Bedrock
+- Local models via Ollama
+- 100+ other providers
+
+### Enterprise Deployment
+
+Deploy on Kubernetes with Helm:
+
+```bash
+helm repo add bytebot https://charts.bytebot.ai
+helm install bytebot bytebot/bytebot \
+  --set agent.env.ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-## 🤝 Contributing
+[Enterprise deployment guide →](https://docs.bytebot.ai/deployment/helm)
 
-We welcome contributions! Whether it's bug fixes, new features, or documentation improvements:
+## Community & Support
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 💬 Community & Support
-
-- **Discord**: Join our [community server](https://discord.com/invite/zcb5wA2t4u) for help and discussions
+- **Discord**: [Join our community](https://discord.com/invite/d9ewZkWPTP) for help and discussions
 - **Documentation**: Comprehensive guides at [docs.bytebot.ai](https://docs.bytebot.ai)
-- **Issues**: Report bugs on [GitHub](https://github.com/bytebot-ai/bytebot/issues)
+- **GitHub Issues**: Report bugs and request features
 
-## 🙏 Acknowledgments
+## Contributing
 
-Built with amazing open source projects:
+We welcome contributions! Whether it's:
 
-- [nutjs](https://github.com/nut-tree/nut.js) - Desktop automation framework
-- [Anthropic Claude](https://www.anthropic.com) - AI reasoning engine
-- [OpenAI](https://openai.com) - GPT models for automation
-- [Google AI](https://ai.google.dev) - Gemini models for efficient tasks
-- [noVNC](https://novnc.com) - Browser-based VNC client
-- Inspired by Anthropic's [computer-use demo](https://github.com/anthropics/anthropic-quickstarts)
+- 🐛 Bug fixes
+- ✨ New features
+- 📚 Documentation improvements
+- 🌐 Translations
 
-## 📄 License
+Please:
 
-Apache-2.0 license © 2025 Tantl Labs, Inc.
+1. Check existing [issues](https://github.com/bytebot-ai/bytebot/issues) first
+2. Open an issue to discuss major changes
+3. Submit PRs with clear descriptions
+4. Join our [Discord](https://discord.com/invite/d9ewZkWPTP) to discuss ideas
+
+## License
+
+Bytebot is open source under the Apache 2.0 license.
 
 ---
 
 <div align="center">
-<strong>Ready to give your AI its own computer?</strong><br>
-Start with the Quick Start guide above or dive into the <a href="https://docs.bytebot.ai">full documentation</a>.
+
+**Give your AI its own computer. See what it can do.**
+
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/bytebot?referralCode=L9lKXQ)
+
+<sub>Built by [Tantl Labs](https://tantl.com) and the open source community</sub>
+
 </div>

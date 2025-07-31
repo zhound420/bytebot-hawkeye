@@ -9,10 +9,12 @@ import {
   convertScrollActionToToolUseBlock,
   convertTypeKeysActionToToolUseBlock,
   convertTypeTextActionToToolUseBlock,
+  ImageContentBlock,
   MessageContentBlock,
   MessageContentType,
   ScreenshotToolUseBlock,
   ToolResultContentBlock,
+  UserActionContentBlock,
 } from '@bytebot/shared';
 import { Role } from '@prisma/client';
 import { MessagesService } from '../messages/messages.service';
@@ -54,36 +56,6 @@ export class InputCaptureService {
       this.capturing = true;
     });
 
-    this.socket.on('screenshot', async (shot: { image: string }) => {
-      if (!this.capturing || !taskId) return;
-      const toolUseId = randomUUID();
-      const screenshotBlock: ScreenshotToolUseBlock = {
-        type: MessageContentType.ToolUse,
-        name: 'computer_screenshot',
-        id: toolUseId,
-        input: {},
-      };
-      const toolResult: ToolResultContentBlock = {
-        type: MessageContentType.ToolResult,
-        tool_use_id: toolUseId,
-        content: [
-          {
-            type: MessageContentType.Image,
-            source: {
-              data: shot.image,
-              media_type: 'image/png',
-              type: 'base64',
-            },
-          },
-        ],
-      };
-      await this.messagesService.create({
-        content: [screenshotBlock, toolResult],
-        role: Role.USER,
-        taskId,
-      });
-    });
-
     this.socket.on(
       'screenshotAndAction',
       async (shot: { image: string }, action: any) => {
@@ -92,31 +64,8 @@ export class InputCaptureService {
         if (action.action !== 'click_mouse' && action.action !== 'drag_mouse')
           return;
 
-        // Create separate tool-use IDs for the screenshot and the mouse click.
-        const screenshotToolUseId = randomUUID();
-        const actionToolUseId = randomUUID();
-
-        const actionResult: ToolResultContentBlock = {
-          type: MessageContentType.ToolResult,
-          tool_use_id: actionToolUseId,
-          content: [
-            {
-              type: MessageContentType.Text,
-              text: `Input action '${action.action}' processed.`,
-            },
-          ],
-        };
-
-        // Screenshot tool-use and result blocks
-        const screenshotBlock: ScreenshotToolUseBlock = {
-          type: MessageContentType.ToolUse,
-          name: 'computer_screenshot',
-          id: screenshotToolUseId,
-          input: {},
-        };
-        const screenshotResult: ToolResultContentBlock = {
-          type: MessageContentType.ToolResult,
-          tool_use_id: screenshotToolUseId,
+        const userActionBlock: UserActionContentBlock = {
+          type: MessageContentType.UserAction,
           content: [
             {
               type: MessageContentType.Image,
@@ -129,31 +78,22 @@ export class InputCaptureService {
           ],
         };
 
-        const actionBlocks: MessageContentBlock[] = [];
-
+        const toolUseId = randomUUID();
         switch (action.action) {
           case 'drag_mouse':
-            actionBlocks.push(
-              convertDragMouseActionToToolUseBlock(action, actionToolUseId),
-              actionResult,
+            userActionBlock.content.push(
+              convertDragMouseActionToToolUseBlock(action, toolUseId),
             );
             break;
           case 'click_mouse':
-            actionBlocks.push(
-              convertClickMouseActionToToolUseBlock(action, actionToolUseId),
-              actionResult,
+            userActionBlock.content.push(
+              convertClickMouseActionToToolUseBlock(action, toolUseId),
             );
             break;
         }
 
         await this.messagesService.create({
-          content: [screenshotBlock, screenshotResult],
-          role: Role.USER,
-          taskId,
-        });
-
-        await this.messagesService.create({
-          content: actionBlocks,
+          content: [userActionBlock],
           role: Role.USER,
           taskId,
         });
@@ -163,62 +103,49 @@ export class InputCaptureService {
     this.socket.on('action', async (action: any) => {
       if (!this.capturing || !taskId) return;
       const toolUseId = randomUUID();
-      const blocks: MessageContentBlock[] = [];
-      const toolResult: ToolResultContentBlock = {
-        type: MessageContentType.ToolResult,
-        tool_use_id: toolUseId,
-        content: [
-          {
-            type: MessageContentType.Text,
-            text: `Input action '${action.action}' processed.`,
-          },
-        ],
+      const userActionBlock: UserActionContentBlock = {
+        type: MessageContentType.UserAction,
+        content: [],
       };
 
       switch (action.action) {
         case 'drag_mouse':
-          blocks.push(
+          userActionBlock.content.push(
             convertDragMouseActionToToolUseBlock(action, toolUseId),
-            toolResult,
           );
           break;
         case 'press_mouse':
-          blocks.push(
+          userActionBlock.content.push(
             convertPressMouseActionToToolUseBlock(action, toolUseId),
-            toolResult,
           );
           break;
         case 'type_keys':
-          blocks.push(
+          userActionBlock.content.push(
             convertTypeKeysActionToToolUseBlock(action, toolUseId),
-            toolResult,
           );
           break;
         case 'press_keys':
-          blocks.push(
+          userActionBlock.content.push(
             convertPressKeysActionToToolUseBlock(action, toolUseId),
-            toolResult,
           );
           break;
         case 'type_text':
-          blocks.push(
+          userActionBlock.content.push(
             convertTypeTextActionToToolUseBlock(action, toolUseId),
-            toolResult,
           );
           break;
         case 'scroll':
-          blocks.push(
+          userActionBlock.content.push(
             convertScrollActionToToolUseBlock(action, toolUseId),
-            toolResult,
           );
           break;
         default:
           this.logger.warn(`Unknown action ${action.action}`);
       }
 
-      if (blocks.length) {
+      if (userActionBlock.content.length > 0) {
         await this.messagesService.create({
-          content: blocks,
+          content: [userActionBlock],
           role: Role.USER,
           taskId,
         });

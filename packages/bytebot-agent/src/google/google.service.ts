@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
+  isComputerToolUseContentBlock,
+  isImageContentBlock,
+  isUserActionContentBlock,
   MessageContentBlock,
   MessageContentType,
   TextContentBlock,
@@ -9,6 +12,7 @@ import {
 import {
   BytebotAgentService,
   BytebotAgentInterrupt,
+  BytebotAgentResponse,
 } from '../agent/agent.types';
 import { Message, Role } from '@prisma/client';
 import { googleTools } from './google.tools';
@@ -27,11 +31,11 @@ export class GoogleService implements BytebotAgentService {
   private readonly logger = new Logger(GoogleService.name);
 
   constructor(private readonly configService: ConfigService) {
-    const apiKey = this.configService.get<string>('GOOGLE_API_KEY');
+    const apiKey = this.configService.get<string>('GEMINI_API_KEY');
 
     if (!apiKey) {
       this.logger.warn(
-        'GOOGLE_API_KEY is not set. GoogleService will not work properly.',
+        'GEMINI_API_KEY is not set. GoogleService will not work properly.',
       );
     }
 
@@ -46,7 +50,7 @@ export class GoogleService implements BytebotAgentService {
     model: string = DEFAULT_MODEL.name,
     useTools: boolean = true,
     signal?: AbortSignal,
-  ): Promise<MessageContentBlock[]> {
+  ): Promise<BytebotAgentResponse> {
     try {
       const maxTokens = 8192;
 
@@ -87,7 +91,14 @@ export class GoogleService implements BytebotAgentService {
         throw new Error('No parts found in content');
       }
 
-      return this.formatGoogleResponse(content.parts);
+      return {
+        contentBlocks: this.formatGoogleResponse(content.parts),
+        tokenUsage: {
+          inputTokens: response.usageMetadata?.promptTokenCount || 0,
+          outputTokens: response.usageMetadata?.candidatesTokenCount || 0,
+          totalTokens: response.usageMetadata?.totalTokenCount || 0,
+        },
+      };
     } catch (error) {
       if (error.message.includes('AbortError')) {
         throw new BytebotAgentInterrupt();
@@ -112,69 +123,93 @@ export class GoogleService implements BytebotAgentService {
 
       const parts: Part[] = [];
 
-      for (const block of messageContentBlocks) {
-        switch (block.type) {
-          case MessageContentType.Text:
+      if (
+        messageContentBlocks.every((block) => isUserActionContentBlock(block))
+      ) {
+        const userActionContentBlocks = messageContentBlocks.flatMap(
+          (block) => block.content,
+        );
+        for (const block of userActionContentBlocks) {
+          if (isComputerToolUseContentBlock(block)) {
             parts.push({
-              text: block.text,
+              text: `User performed action: ${block.name}\n${JSON.stringify(block.input, null, 2)}`,
             });
-            break;
-          case MessageContentType.ToolUse:
-            parts.push({
-              functionCall: {
-                id: block.id,
-                name: block.name,
-                args: block.input,
-              },
-            });
-            break;
-          case MessageContentType.Image:
+          } else if (isImageContentBlock(block)) {
             parts.push({
               inlineData: {
                 data: block.source.data,
                 mimeType: block.source.media_type,
               },
             });
-            break;
-          case MessageContentType.ToolResult: {
-            const toolResultContentBlock = block.content[0];
-            if (toolResultContentBlock.type === MessageContentType.Image) {
+          }
+        }
+      } else {
+        for (const block of messageContentBlocks) {
+          switch (block.type) {
+            case MessageContentType.Text:
+              parts.push({
+                text: block.text,
+              });
+              break;
+            case MessageContentType.ToolUse:
+              parts.push({
+                functionCall: {
+                  id: block.id,
+                  name: block.name,
+                  args: block.input,
+                },
+              });
+              break;
+            case MessageContentType.Image:
+              parts.push({
+                inlineData: {
+                  data: block.source.data,
+                  mimeType: block.source.media_type,
+                },
+              });
+              break;
+            case MessageContentType.ToolResult: {
+              const toolResultContentBlock = block.content[0];
+              if (toolResultContentBlock.type === MessageContentType.Image) {
+                parts.push({
+                  functionResponse: {
+                    id: block.tool_use_id,
+                    name: 'screenshot',
+                    response: {
+                      ...(!block.is_error && {
+                        output: 'screenshot successful',
+                      }),
+                      ...(block.is_error && { error: block.content[0] }),
+                    },
+                  },
+                });
+                parts.push({
+                  inlineData: {
+                    data: toolResultContentBlock.source.data,
+                    mimeType: toolResultContentBlock.source.media_type,
+                  },
+                });
+                break;
+              }
+
               parts.push({
                 functionResponse: {
                   id: block.tool_use_id,
-                  name: 'screenshot',
+                  name: this.getToolName(block.tool_use_id, messages),
                   response: {
-                    ...(!block.is_error && { output: 'screenshot successful' }),
+                    ...(!block.is_error && { output: block.content[0] }),
                     ...(block.is_error && { error: block.content[0] }),
                   },
                 },
               });
-              parts.push({
-                inlineData: {
-                  data: toolResultContentBlock.source.data,
-                  mimeType: toolResultContentBlock.source.media_type,
-                },
-              });
               break;
             }
-
-            parts.push({
-              functionResponse: {
-                id: block.tool_use_id,
-                name: this.getToolName(block.tool_use_id, messages),
-                response: {
-                  ...(!block.is_error && { output: block.content[0] }),
-                  ...(block.is_error && { error: block.content[0] }),
-                },
-              },
-            });
-            break;
+            default:
+              parts.push({
+                text: JSON.stringify(block),
+              });
+              break;
           }
-          default:
-            parts.push({
-              text: JSON.stringify(block),
-            });
-            break;
         }
       }
 
