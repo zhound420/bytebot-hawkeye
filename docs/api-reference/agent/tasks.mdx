@@ -34,9 +34,24 @@ Create a new task for the agent to process.
 
 ```json
 {
-  "description": "This is a description of the task"
+  "description": "This is a description of the task",
+  "priority": "MEDIUM" // Optional: LOW, MEDIUM, HIGH, URGENT
 }
 ```
+
+#### With File Upload
+
+To upload files with a task, use `multipart/form-data`:
+
+```bash
+curl -X POST http://localhost:9991/tasks \
+  -F "description=Analyze the uploaded contracts and extract key terms" \
+  -F "priority=HIGH" \
+  -F "files=@contract1.pdf" \
+  -F "files=@contract2.pdf"
+```
+
+Uploaded files are automatically saved to the desktop and can be referenced in the task description.
 
 #### Response
 
