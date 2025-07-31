@@ -183,6 +183,11 @@ export async function handleComputerToolUse(
 
     let image: string | null = null;
     try {
+      // Wait before taking screenshot to allow UI to settle
+      const delayMs = 750; // 750ms delay
+      logger.debug(`Waiting ${delayMs}ms before taking screenshot`);
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+
       logger.debug('Taking screenshot');
       image = await screenshot();
       logger.debug('Screenshot captured successfully');
