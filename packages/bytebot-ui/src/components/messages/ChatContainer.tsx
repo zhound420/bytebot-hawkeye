@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useCallback, Fragment } from "react";
-import { Role, TaskStatus, GroupedMessages } from "@/types";
+import { Role, TaskStatus } from "@/types";
 import { MessageGroup } from "./MessageGroup";
 import { TextShimmer } from "../ui/text-shimmer";
 import { MessageAvatar } from "./MessageAvatar";
@@ -12,7 +12,6 @@ interface ChatContainerProps {
   messageIdToIndex: Record<string, number>;
   taskId: string;
 }
-
 
 export function ChatContainer({
   scrollRef,
@@ -76,9 +75,9 @@ export function ChatContainer({
   };
 
   return (
-    <div className="h-full flex flex-col bg-bytebot-bronze-light-3">
+    <div className="bg-bytebot-bronze-light-3 flex h-full flex-col">
       {isLoadingSession ? (
-        <div className="flex h-full items-center justify-center min-h-80 bg-bytebot-bronze-light-3 border border-bytebot-bronze-light-7 rounded-lg overflow-hidden">
+        <div className="bg-bytebot-bronze-light-3 border-bytebot-bronze-light-7 flex h-full min-h-80 items-center justify-center overflow-hidden rounded-lg border">
           <Loader size={32} />
         </div>
       ) : groupedMessages.length > 0 ? (
@@ -87,23 +86,28 @@ export function ChatContainer({
           <div className="flex-1 overflow-y-auto">
             {groupedMessages.map((group, groupIndex) => (
               <Fragment key={groupIndex}>
-                <MessageGroup group={group} messageIdToIndex={messageIdToIndex} taskStatus={taskStatus} />
+                <MessageGroup
+                  group={group}
+                  messageIdToIndex={messageIdToIndex}
+                  taskStatus={taskStatus}
+                />
               </Fragment>
             ))}
 
-            {taskStatus === TaskStatus.RUNNING && control === Role.ASSISTANT && (
-              <div className="flex items-center justify-start gap-4 px-4 py-3 bg-bytebot-bronze-light-3 border-x border-bytebot-bronze-light-7">
-                <MessageAvatar role={Role.ASSISTANT} />
-                <div className="flex items-center justify-start gap-2">
-                  <div className="flex h-full items-center justify-center py-2">
-                    <Loader size={20} />
+            {taskStatus === TaskStatus.RUNNING &&
+              control === Role.ASSISTANT && (
+                <div className="bg-bytebot-bronze-light-3 border-bytebot-bronze-light-7 flex items-center justify-start gap-4 border-x px-4 py-3">
+                  <MessageAvatar role={Role.ASSISTANT} />
+                  <div className="flex items-center justify-start gap-2">
+                    <div className="flex h-full items-center justify-center py-2">
+                      <Loader size={20} />
+                    </div>
+                    <TextShimmer className="text-sm" duration={2}>
+                      Bytebot is working...
+                    </TextShimmer>
                   </div>
-                  <TextShimmer className="text-sm" duration={2}>
-                    Bytebot is working...
-                  </TextShimmer>
                 </div>
-              </div>
-            )}
+              )}
 
             {/* Loading indicator for infinite scroll at bottom */}
             {isLoadingMoreMessages && (
@@ -118,17 +122,17 @@ export function ChatContainer({
 
           {/* Fixed chat input at bottom */}
           {[TaskStatus.RUNNING, TaskStatus.NEEDS_HELP].includes(taskStatus) && (
-            <div className="flex-shrink-0 z-10 bg-bytebot-bronze-light-3">
-              <div className="p-2 border-x border-b border-bytebot-bronze-light-7 rounded-b-lg">
-                <div className="bg-bytebot-bronze-light-2 border border-bytebot-bronze-light-7 rounded-lg p-2">
-                    <ChatInput
-                      input={input}
-                      isLoading={isLoading}
-                      onInputChange={setInput}
-                      onSend={handleAddMessage}
-                      minLines={1}
-                      placeholder="Add more details to your task..."
-                    />
+            <div className="bg-bytebot-bronze-light-3 z-10 flex-shrink-0">
+              <div className="border-bytebot-bronze-light-7 rounded-b-lg border-x border-b p-2">
+                <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-7 rounded-lg border p-2">
+                  <ChatInput
+                    input={input}
+                    isLoading={isLoading}
+                    onInputChange={setInput}
+                    onSend={handleAddMessage}
+                    minLines={1}
+                    placeholder="Add more details to your task..."
+                  />
                 </div>
               </div>
             </div>

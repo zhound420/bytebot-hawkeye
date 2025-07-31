@@ -1,23 +1,24 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Header } from "@/components/layout/Header";
 import { TaskItem } from "@/components/tasks/TaskItem";
 import { TaskTabs, TabKey, TAB_CONFIGS } from "@/components/tasks/TaskTabs";
 import { Pagination } from "@/components/ui/pagination";
 import { fetchTasks, fetchTaskCounts } from "@/utils/taskUtils";
-import { Task, TaskStatus } from "@/types";
+import { Task } from "@/types";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { Suspense } from "react";
 
-export default function Tasks() {
+function TasksPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  
+
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // Initialize activeTab from URL params
   const getInitialTab = (): TabKey => {
     const tabParam = searchParams.get("tab");
@@ -26,7 +27,7 @@ export default function Tasks() {
     }
     return "ALL";
   };
-  
+
   const [activeTab, setActiveTab] = useState<TabKey>(getInitialTab);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
@@ -43,11 +44,12 @@ export default function Tasks() {
     const loadTasks = async () => {
       setIsLoading(true);
       try {
-        const statuses = activeTab === "ALL" ? undefined : TAB_CONFIGS[activeTab].statuses;
-        const result = await fetchTasks({ 
-          page: currentPage, 
+        const statuses =
+          activeTab === "ALL" ? undefined : TAB_CONFIGS[activeTab].statuses;
+        const result = await fetchTasks({
+          page: currentPage,
           limit: PAGE_SIZE,
-          statuses 
+          statuses,
         });
         setTasks(result.tasks);
         setTotal(result.total);
@@ -78,21 +80,21 @@ export default function Tasks() {
   // Sync activeTab with URL params when they change
   useEffect(() => {
     const tabParam = searchParams.get("tab");
-    const newTab: TabKey = (tabParam && Object.keys(TAB_CONFIGS).includes(tabParam)) 
-      ? tabParam as TabKey 
-      : "ALL";
-    
+    const newTab: TabKey =
+      tabParam && Object.keys(TAB_CONFIGS).includes(tabParam)
+        ? (tabParam as TabKey)
+        : "ALL";
+
     if (newTab !== activeTab) {
       setActiveTab(newTab);
       setCurrentPage(1);
     }
   }, [searchParams, activeTab]);
 
-
   const handleTabChange = (tab: TabKey) => {
     setActiveTab(tab);
     setCurrentPage(1);
-    
+
     // Update URL with the new tab
     const newSearchParams = new URLSearchParams(searchParams);
     if (tab === "ALL") {
@@ -100,7 +102,7 @@ export default function Tasks() {
     } else {
       newSearchParams.set("tab", tab);
     }
-    
+
     const newUrl = `/tasks${newSearchParams.toString() ? `?${newSearchParams.toString()}` : ""}`;
     router.push(newUrl, { scroll: false });
   };
@@ -116,7 +118,7 @@ export default function Tasks() {
       <main className="flex-1 overflow-scroll px-6 pt-6 pb-10">
         <div className="mx-auto max-w-3xl">
           <h1 className="mb-6 text-xl font-medium">Tasks</h1>
-          
+
           {!isLoading && (
             <TaskTabs
               activeTab={activeTab}
@@ -153,7 +155,7 @@ export default function Tasks() {
                   <TaskItem key={task.id} task={task} />
                 ))}
               </div>
-              
+
               {totalPages > 1 && (
                 <Pagination
                   currentPage={currentPage}
@@ -168,5 +170,22 @@ export default function Tasks() {
         </div>
       </main>
     </div>
+  );
+}
+
+function TasksPageFallback() {
+  return (
+    <div className="p-8 text-center">
+      <div className="border-bytebot-bronze-light-5 border-t-bytebot-bronze mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4"></div>
+      <p className="text-gray-500">Loading tasks...</p>
+    </div>
+  );
+}
+
+export default function TasksPage() {
+  return (
+    <Suspense fallback={<TasksPageFallback />}>
+      <TasksPageContent />
+    </Suspense>
   );
 }

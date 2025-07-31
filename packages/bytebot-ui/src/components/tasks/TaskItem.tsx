@@ -7,7 +7,6 @@ import {
   Tick02Icon,
   CancelCircleIcon,
   AlertCircleIcon,
-  TimeScheduleIcon,
 } from "@hugeicons/core-free-icons";
 import { Loader } from "@/components/ui/loader";
 import Link from "next/link";
@@ -58,14 +57,12 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
     const date = new Date(dateString);
     const today = new Date();
 
-    const isToday = 
+    const isToday =
       date.getDate() === today.getDate() &&
       date.getMonth() === today.getMonth() &&
       date.getFullYear() === today.getFullYear();
 
-    const formatString = isToday 
-      ? `'Today' h:mma`
-      : "MMMM d, yyyy h:mma";
+    const formatString = isToday ? `'Today' h:mma` : "MMMM d, yyyy h:mma";
 
     const formatted = format(date, formatString).toLowerCase();
     return capitalizeFirstChar(formatted);
@@ -87,10 +84,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
 
     return (
       <div className="flex items-center justify-center">
-        <HugeiconsIcon
-          icon={icon}
-          className={`h-5 w-5 ${color}`}
-        />
+        <HugeiconsIcon icon={icon} className={`h-5 w-5 ${color}`} />
       </div>
     );
   };
@@ -98,22 +92,20 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
   return (
     <Link href={`/tasks/${task.id}`} className="block">
       <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-7 hover:bg-bytebot-bronze-light-3 flex min-h-24 items-start rounded-lg border p-5 transition-colors">
-        <div className="flex-1 space-y-2 mb-0.5">
+        <div className="mb-0.5 flex-1 space-y-2">
           <div className="flex items-center justify-start space-x-2">
             <StatusIcon status={task.status} />
             <div className="text-byhtebot-bronze-dark-7 text-sm font-medium">
               {capitalizeFirstChar(task.description)}
             </div>
           </div>
-          <div className="text-xs flex items-center justify-start space-x-1.5 ml-7">
+          <div className="ml-7 flex items-center justify-start space-x-1.5 text-xs">
             <span className="text-bytebot-bronze-light-10">
               {formatDate(task.createdAt)}
             </span>
             {task.user && (
               <>
-                <span className="text-bytebot-bronze-light-10">
-                  •
-                </span>
+                <span className="text-bytebot-bronze-light-10">•</span>
                 <span className="text-bytebot-bronze-light-10">
                   {task.user.name || task.user.email}
                 </span>

@@ -18,7 +18,11 @@ interface TaskTabsProps {
 
 interface TabConfig {
   label: string;
-  icon: any;
+  icon:
+    | typeof Tick02Icon
+    | typeof CursorProgress04Icon
+    | typeof MultiplicationSignIcon
+    | typeof ListViewIcon;
   color: string;
   statuses: TaskStatus[];
 }
@@ -34,7 +38,12 @@ const TAB_CONFIGS: Record<TabKey, TabConfig> = {
     label: "Active",
     icon: CursorProgress04Icon,
     color: "text-bytebot-bronze-light-10",
-    statuses: [TaskStatus.PENDING, TaskStatus.RUNNING, TaskStatus.NEEDS_HELP, TaskStatus.NEEDS_REVIEW],
+    statuses: [
+      TaskStatus.PENDING,
+      TaskStatus.RUNNING,
+      TaskStatus.NEEDS_HELP,
+      TaskStatus.NEEDS_REVIEW,
+    ],
   },
   COMPLETED: {
     label: "Completed",
@@ -58,20 +67,20 @@ export const TaskTabs: React.FC<TaskTabsProps> = ({
   const tabs = Object.entries(TAB_CONFIGS) as [TabKey, TabConfig][];
 
   return (
-    <div className="border-b border-bytebot-bronze-light-7 mb-6">
+    <div className="border-bytebot-bronze-light-7 mb-6 border-b">
       <div className="flex overflow-x-auto">
         {tabs.map(([tabKey, config]) => {
           const isActive = activeTab === tabKey;
           const count = taskCounts[tabKey] || 0;
-          
+
           return (
             <button
               key={tabKey}
               onClick={() => onTabChange(tabKey)}
-              className={`flex items-center space-x-2 px-4 py-3 border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
+              className={`flex cursor-pointer items-center space-x-2 border-b-2 px-4 py-3 whitespace-nowrap transition-colors ${
                 isActive
                   ? "border-bytebot-bronze-dark-7 text-bytebot-bronze-dark-7"
-                  : "border-transparent text-bytebot-bronze-light-10 hover:text-bytebot-bronze-dark-7"
+                  : "text-bytebot-bronze-light-10 hover:text-bytebot-bronze-dark-7 border-transparent"
               }`}
             >
               <HugeiconsIcon
@@ -81,7 +90,7 @@ export const TaskTabs: React.FC<TaskTabsProps> = ({
               <span className="text-sm font-medium">{config.label}</span>
               {count > 0 && (
                 <span
-                  className={`text-xs px-2 py-0.5 rounded-full ${
+                  className={`rounded-full px-2 py-0.5 text-xs ${
                     isActive
                       ? "bg-bytebot-bronze-dark-7 text-white"
                       : "bg-bytebot-bronze-light-7 text-bytebot-bronze-light-11"
