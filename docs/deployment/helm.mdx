@@ -18,10 +18,10 @@ Helm provides a simple way to deploy Bytebot on Kubernetes clusters, with full c
 ## Quick Start
 
 <Steps>
-  <Step title="Add Bytebot Helm Repository">
+  <Step title="Clone Bytebot Repository">
     ```bash
-    helm repo add bytebot https://charts.bytebot.ai
-    helm repo update
+    git clone https://github.com/bytebot-ai/bytebot.git
+    cd bytebot
     ```
   </Step>
   
@@ -58,7 +58,7 @@ Helm provides a simple way to deploy Bytebot on Kubernetes clusters, with full c
   
   <Step title="Install Bytebot">
     ```bash
-    helm install bytebot bytebot/bytebot \
+    helm install bytebot ./helm \
       --namespace bytebot \
       --create-namespace \
       -f values.yaml
@@ -396,10 +396,10 @@ kubectl get pv,pvc -n bytebot
 helm repo update
 
 # Check changes
-helm diff upgrade bytebot bytebot/bytebot -n bytebot -f values.yaml
+helm diff upgrade bytebot ./helm -n bytebot -f values.yaml
 
 # Perform upgrade
-helm upgrade bytebot bytebot/bytebot -n bytebot -f values.yaml
+helm upgrade bytebot ./helm -n bytebot -f values.yaml
 
 # Rollback if needed
 helm rollback bytebot -n bytebot
