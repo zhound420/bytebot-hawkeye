@@ -245,8 +245,12 @@ Use any AI provider through our [LiteLLM integration](https://docs.bytebot.ai/de
 Deploy on Kubernetes with Helm:
 
 ```bash
-helm repo add bytebot https://charts.bytebot.ai
-helm install bytebot bytebot/bytebot \
+# Clone the repository
+git clone https://github.com/bytebot-ai/bytebot.git
+cd bytebot
+
+# Install with Helm
+helm install bytebot ./helm \
   --set agent.env.ANTHROPIC_API_KEY=sk-ant-...
 ```
 

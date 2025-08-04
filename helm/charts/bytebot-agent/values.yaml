@@ -32,9 +32,28 @@ env:
   DATABASE_URL: ""
   BYTEBOT_DESKTOP_BASE_URL: "http://bytebot-desktop:9990"
   BYTEBOT_LLM_PROXY_URL: ""
+  # Legacy API key values for backward compatibility
   ANTHROPIC_API_KEY: ""
   OPENAI_API_KEY: ""
   GEMINI_API_KEY: ""
+
+# New secret management structure
+apiKeys:
+  anthropic:
+    useExisting: false
+    secretName: ""
+    secretKey: "anthropic-api-key"
+    value: ""  # Only used if useExisting is false
+  openai:
+    useExisting: false
+    secretName: ""
+    secretKey: "openai-api-key"
+    value: ""  # Only used if useExisting is false
+  gemini:
+    useExisting: false
+    secretName: ""
+    secretKey: "gemini-api-key"
+    value: ""  # Only used if useExisting is false
 
 config:
   databaseUrl: "postgresql://postgres:postgres@bytebot-postgresql:5432/bytebotdb"
