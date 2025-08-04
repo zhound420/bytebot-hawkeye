@@ -31,21 +31,60 @@ spec:
         - name: BYTEBOT_LLM_PROXY_URL
           value: {{ .Values.config.llmProxyUrl | default .Values.env.BYTEBOT_LLM_PROXY_URL | quote }}
         {{- end }}
+        {{- /* Anthropic API Key */ -}}
         {{- if .Values.env.ANTHROPIC_API_KEY }}
         - name: ANTHROPIC_API_KEY
           valueFrom:
             secretKeyRef:
               name: {{ include "bytebot-agent.fullname" . }}-secrets
               key: anthropic-api-key
+        {{- else if .Values.apiKeys.anthropic.useExisting }}
+        - name: ANTHROPIC_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.apiKeys.anthropic.secretName }}
+              key: {{ .Values.apiKeys.anthropic.secretKey }}
+        {{- else if .Values.apiKeys.anthropic.value }}
+        - name: ANTHROPIC_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "bytebot-agent.fullname" . }}-secrets
+              key: anthropic-api-key
         {{- end }}
+        {{- /* OpenAI API Key */ -}}
         {{- if .Values.env.OPENAI_API_KEY }}
         - name: OPENAI_API_KEY
           valueFrom:
             secretKeyRef:
               name: {{ include "bytebot-agent.fullname" . }}-secrets
               key: openai-api-key
+        {{- else if .Values.apiKeys.openai.useExisting }}
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.apiKeys.openai.secretName }}
+              key: {{ .Values.apiKeys.openai.secretKey }}
+        {{- else if .Values.apiKeys.openai.value }}
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "bytebot-agent.fullname" . }}-secrets
+              key: openai-api-key
         {{- end }}
+        {{- /* Gemini API Key */ -}}
         {{- if .Values.env.GEMINI_API_KEY }}
+        - name: GEMINI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "bytebot-agent.fullname" . }}-secrets
+              key: gemini-api-key
+        {{- else if .Values.apiKeys.gemini.useExisting }}
+        - name: GEMINI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.apiKeys.gemini.secretName }}
+              key: {{ .Values.apiKeys.gemini.secretKey }}
+        {{- else if .Values.apiKeys.gemini.value }}
         - name: GEMINI_API_KEY
           valueFrom:
             secretKeyRef:

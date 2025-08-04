@@ -30,12 +30,15 @@ Helm provides a simple way to deploy Bytebot on Kubernetes clusters, with full c
     
     ```yaml
     # values.yaml
-    agent:
+    bytebot-agent:
       # Set your API keys (one or more)
-      env:
-        ANTHROPIC_API_KEY: "sk-ant-your-key-here"
-        OPENAI_API_KEY: "sk-your-key-here"
-        GEMINI_API_KEY: "your-key-here"
+      apiKeys:
+        anthropic:
+          value: "sk-ant-your-key-here"
+        openai:
+          value: "sk-your-key-here"
+        gemini:
+          value: "your-key-here"
     
     # Resource limits
     desktop:
@@ -97,15 +100,56 @@ Helm provides a simple way to deploy Bytebot on Kubernetes clusters, with full c
 <Tabs>
   <Tab title="Direct API Keys">
     ```yaml
-    agent:
+    bytebot-agent:
+      # Method 1: Using the new apiKeys structure (recommended)
+      apiKeys:
+        anthropic:
+          useExisting: false
+          value: "sk-ant-your-key-here"
+        openai:
+          useExisting: false
+          value: "sk-your-key-here"
+        gemini:
+          useExisting: false
+          value: "your-key-here"
+    
+      # Method 2: Legacy approach (backward compatible)
       env:
-        # Add one or more API keys
         ANTHROPIC_API_KEY: "sk-ant-your-key-here"
         OPENAI_API_KEY: "sk-your-key-here"
         GEMINI_API_KEY: "your-key-here"
     ```
     
     Bytebot automatically detects available providers based on which API keys are set. Models are pre-configured within Bytebot.
+  </Tab>
+  <Tab title="External Secrets">
+    If you're using a secrets management solution (e.g., Vault, Sealed Secrets, External Secrets Operator), you can reference existing secrets:
+    
+    ```yaml
+    bytebot-agent:
+      apiKeys:
+        anthropic:
+          useExisting: true
+          secretName: "my-api-keys"  # Name of your existing secret
+          secretKey: "anthropic-key"  # Key within the secret
+        openai:
+          useExisting: true
+          secretName: "my-api-keys"
+          secretKey: "openai-key"
+        gemini:
+          useExisting: true
+          secretName: "my-api-keys"
+          secretKey: "gemini-key"
+    ```
+    
+    Example of creating the external secret manually:
+    ```bash
+    kubectl create secret generic my-api-keys \
+      --namespace bytebot \
+      --from-literal=anthropic-key="sk-ant-your-key-here" \
+      --from-literal=openai-key="sk-your-key-here" \
+      --from-literal=gemini-key="your-key-here"
+    ```
   </Tab>
   <Tab title="LiteLLM Proxy">
     ```yaml

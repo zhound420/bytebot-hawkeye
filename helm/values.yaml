@@ -51,10 +51,29 @@ bytebot-agent:
     database: bytebotdb
     username: postgres
     password: postgres
+  # Legacy API key configuration (for backward compatibility)
   env:
     ANTHROPIC_API_KEY: ""
     OPENAI_API_KEY: ""
     GEMINI_API_KEY: ""
+  
+  # New secret management structure - use this for better security
+  apiKeys:
+    anthropic:
+      useExisting: false
+      secretName: ""
+      secretKey: "anthropic-api-key"
+      value: ""  # Only used if useExisting is false
+    openai:
+      useExisting: false
+      secretName: ""
+      secretKey: "openai-api-key"
+      value: ""  # Only used if useExisting is false
+    gemini:
+      useExisting: false
+      secretName: ""
+      secretKey: "gemini-api-key"
+      value: ""  # Only used if useExisting is false
   resources:
     limits:
       memory: "2Gi"
