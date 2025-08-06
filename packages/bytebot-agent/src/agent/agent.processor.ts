@@ -23,7 +23,6 @@ import {
   ToolResultContentBlock,
   TextContentBlock,
 } from '@bytebot/shared';
-import { ConfigService } from '@nestjs/config';
 import { InputCaptureService } from './input-capture.service';
 import { OnEvent } from '@nestjs/event-emitter';
 import { OpenAIService } from '../openai/openai.service';
@@ -37,8 +36,9 @@ import {
   AGENT_SYSTEM_PROMPT,
   SUMMARIZATION_SYSTEM_PROMPT,
 } from './agent.constants';
-import { SummariesService } from 'src/summaries/summaries.service';
+import { SummariesService } from '../summaries/summaries.service';
 import { handleComputerToolUse } from './agent.computer-use';
+import { ProxyService } from '../proxy/proxy.service';
 
 @Injectable()
 export class AgentProcessor {
@@ -55,12 +55,14 @@ export class AgentProcessor {
     private readonly anthropicService: AnthropicService,
     private readonly openaiService: OpenAIService,
     private readonly googleService: GoogleService,
+    private readonly proxyService: ProxyService,
     private readonly inputCaptureService: InputCaptureService,
   ) {
     this.services = {
       anthropic: this.anthropicService,
       openai: this.openaiService,
       google: this.googleService,
+      proxy: this.proxyService,
     };
     this.logger.log('AgentProcessor initialized');
   }

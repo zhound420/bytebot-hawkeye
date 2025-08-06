@@ -139,7 +139,7 @@ export function getLabel(block: ComputerToolUseContentBlock) {
       return "Click";
     }
 
-    return `${block.input.button.charAt(0).toUpperCase() + block.input.button.slice(1)} Click`;
+    return `${block.input.button?.charAt(0).toUpperCase() + block.input.button?.slice(1)} Click`;
   }
 
   if (isDragMouseToolUseBlock(block)) {

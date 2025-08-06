@@ -105,9 +105,10 @@ export class TasksController {
         // Map proxy response to BytebotAgentModel format
         const models: BytebotAgentModel[] = proxyModels.data.map(
           (model: any) => ({
-            provider: 'anthropic',
-            name: model.model_name,
+            provider: 'proxy',
+            name: model.litellm_params.model,
             title: model.model_name,
+            contextWindow: 128000,
           }),
         );
 
