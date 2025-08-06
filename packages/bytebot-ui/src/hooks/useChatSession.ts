@@ -5,7 +5,6 @@ import {
   fetchTaskMessages,
   fetchTaskProcessedMessages,
   fetchTaskById,
-  startTask,
   takeOverTask,
   resumeTask,
   cancelTask,
@@ -251,51 +250,6 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
     }
   }, [currentTaskId, joinTask, leaveTask]);
 
-  const handleStartTask = async () => {
-    if (!input.trim()) return;
-
-    setIsLoading(true);
-
-    try {
-      const description = input;
-      setInput("");
-
-      startNewConversation();
-
-      // Send request to start a new task or continue existing task
-      const task = await startTask({
-        description,
-        model: {
-          provider: "anthropic",
-          name: "claude-opus-4-20250514",
-          title: "Claude Opus 4",
-        },
-      });
-
-      if (task) {
-        // Store the task ID for polling
-        setCurrentTaskId(task.id);
-      } else {
-        // Add error message to chat
-        const errorMessage: Message = {
-          id: Date.now().toString(),
-          content: [
-            {
-              type: MessageContentType.Text,
-              text: "Sorry, there was an error processing your request. Please try again.",
-            },
-          ],
-          role: Role.ASSISTANT,
-        };
-
-        processedMessageIds.current.add(errorMessage.id);
-        setMessages((prev) => [...prev, errorMessage]);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleAddMessage = async () => {
     if (!input.trim()) return;
 
@@ -327,24 +281,6 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  // Start a new conversation (clears current task)
-  const startNewConversation = () => {
-    // Clear the current task ID
-    setCurrentTaskId(null);
-
-    // Clear messages
-    setMessages([]);
-
-    // Clear processed message IDs
-    processedMessageIds.current = new Set();
-
-    // Reset pagination state
-    setCurrentPage(1);
-    setHasMoreMessages(true);
-
-    console.log("Started new conversation");
   };
 
   const handleTakeOverTask = async () => {
@@ -401,8 +337,6 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
     hasMoreMessages,
     loadMoreMessages,
     handleAddMessage,
-    handleStartTask,
-    startNewConversation,
     handleTakeOverTask,
     handleResumeTask,
     handleCancelTask,

@@ -14,6 +14,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { AuthModule } from '@thallesp/nestjs-better-auth';
 import { auth } from './auth';
 import { SummariesModule } from './summaries/summaries.modue';
+import { ProxyModule } from './proxy/proxy.module';
 
 const authEnabled = process.env.AUTH_ENABLED === 'true';
 
@@ -38,6 +39,7 @@ const authEnabled = process.env.AUTH_ENABLED === 'true';
     AnthropicModule,
     OpenAIModule,
     GoogleModule,
+    ProxyModule,
     PrismaModule,
   ],
   controllers: [AppController],
