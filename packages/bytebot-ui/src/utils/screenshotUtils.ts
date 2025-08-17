@@ -58,10 +58,12 @@ export function getScreenshotForScrollPosition(
 
   // Find the screenshot marker that's most visible at 350px down from the top of the container
   const targetViewPosition = 350; // 350px down from top
-  let bestVisibleMessageIndex = 0;
-  let bestVisibleBlockIndex = 0;
+  let bestVisibleMessageIndex = -1; // Start with -1 to detect when no markers are found
+  let bestVisibleBlockIndex = -1;
   let bestVisibility = 0;
   let minDistanceFromTarget = Infinity;
+  let lastMarkerMessageIndex = -1;
+  let lastMarkerBlockIndex = -1;
 
   screenshotElements.forEach((element) => {
     const messageIndex = parseInt((element as HTMLElement).dataset.messageIndex || '0');
@@ -69,6 +71,13 @@ export function getScreenshotForScrollPosition(
     const elementTop = (element as HTMLElement).offsetTop;
     const elementHeight = (element as HTMLElement).offsetHeight;
     const elementBottom = elementTop + elementHeight;
+    
+    // Keep track of the last (bottommost) marker
+    if (messageIndex > lastMarkerMessageIndex || 
+        (messageIndex === lastMarkerMessageIndex && blockIndex > lastMarkerBlockIndex)) {
+      lastMarkerMessageIndex = messageIndex;
+      lastMarkerBlockIndex = blockIndex;
+    }
     
     // Distance from top of container (accounting for scroll)
     const distanceFromViewportTop = elementTop - containerScrollTop;
@@ -100,6 +109,35 @@ export function getScreenshotForScrollPosition(
       }
     }
   });
+
+  // If no markers are visible, check if we've scrolled past all markers
+  if (bestVisibleMessageIndex === -1 && lastMarkerMessageIndex !== -1) {
+    // Check if we're scrolled past the last marker
+    const lastMarker = Array.from(screenshotElements).find(element => {
+      const msgIdx = parseInt((element as HTMLElement).dataset.messageIndex || '0');
+      const blockIdx = parseInt((element as HTMLElement).dataset.blockIndex || '0');
+      return msgIdx === lastMarkerMessageIndex && blockIdx === lastMarkerBlockIndex;
+    });
+    
+    if (lastMarker) {
+      const lastMarkerTop = (lastMarker as HTMLElement).offsetTop;
+      if (containerScrollTop > lastMarkerTop) {
+        // We're scrolled past the last marker, use it
+        bestVisibleMessageIndex = lastMarkerMessageIndex;
+        bestVisibleBlockIndex = lastMarkerBlockIndex;
+      } else {
+        // We're before the first marker, use the first one
+        bestVisibleMessageIndex = 0;
+        bestVisibleBlockIndex = 0;
+      }
+    }
+  }
+
+  // If still no marker found, default to first screenshot
+  if (bestVisibleMessageIndex === -1) {
+    bestVisibleMessageIndex = 0;
+    bestVisibleBlockIndex = 0;
+  }
 
   // Find the most recent screenshot at or before this message and block index
   let bestScreenshot: ScreenshotData | null = null;
