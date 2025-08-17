@@ -1,36 +1,44 @@
 import React, { useRef, useEffect, useCallback, Fragment } from "react";
-import { Role, TaskStatus } from "@/types";
+import { Role, TaskStatus, GroupedMessages } from "@/types";
 import { MessageGroup } from "./MessageGroup";
 import { TextShimmer } from "../ui/text-shimmer";
 import { MessageAvatar } from "./MessageAvatar";
 import { Loader } from "../ui/loader";
-import { useChatSession } from "@/hooks/useChatSession";
 import { ChatInput } from "./ChatInput";
 
 interface ChatContainerProps {
   scrollRef?: React.RefObject<HTMLDivElement | null>;
   messageIdToIndex: Record<string, number>;
   taskId: string;
+  input: string;
+  setInput: (value: string) => void;
+  isLoading: boolean;
+  handleAddMessage: () => Promise<void>;
+  groupedMessages: GroupedMessages[];
+  taskStatus: TaskStatus;
+  control: Role;
+  isLoadingSession: boolean;
+  isLoadingMoreMessages: boolean;
+  hasMoreMessages: boolean;
+  loadMoreMessages: () => Promise<void>;
 }
 
 export function ChatContainer({
   scrollRef,
   taskId,
   messageIdToIndex,
+  input,
+  setInput,
+  isLoading,
+  handleAddMessage,
+  groupedMessages,
+  taskStatus,
+  control,
+  isLoadingSession,
+  isLoadingMoreMessages,
+  hasMoreMessages,
+  loadMoreMessages,
 }: ChatContainerProps) {
-  const {
-    input,
-    setInput,
-    isLoading,
-    handleAddMessage,
-    groupedMessages,
-    taskStatus,
-    control,
-    isLoadingSession,
-    isLoadingMoreMessages,
-    hasMoreMessages,
-    loadMoreMessages,
-  } = useChatSession({ initialTaskId: taskId });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 

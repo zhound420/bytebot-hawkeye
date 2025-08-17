@@ -16,17 +16,19 @@ export function extractScreenshots(messages: Message[]): ScreenshotData[] {
   
   messages.forEach((message, messageIndex) => {
     message.content.forEach((block, blockIndex) => {
-      // Check if this is a tool result block with an image
+      // Check if this is a tool result block with images
       if (isToolResultContentBlock(block) && block.content && block.content.length > 0) {
-        const imageBlock = block.content[0];
-        if (isImageContentBlock(imageBlock)) {
-          screenshots.push({
-            id: `${message.id}-${blockIndex}`,
-            base64Data: imageBlock.source.data,
-            messageIndex,
-            blockIndex,
-          });
-        }
+        // Check ALL content items in the tool result, not just the first one
+        block.content.forEach((contentItem, contentIndex) => {
+          if (isImageContentBlock(contentItem)) {
+            screenshots.push({
+              id: `${message.id}-${blockIndex}-${contentIndex}`,
+              base64Data: contentItem.source.data,
+              messageIndex,
+              blockIndex,
+            });
+          }
+        });
       }
     });
   });
