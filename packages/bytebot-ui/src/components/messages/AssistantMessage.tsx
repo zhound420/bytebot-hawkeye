@@ -52,13 +52,16 @@ export function AssistantMessage({
                     block.content &&
                     block.content.length > 0
                   ) {
-                    block.content.map((contentBlock) => {
-                      if (isImageContentBlock(contentBlock)) {
-                        return (
+                    // Check ALL content items in the tool result, not just the first one
+                    const markers: React.ReactNode[] = [];
+                    block.content.forEach((contentItem, contentIndex) => {
+                      if (isImageContentBlock(contentItem)) {
+                        markers.push(
                           <div
-                            key={blockIndex}
+                            key={`${blockIndex}-${contentIndex}`}
                             data-message-index={messageIdToIndex[message.id]}
                             data-block-index={blockIndex}
+                            data-content-index={contentIndex}
                             style={{
                               position: "absolute",
                               width: 0,
@@ -69,6 +72,7 @@ export function AssistantMessage({
                         );
                       }
                     });
+                    return markers;
                   }
                   return null;
                 })}
@@ -95,22 +99,27 @@ export function AssistantMessage({
                   block.content &&
                   block.content.length > 0
                 ) {
-                  const imageBlock = block.content[0];
-                  if (isImageContentBlock(imageBlock)) {
-                    return (
-                      <div
-                        key={blockIndex}
-                        data-message-index={messageIdToIndex[message.id]}
-                        data-block-index={blockIndex}
-                        style={{
-                          position: "absolute",
-                          width: 0,
-                          height: 0,
-                          overflow: "hidden",
-                        }}
-                      />
-                    );
-                  }
+                  // Check ALL content items in the tool result, not just the first one
+                  const markers: React.ReactNode[] = [];
+                  block.content.forEach((contentItem, contentIndex) => {
+                    if (isImageContentBlock(contentItem)) {
+                      markers.push(
+                        <div
+                          key={`${blockIndex}-${contentIndex}`}
+                          data-message-index={messageIdToIndex[message.id]}
+                          data-block-index={blockIndex}
+                          data-content-index={contentIndex}
+                          style={{
+                            position: "absolute",
+                            width: 0,
+                            height: 0,
+                            overflow: "hidden",
+                          }}
+                        />
+                      );
+                    }
+                  });
+                  return markers;
                 }
                 return null;
               })}
