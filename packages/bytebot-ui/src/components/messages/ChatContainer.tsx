@@ -25,7 +25,6 @@ interface ChatContainerProps {
 
 export function ChatContainer({
   scrollRef,
-  taskId,
   messageIdToIndex,
   input,
   setInput,
@@ -39,7 +38,6 @@ export function ChatContainer({
   hasMoreMessages,
   loadMoreMessages,
 }: ChatContainerProps) {
-
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Infinite scroll handler
