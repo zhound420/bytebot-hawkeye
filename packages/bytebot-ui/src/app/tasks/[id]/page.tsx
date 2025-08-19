@@ -30,8 +30,17 @@ export default function TaskPage() {
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const {
     messages,
+    groupedMessages,
     taskStatus,
     control,
+    input,
+    setInput,
+    isLoading,
+    isLoadingSession,
+    isLoadingMoreMessages,
+    hasMoreMessages,
+    loadMoreMessages,
+    handleAddMessage,
     handleTakeOverTask,
     handleResumeTask,
     handleCancelTask,
@@ -78,6 +87,13 @@ export default function TaskPage() {
     messages,
     scrollContainerRef: chatContainerRef,
   });
+
+  // For inactive tasks, auto-load all messages for proper screenshot navigation
+  useEffect(() => {
+    if (isTaskInactive() && hasMoreMessages && !isLoadingMoreMessages) {
+      loadMoreMessages();
+    }
+  }, [isTaskInactive(), hasMoreMessages, isLoadingMoreMessages, loadMoreMessages]);
 
   // Map each message ID to its flat index for screenshot scroll logic
   const messageIdToIndex = React.useMemo(() => {
@@ -178,6 +194,17 @@ export default function TaskPage() {
                 scrollRef={chatContainerRef}
                 messageIdToIndex={messageIdToIndex}
                 taskId={taskId}
+                input={input}
+                setInput={setInput}
+                isLoading={isLoading}
+                handleAddMessage={handleAddMessage}
+                groupedMessages={groupedMessages}
+                taskStatus={taskStatus}
+                control={control}
+                isLoadingSession={isLoadingSession}
+                isLoadingMoreMessages={isLoadingMoreMessages}
+                hasMoreMessages={hasMoreMessages}
+                loadMoreMessages={loadMoreMessages}
               />
             </div>
           </div>

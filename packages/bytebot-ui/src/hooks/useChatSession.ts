@@ -105,28 +105,18 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
 
   // Load more messages function for infinite scroll
   const loadMoreMessages = useCallback(async () => {
-    console.log("loadMoreMessages called with state:", {
-      currentTaskId,
-      isLoadingMoreMessages,
-      hasMoreMessages,
-      currentPage,
-    });
-
     if (!currentTaskId || isLoadingMoreMessages || !hasMoreMessages) {
       console.log("loadMoreMessages early return");
       return;
     }
 
-    console.log("Starting to load more messages");
     setIsLoadingMoreMessages(true);
     try {
       const nextPage = currentPage + 1;
-      console.log("Fetching page:", nextPage);
       const newMessages = await fetchTaskMessages(currentTaskId, {
         limit: 10,
         page: nextPage,
       });
-      console.log("Received messages:", newMessages.length);
 
       if (newMessages.length === 0) {
         setHasMoreMessages(false);
