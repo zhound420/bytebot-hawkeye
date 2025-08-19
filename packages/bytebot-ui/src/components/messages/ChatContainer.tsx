@@ -90,8 +90,8 @@ export function ChatContainer({
         </div>
       ) : groupedMessages.length > 0 ? (
         <>
-          {/* Scrollable content area */}
-          <div className="flex-1 overflow-y-auto">
+          {/* Content area - scrolling handled by parent */}
+          <div className="flex-1">
             {groupedMessages.map((group, groupIndex) => (
               <Fragment key={groupIndex}>
                 <MessageGroup

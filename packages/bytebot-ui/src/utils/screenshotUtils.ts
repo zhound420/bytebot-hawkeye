@@ -52,7 +52,6 @@ export function getScreenshotForScrollPosition(
   if (screenshotElements.length === 0) {
     return screenshots[screenshots.length - 1] || null;
   }
-
   const containerScrollTop = scrollContainer.scrollTop;
   const containerHeight = scrollContainer.clientHeight;
 
@@ -125,21 +124,16 @@ export function getScreenshotForScrollPosition(
         // We're scrolled past the last marker, use it
         bestVisibleMessageIndex = lastMarkerMessageIndex;
         bestVisibleBlockIndex = lastMarkerBlockIndex;
-      } else {
-        // We're before the first marker, use the first one
-        bestVisibleMessageIndex = 0;
-        bestVisibleBlockIndex = 0;
       }
     }
   }
 
-  // If still no marker found, default to first screenshot
+  // If still no marker found, return null to keep current screenshot
   if (bestVisibleMessageIndex === -1) {
-    bestVisibleMessageIndex = 0;
-    bestVisibleBlockIndex = 0;
+    return null;
   }
 
-  // Find the most recent screenshot at or before this message and block index
+  // Find the most recent screenshot at or before the best visible marker
   let bestScreenshot: ScreenshotData | null = null;
   for (const screenshot of screenshots) {
     if (
@@ -148,13 +142,7 @@ export function getScreenshotForScrollPosition(
     ) {
       bestScreenshot = screenshot;
     }
-    // Don't break - we want to continue to find the best match
   }
   
-  // If no screenshot found at or before this marker, use the first screenshot
-  if (!bestScreenshot && screenshots.length > 0) {
-    bestScreenshot = screenshots[0];
-  }
-  
-  return bestScreenshot || screenshots[0];
+  return bestScreenshot;
 }

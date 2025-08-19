@@ -21,7 +21,7 @@ export function AssistantMessage({
     <div className={
       cn(
         "bg-bytebot-bronze-light-3 flex items-start justify-start gap-2 px-4 py-3 border-x border-bytebot-bronze-light-7",
-        ![TaskStatus.RUNNING, TaskStatus.NEEDS_HELP].includes(taskStatus) && "border-b border-bytebot-bronze-light-7 rounded-b-lg"
+        ![TaskStatus.RUNNING, TaskStatus.NEEDS_HELP].includes(taskStatus) && !group.take_over && "border-b border-bytebot-bronze-light-7 rounded-b-lg"
       )}
     >
       <MessageAvatar role={group.role} />

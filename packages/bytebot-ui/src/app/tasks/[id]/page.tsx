@@ -88,6 +88,13 @@ export default function TaskPage() {
     scrollContainerRef: chatContainerRef,
   });
 
+  // For inactive tasks, auto-load all messages for proper screenshot navigation
+  useEffect(() => {
+    if (isTaskInactive() && hasMoreMessages && !isLoadingMoreMessages) {
+      loadMoreMessages();
+    }
+  }, [isTaskInactive(), hasMoreMessages, isLoadingMoreMessages, loadMoreMessages]);
+
   // Map each message ID to its flat index for screenshot scroll logic
   const messageIdToIndex = React.useMemo(() => {
     const map: Record<string, number> = {};
