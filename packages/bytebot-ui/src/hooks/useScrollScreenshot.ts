@@ -17,18 +17,30 @@ export function useScrollScreenshot({ messages, scrollContainerRef }: UseScrollS
     const screenshots = extractScreenshots(messages);
     setAllScreenshots(screenshots);
     
-    // Set initial screenshot (latest one) with a small delay to ensure container is ready
-    if (screenshots.length > 0) {
+    // Only set initial screenshot if we don't have one yet
+    if (screenshots.length > 0 && !currentScreenshot) {
       setTimeout(() => {
         const initialScreenshot = getScreenshotForScrollPosition(
           screenshots,
           messages,
           scrollContainerRef.current
         );
-        setCurrentScreenshot(initialScreenshot);
+        if (initialScreenshot) {
+          setCurrentScreenshot(initialScreenshot);
+        } else {
+          setCurrentScreenshot(screenshots[screenshots.length - 1]);
+        }
       }, 100);
-    } else {
+    } else if (screenshots.length === 0) {
       setCurrentScreenshot(null);
+    } else if (screenshots.length > 0 && currentScreenshot) {
+      // When messages update, trigger a re-check
+      setTimeout(() => {
+        if (scrollContainerRef.current) {
+          const event = new Event('scroll');
+          scrollContainerRef.current.dispatchEvent(event);
+        }
+      }, 300);
     }
   }, [messages, scrollContainerRef]);
 
@@ -37,38 +49,45 @@ export function useScrollScreenshot({ messages, scrollContainerRef }: UseScrollS
     if (!scrollContainerRef.current) return;
 
     const container = scrollContainerRef.current;
+    let mutationTimeout: NodeJS.Timeout;
     const observer = new MutationObserver(() => {
-      // When the DOM changes, trigger a scroll event to update screenshot selection
-      const event = new Event('scroll');
-      container.dispatchEvent(event);
+      clearTimeout(mutationTimeout);
+      mutationTimeout = setTimeout(() => {
+        const event = new Event('scroll');
+        container.dispatchEvent(event);
+      }, 200);
     });
 
     observer.observe(container, { childList: true, subtree: true });
 
-    return () => observer.disconnect();
+    return () => {
+      clearTimeout(mutationTimeout);
+      observer.disconnect();
+    };
   }, [scrollContainerRef, allScreenshots.length]);
 
-  // Store the actual scrolling element
-  const actualScrollElementRef = useRef<HTMLElement | null>(null);
 
   // Handle scroll events to update current screenshot
-  const handleScroll = useCallback((scrollElement?: HTMLElement) => {
+  const handleScroll = useCallback((scrollElement: HTMLElement) => {
     if (allScreenshots.length === 0) return;
 
     const now = Date.now();
+    if (now - lastScrollTime.current < 100) return;
     lastScrollTime.current = now;
 
     setTimeout(() => {
       if ((Date.now() - now) <= 150 && allScreenshots.length > 0) {
-        const scrollContainer = scrollElement || actualScrollElementRef.current || scrollContainerRef.current;
-        const screenshot = getScreenshotForScrollPosition(allScreenshots, messages, scrollContainer);
-        // Only update if screenshot actually changed
-        if (screenshot?.id !== currentScreenshot?.id) {
-          setCurrentScreenshot(screenshot);
-        }
+        setCurrentScreenshot(prevScreenshot => {
+          const screenshot = getScreenshotForScrollPosition(allScreenshots, messages, scrollElement);
+          
+          if (screenshot && screenshot.id !== prevScreenshot?.id) {
+            return screenshot;
+          }
+          return prevScreenshot;
+        });
       }
     }, 50);
-  }, [allScreenshots, messages, scrollContainerRef, currentScreenshot]);
+  }, [allScreenshots, messages]);
 
   // Attach scroll listener
   useEffect(() => {
@@ -76,39 +95,16 @@ export function useScrollScreenshot({ messages, scrollContainerRef }: UseScrollS
     if (!container) return;
 
     const scrollHandler = (e: Event) => {
-      const scrollElement = e.target as HTMLElement;
-      actualScrollElementRef.current = scrollElement;
-      handleScroll(scrollElement);
+      // Only handle scroll events from the actual container
+      if (e.target === container) {
+        handleScroll(container);
+      }
     };
 
-    const cleanupFunctions: (() => void)[] = [];
-
-    // Attach to container and all scrollable child/parent elements
-    [container, ...container.querySelectorAll('*')].forEach((element) => {
-      const style = getComputedStyle(element);
-      const hasScroll = element.scrollHeight > element.clientHeight;
-      const hasOverflow = ['auto', 'scroll'].includes(style.overflow) || ['auto', 'scroll'].includes(style.overflowY);
-      
-      if (hasScroll || hasOverflow) {
-        element.addEventListener('scroll', scrollHandler, { passive: true });
-        cleanupFunctions.push(() => element.removeEventListener('scroll', scrollHandler));
-      }
-    });
-
-    // Also check parent elements
-    let parent = container.parentElement;
-    let level = 0;
-    while (parent && level < 3) {
-      const style = getComputedStyle(parent);
-      if (parent.scrollHeight > parent.clientHeight || ['auto', 'scroll'].includes(style.overflow) || ['auto', 'scroll'].includes(style.overflowY)) {
-        parent.addEventListener('scroll', scrollHandler, { passive: true });
-        cleanupFunctions.push(() => parent?.removeEventListener('scroll', scrollHandler));
-      }
-      parent = parent.parentElement;
-      level++;
-    }
+    // Only attach to the container itself
+    container.addEventListener('scroll', scrollHandler, { passive: true });
     
-    return () => cleanupFunctions.forEach(cleanup => cleanup());
+    return () => container.removeEventListener('scroll', scrollHandler);
   }, [handleScroll, scrollContainerRef]);
 
   return {

@@ -8,21 +8,11 @@ interface ScreenshotViewerProps {
 }
 
 export function ScreenshotViewer({ screenshot, className = '' }: ScreenshotViewerProps) {
-  const [isVisible, setIsVisible] = useState(true);
   const [currentScreenshot, setCurrentScreenshot] = useState(screenshot);
 
   useEffect(() => {
     if (screenshot?.id !== currentScreenshot?.id) {
-      // Start fade out
-      setIsVisible(false);
-      
-      // After fade out completes, update screenshot and fade in
-      const timeout = setTimeout(() => {
-        setCurrentScreenshot(screenshot);
-        setIsVisible(true);
-      }, 75); // Half of the transition duration
-      
-      return () => clearTimeout(timeout);
+      setCurrentScreenshot(screenshot);
     }
   }, [screenshot, currentScreenshot]);
 
@@ -44,9 +34,7 @@ export function ScreenshotViewer({ screenshot, className = '' }: ScreenshotViewe
         src={`data:image/png;base64,${currentScreenshot.base64Data}`}
         alt="Task screenshot"
         fill
-        className={`object-contain transition-opacity duration-150 ease-in-out ${
-          isVisible ? 'opacity-100' : 'opacity-0'
-        }`}
+        className="object-contain"
         priority
       />
     </div>
