@@ -50,10 +50,6 @@ export class CreateTaskDto {
   createdBy?: Role;
 
   @IsOptional()
-  @IsString()
-  userId?: string;
-
-  @IsOptional()
   model?: any;
 
   @IsOptional()

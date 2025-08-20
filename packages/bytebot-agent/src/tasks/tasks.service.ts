@@ -53,7 +53,6 @@ export class TasksService {
           status: TaskStatus.PENDING,
           createdBy: createTaskDto.createdBy || Role.USER,
           model: createTaskDto.model,
-          ...(createTaskDto.userId ? { userId: createTaskDto.userId } : {}),
           ...(createTaskDto.scheduledFor
             ? { scheduledFor: createTaskDto.scheduledFor }
             : {}),
@@ -175,15 +174,6 @@ export class TasksService {
     const [tasks, total] = await Promise.all([
       this.prisma.task.findMany({
         where: whereClause,
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
-          },
-        },
         orderBy: {
           createdAt: 'desc',
         },
@@ -206,13 +196,6 @@ export class TasksService {
       const task = await this.prisma.task.findUnique({
         where: { id },
         include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
-          },
           files: true,
         },
       });

@@ -4,29 +4,21 @@ import {
   Post,
   Body,
   Param,
-  Patch,
   Delete,
   HttpStatus,
   HttpCode,
-  UseGuards,
   Query,
-  Req,
   HttpException,
 } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
-import { UpdateTaskDto } from './dto/update-task.dto';
 import { Message, Task } from '@prisma/client';
 import { AddTaskMessageDto } from './dto/add-task-message.dto';
 import { MessagesService } from '../messages/messages.service';
-import { AuthGuard } from '@thallesp/nestjs-better-auth';
-import { Request } from 'express';
 import { ANTHROPIC_MODELS } from '../anthropic/anthropic.constants';
 import { OPENAI_MODELS } from '../openai/openai.constants';
 import { GOOGLE_MODELS } from '../google/google.constants';
 import { BytebotAgentModel } from 'src/agent/agent.types';
-
-const authEnabled = process.env.AUTH_ENABLED === 'true';
 
 const geminiApiKey = process.env.GEMINI_API_KEY;
 const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
@@ -41,7 +33,6 @@ const models = [
 ];
 
 @Controller('tasks')
-@UseGuards(...(authEnabled ? [AuthGuard] : []))
 export class TasksController {
   constructor(
     private readonly tasksService: TasksService,
@@ -50,14 +41,7 @@ export class TasksController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async create(
-    @Body() createTaskDto: CreateTaskDto,
-    @Req() req: Request,
-  ): Promise<Task> {
-    // Add user ID if auth is enabled and user is authenticated
-    if (authEnabled && (req as any).user?.id) {
-      createTaskDto.userId = (req as any).user.id;
-    }
+  async create(@Body() createTaskDto: CreateTaskDto): Promise<Task> {
     return this.tasksService.create(createTaskDto);
   }
 
