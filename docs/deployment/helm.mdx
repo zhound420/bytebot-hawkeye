@@ -5,7 +5,7 @@ description: "Deploy Bytebot on Kubernetes using Helm charts"
 
 # Deploy Bytebot on Kubernetes with Helm
 
-Helm provides a simple way to deploy Bytebot on Kubernetes clusters, with full control over resource allocation and configuration.
+Helm provides a simple way to deploy Bytebot on Kubernetes clusters.
 
 ## Prerequisites
 
@@ -13,49 +13,30 @@ Helm provides a simple way to deploy Bytebot on Kubernetes clusters, with full c
 - Helm 3.x installed
 - kubectl configured
 - 8GB+ available memory in cluster
-- StorageClass for persistent volumes
 
 ## Quick Start
 
 <Steps>
-  <Step title="Clone Bytebot Repository">
+  <Step title="Clone Repository">
     ```bash
     git clone https://github.com/bytebot-ai/bytebot.git
     cd bytebot
     ```
   </Step>
   
-  <Step title="Create Configuration">
-    Create a `values.yaml` file with your settings:
+  <Step title="Configure API Keys">
+    Create a `values.yaml` file with at least one API key:
     
     ```yaml
-    # values.yaml
     bytebot-agent:
-      # Set your API keys (one or more)
       apiKeys:
         anthropic:
           value: "sk-ant-your-key-here"
-        openai:
-          value: "sk-your-key-here"
-        gemini:
-          value: "your-key-here"
-    
-    # Resource limits
-    desktop:
-      resources:
-        requests:
-          memory: "2Gi"
-          cpu: "1"
-        limits:
-          memory: "4Gi"
-          cpu: "2"
-    
-    # Enable ingress for external access
-    ui:
-      ingress:
-        enabled: true
-        hostname: bytebot.your-domain.com
-        # tls: true  # Enable for HTTPS
+        # Optional: Add more providers
+        # openai:
+        #   value: "sk-your-key-here"
+        # gemini:
+        #   value: "your-key-here"
     ```
   </Step>
   
@@ -68,118 +49,39 @@ Helm provides a simple way to deploy Bytebot on Kubernetes clusters, with full c
     ```
   </Step>
   
-  <Step title="Check Deployment Status">
-    ```bash
-    # Watch pods come up
-    kubectl get pods -n bytebot -w
-    
-    # Check service endpoints
-    kubectl get svc -n bytebot
-    ```
-  </Step>
-  
   <Step title="Access Bytebot">
-    If using ingress:
     ```bash
-    # Your Bytebot UI will be available at:
-    https://bytebot.your-domain.com
-    ```
-    
-    Or use port-forward for local access:
-    ```bash
+    # Port-forward for local access
     kubectl port-forward -n bytebot svc/bytebot-ui 9992:9992
+    
     # Access at http://localhost:9992
     ```
   </Step>
 </Steps>
 
-## Configuration Options
+## Basic Configuration
 
-### AI Provider Configuration
+### API Keys
 
-<Tabs>
-  <Tab title="Direct API Keys">
-    ```yaml
-    bytebot-agent:
-      # Method 1: Using the new apiKeys structure (recommended)
-      apiKeys:
-        anthropic:
-          useExisting: false
-          value: "sk-ant-your-key-here"
-        openai:
-          useExisting: false
-          value: "sk-your-key-here"
-        gemini:
-          useExisting: false
-          value: "your-key-here"
-    
-      # Method 2: Legacy approach (backward compatible)
-      env:
-        ANTHROPIC_API_KEY: "sk-ant-your-key-here"
-        OPENAI_API_KEY: "sk-your-key-here"
-        GEMINI_API_KEY: "your-key-here"
-    ```
-    
-    Bytebot automatically detects available providers based on which API keys are set. Models are pre-configured within Bytebot.
-  </Tab>
-  <Tab title="External Secrets">
-    If you're using a secrets management solution (e.g., Vault, Sealed Secrets, External Secrets Operator), you can reference existing secrets:
-    
-    ```yaml
-    bytebot-agent:
-      apiKeys:
-        anthropic:
-          useExisting: true
-          secretName: "my-api-keys"  # Name of your existing secret
-          secretKey: "anthropic-key"  # Key within the secret
-        openai:
-          useExisting: true
-          secretName: "my-api-keys"
-          secretKey: "openai-key"
-        gemini:
-          useExisting: true
-          secretName: "my-api-keys"
-          secretKey: "gemini-key"
-    ```
-    
-    Example of creating the external secret manually:
-    ```bash
-    kubectl create secret generic my-api-keys \
-      --namespace bytebot \
-      --from-literal=anthropic-key="sk-ant-your-key-here" \
-      --from-literal=openai-key="sk-your-key-here" \
-      --from-literal=gemini-key="your-key-here"
-    ```
-  </Tab>
-  <Tab title="LiteLLM Proxy">
-    ```yaml
-    agent:
-      env:
-        BYTEBOT_LLM_PROXY_URL: "http://litellm-proxy:4000"
-    
-    # Deploy LiteLLM separately with your model configuration
-    litellm:
-      config: |
-        model_list:
-          - model_name: claude-3-5-sonnet
-            litellm_params:
-              model: claude-3-5-sonnet-20241022
-              api_key: ${ANTHROPIC_API_KEY}
-          - model_name: gpt-4o
-            litellm_params:
-              model: azure/gpt-4o
-              api_base: https://your-azure.openai.azure.com/
-              api_key: ${AZURE_API_KEY}
-    ```
-    
-    See our [LiteLLM guide](/deployment/litellm) for detailed setup.
-  </Tab>
-</Tabs>
-
-### Resource Configuration
+Configure at least one AI provider:
 
 ```yaml
-# Desktop container resources
+bytebot-agent:
+  apiKeys:
+    anthropic:
+      value: "sk-ant-your-key-here"
+    openai:
+      value: "sk-your-key-here"
+    gemini:
+      value: "your-key-here"
+```
+
+### Resource Limits (Optional)
+
+Adjust resources based on your needs:
+
+```yaml
+# Desktop container (where automation runs)
 desktop:
   resources:
     requests:
@@ -188,268 +90,97 @@ desktop:
     limits:
       memory: "4Gi"
       cpu: "2"
-  
-  # Persistent storage for desktop
-  persistence:
-    enabled: true
-    size: "10Gi"
-    storageClass: "standard"  # Your storage class
 
-# Agent resources
+# Agent (AI orchestration)
 agent:
   resources:
     requests:
       memory: "1Gi"
       cpu: "500m"
-    limits:
-      memory: "2Gi"
-      cpu: "1"
-  
-  replicaCount: 1  # Always 1 - agent manages a single desktop
-
-# UI resources
-ui:
-  resources:
-    requests:
-      memory: "256Mi"
-      cpu: "100m"
-    limits:
-      memory: "512Mi"
-      cpu: "500m"
-
-# PostgreSQL resources
-postgresql:
-  resources:
-    requests:
-      memory: "256Mi"
-      cpu: "250m"
-    limits:
-      memory: "1Gi"
-      cpu: "1"
-  persistence:
-    enabled: true
-    size: "8Gi"
 ```
 
-### Networking & Security
+### External Access (Optional)
+
+Enable ingress for domain-based access:
 
 ```yaml
-# Ingress configuration
 ui:
   ingress:
     enabled: true
-    className: "nginx"  # Your ingress class
-    hostname: bytebot.example.com
+    hostname: bytebot.your-domain.com
     tls: true
-    annotations:
-      cert-manager.io/cluster-issuer: "letsencrypt-prod"
-      nginx.ingress.kubernetes.io/proxy-body-size: "100m"
-
-# Network policies
-networkPolicy:
-  enabled: true
-  allowExternal: true
-
-# Pod security
-podSecurityContext:
-  runAsNonRoot: true
-  runAsUser: 1000
-  fsGroup: 1000
-
-# Enable authentication
-auth:
-  enabled: true
-  type: "basic"  # or "oauth"
-  username: "admin"
-  password: "changeme"  # Change this!
 ```
 
-### Production Configuration
+## Accessing Bytebot
 
-```yaml
-# Single instance deployment
-agent:
-  replicaCount: 1  # Agent handles one desktop
-
-desktop:
-  # Single desktop instance
-  replicaCount: 1
-
-# PostgreSQL with backups
-postgresql:
-  persistence:
-    enabled: true
-    size: "20Gi"
-  backup:
-    enabled: true
-    schedule: "0 2 * * *"  # Daily at 2 AM
-```
-
-## Advanced Deployment Scenarios
-
-### GPU Support
-
-Enable GPU for AI acceleration:
-
-```yaml
-desktop:
-  gpu:
-    enabled: true
-    type: "nvidia"  # or "amd"
-  resources:
-    limits:
-      nvidia.com/gpu: 1
-```
-
-
-### Custom Images
-
-Use your own container images:
-
-```yaml
-images:
-  desktop:
-    repository: "your-registry/bytebot-desktop"
-    tag: "custom-1.0"
-    pullPolicy: "Always"
-  agent:
-    repository: "your-registry/bytebot-agent"
-    tag: "custom-1.0"
-  ui:
-    repository: "your-registry/bytebot-ui"
-    tag: "custom-1.0"
-
-imagePullSecrets:
-  - name: "your-registry-secret"
-```
-
-## Monitoring & Observability
-
-### Prometheus Metrics
-
-```yaml
-metrics:
-  enabled: true
-  serviceMonitor:
-    enabled: true
-    namespace: "monitoring"
-  
-  # Grafana dashboards
-  dashboards:
-    enabled: true
-    namespace: "monitoring"
-```
-
-### Logging
-
-```yaml
-logging:
-  level: "info"  # debug, info, warn, error
-  format: "json"
-  
-  # Send to external logging
-  fluentd:
-    enabled: true
-    host: "fluentd.logging.svc.cluster.local"
-    port: 24224
-```
-
-## Backup & Restore
-
-### Automated Backups
-
-```yaml
-backup:
-  enabled: true
-  schedule: "0 2 * * *"  # Daily at 2 AM
-  retention: 7  # Keep 7 days
-  destination:
-    type: "s3"
-    bucket: "bytebot-backups"
-    region: "us-east-1"
-```
-
-### Manual Backup
+### Local Access (Recommended)
 
 ```bash
-# Backup database
-kubectl exec -n bytebot bytebot-postgresql-0 -- pg_dump -U postgres bytebot > backup.sql
+kubectl port-forward -n bytebot svc/bytebot-ui 9992:9992
+```
 
-# Backup desktop data
-kubectl cp bytebot/bytebot-desktop-0:/home/user ./desktop-backup
+Access at: http://localhost:9992
+
+### External Access
+
+If you configured ingress:
+- Access at: https://bytebot.your-domain.com
+
+## Verifying Deployment
+
+Check that all pods are running:
+
+```bash
+kubectl get pods -n bytebot
+```
+
+Expected output:
+```
+NAME                              READY   STATUS    RESTARTS   AGE
+bytebot-agent-xxxxx               1/1     Running   0          2m
+bytebot-desktop-xxxxx             1/1     Running   0          2m
+bytebot-postgresql-0              1/1     Running   0          2m
+bytebot-ui-xxxxx                 1/1     Running   0          2m
 ```
 
 ## Troubleshooting
 
-### Common Issues
+### Pods Not Starting
 
-<AccordionGroup>
-  <Accordion title="Pods stuck in Pending">
-    Check resource availability:
-    ```bash
-    kubectl describe pod -n bytebot <pod-name>
-    kubectl top nodes
-    ```
-    
-    Common causes:
-    - Insufficient CPU/memory
-    - No nodes match node selector
-    - PVC cannot be provisioned
-  </Accordion>
-  
-  <Accordion title="Desktop connection issues">
-    Check service connectivity:
-    ```bash
-    kubectl logs -n bytebot deployment/bytebot-desktop
-    kubectl exec -n bytebot deployment/bytebot-ui -- curl http://bytebot-desktop:9990/health
-    ```
-  </Accordion>
-  
-  <Accordion title="Agent API errors">
-    Verify API keys and connectivity:
-    ```bash
-    kubectl logs -n bytebot deployment/bytebot-agent
-    kubectl get secret -n bytebot bytebot-agent -o yaml
-    ```
-  </Accordion>
-</AccordionGroup>
+Check pod status:
+```bash
+kubectl describe pod -n bytebot <pod-name>
+```
 
-### Debug Commands
+Common issues:
+- Insufficient memory/CPU: Check node resources with `kubectl top nodes`
+- Missing API keys: Verify your values.yaml configuration
+
+### Connection Issues
+
+Test service connectivity:
+```bash
+kubectl logs -n bytebot deployment/bytebot-agent
+```
+
+### View Logs
 
 ```bash
-# Get all resources
-kubectl get all -n bytebot
-
-# Describe problematic pod
-kubectl describe pod -n bytebot <pod-name>
-
-# Check events
-kubectl get events -n bytebot --sort-by='.lastTimestamp'
-
-# View logs
+# All logs
 kubectl logs -n bytebot -l app=bytebot --tail=100
 
-# Check persistent volumes
-kubectl get pv,pvc -n bytebot
+# Specific component
+kubectl logs -n bytebot deployment/bytebot-agent
 ```
 
 ## Upgrading
 
 ```bash
-# Update repo
-helm repo update
-
-# Check changes
-helm diff upgrade bytebot ./helm -n bytebot -f values.yaml
-
-# Perform upgrade
+# Update your values.yaml as needed, then:
 helm upgrade bytebot ./helm -n bytebot -f values.yaml
-
-# Rollback if needed
-helm rollback bytebot -n bytebot
 ```
 
-## Uninstall
+## Uninstalling
 
 ```bash
 # Remove Bytebot
@@ -457,22 +188,98 @@ helm uninstall bytebot -n bytebot
 
 # Clean up namespace
 kubectl delete namespace bytebot
-
-# Remove PVCs (careful - this deletes data!)
-kubectl delete pvc -n bytebot --all
 ```
+
+## Advanced Configuration
+
+<AccordionGroup>
+  <Accordion title="Using External Secrets">
+    If using Kubernetes secret management (Vault, Sealed Secrets, etc.):
+    
+    ```yaml
+    bytebot-agent:
+      apiKeys:
+        anthropic:
+          useExisting: true
+          secretName: "my-api-keys"
+          secretKey: "anthropic-key"
+    ```
+    
+    Create the secret manually:
+    ```bash
+    kubectl create secret generic my-api-keys \
+      --namespace bytebot \
+      --from-literal=anthropic-key="sk-ant-your-key"
+    ```
+  </Accordion>
+  
+  <Accordion title="LiteLLM Proxy Mode">
+    For centralized LLM management, use the included LiteLLM proxy:
+    
+    ```bash
+    helm install bytebot ./helm \
+      -f values-proxy.yaml \
+      --namespace bytebot \
+      --create-namespace \
+      --set bytebot-llm-proxy.env.ANTHROPIC_API_KEY="your-key"
+    ```
+    
+    This provides:
+    - Centralized API key management
+    - Request routing and load balancing
+    - Rate limiting and retry logic
+  </Accordion>
+  
+  <Accordion title="Custom Storage">
+    Configure persistent storage:
+    
+    ```yaml
+    desktop:
+      persistence:
+        enabled: true
+        size: "20Gi"
+        storageClass: "fast-ssd"
+    
+    postgresql:
+      persistence:
+        size: "20Gi"
+        storageClass: "fast-ssd"
+    ```
+  </Accordion>
+  
+  <Accordion title="Production Security">
+    ```yaml
+    # Network policies
+    networkPolicy:
+      enabled: true
+    
+    # Pod security
+    podSecurityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      fsGroup: 1000
+    
+    # Enable authentication
+    auth:
+      enabled: true
+      type: "basic"
+      username: "admin"
+      password: "changeme"  # Use secrets in production!
+    ```
+  </Accordion>
+</AccordionGroup>
 
 ## Next Steps
 
 <CardGroup cols={2}>
-  <Card title="LiteLLM Integration" icon="plug" href="/deployment/litellm">
-    Use any LLM with Bytebot
-  </Card>
   <Card title="API Reference" icon="code" href="/api-reference/introduction">
-    Integrate with your apps
+    Integrate Bytebot with your applications
+  </Card>
+  <Card title="LiteLLM Integration" icon="plug" href="/deployment/litellm">
+    Use any LLM provider with Bytebot
   </Card>
 </CardGroup>
 
 <Note>
-  **Need help?** Join our [Discord community](https://discord.com/invite/d9ewZkWPTP) for Kubernetes-specific support.
+  **Need help?** Join our [Discord community](https://discord.com/invite/d9ewZkWPTP) or check our [GitHub discussions](https://github.com/bytebot-ai/bytebot/discussions).
 </Note>

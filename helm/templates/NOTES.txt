@@ -1,44 +1,21 @@
-Thank you for installing {{ .Chart.Name }}.
+Thank you for installing {{ .Chart.Name }}!
 
-Your release is named {{ .Release.Name }}.
+To access Bytebot:
 
-To get started with Bytebot:
+1. Port-forward the UI service:
+   kubectl port-forward -n {{ .Release.Namespace }} service/bytebot-ui 9992:9992
 
-1. Get the application URLs by running these commands:
+2. Open your browser:
+   http://localhost:9992
 
 {{- if .Values.ingress.enabled }}
-  Bytebot UI: http{{ if .Values.ingress.tls.enabled }}s{{ end }}://{{ .Values.ingress.host }}
-{{- else }}
 
-  # Quick start - Forward all services:
-  kubectl port-forward -n {{ .Release.Namespace }} service/bytebot-ui 9992:9992 &
-  kubectl port-forward -n {{ .Release.Namespace }} service/bytebot-agent 9991:9991 &
-  kubectl port-forward -n {{ .Release.Namespace }} service/bytebot-desktop 9990:9990 &
-
-  Then access:
-  - Bytebot UI: http://localhost:9992
-  - Bytebot Agent API: http://localhost:9991
-  - Bytebot Desktop (noVNC): http://localhost:9990
-
-  # Or forward services individually:
-  
-  Bytebot UI:
-  kubectl port-forward -n {{ .Release.Namespace }} service/bytebot-ui 9992:9992
-
-  Bytebot Agent API:
-  kubectl port-forward -n {{ .Release.Namespace }} service/bytebot-agent 9991:9991
-
-  Bytebot Desktop (noVNC):
-  kubectl port-forward -n {{ .Release.Namespace }} service/bytebot-desktop 9990:9990
+External access is configured at:
+http{{ if .Values.ingress.tls.enabled }}s{{ end }}://{{ .Values.ingress.host }}
 {{- end }}
 
-2. Configure API Keys:
-   Make sure to set your API keys in the values.yaml file or via --set flags:
-   - ANTHROPIC_API_KEY
-   - OPENAI_API_KEY  
-   - GEMINI_API_KEY
+To check deployment status:
+kubectl get pods -n {{ .Release.Namespace }}
 
-3. Check the deployment status:
-   kubectl get pods --namespace {{ .Release.Namespace }} -l "app.kubernetes.io/instance={{ .Release.Name }}"
-
-For more information, visit: https://github.com/bytebot-ai/bytebot
+For documentation:
+https://docs.bytebot.ai/deployment/helm
