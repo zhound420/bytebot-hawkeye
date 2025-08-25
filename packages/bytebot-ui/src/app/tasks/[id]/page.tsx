@@ -79,7 +79,7 @@ export default function TaskPage() {
 
   // Determine VNC mode - interactive when user has control, view-only otherwise
   function vncViewOnly(): boolean {
-    return !hasUserControl;
+    return !hasUserControl();
   }
 
   // Use scroll screenshot hook for inactive tasks
@@ -93,7 +93,12 @@ export default function TaskPage() {
     if (isTaskInactive() && hasMoreMessages && !isLoadingMoreMessages) {
       loadMoreMessages();
     }
-  }, [isTaskInactive(), hasMoreMessages, isLoadingMoreMessages, loadMoreMessages]);
+  }, [
+    isTaskInactive(),
+    hasMoreMessages,
+    isLoadingMoreMessages,
+    loadMoreMessages,
+  ]);
 
   // Map each message ID to its flat index for screenshot scroll logic
   const messageIdToIndex = React.useMemo(() => {
