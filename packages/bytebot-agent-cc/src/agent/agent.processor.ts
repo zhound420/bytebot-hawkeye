@@ -199,19 +199,30 @@ export class AgentProcessor {
         let messageContentBlocks: MessageContentBlock[] = [];
         let role: Role = Role.ASSISTANT;
         switch (message.type) {
-          case 'user':
-            messageContentBlocks = message.message
-              .content as MessageContentBlock[];
+          case 'user': {
+            if (Array.isArray(message.message.content)) {
+              messageContentBlocks = message.message
+                .content as MessageContentBlock[];
+            }
+
+            if (typeof message.message.content === 'string') {
+              messageContentBlocks = [
+                {
+                  type: MessageContentType.Text,
+                  text: message.message.content,
+                } as TextContentBlock,
+              ];
+            }
+
             role = Role.USER;
             break;
-          case 'assistant':
-            console.log(JSON.stringify(message, null, 2));
-            {
-              messageContentBlocks = this.formatAnthropicResponse(
-                message.message.content,
-              );
-            }
+          }
+          case 'assistant': {
+            messageContentBlocks = this.formatAnthropicResponse(
+              message.message.content,
+            );
             break;
+          }
           case 'system':
             break;
           case 'result': {
