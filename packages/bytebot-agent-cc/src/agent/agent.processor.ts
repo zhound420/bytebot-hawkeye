@@ -123,6 +123,11 @@ export class AgentProcessor {
   private formatAnthropicResponse(
     content: Anthropic.ContentBlock[],
   ): MessageContentBlock[] {
+    // filter out tool_use blocks that aren't computer tool uses
+    content = content.filter(
+      (block) =>
+        block.type !== 'tool_use' || block.name.startsWith('mcp__desktop__'),
+    );
     return content.map((block) => {
       switch (block.type) {
         case 'text':
@@ -130,17 +135,13 @@ export class AgentProcessor {
             type: MessageContentType.Text,
             text: block.text,
           } as TextContentBlock;
-
         case 'tool_use':
-          if (isComputerToolUseContentBlock(block)) {
-            return {
-              type: MessageContentType.ToolUse,
-              id: block.id,
-              name: block.name.replace('mcp__desktop__', ''),
-              input: block.input,
-            } as ToolUseContentBlock;
-          }
-          break;
+          return {
+            type: MessageContentType.ToolUse,
+            id: block.id,
+            name: block.name.replace('mcp__desktop__', ''),
+            input: block.input,
+          } as ToolUseContentBlock;
         case 'thinking':
           return {
             type: MessageContentType.Thinking,
