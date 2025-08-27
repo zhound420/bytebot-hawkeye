@@ -132,20 +132,21 @@ export class AgentProcessor {
           } as TextContentBlock;
 
         case 'tool_use':
-          return {
-            type: MessageContentType.ToolUse,
-            id: block.id,
-            name: block.name.replace('mcp__desktop__', ''),
-            input: block.input,
-          } as ToolUseContentBlock;
-
+          if (isComputerToolUseContentBlock(block)) {
+            return {
+              type: MessageContentType.ToolUse,
+              id: block.id,
+              name: block.name.replace('mcp__desktop__', ''),
+              input: block.input,
+            } as ToolUseContentBlock;
+          }
+          break;
         case 'thinking':
           return {
             type: MessageContentType.Thinking,
             thinking: block.thinking,
             signature: block.signature,
           } as ThinkingContentBlock;
-
         case 'redacted_thinking':
           return {
             type: MessageContentType.RedactedThinking,
@@ -203,9 +204,7 @@ export class AgentProcessor {
             if (Array.isArray(message.message.content)) {
               messageContentBlocks = message.message
                 .content as MessageContentBlock[];
-            }
-
-            if (typeof message.message.content === 'string') {
+            } else if (typeof message.message.content === 'string') {
               messageContentBlocks = [
                 {
                   type: MessageContentType.Text,
