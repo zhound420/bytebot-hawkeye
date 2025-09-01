@@ -186,7 +186,6 @@ export class AgentProcessor {
       for await (const message of query({
         prompt: task.description,
         options: {
-          continue: true,
           abortController: this.abortController,
           appendSystemPrompt: AGENT_SYSTEM_PROMPT,
           permissionMode: 'bypassPermissions',

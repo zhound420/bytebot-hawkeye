@@ -7,6 +7,7 @@ import {
   MessageContentBlock,
   MessageContentType,
   TextContentBlock,
+  ThinkingContentBlock,
   ToolUseContentBlock,
 } from '@bytebot/shared';
 import {
@@ -62,6 +63,9 @@ export class GoogleService implements BytebotAgentService {
           model,
           contents: googleMessages,
           config: {
+            thinkingConfig: {
+              thinkingBudget: 24576,
+            },
             maxOutputTokens: maxTokens,
             systemInstruction: systemPrompt,
             tools: useTools
@@ -204,6 +208,13 @@ export class GoogleService implements BytebotAgentService {
               });
               break;
             }
+            case MessageContentType.Thinking:
+              parts.push({
+                text: block.thinking,
+                thoughtSignature: block.signature,
+                thought: true,
+              });
+              break;
             default:
               parts.push({
                 text: JSON.stringify(block),
@@ -257,6 +268,14 @@ export class GoogleService implements BytebotAgentService {
           type: MessageContentType.Text,
           text: part.text,
         } as TextContentBlock;
+      }
+
+      if (part.thought) {
+        return {
+          type: MessageContentType.Thinking,
+          signature: part.thoughtSignature,
+          thinking: part.text,
+        } as ThinkingContentBlock;
       }
 
       if (part.functionCall) {
