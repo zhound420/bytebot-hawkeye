@@ -18,9 +18,6 @@ async function bootstrap() {
     app.use(json({ limit: '50mb' }));
     app.use(urlencoded({ limit: '50mb', extended: true }));
 
-    // Set global prefix for all routes
-    app.setGlobalPrefix('api');
-
     // Enable CORS
     app.enableCors({
       origin: '*',
