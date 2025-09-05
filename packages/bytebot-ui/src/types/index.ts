@@ -51,12 +51,6 @@ export enum TaskType {
   SCHEDULED = "SCHEDULED",
 }
 
-export interface User {
-  id: string;
-  name?: string;
-  email: string;
-}
-
 export interface FileWithBase64 {
   name: string;
   base64: string;
@@ -92,6 +86,5 @@ export interface Task {
   error?: string;
   result?: unknown;
   model: Model;
-  user?: User;
   files?: File[];
 }
