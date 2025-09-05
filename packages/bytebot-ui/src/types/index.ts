@@ -92,7 +92,6 @@ export interface Task {
   error?: string;
   result?: unknown;
   model: Model;
-  userId?: string;
   user?: User;
   files?: File[];
 }
