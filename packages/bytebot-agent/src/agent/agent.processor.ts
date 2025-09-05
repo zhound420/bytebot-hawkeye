@@ -166,7 +166,6 @@ export class AgentProcessor {
                 updatedAt: new Date(),
                 taskId,
                 summaryId: null,
-                userId: null,
                 role: Role.USER,
                 content: [
                   {
@@ -250,7 +249,6 @@ export class AgentProcessor {
                 updatedAt: new Date(),
                 taskId,
                 summaryId: null,
-                userId: null,
                 role: Role.USER,
                 content: [
                   {
