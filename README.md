@@ -4,6 +4,8 @@
 
 # Bytebot: Open-Source AI Desktop Agent
 
+<a href="https://trendshift.io/repositories/14624" target="_blank"><img src="https://trendshift.io/api/badge/repositories/14624" alt="bytebot-ai%2Fbytebot | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
+
 **An AI that has its own computer to complete tasks for you**
 
 [![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/bytebot?referralCode=L9lKXQ)
@@ -20,13 +22,7 @@
 
 https://github.com/user-attachments/assets/f271282a-27a3-43f3-9b99-b34007fdd169
 
-
-
 https://github.com/user-attachments/assets/72a43cf2-bd87-44c5-a582-e7cbe176f37f
-
-
-
-
 
 ## What is a Desktop Agent?
 
