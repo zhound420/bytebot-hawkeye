@@ -4,6 +4,8 @@
 
 # Bytebot: Open-Source AI Desktop Agent
 
+<a href="https://trendshift.io/repositories/14624" target="_blank"><img src="https://trendshift.io/api/badge/repositories/14624" alt="bytebot-ai%2Fbytebot | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
+
 **An AI that has its own computer to complete tasks for you**
 
 [![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/bytebot?referralCode=L9lKXQ)
@@ -14,19 +16,22 @@
 
 [🌐 Website](https://bytebot.ai) • [📚 Documentation](https://docs.bytebot.ai) • [💬 Discord](https://discord.com/invite/d9ewZkWPTP) • [𝕏 Twitter](https://x.com/bytebot_ai)
 
+<!-- Keep these links. Translations will automatically update with the README. -->
+[Deutsch](https://zdoc.app/de/bytebot-ai/bytebot) | 
+[Español](https://zdoc.app/es/bytebot-ai/bytebot) | 
+[français](https://zdoc.app/fr/bytebot-ai/bytebot) | 
+[日本語](https://zdoc.app/ja/bytebot-ai/bytebot) | 
+[한국어](https://zdoc.app/ko/bytebot-ai/bytebot) | 
+[Português](https://zdoc.app/pt/bytebot-ai/bytebot) | 
+[Русский](https://zdoc.app/ru/bytebot-ai/bytebot) | 
+[中文](https://zdoc.app/zh/bytebot-ai/bytebot)
 </div>
 
 ---
 
 https://github.com/user-attachments/assets/f271282a-27a3-43f3-9b99-b34007fdd169
 
-
-
 https://github.com/user-attachments/assets/72a43cf2-bd87-44c5-a582-e7cbe176f37f
-
-
-
-
 
 ## What is a Desktop Agent?
 

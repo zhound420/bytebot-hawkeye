@@ -123,6 +123,11 @@ export class AgentProcessor {
   private formatAnthropicResponse(
     content: Anthropic.ContentBlock[],
   ): MessageContentBlock[] {
+    // filter out tool_use blocks that aren't computer tool uses
+    content = content.filter(
+      (block) =>
+        block.type !== 'tool_use' || block.name.startsWith('mcp__desktop__'),
+    );
     return content.map((block) => {
       switch (block.type) {
         case 'text':
@@ -130,7 +135,6 @@ export class AgentProcessor {
             type: MessageContentType.Text,
             text: block.text,
           } as TextContentBlock;
-
         case 'tool_use':
           return {
             type: MessageContentType.ToolUse,
@@ -138,14 +142,12 @@ export class AgentProcessor {
             name: block.name.replace('mcp__desktop__', ''),
             input: block.input,
           } as ToolUseContentBlock;
-
         case 'thinking':
           return {
             type: MessageContentType.Thinking,
             thinking: block.thinking,
             signature: block.signature,
           } as ThinkingContentBlock;
-
         case 'redacted_thinking':
           return {
             type: MessageContentType.RedactedThinking,
@@ -198,19 +200,28 @@ export class AgentProcessor {
         let messageContentBlocks: MessageContentBlock[] = [];
         let role: Role = Role.ASSISTANT;
         switch (message.type) {
-          case 'user':
-            messageContentBlocks = message.message
-              .content as MessageContentBlock[];
+          case 'user': {
+            if (Array.isArray(message.message.content)) {
+              messageContentBlocks = message.message
+                .content as MessageContentBlock[];
+            } else if (typeof message.message.content === 'string') {
+              messageContentBlocks = [
+                {
+                  type: MessageContentType.Text,
+                  text: message.message.content,
+                } as TextContentBlock,
+              ];
+            }
+
             role = Role.USER;
             break;
-          case 'assistant':
-            console.log(JSON.stringify(message, null, 2));
-            {
-              messageContentBlocks = this.formatAnthropicResponse(
-                message.message.content,
-              );
-            }
+          }
+          case 'assistant': {
+            messageContentBlocks = this.formatAnthropicResponse(
+              message.message.content,
+            );
             break;
+          }
           case 'system':
             break;
           case 'result': {
