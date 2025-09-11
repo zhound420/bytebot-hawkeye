@@ -22,7 +22,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
-    "@anthropic-ai/claude-code": "^1.0.90",
+    "@anthropic-ai/claude-code": "^1.0.105",
     "@anthropic-ai/sdk": "^0.39.0",
     "@bytebot/shared": "../shared",
     "@google/genai": "^1.8.0",
