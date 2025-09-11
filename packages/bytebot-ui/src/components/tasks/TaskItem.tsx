@@ -103,14 +103,6 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
             <span className="text-bytebot-bronze-light-10">
               {formatDate(task.createdAt)}
             </span>
-            {task.user && (
-              <>
-                <span className="text-bytebot-bronze-light-10">•</span>
-                <span className="text-bytebot-bronze-light-10">
-                  {task.user.name || task.user.email}
-                </span>
-              </>
-            )}
           </div>
         </div>
       </div>
