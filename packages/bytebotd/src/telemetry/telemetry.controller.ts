@@ -33,7 +33,10 @@ export class TelemetryController {
     let sumDx = 0;
     let sumDy = 0;
     const recentAbsDeltas: number[] = [];
-    const limit = Math.max(5, Math.min(parseInt(limitStr || '20', 10) || 20, 100));
+    const limit = Math.max(
+      5,
+      Math.min(parseInt(limitStr || '20', 10) || 20, 100),
+    );
 
     let retryClicks = 0;
     let hoverCount = 0;
@@ -43,6 +46,26 @@ export class TelemetryController {
     const actionCounts = new Map<string, number>();
     let smartClicks = 0;
     let progressiveZooms = 0;
+    let progressiveZoomEvents = 0;
+    let inferredProgressiveZooms = 0;
+    const progressiveZoomActionNames = new Set([
+      'screenshot_region',
+      'screenshot_custom_region',
+    ]);
+    const extractSource = (event: any): string | undefined => {
+      if (event && typeof event === 'object') {
+        if (typeof event.source === 'string') {
+          return event.source;
+        }
+        if (typeof event.context?.source === 'string') {
+          return event.context.source;
+        }
+        if (typeof event.metadata?.source === 'string') {
+          return event.metadata.source;
+        }
+      }
+      return undefined;
+    };
 
     try {
       const content = await fs.readFile(logPath, 'utf8');
@@ -78,17 +101,25 @@ export class TelemetryController {
             postSum += d;
           } else if (obj.type === 'action' && obj.name) {
             actionCounts.set(obj.name, (actionCounts.get(obj.name) || 0) + 1);
-            if (obj.name === 'screenshot_region' || obj.name === 'screenshot_custom_region') {
-              progressiveZooms += 1;
+            if (progressiveZoomActionNames.has(obj.name)) {
+              const source = extractSource(obj);
+              if (source === 'progressive_zoom') {
+                inferredProgressiveZooms += 1;
+              }
             }
-          } else if (obj.type === 'smart_click' || obj.type === 'smart_click_complete') {
+          } else if (
+            obj.type === 'smart_click' ||
+            obj.type === 'smart_click_complete'
+          ) {
             smartClicks += 1;
           } else if (obj.type === 'progressive_zoom') {
-            progressiveZooms += 1;
+            progressiveZoomEvents += 1;
           }
         } catch {}
       }
     } catch {}
+
+    progressiveZooms = progressiveZoomEvents || inferredProgressiveZooms;
 
     let calibrationSnapshots = 0;
     try {
@@ -107,8 +138,14 @@ export class TelemetryController {
       recentAbsDeltas,
       actionCounts: Object.fromEntries(actionCounts.entries()),
       retryClicks,
-      hoverProbes: { count: hoverCount, avgDiff: hoverCount ? hoverSum / hoverCount : null },
-      postClickDiff: { count: postCount, avgDiff: postCount ? postSum / postCount : null },
+      hoverProbes: {
+        count: hoverCount,
+        avgDiff: hoverCount ? hoverSum / hoverCount : null,
+      },
+      postClickDiff: {
+        count: postCount,
+        avgDiff: postCount ? postSum / postCount : null,
+      },
       smartClicks,
       progressiveZooms,
     };
@@ -117,7 +154,7 @@ export class TelemetryController {
   @Post('event')
   async event(@Body() body: any) {
     const type = typeof body?.type === 'string' ? body.type : 'custom';
-    const data = (body && typeof body === 'object') ? body : {};
+    const data = body && typeof body === 'object' ? body : {};
     await this.telemetry.recordEvent(type, data);
     return { ok: true };
   }
@@ -134,8 +171,14 @@ export class TelemetryController {
     @Query('window') windowStr?: string,
   ): Promise<{ apps: Array<{ name: string; count: number }> }> {
     const logPath = this.telemetry.getLogFilePath();
-    const limit = Math.max(1, Math.min(parseInt(limitStr || '10', 10) || 10, 50));
-    const windowSize = Math.max(100, Math.min(parseInt(windowStr || '2000', 10) || 2000, 20000));
+    const limit = Math.max(
+      1,
+      Math.min(parseInt(limitStr || '10', 10) || 10, 50),
+    );
+    const windowSize = Math.max(
+      100,
+      Math.min(parseInt(windowStr || '2000', 10) || 2000, 20000),
+    );
 
     const counts = new Map<string, number>();
     try {
