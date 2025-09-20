@@ -37,6 +37,12 @@ env:
   OPENAI_API_KEY: ""
   GEMINI_API_KEY: ""
 
+# Agent behavior defaults
+behavior:
+  clickVerify: true
+  postActionScreenshot: true
+  includeFullAfterVerify: true
+
 # New secret management structure
 apiKeys:
   anthropic:

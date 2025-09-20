@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+   bytebotd:
+     volumes:
+       - ./progress-data:/app/progress
+     # ...existing env/volumes...
+
+   bytebot-agent:
+     volumes:
+       - ./progress-data:/app/progress
+     # ...existing env/volumes...

@@ -275,6 +275,81 @@ export const _screenshotTool = {
   },
 };
 
+export const _screenshotRegionTool = {
+  name: 'computer_screenshot_region',
+  description:
+    'Captures a focused screenshot of one of the 3x3 predefined screen regions with an optional finer grid',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      region: {
+        type: 'string' as const,
+        enum: [
+          'top-left',
+          'top-center',
+          'top-right',
+          'middle-left',
+          'middle-center',
+          'middle-right',
+          'bottom-left',
+          'bottom-center',
+          'bottom-right',
+        ],
+        description: 'Named region to capture',
+      },
+      gridSize: {
+        type: 'integer' as const,
+        description: 'Optional grid size in pixels for the focused view',
+        nullable: true,
+      },
+      enhance: {
+        type: 'boolean' as const,
+        description: 'Enhance contrast and sharpness for readability',
+        nullable: true,
+      },
+      includeOffset: {
+        type: 'boolean' as const,
+        description: 'Include global coordinate offsets on the grid labels',
+        nullable: true,
+      },
+    },
+    required: ['region'],
+  },
+};
+
+export const _screenshotCustomRegionTool = {
+  name: 'computer_screenshot_custom_region',
+  description:
+    'Captures a custom rectangular region of the screen and overlays a detailed grid',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      x: {
+        type: 'number' as const,
+        description: 'Left coordinate of the region',
+      },
+      y: {
+        type: 'number' as const,
+        description: 'Top coordinate of the region',
+      },
+      width: {
+        type: 'number' as const,
+        description: 'Width of the region in pixels',
+      },
+      height: {
+        type: 'number' as const,
+        description: 'Height of the region in pixels',
+      },
+      gridSize: {
+        type: 'integer' as const,
+        description: 'Optional grid size in pixels',
+        nullable: true,
+      },
+    },
+    required: ['x', 'y', 'width', 'height'],
+  },
+};
+
 export const _cursorPositionTool = {
   name: 'computer_cursor_position',
   description: 'Gets the current (x, y) coordinates of the mouse cursor',
@@ -397,6 +472,8 @@ export const agentTools = [
   _pasteTextTool,
   _waitTool,
   _screenshotTool,
+  _screenshotRegionTool,
+  _screenshotCustomRegionTool,
   _applicationTool,
   _cursorPositionTool,
   _setTaskStatusTool,

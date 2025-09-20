@@ -67,14 +67,21 @@ export const _traceMouseTool = {
 export const _clickMouseTool = {
   name: 'computer_click_mouse',
   description:
-    'Performs a mouse click at the specified coordinates or current position',
+    'Performs a mouse click. Prefer keyboard navigation/shortcuts first; use clicking as a fallback. When clicking, either: (1) provide precise coordinates (use grid/zoom), or (2) include a short target description (e.g., "Submit button") to enable Smart Focus. Clicks without coordinates or description are rejected by default.',
   input_schema: {
     type: 'object' as const,
     properties: {
       coordinates: {
         ...coordinateSchema,
         description:
-          'Optional click coordinates (defaults to current position)',
+          'Click coordinates in pixels. When grid overlay is present, use grid lines and labels to calculate precise coordinates (e.g., intersection at 400,300). Defaults to current position if not specified.',
+        nullable: true,
+      },
+      description: {
+        type: 'string' as const,
+        description:
+          'Short description of the intended target (e.g., "Submit button"). REQUIRED if coordinates are omitted; used by Smart Focus to compute exact coordinates. Keep it 3–6 words. Include optional coarse grid hint like "~X=600,Y=420".',
+        minLength: 1,
         nullable: true,
       },
       button: buttonSchema,
@@ -83,6 +90,40 @@ export const _clickMouseTool = {
         type: 'integer' as const,
         description: 'Number of clicks to perform (e.g., 2 for double-click)',
         default: 1,
+      },
+      context: {
+        type: 'object' as const,
+        description:
+          'Optional telemetry context including region bounds, zoom level, target description, and click source.',
+        properties: {
+          region: {
+            type: 'object' as const,
+            properties: {
+              x: { type: 'number' as const },
+              y: { type: 'number' as const },
+              width: { type: 'number' as const },
+              height: { type: 'number' as const },
+            },
+            additionalProperties: false,
+            nullable: true,
+          },
+          zoomLevel: {
+            type: 'number' as const,
+            description: 'Zoom factor used when capturing the region',
+            nullable: true,
+          },
+          targetDescription: {
+            type: 'string' as const,
+            description: 'Human-readable description of the intended target',
+            nullable: true,
+          },
+          source: {
+            type: 'string' as const,
+            enum: ['manual', 'smart_focus', 'progressive_zoom', 'binary_search'],
+            description: 'Origin of the click request for telemetry analysis',
+            nullable: true,
+          },
+        },
       },
     },
     required: ['button', 'clickCount'],
@@ -159,7 +200,8 @@ export const _scrollTool = {
  */
 export const _typeKeysTool = {
   name: 'computer_type_keys',
-  description: 'Types a sequence of keys (useful for keyboard shortcuts)',
+  description:
+    'Types a sequence of keys (preferred for navigation and activation via keyboard shortcuts, e.g., Ctrl+L, Tab, Enter).',
   input_schema: {
     type: 'object' as const,
     properties: {
@@ -275,9 +317,93 @@ export const _screenshotTool = {
   },
 };
 
+export const _screenshotRegionTool = {
+  name: 'computer_screenshot_region',
+  description:
+    'Captures a focused screenshot of one of the predefined 3x3 screen regions with an optional finer grid overlay',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      region: {
+        type: 'string' as const,
+        enum: [
+          'top-left',
+          'top-center',
+          'top-right',
+          'middle-left',
+          'middle-center',
+          'middle-right',
+          'bottom-left',
+          'bottom-center',
+          'bottom-right',
+        ],
+        description: 'Named region of the screen to capture',
+      },
+      gridSize: {
+        type: 'integer' as const,
+        description: 'Optional grid size in pixels for the focused capture',
+        nullable: true,
+      },
+      enhance: {
+        type: 'boolean' as const,
+        description: 'Enable image enhancement for better readability',
+        nullable: true,
+      },
+      includeOffset: {
+        type: 'boolean' as const,
+        description: 'Include global screen offset labels in the grid',
+        nullable: true,
+      },
+    },
+    required: ['region'],
+  },
+};
+
+export const _screenshotCustomRegionTool = {
+  name: 'computer_screenshot_custom_region',
+  description:
+    'Captures a custom rectangular region of the screen and overlays a fine grid with global coordinates',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      x: {
+        type: 'number' as const,
+        description: 'Left coordinate of the region',
+      },
+      y: {
+        type: 'number' as const,
+        description: 'Top coordinate of the region',
+      },
+      width: {
+        type: 'number' as const,
+        description: 'Width of the region in pixels',
+      },
+      height: {
+        type: 'number' as const,
+        description: 'Height of the region in pixels',
+      },
+      gridSize: {
+        type: 'integer' as const,
+        description: 'Optional grid size in pixels for the custom capture',
+        nullable: true,
+      },
+    },
+    required: ['x', 'y', 'width', 'height'],
+  },
+};
+
 export const _cursorPositionTool = {
   name: 'computer_cursor_position',
   description: 'Gets the current (x, y) coordinates of the mouse cursor',
+  input_schema: {
+    type: 'object' as const,
+    properties: {},
+  },
+};
+
+export const _screenInfoTool = {
+  name: 'computer_screen_info',
+  description: 'Returns the current screen width and height in pixels',
   input_schema: {
     type: 'object' as const,
     properties: {},
@@ -397,8 +523,11 @@ export const agentTools = [
   _pasteTextTool,
   _waitTool,
   _screenshotTool,
+  _screenshotRegionTool,
+  _screenshotCustomRegionTool,
   _applicationTool,
   _cursorPositionTool,
+  _screenInfoTool,
   _setTaskStatusTool,
   _createTaskTool,
   _readFileTool,

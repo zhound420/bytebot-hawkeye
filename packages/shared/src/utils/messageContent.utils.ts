@@ -16,6 +16,8 @@ import {
   TypeTextToolUseBlock,
   WaitToolUseBlock,
   ScreenshotToolUseBlock,
+  ScreenshotRegionToolUseBlock,
+  ScreenshotCustomRegionToolUseBlock,
   CursorPositionToolUseBlock,
   DragMouseToolUseBlock,
   ScrollToolUseBlock,
@@ -325,6 +327,21 @@ export function isCursorPositionToolUseBlock(
 }
 
 /**
+ * Type guard to check if an object is a ScreenInfoToolUseBlock
+ */
+import { ScreenInfoToolUseBlock } from "../types/messageContent.types";
+
+export function isScreenInfoToolUseBlock(
+  obj: unknown
+): obj is ScreenInfoToolUseBlock {
+  if (!isComputerToolUseContentBlock(obj)) {
+    return false;
+  }
+  const block = obj as Record<string, any>;
+  return block.name === "computer_screen_info";
+}
+
+/**
  * Type guard to check if an object is a PressMouseToolUseBlock
  * @param obj The object to validate
  * @returns Type predicate indicating obj is PressMouseToolUseBlock
@@ -457,6 +474,28 @@ export function isScreenshotToolUseBlock(
 
   const block = obj as Record<string, any>;
   return block.name === "computer_screenshot";
+}
+
+export function isScreenshotRegionToolUseBlock(
+  obj: unknown
+): obj is ScreenshotRegionToolUseBlock {
+  if (!isComputerToolUseContentBlock(obj)) {
+    return false;
+  }
+
+  const block = obj as Record<string, any>;
+  return block.name === "computer_screenshot_region";
+}
+
+export function isScreenshotCustomRegionToolUseBlock(
+  obj: unknown
+): obj is ScreenshotCustomRegionToolUseBlock {
+  if (!isComputerToolUseContentBlock(obj)) {
+    return false;
+  }
+
+  const block = obj as Record<string, any>;
+  return block.name === "computer_screenshot_custom_region";
 }
 
 export function isApplicationToolUseBlock(

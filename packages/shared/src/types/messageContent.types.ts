@@ -1,4 +1,4 @@
-import { Button, Coordinates, Press } from "./computerAction.types";
+import { Button, Coordinates, Press, ClickContext } from "./computerAction.types";
 
 // Content block types
 export enum MessageContentType {
@@ -83,6 +83,8 @@ export type ClickMouseToolUseBlock = ToolUseContentBlock & {
     button: Button;
     holdKeys?: string[];
     clickCount: number;
+    description?: string;
+    context?: ClickContext;
   };
 };
 
@@ -156,10 +158,60 @@ export type WaitToolUseBlock = ToolUseContentBlock & {
 
 export type ScreenshotToolUseBlock = ToolUseContentBlock & {
   name: "computer_screenshot";
+  input?: {
+    gridOverlay?: boolean;
+    gridSize?: number;
+    highlightRegions?: boolean;
+    progressStep?: number;
+    progressMessage?: string;
+    progressTaskId?: string;
+    markTarget?: {
+      coordinates: Coordinates;
+      label?: string;
+    };
+  };
+};
+
+export type ScreenshotRegionToolUseBlock = ToolUseContentBlock & {
+  name: "computer_screenshot_region";
+  input: {
+    region:
+      | "top-left"
+      | "top-center"
+      | "top-right"
+      | "middle-left"
+      | "middle-center"
+      | "middle-right"
+      | "bottom-left"
+      | "bottom-center"
+      | "bottom-right";
+    gridSize?: number;
+    enhance?: boolean;
+    includeOffset?: boolean;
+    addHighlight?: boolean;
+    progressStep?: number;
+    progressMessage?: string;
+    progressTaskId?: string;
+  };
+};
+
+export type ScreenshotCustomRegionToolUseBlock = ToolUseContentBlock & {
+  name: "computer_screenshot_custom_region";
+  input: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    gridSize?: number;
+  };
 };
 
 export type CursorPositionToolUseBlock = ToolUseContentBlock & {
   name: "computer_cursor_position";
+};
+
+export type ScreenInfoToolUseBlock = ToolUseContentBlock & {
+  name: "computer_screen_info";
 };
 
 export type ApplicationToolUseBlock = ToolUseContentBlock & {
@@ -195,9 +247,12 @@ export type ComputerToolUseContentBlock =
   | PasteTextToolUseBlock
   | WaitToolUseBlock
   | ScreenshotToolUseBlock
+  | ScreenshotRegionToolUseBlock
+  | ScreenshotCustomRegionToolUseBlock
   | DragMouseToolUseBlock
   | ScrollToolUseBlock
   | CursorPositionToolUseBlock
+  | ScreenInfoToolUseBlock
   | ApplicationToolUseBlock
   | WriteFileToolUseBlock
   | ReadFileToolUseBlock;

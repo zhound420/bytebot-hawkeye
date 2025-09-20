@@ -176,11 +176,12 @@ RUN apt-get update && \
 
 COPY ./shared/ /bytebot/shared/
 COPY ./bytebotd/ /bytebot/bytebotd/
+COPY ./bytebotd/verify-all-systems.js /bytebot/bytebotd/verify-all-systems.js
 WORKDIR /bytebot/bytebotd
-RUN npm install --build-from-source
-RUN npm rebuild uiohook-napi --build-from-source
+RUN /usr/bin/npm install --build-from-source
+RUN /usr/bin/npm rebuild uiohook-napi --build-from-source
 
-RUN npm run build
+RUN /usr/bin/npm run build
 
 WORKDIR /compile
 
@@ -234,6 +235,15 @@ RUN mkdir -p /home/user/Desktop && \
     cp -f /usr/share/applications/terminal.desktop /home/user/Desktop/ && \
     chmod +x /home/user/Desktop/*.desktop && \
     chown user:user /home/user/Desktop/*.desktop
+
+ENV BYTEBOT_GRID_OVERLAY=true \
+    BYTEBOT_GRID_DEBUG=false \
+    BYTEBOT_PROGRESSIVE_ZOOM_USE_AI=true \
+    BYTEBOT_POST_CLICK_CALIBRATION=true \
+    BYTEBOT_DRIFT_COMPENSATION=true \
+    BYTEBOT_DRIFT_SMOOTHING=0.2 \
+    BYTEBOT_TELEMETRY_DIR=/tmp/bytebot-telemetry \
+    BYTEBOT_PROGRESS_PORT=8081
 
 RUN mkdir -p /home/user/.config /home/user/.local/share /home/user/.cache \
     && chown -R user:user /home/user/.config /home/user/.local /home/user/.cache

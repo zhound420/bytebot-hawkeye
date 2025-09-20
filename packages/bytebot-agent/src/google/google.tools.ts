@@ -112,6 +112,7 @@ export const pasteTextTool = toolMap.pasteTextTool;
 export const waitTool = toolMap.waitTool;
 export const screenshotTool = toolMap.screenshotTool;
 export const cursorPositionTool = toolMap.cursorPositionTool;
+export const screenInfoTool = toolMap.screenInfoTool;
 export const setTaskStatusTool = toolMap.setTaskStatusTool;
 export const createTaskTool = toolMap.createTaskTool;
 export const applicationTool = toolMap.applicationTool;

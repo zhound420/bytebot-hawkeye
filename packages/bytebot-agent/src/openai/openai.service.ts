@@ -184,11 +184,10 @@ export class OpenAIService implements BytebotAgentService {
               break;
             }
             case MessageContentType.ToolResult: {
-              // Handle tool results as function call outputs
+              // Handle tool results as function call outputs only.
+              // Avoid inserting extra user image messages here to satisfy tool_call sequencing.
               const toolResult = block;
-              // Tool results should be added as separate items in the response
-
-              toolResult.content.forEach((content) => {
+              for (const content of toolResult.content) {
                 if (content.type === MessageContentType.Text) {
                   openaiMessages.push({
                     type: 'function_call_output',
@@ -196,26 +195,14 @@ export class OpenAIService implements BytebotAgentService {
                     output: content.text,
                   } as OpenAI.Responses.ResponseInputItem.FunctionCallOutput);
                 }
-
                 if (content.type === MessageContentType.Image) {
                   openaiMessages.push({
                     type: 'function_call_output',
                     call_id: toolResult.tool_use_id,
                     output: 'screenshot',
                   } as OpenAI.Responses.ResponseInputItem.FunctionCallOutput);
-                  openaiMessages.push({
-                    role: 'user',
-                    type: 'message',
-                    content: [
-                      {
-                        type: 'input_image',
-                        detail: 'high',
-                        image_url: `data:${content.source.media_type};base64,${content.source.data}`,
-                      },
-                    ],
-                  } as OpenAI.Responses.ResponseInputItem.Message);
                 }
-              });
+              }
               break;
             }
 

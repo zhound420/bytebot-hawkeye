@@ -28,6 +28,16 @@ export type ClickMouseAction = {
   button: Button;
   holdKeys?: string[];
   clickCount: number;
+  description?: string;
+  context?: ClickContext;
+};
+
+export type ClickContext = {
+  region?: { x: number; y: number; width: number; height: number };
+  zoomLevel?: number;
+  targetDescription?: string;
+  source?: "manual" | "smart_focus" | "progressive_zoom" | "binary_search";
+  clickTaskId?: string;
 };
 
 export type PressMouseAction = {
@@ -83,10 +93,66 @@ export type WaitAction = {
 
 export type ScreenshotAction = {
   action: "screenshot";
+  gridOverlay?: boolean;
+  gridSize?: number;
+  highlightRegions?: boolean;
+  progressStep?: number;
+  progressMessage?: string;
+  progressTaskId?: string;
+  markTarget?: {
+    coordinates: Coordinates;
+    label?: string;
+  };
+};
+
+export type ScreenshotRegionAction = {
+  action: "screenshot_region";
+  region:
+    | "top-left"
+    | "top-center"
+    | "top-right"
+    | "middle-left"
+    | "middle-center"
+    | "middle-right"
+    | "bottom-left"
+    | "bottom-center"
+    | "bottom-right";
+  gridSize?: number;
+  enhance?: boolean;
+  includeOffset?: boolean;
+  addHighlight?: boolean;
+  zoomLevel?: number;
+  progressStep?: number;
+  progressMessage?: string;
+  progressTaskId?: string;
+};
+
+export type ScreenshotCustomRegionAction = {
+  action: "screenshot_custom_region";
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  gridSize?: number;
+  zoomLevel?: number;
+  // Optional: draw a target marker within the returned image.
+  // Coordinates are in GLOBAL screen space; daemon maps to local image coords.
+  markTarget?: {
+    coordinates: Coordinates;
+    label?: string;
+  };
+  // Optional progress metadata for overlays/broadcasts
+  progressStep?: number;
+  progressMessage?: string;
+  progressTaskId?: string;
 };
 
 export type CursorPositionAction = {
   action: "cursor_position";
+};
+
+export type ScreenInfoAction = {
+  action: "screen_info";
 };
 
 export type ApplicationAction = {
@@ -119,7 +185,10 @@ export type ComputerAction =
   | PasteTextAction
   | WaitAction
   | ScreenshotAction
+  | ScreenshotRegionAction
+  | ScreenshotCustomRegionAction
   | CursorPositionAction
+  | ScreenInfoAction
   | ApplicationAction
   | WriteFileAction
   | ReadFileAction;

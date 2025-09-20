@@ -3,9 +3,12 @@ import {
   Coordinates,
   Press,
   ComputerToolUseContentBlock,
+  MessageContentBlock,
   ToolResultContentBlock,
   MessageContentType,
   isScreenshotToolUseBlock,
+  isScreenshotRegionToolUseBlock,
+  isScreenshotCustomRegionToolUseBlock,
   isCursorPositionToolUseBlock,
   isMoveMouseToolUseBlock,
   isTraceMouseToolUseBlock,
@@ -20,10 +23,38 @@ import {
   isApplicationToolUseBlock,
   isPasteTextToolUseBlock,
   isReadFileToolUseBlock,
+  isScreenInfoToolUseBlock,
+  ClickContext,
 } from '@bytebot/shared';
 import { Logger } from '@nestjs/common';
+import OpenAI from 'openai';
+import { SmartClickAI, SmartClickHelper } from './smart-click.helper';
+
+interface ScreenshotOptions {
+  gridOverlay?: boolean;
+  gridSize?: number;
+  highlightRegions?: boolean;
+  progressStep?: number;
+  progressMessage?: string;
+  progressTaskId?: string;
+  markTarget?: {
+    coordinates: Coordinates;
+    label?: string;
+  };
+}
+
+interface ScreenshotResponse {
+  image: string;
+  offset?: { x: number; y: number };
+  region?: { x: number; y: number; width: number; height: number };
+  zoomLevel?: number;
+}
 
 const BYTEBOT_DESKTOP_BASE_URL = process.env.BYTEBOT_DESKTOP_BASE_URL as string;
+const BYTEBOT_LLM_PROXY_URL = process.env.BYTEBOT_LLM_PROXY_URL as string | undefined;
+const SMART_FOCUS_MODEL =
+  process.env.BYTEBOT_SMART_FOCUS_MODEL || 'gpt-4o-mini';
+const SMART_FOCUS_ENABLED = process.env.BYTEBOT_SMART_FOCUS !== 'false';
 
 export async function handleComputerToolUse(
   block: ComputerToolUseContentBlock,
@@ -36,8 +67,7 @@ export async function handleComputerToolUse(
   if (isScreenshotToolUseBlock(block)) {
     logger.debug('Processing screenshot request');
     try {
-      logger.debug('Taking screenshot');
-      const image = await screenshot();
+      const { image } = await screenshot();
       logger.debug('Screenshot captured successfully');
 
       return {
@@ -63,6 +93,105 @@ export async function handleComputerToolUse(
           {
             type: MessageContentType.Text,
             text: 'ERROR: Failed to take screenshot',
+          },
+        ],
+        is_error: true,
+      };
+    }
+  }
+
+  if (isScreenshotRegionToolUseBlock(block)) {
+    logger.debug('Processing focused region screenshot request');
+    try {
+      const { image, offset, region, zoomLevel } = await screenshotRegion(block.input);
+      const content: MessageContentBlock[] = [
+        {
+          type: MessageContentType.Image,
+          source: {
+            data: image,
+            media_type: 'image/png',
+            type: 'base64',
+          },
+        },
+      ];
+
+      // Provide explicit numeric context to help models compute global coordinates
+      const meta: Record<string, any> = {};
+      if (offset) meta.offset = offset;
+      if (region) meta.region = region;
+      if (typeof zoomLevel === 'number') meta.zoomLevel = zoomLevel;
+      content.push({
+        type: MessageContentType.Text,
+        text: `Focused region metadata: ${JSON.stringify(meta)}. Note: grid labels in the image are global screen coordinates. Use them (not local pixels) when computing click positions.`,
+      });
+
+      return {
+        type: MessageContentType.ToolResult,
+        tool_use_id: block.id,
+        content,
+      };
+    } catch (error) {
+      logger.error(
+        `Focused region screenshot failed: ${error.message}`,
+        error.stack,
+      );
+      return {
+        type: MessageContentType.ToolResult,
+        tool_use_id: block.id,
+        content: [
+          {
+            type: MessageContentType.Text,
+            text: 'ERROR: Failed to capture focused region screenshot',
+          },
+        ],
+        is_error: true,
+      };
+    }
+  }
+
+  if (isScreenshotCustomRegionToolUseBlock(block)) {
+    logger.debug('Processing custom region screenshot request');
+    try {
+      const { image } = await screenshotCustomRegion(block.input);
+      const meta = {
+        region: {
+          x: block.input.x,
+          y: block.input.y,
+          width: block.input.width,
+          height: block.input.height,
+        },
+        gridSize: block.input.gridSize ?? null,
+      };
+      return {
+        type: MessageContentType.ToolResult,
+        tool_use_id: block.id,
+        content: [
+          {
+            type: MessageContentType.Image,
+            source: {
+              data: image,
+              media_type: 'image/png',
+              type: 'base64',
+            },
+          },
+          {
+            type: MessageContentType.Text,
+            text: `Custom region metadata: ${JSON.stringify(meta)}. Grid labels are global; compute clicks in global coordinates.`,
+          },
+        ],
+      };
+    } catch (error) {
+      logger.error(
+        `Custom region screenshot failed: ${error.message}`,
+        error.stack,
+      );
+      return {
+        type: MessageContentType.ToolResult,
+        tool_use_id: block.id,
+        content: [
+          {
+            type: MessageContentType.Text,
+            text: 'ERROR: Failed to capture custom region screenshot',
           },
         ],
         is_error: true,
@@ -106,7 +235,40 @@ export async function handleComputerToolUse(
     }
   }
 
+  if (isScreenInfoToolUseBlock(block)) {
+    logger.debug('Processing screen info request');
+    try {
+      const info = await screenInfo();
+      logger.debug(`Screen info obtained: ${info.width}x${info.height}`);
+
+      return {
+        type: MessageContentType.ToolResult,
+        tool_use_id: block.id,
+        content: [
+          {
+            type: MessageContentType.Text,
+            text: `Screen size: ${info.width} x ${info.height}`,
+          },
+        ],
+      };
+    } catch (error) {
+      logger.error(`Getting screen info failed: ${error instanceof Error ? error.message : String(error)}`);
+      return {
+        type: MessageContentType.ToolResult,
+        tool_use_id: block.id,
+        content: [
+          {
+            type: MessageContentType.Text,
+            text: 'ERROR: Failed to get screen info',
+          },
+        ],
+        is_error: true,
+      };
+    }
+  }
+
   try {
+    let postClickVerifyImage: string | null = null;
     if (isMoveMouseToolUseBlock(block)) {
       await moveMouse(block.input);
     }
@@ -114,7 +276,51 @@ export async function handleComputerToolUse(
       await traceMouse(block.input);
     }
     if (isClickMouseToolUseBlock(block)) {
-      await clickMouse(block.input);
+      const clickMeta = await performClick(block.input);
+
+      // Optional post-click verification: capture a zoomed region around the click with a target marker
+      try {
+        const verifyEnabled = process.env.BYTEBOT_CLICK_VERIFY === 'true';
+        if (verifyEnabled) {
+          const R = Number.parseInt(
+            process.env.BYTEBOT_CLICK_VERIFY_RADIUS || '160',
+            10,
+          );
+          const zoom = Number.parseFloat(
+            process.env.BYTEBOT_CLICK_VERIFY_ZOOM || '2.0',
+          );
+
+          let coords = clickMeta?.coordinates;
+          if (!coords) {
+            try {
+              coords = await cursorPosition();
+            } catch (err) {
+              console.warn('Unable to get cursor position for verification:', err);
+            }
+          }
+
+          if (coords) {
+            const x = Math.max(0, coords.x - R);
+            const y = Math.max(0, coords.y - R);
+            const width = Math.max(50, R * 2);
+            const height = Math.max(50, R * 2);
+
+            const verifyShot = await screenshotCustomRegion({
+              x,
+              y,
+              width,
+              height,
+              gridSize: 25,
+              zoomLevel: zoom,
+              markTarget: { coordinates: coords },
+              progressMessage: 'Post-click verification',
+            });
+            postClickVerifyImage = verifyShot.image;
+          }
+        }
+      } catch (e) {
+        console.warn('Post-click verification failed:', e);
+      }
     }
     if (isPressMouseToolUseBlock(block)) {
       await pressMouse(block.input);
@@ -181,16 +387,23 @@ export async function handleComputerToolUse(
       }
     }
 
-    let image: string | null = null;
+    let screenshotResult: string | null = null;
     try {
-      // Wait before taking screenshot to allow UI to settle
-      const delayMs = 750; // 750ms delay
-      logger.debug(`Waiting ${delayMs}ms before taking screenshot`);
-      await new Promise((resolve) => setTimeout(resolve, delayMs));
+      // Default: do NOT take a generic full screenshot unless explicitly opted in
+      const wantFull = process.env.BYTEBOT_POST_ACTION_SCREENSHOT === 'true';
+      const includeFullAfterVerify =
+        process.env.BYTEBOT_INCLUDE_FULL_AFTER_VERIFY === 'true';
 
-      logger.debug('Taking screenshot');
-      image = await screenshot();
-      logger.debug('Screenshot captured successfully');
+      if (wantFull && (!postClickVerifyImage || includeFullAfterVerify)) {
+        // Wait before taking screenshot to allow UI to settle
+        const delayMs = 750; // 750ms delay
+        logger.debug(`Waiting ${delayMs}ms before taking screenshot`);
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+
+        logger.debug('Taking screenshot after tool execution (gridOverlay=true)');
+        screenshotResult = (await screenshot({ gridOverlay: true })).image;
+        logger.debug('Screenshot captured successfully');
+      }
     } catch (error) {
       logger.error('Failed to take screenshot', error);
     }
@@ -207,11 +420,21 @@ export async function handleComputerToolUse(
       ],
     };
 
-    if (image) {
+    if (postClickVerifyImage) {
       toolResult.content.push({
         type: MessageContentType.Image,
         source: {
-          data: image,
+          data: postClickVerifyImage,
+          media_type: 'image/png',
+          type: 'base64',
+        },
+      });
+    }
+    if (screenshotResult) {
+      toolResult.content.push({
+        type: MessageContentType.Image,
+        source: {
+          data: screenshotResult,
           media_type: 'image/png',
           type: 'base64',
         },
@@ -220,17 +443,19 @@ export async function handleComputerToolUse(
 
     return toolResult;
   } catch (error) {
-    logger.error(
-      `Error executing ${block.name} tool: ${error.message}`,
-      error.stack,
-    );
+    const msg = error instanceof Error ? error.message : String(error);
+    logger.error(`Error executing ${block.name} tool: ${msg}`, (error as any)?.stack);
+    const friendly =
+      block.name === 'computer_click_mouse' && msg.startsWith('Click rejected:')
+        ? 'Click rejected: provide coordinates or a short target description so Smart Focus can compute exact coordinates.'
+        : `Error executing ${block.name} tool: ${msg}`;
     return {
       type: MessageContentType.ToolResult,
       tool_use_id: block.id,
       content: [
         {
           type: MessageContentType.Text,
-          text: `Error executing ${block.name} tool: ${error.message}`,
+          text: friendly,
         },
       ],
       is_error: true,
@@ -284,11 +509,89 @@ async function traceMouse(input: {
   }
 }
 
+type ClickInput = {
+  coordinates?: Coordinates;
+  button: Button;
+  holdKeys?: string[];
+  clickCount: number;
+  description?: string;
+  context?: ClickContext;
+};
+
+async function performClick(
+  input: ClickInput,
+): Promise<{ coordinates?: Coordinates; context?: ClickContext } | null> {
+  const { coordinates, description } = input;
+  const baseContext =
+    input.context ??
+    (description
+      ? {
+          targetDescription: description,
+          source: 'manual' as const,
+        }
+      : undefined);
+
+  if (coordinates) {
+    await clickMouse({ ...input, context: baseContext });
+    return { coordinates, context: baseContext };
+  }
+
+  const trimmedDescription = description?.trim();
+  const requireDesc = process.env.BYTEBOT_REQUIRE_CLICK_DESCRIPTION !== 'false';
+  if (!trimmedDescription && !coordinates && requireDesc) {
+    throw new Error(
+      'Click rejected: provide coordinates or a short target description to enable Smart Focus.',
+    );
+  }
+  if (!trimmedDescription && !coordinates) {
+    console.warn(
+      '[SmartFocus] No coordinates or description provided; proceeding with direct click at current cursor position.',
+    );
+    await clickMouse({ ...input, context: baseContext });
+    return null;
+  }
+
+  const helper = getSmartClickHelper();
+
+  if (!helper) {
+    console.warn(
+      '[SmartFocus] Helper unavailable (proxy URL or configuration missing); falling back to basic click.',
+    );
+    await clickMouse({ ...input, context: baseContext });
+    return null;
+  }
+
+  const smartResult = await helper.performSmartClick(trimmedDescription!);
+  if (smartResult) {
+    await clickMouse({
+      ...input,
+      coordinates: smartResult.coordinates,
+      context: smartResult.context,
+    });
+    return smartResult;
+  }
+
+  const binaryResult = await helper.binarySearchClick(trimmedDescription!);
+  if (binaryResult) {
+    await clickMouse({
+      ...input,
+      coordinates: binaryResult.coordinates,
+      context: binaryResult.context,
+    });
+    return binaryResult;
+  }
+
+  await clickMouse({ ...input, context: baseContext });
+  return null;
+}
+
 async function clickMouse(input: {
   coordinates?: Coordinates;
   button: Button;
   holdKeys?: string[];
   clickCount: number;
+  description?: string;
+  context?: ClickContext;
 }): Promise<void> {
   const { coordinates, button, holdKeys, clickCount } = input;
   console.log(
@@ -305,12 +608,220 @@ async function clickMouse(input: {
         button,
         holdKeys: holdKeys && holdKeys.length > 0 ? holdKeys : undefined,
         clickCount,
+        description: input.description ?? undefined,
+        context: input.context ?? undefined,
       }),
     });
   } catch (error) {
     console.error('Error in click_mouse action:', error);
     throw error;
   }
+}
+
+let cachedSmartClickHelper: SmartClickHelper | null | undefined = undefined;
+
+function getSmartClickHelper(): SmartClickHelper | null {
+  if (!SMART_FOCUS_ENABLED) {
+    return null;
+  }
+
+  if (cachedSmartClickHelper !== undefined) {
+    return cachedSmartClickHelper;
+  }
+
+  cachedSmartClickHelper = createSmartClickHelper();
+  return cachedSmartClickHelper;
+}
+
+function createSmartClickHelper(): SmartClickHelper | null {
+  const ai = createSmartClickAI();
+  if (!ai) {
+    return null;
+  }
+
+  const screenshotFn = async (options?: ScreenshotOptions) => {
+    return screenshot(options);
+  };
+
+  const screenshotRegionFn = async (options: {
+    region: string;
+    gridSize?: number;
+    enhance?: boolean;
+    includeOffset?: boolean;
+    addHighlight?: boolean;
+    progressStep?: number;
+    progressMessage?: string;
+    progressTaskId?: string;
+  }) => {
+    return screenshotRegion(options);
+  };
+
+  const screenshotCustomRegionFn = async (options: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    gridSize?: number;
+  }) => {
+    return screenshotCustomRegion(options);
+  };
+
+  return new SmartClickHelper(
+    ai,
+    screenshotFn,
+    screenshotRegionFn,
+    screenshotCustomRegionFn,
+    {
+      proxyUrl: BYTEBOT_LLM_PROXY_URL,
+      model: SMART_FOCUS_MODEL,
+    },
+  );
+}
+
+export function createSmartClickAI(): SmartClickAI | null {
+  if (!BYTEBOT_LLM_PROXY_URL) {
+    console.warn(
+      '[SmartFocus] BYTEBOT_LLM_PROXY_URL not set; smart focus disabled.',
+    );
+    return null;
+  }
+
+  const openai = new OpenAI({
+    apiKey: 'dummy-key-for-proxy',
+    baseURL: BYTEBOT_LLM_PROXY_URL,
+  });
+
+  return {
+    async askAboutScreenshot(image: string, prompt: string): Promise<string> {
+      const response = await openai.chat.completions.create({
+        model: SMART_FOCUS_MODEL,
+        temperature: 0,
+        max_tokens: 64,
+        messages: [
+          {
+            role: 'system',
+            content:
+              'You identify regions of a desktop screenshot. Reply exactly with the requested format.',
+          },
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: prompt.trim(),
+              },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: `data:image/png;base64,${image}`,
+                  detail: 'low',
+                },
+              },
+            ],
+          },
+        ],
+      });
+
+      const message = response.choices[0]?.message;
+      if (!message) {
+        throw new Error('Smart focus region identification returned no result');
+      }
+
+      const content = Array.isArray(message.content)
+        ? message.content
+            .map((part) =>
+              typeof part === 'string' ? part : 'text' in part ? part.text : '',
+            )
+            .join('')
+        : message.content ?? '';
+
+      return (content || '').trim();
+    },
+
+    async getCoordinates(
+      image: string,
+      prompt: string,
+    ): Promise<{ x: number; y: number }> {
+      const completion = await openai.chat.completions.create({
+        model: SMART_FOCUS_MODEL,
+        temperature: 0,
+        max_tokens: 128,
+        messages: [
+          {
+            role: 'system',
+            content:
+              'You provide exact screen coordinates. Reply ONLY with JSON: {"x":<number>,"y":<number>}.',
+          },
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: `${prompt.trim()}\nRespond with JSON only.`,
+              },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: `data:image/png;base64,${image}`,
+                  detail: 'high',
+                },
+              },
+            ],
+          },
+        ],
+      });
+
+      const message = completion.choices[0]?.message;
+      if (!message) {
+        throw new Error('Smart focus coordinate identification returned no result');
+      }
+
+      const rawContent = Array.isArray(message.content)
+        ? message.content
+            .map((part) =>
+              typeof part === 'string' ? part : 'text' in part ? part.text : '',
+            )
+            .join('')
+        : message.content ?? '';
+
+      const parsed = parseCoordinateResponse(rawContent);
+      if (!parsed) {
+        throw new Error(
+          `Unable to parse coordinates from smart focus response: ${rawContent}`,
+        );
+      }
+
+      return parsed;
+    },
+  };
+}
+
+function parseCoordinateResponse(
+  response: string,
+): { x: number; y: number } | null {
+  const trimmed = response.trim();
+  try {
+    const json = JSON.parse(trimmed);
+    if (typeof json.x === 'number' && typeof json.y === 'number') {
+      return { x: Math.round(json.x), y: Math.round(json.y) };
+    }
+  } catch (error) {
+    // Ignore JSON parse errors and fall through to regex parsing.
+  }
+
+  const match = trimmed.match(/(-?\d+(?:\.\d+)?)[^\d-]+(-?\d+(?:\.\d+)?)/);
+  if (!match) {
+    return null;
+  }
+
+  const x = Number.parseFloat(match[1]);
+  const y = Number.parseFloat(match[2]);
+
+  if (Number.isNaN(x) || Number.isNaN(y)) {
+    return null;
+  }
+
+  return { x: Math.round(x), y: Math.round(y) };
 }
 
 async function pressMouse(input: {
@@ -523,18 +1034,25 @@ async function cursorPosition(): Promise<Coordinates> {
   }
 }
 
-async function screenshot(): Promise<string> {
+async function screenshot(
+  options?: ScreenshotOptions,
+): Promise<ScreenshotResponse> {
   console.log('Taking screenshot');
 
   try {
-    const requestBody = {
-      action: 'screenshot',
-    };
-
     const response = await fetch(`${BYTEBOT_DESKTOP_BASE_URL}/computer-use`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody),
+      body: JSON.stringify({
+        action: 'screenshot',
+        gridOverlay: options?.gridOverlay ?? undefined,
+        gridSize: options?.gridSize ?? undefined,
+        highlightRegions: options?.highlightRegions ?? undefined,
+        progressStep: options?.progressStep ?? undefined,
+        progressMessage: options?.progressMessage ?? undefined,
+        progressTaskId: options?.progressTaskId ?? undefined,
+        markTarget: options?.markTarget ?? undefined,
+      }),
     });
 
     if (!response.ok) {
@@ -547,9 +1065,152 @@ async function screenshot(): Promise<string> {
       throw new Error('Failed to take screenshot: No image data received');
     }
 
-    return data.image; // Base64 encoded image
+    return { image: data.image, offset: data.offset };
   } catch (error) {
     console.error('Error in screenshot action:', error);
+    throw error;
+  }
+}
+
+async function screenInfo(): Promise<{ width: number; height: number }> {
+  console.log('Getting screen info');
+  try {
+    const response = await fetch(`${BYTEBOT_DESKTOP_BASE_URL}/computer-use`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'screen_info' }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to get screen info: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return { width: data.width, height: data.height };
+  } catch (error) {
+    console.error('Error in screen_info action:', error);
+    throw error;
+  }
+}
+
+async function screenshotRegion(input: {
+  region: string;
+  gridSize?: number | null;
+  enhance?: boolean | null;
+  includeOffset?: boolean | null;
+  addHighlight?: boolean | null;
+  progressStep?: number | null;
+  progressMessage?: string | null;
+  progressTaskId?: string | null;
+  zoomLevel?: number | null;
+}): Promise<{
+  image: string;
+  offset?: { x: number; y: number };
+  region?: { x: number; y: number; width: number; height: number };
+  zoomLevel?: number;
+}> {
+  console.log(`Taking focused screenshot for region: ${input.region}`);
+
+  try {
+    const response = await fetch(`${BYTEBOT_DESKTOP_BASE_URL}/computer-use`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'screenshot_region',
+        region: input.region,
+        gridSize: input.gridSize ?? undefined,
+        enhance: input.enhance ?? undefined,
+        includeOffset: input.includeOffset ?? undefined,
+        addHighlight: input.addHighlight ?? undefined,
+        progressStep: input.progressStep ?? undefined,
+        progressMessage: input.progressMessage ?? undefined,
+        progressTaskId: input.progressTaskId ?? undefined,
+        zoomLevel: input.zoomLevel ?? undefined,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to take focused screenshot: ${response.statusText}`,
+      );
+    }
+
+    const data = await response.json();
+    if (!data.image) {
+      throw new Error('No image returned for focused screenshot');
+    }
+
+    return {
+      image: data.image,
+      offset: data.offset,
+      region: data.region,
+      zoomLevel: data.zoomLevel,
+    };
+  } catch (error) {
+    console.error('Error in screenshot_region action:', error);
+    throw error;
+  }
+}
+
+async function screenshotCustomRegion(input: {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  gridSize?: number | null;
+  zoomLevel?: number | null;
+  markTarget?: { coordinates: Coordinates; label?: string } | null;
+  progressStep?: number | null;
+  progressMessage?: string | null;
+  progressTaskId?: string | null;
+}): Promise<{
+  image: string;
+  offset?: { x: number; y: number };
+  region?: { x: number; y: number; width: number; height: number };
+  zoomLevel?: number;
+}> {
+  console.log(
+    `Taking custom region screenshot at (${input.x}, ${input.y}) ${input.width}x${input.height}`,
+  );
+
+  try {
+    const response = await fetch(`${BYTEBOT_DESKTOP_BASE_URL}/computer-use`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'screenshot_custom_region',
+        x: input.x,
+        y: input.y,
+        width: input.width,
+        height: input.height,
+        gridSize: input.gridSize ?? undefined,
+        zoomLevel: input.zoomLevel ?? undefined,
+        markTarget: input.markTarget ?? undefined,
+        progressStep: input.progressStep ?? undefined,
+        progressMessage: input.progressMessage ?? undefined,
+        progressTaskId: input.progressTaskId ?? undefined,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to take custom region screenshot: ${response.statusText}`,
+      );
+    }
+
+    const data = await response.json();
+    if (!data.image) {
+      throw new Error('No image returned for custom region screenshot');
+    }
+
+    return {
+      image: data.image,
+      offset: data.offset,
+      region: data.region,
+      zoomLevel: data.zoomLevel,
+    };
+  } catch (error) {
+    console.error('Error in screenshot_custom_region action:', error);
     throw error;
   }
 }

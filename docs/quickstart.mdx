@@ -29,6 +29,21 @@ Bytebot can be deployed in several ways depending on your needs:
   Need more details? See the full <a href="/deployment/railway">Railway deployment guide</a>.
 </Note>
 
+### Precision & Verification Defaults
+
+Out of the box, Bytebot prioritizes keyboard navigation and uses zoomed, grid‑assisted verification after clicks. These defaults are already set in `docker/docker-compose.yml` and Helm charts:
+
+- Desktop (bytebot-desktop)
+  - `BYTEBOT_PRECLICK_SNAP=true` – snap click to nearest high‑contrast feature (±6px)
+  - `BYTEBOT_CLICK_RETRY_ON_NOCHANGE=true` – retry once if local UI region doesn’t change
+  - `BYTEBOT_GRID_OVERLAY=true` – include coordinate grid on screenshots
+- Agent (bytebot-agent)
+  - `BYTEBOT_CLICK_VERIFY=true` – include a zoomed verification image with crosshair after clicks
+  - `BYTEBOT_POST_ACTION_SCREENSHOT=false` – skip generic full screenshot unless opted‑in
+  - `BYTEBOT_INCLUDE_FULL_AFTER_VERIFY=false` – include full view only if explicitly enabled
+
+You can override these in your environment or compose files as needed.
+
   </Tab>
   <Tab title="Docker Compose">
     ## 🐳 Self-host with Docker Compose

@@ -110,6 +110,72 @@ export class TasksController {
     return models;
   }
 
+  @Get('telemetry/summary')
+  async telemetrySummary(
+    @Query('app') app?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const base = process.env.BYTEBOT_DESKTOP_BASE_URL;
+    if (!base) {
+      throw new HttpException('Desktop base URL not configured', HttpStatus.BAD_GATEWAY);
+    }
+    const qs: string[] = [];
+    if (app) qs.push(`app=${encodeURIComponent(app)}`);
+    if (limit) qs.push(`limit=${encodeURIComponent(limit)}`);
+    const url = `${base}/telemetry/summary${qs.length ? `?${qs.join('&')}` : ''}`;
+    try {
+      const res = await fetch(url);
+      if (!res.ok) {
+        throw new HttpException(`Failed to fetch telemetry: ${res.statusText}`, HttpStatus.BAD_GATEWAY);
+      }
+      return await res.json();
+    } catch (e: any) {
+      throw new HttpException(`Error fetching telemetry: ${e.message}`, HttpStatus.BAD_GATEWAY);
+    }
+  }
+
+  @Get('telemetry/apps')
+  async telemetryApps(
+    @Query('limit') limit?: string,
+    @Query('window') window?: string,
+  ) {
+    const base = process.env.BYTEBOT_DESKTOP_BASE_URL;
+    if (!base) {
+      throw new HttpException('Desktop base URL not configured', HttpStatus.BAD_GATEWAY);
+    }
+    const qs: string[] = [];
+    if (limit) qs.push(`limit=${encodeURIComponent(limit)}`);
+    if (window) qs.push(`window=${encodeURIComponent(window)}`);
+    const url = `${base}/telemetry/apps${qs.length ? `?${qs.join('&')}` : ''}`;
+    try {
+      const res = await fetch(url);
+      if (!res.ok) {
+        throw new HttpException(`Failed to fetch apps: ${res.statusText}`, HttpStatus.BAD_GATEWAY);
+      }
+      return await res.json();
+    } catch (e: any) {
+      throw new HttpException(`Error fetching apps: ${e.message}`, HttpStatus.BAD_GATEWAY);
+    }
+  }
+
+  @Post('telemetry/reset')
+  async telemetryReset() {
+    const base = process.env.BYTEBOT_DESKTOP_BASE_URL;
+    if (!base) {
+      throw new HttpException('Desktop base URL not configured', HttpStatus.BAD_GATEWAY);
+    }
+    const url = `${base}/telemetry/reset`;
+    try {
+      const res = await fetch(url, { method: 'POST' });
+      if (!res.ok) {
+        throw new HttpException(`Failed to reset telemetry: ${res.statusText}`, HttpStatus.BAD_GATEWAY);
+      }
+      return await res.json();
+    } catch (e: any) {
+      throw new HttpException(`Error resetting telemetry: ${e.message}`, HttpStatus.BAD_GATEWAY);
+    }
+  }
+
   @Get(':id')
   async findById(@Param('id') id: string): Promise<Task> {
     return this.tasksService.findById(id);

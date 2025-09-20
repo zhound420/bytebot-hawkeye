@@ -88,3 +88,23 @@ export interface Task {
   model: Model;
   files?: File[];
 }
+
+export interface TelemetrySummary {
+  targetedClicks: number;
+  untargetedClicks: number;
+  avgAbsDelta: number | null;
+  avgDeltaX: number | null;
+  avgDeltaY: number | null;
+  calibrationSnapshots: number;
+  recentAbsDeltas?: number[];
+  actionCounts?: Record<string, number>;
+  retryClicks?: number;
+  hoverProbes?: { count: number; avgDiff: number | null };
+  postClickDiff?: { count: number; avgDiff: number | null };
+  smartClicks?: number;
+  progressiveZooms?: number;
+}
+
+export interface TelemetryApps {
+  apps: Array<{ name: string; count: number }>;
+}

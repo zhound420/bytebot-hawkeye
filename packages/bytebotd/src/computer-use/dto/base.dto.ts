@@ -1,4 +1,5 @@
-import { IsNumber } from 'class-validator';
+import { IsIn, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CoordinatesDto {
   @IsNumber()
@@ -34,4 +35,44 @@ export enum ApplicationName {
   TERMINAL = 'terminal',
   DESKTOP = 'desktop',
   DIRECTORY = 'directory',
+}
+
+export enum ClickSourceType {
+  MANUAL = 'manual',
+  SMART_FOCUS = 'smart_focus',
+  PROGRESSIVE_ZOOM = 'progressive_zoom',
+  BINARY_SEARCH = 'binary_search',
+}
+
+export class RegionDto {
+  @IsNumber()
+  x: number;
+
+  @IsNumber()
+  y: number;
+
+  @IsNumber()
+  width: number;
+
+  @IsNumber()
+  height: number;
+}
+
+export class ClickContextDto {
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => RegionDto)
+  region?: RegionDto;
+
+  @IsOptional()
+  @IsNumber()
+  zoomLevel?: number;
+
+  @IsOptional()
+  @IsString()
+  targetDescription?: string;
+
+  @IsOptional()
+  @IsIn(Object.values(ClickSourceType))
+  source?: ClickSourceType;
 }

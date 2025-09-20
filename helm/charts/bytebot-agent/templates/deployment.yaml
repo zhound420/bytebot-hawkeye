@@ -31,6 +31,13 @@ spec:
         - name: BYTEBOT_LLM_PROXY_URL
           value: {{ .Values.config.llmProxyUrl | default .Values.env.BYTEBOT_LLM_PROXY_URL | quote }}
         {{- end }}
+        # Agent behavior flags
+        - name: BYTEBOT_CLICK_VERIFY
+          value: {{ .Values.behavior.clickVerify | default true | quote }}
+        - name: BYTEBOT_POST_ACTION_SCREENSHOT
+          value: {{ .Values.behavior.postActionScreenshot | default false | quote }}
+        - name: BYTEBOT_INCLUDE_FULL_AFTER_VERIFY
+          value: {{ .Values.behavior.includeFullAfterVerify | default false | quote }}
         {{- /* Anthropic API Key */ -}}
         {{- if .Values.env.ANTHROPIC_API_KEY }}
         - name: ANTHROPIC_API_KEY

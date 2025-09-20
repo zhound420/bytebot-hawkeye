@@ -19,7 +19,10 @@ import {
   PasteTextActionDto,
   WaitActionDto,
   ScreenshotActionDto,
+  ScreenshotRegionFocusActionDto,
+  ScreenshotCustomRegionActionDto,
   CursorPositionActionDto,
+  ScreenInfoActionDto,
   ApplicationActionDto,
   WriteFileActionDto,
   ReadFileActionDto,
@@ -70,8 +73,17 @@ export class ComputerActionValidationPipe implements PipeTransform {
       case 'screenshot':
         dto = plainToClass(ScreenshotActionDto, value);
         break;
+      case 'screenshot_region':
+        dto = plainToClass(ScreenshotRegionFocusActionDto, value);
+        break;
+      case 'screenshot_custom_region':
+        dto = plainToClass(ScreenshotCustomRegionActionDto, value);
+        break;
       case 'cursor_position':
         dto = plainToClass(CursorPositionActionDto, value);
+        break;
+      case 'screen_info':
+        dto = plainToClass(ScreenInfoActionDto, value);
         break;
       case 'application':
         dto = plainToClass(ApplicationActionDto, value);

@@ -101,6 +101,32 @@ export class ComputerUseTools {
       clickCount: z
         .number()
         .describe('Number of clicks to perform (e.g., 2 for double-click).'),
+      description: z
+        .string()
+        .optional()
+        .describe(
+          'Optional description of the intended target (e.g., "Submit button"). When provided, the smart focus system can locate the element automatically.',
+        ),
+      context: z
+        .object({
+          region: z
+            .object({
+              x: z.number(),
+              y: z.number(),
+              width: z.number(),
+              height: z.number(),
+            })
+            .optional(),
+          zoomLevel: z.number().optional(),
+          targetDescription: z.string().optional(),
+          source: z
+            .enum(['manual', 'smart_focus', 'progressive_zoom', 'binary_search'])
+            .optional(),
+        })
+        .optional()
+        .describe(
+          'Optional telemetry context including region bounds, zoom level, and origin of the click request.',
+        ),
     }),
   })
   async clickMouse({
@@ -108,11 +134,20 @@ export class ComputerUseTools {
     button,
     holdKeys,
     clickCount,
+    description,
+    context,
   }: {
     coordinates?: { x: number; y: number };
     button: 'left' | 'right' | 'middle';
     holdKeys?: string[];
     clickCount: number;
+    description?: string;
+    context?: {
+      region?: { x: number; y: number; width: number; height: number };
+      zoomLevel?: number;
+      targetDescription?: string;
+      source?: 'manual' | 'smart_focus' | 'progressive_zoom' | 'binary_search';
+    };
   }) {
     try {
       await this.computerUse.action({
@@ -121,6 +156,8 @@ export class ComputerUseTools {
         button,
         holdKeys,
         clickCount,
+        description,
+        context,
       });
       return {
         content: [{ type: 'text', text: 'mouse clicked' }],
@@ -549,11 +586,50 @@ V, W, X, Y, Z
   @Tool({
     name: 'computer_screenshot',
     description: 'Captures a screenshot of the current screen.',
+    parameters: z
+      .object({
+        gridOverlay: z.boolean().optional(),
+        gridSize: z.number().optional(),
+        highlightRegions: z.boolean().optional(),
+        progressStep: z.number().optional(),
+        progressMessage: z.string().optional(),
+        progressTaskId: z.string().optional(),
+        markTarget: z
+          .object({
+            coordinates: z.object({ x: z.number(), y: z.number() }),
+            label: z.string().optional(),
+          })
+          .optional(),
+      })
+      .optional(),
   })
-  async screenshot() {
+  async screenshot({
+    gridOverlay,
+    gridSize,
+    highlightRegions,
+    progressStep,
+    progressMessage,
+    progressTaskId,
+    markTarget,
+  }: {
+    gridOverlay?: boolean;
+    gridSize?: number;
+    highlightRegions?: boolean;
+    progressStep?: number;
+    progressMessage?: string;
+    progressTaskId?: string;
+    markTarget?: { coordinates: { x: number; y: number }; label?: string };
+  } = {}) {
     try {
       const shot = (await this.computerUse.action({
         action: 'screenshot',
+        gridOverlay,
+        gridSize,
+        highlightRegions,
+        progressStep,
+        progressMessage,
+        progressTaskId,
+        markTarget,
       })) as { image: string };
       return {
         content: [
@@ -570,6 +646,168 @@ V, W, X, Y, Z
           {
             type: 'text',
             text: `Error taking screenshot: ${(err as Error).message}`,
+          },
+        ],
+      };
+    }
+  }
+
+  @Tool({
+    name: 'computer_screenshot_region',
+    description:
+      'Captures a focused screenshot of a predefined 3x3 screen region with an optional finer grid.',
+    parameters: z.object({
+      region: z.enum([
+        'top-left',
+        'top-center',
+        'top-right',
+        'middle-left',
+        'middle-center',
+        'middle-right',
+        'bottom-left',
+        'bottom-center',
+        'bottom-right',
+      ]),
+      gridSize: z
+        .number()
+        .optional()
+        .describe('Optional grid spacing in pixels for the focused view.'),
+      enhance: z
+        .boolean()
+        .optional()
+        .describe('Apply sharpening and contrast enhancement to the capture.'),
+      includeOffset: z
+        .boolean()
+        .optional()
+        .describe('Include global coordinate offsets in the grid labels.'),
+      addHighlight: z
+        .boolean()
+        .optional()
+        .describe('Highlight this region in the output.'),
+      progressStep: z.number().optional(),
+      progressMessage: z.string().optional(),
+      progressTaskId: z.string().optional(),
+    }),
+  })
+  async screenshotRegion({
+    region,
+    gridSize,
+    enhance,
+    includeOffset,
+    addHighlight,
+    progressStep,
+    progressMessage,
+    progressTaskId,
+  }: {
+    region:
+      | 'top-left'
+      | 'top-center'
+      | 'top-right'
+      | 'middle-left'
+      | 'middle-center'
+      | 'middle-right'
+      | 'bottom-left'
+      | 'bottom-center'
+      | 'bottom-right';
+    gridSize?: number;
+    enhance?: boolean;
+    includeOffset?: boolean;
+    addHighlight?: boolean;
+    progressStep?: number;
+    progressMessage?: string;
+    progressTaskId?: string;
+  }) {
+    try {
+      const shot = (await this.computerUse.action({
+        action: 'screenshot_region',
+        region,
+        gridSize,
+        enhance,
+        includeOffset,
+        addHighlight,
+        progressStep,
+        progressMessage,
+        progressTaskId,
+      })) as { image: string; offset: { x: number; y: number } };
+
+      return {
+        content: [
+          {
+            type: 'image',
+            data: await compressPngBase64Under1MB(shot.image),
+            mimeType: 'image/png',
+          },
+          {
+            type: 'text',
+            text: JSON.stringify({ offset: shot.offset }),
+          },
+        ],
+      };
+    } catch (err) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Error taking focused region screenshot: ${(err as Error).message}`,
+          },
+        ],
+      };
+    }
+  }
+
+  @Tool({
+    name: 'computer_screenshot_custom_region',
+    description:
+      'Captures a custom rectangular region of the screen with a fine grid overlay and global coordinates.',
+    parameters: z.object({
+      x: z.number(),
+      y: z.number(),
+      width: z.number(),
+      height: z.number(),
+      gridSize: z
+        .number()
+        .optional()
+        .describe('Optional grid spacing in pixels for the custom capture.'),
+    }),
+  })
+  async screenshotCustomRegion({
+    x,
+    y,
+    width,
+    height,
+    gridSize,
+  }: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    gridSize?: number;
+  }) {
+    try {
+      const shot = (await this.computerUse.action({
+        action: 'screenshot_custom_region',
+        x,
+        y,
+        width,
+        height,
+        gridSize,
+      })) as { image: string };
+
+      return {
+        content: [
+          {
+            type: 'image',
+            data: await compressPngBase64Under1MB(shot.image),
+            mimeType: 'image/png',
+          },
+        ],
+      };
+    } catch (err) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Error taking custom region screenshot: ${(err as Error).message}`,
           },
         ],
       };

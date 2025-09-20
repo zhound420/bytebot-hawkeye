@@ -15,8 +15,24 @@ services:
     privileged: true
     ports:
       - "9990:9990" # bytebotd service & noVNC
+      - "8081:8081" # progress websocket
     environment:
       - DISPLAY=:0
+      - BYTEBOT_GRID_OVERLAY=true
+      - BYTEBOT_GRID_DEBUG=false
+      - BYTEBOT_PROGRESSIVE_ZOOM_USE_AI=true
+      - BYTEBOT_POST_CLICK_CALIBRATION=true
+      - BYTEBOT_DRIFT_COMPENSATION=true
+      - BYTEBOT_DRIFT_SMOOTHING=0.2
+      # Accuracy aids
+      - BYTEBOT_PRECLICK_SNAP=true
+      - BYTEBOT_SNAP_RADIUS=6
+      - BYTEBOT_SNAP_PENALTY=0.25
+      - BYTEBOT_CLICK_RETRY_ON_NOCHANGE=true
+      - BYTEBOT_CLICK_VERIFY_DELAY=250
+      - BYTEBOT_CLICK_VERIFY_RADIUS=12
+      - BYTEBOT_CLICK_VERIFY_THRESHOLD=4.0
+      - BYTEBOT_CLICK_RETRY_MAX=1
     networks:
       - bytebot-network
 
@@ -49,6 +65,12 @@ services:
       - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/bytebotdb}
       - BYTEBOT_DESKTOP_BASE_URL=${BYTEBOT_DESKTOP_BASE_URL:-http://bytebot-desktop:9990}
       - BYTEBOT_LLM_PROXY_URL=${BYTEBOT_LLM_PROXY_URL:-http://bytebot-llm-proxy:4000}
+      - BYTEBOT_GRID_OVERLAY=true
+      - BYTEBOT_PROGRESSIVE_ZOOM_USE_AI=true
+      # Agent-side verification + screenshot policy
+      - BYTEBOT_CLICK_VERIFY=true
+      - BYTEBOT_POST_ACTION_SCREENSHOT=true
+      - BYTEBOT_INCLUDE_FULL_AFTER_VERIFY=true
     depends_on:
       - postgres
     networks:
@@ -60,10 +82,14 @@ services:
       dockerfile: bytebot-llm-proxy/Dockerfile
     ports:
       - "4000:4000"
+    volumes:
+      # Mount the config to avoid needing image rebuilds for model list changes
+      - ../packages/bytebot-llm-proxy/litellm-config.yaml:/app/config.yaml:ro
     environment:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
     networks:
       - bytebot-network
 
@@ -84,6 +110,7 @@ services:
       - NODE_ENV=production
       - BYTEBOT_AGENT_BASE_URL=${BYTEBOT_AGENT_BASE_URL:-http://bytebot-agent:9991}
       - BYTEBOT_DESKTOP_VNC_URL=${BYTEBOT_DESKTOP_VNC_URL:-http://bytebot-desktop:9990/websockify}
+      - NEXT_PUBLIC_PROGRESS_WS_PORT=${NEXT_PUBLIC_PROGRESS_WS_PORT:-8081}
     depends_on:
       - bytebot-agent
     networks:

@@ -366,18 +366,39 @@ export class AgentProcessor {
 
       // Update the task status after all tool results have been generated if we have a set task status tool use block
       if (setTaskStatusToolUseBlock) {
-        switch (setTaskStatusToolUseBlock.input.status) {
-          case 'completed':
+        const desired = setTaskStatusToolUseBlock.input.status;
+        if (desired === 'completed') {
+          const canComplete = await this.canMarkCompleted(taskId);
+          if (canComplete) {
             await this.tasksService.update(taskId, {
               status: TaskStatus.COMPLETED,
               completedAt: new Date(),
             });
-            break;
-          case 'needs_help':
-            await this.tasksService.update(taskId, {
-              status: TaskStatus.NEEDS_HELP,
+          } else {
+            // Reject completion with guidance; keep task running
+            await this.messagesService.create({
+              content: [
+                {
+                  type: MessageContentType.ToolResult,
+                  tool_use_id: setTaskStatusToolUseBlock.id,
+                  is_error: true,
+                  content: [
+                    {
+                      type: MessageContentType.Text,
+                      text:
+                        'Cannot mark as completed yet. Please perform concrete actions (e.g., open the app, click/type/paste, write_file) and provide verification (screenshot of the result or computer_read_file content). Then try completion again.',
+                    },
+                  ],
+                } as any,
+              ],
+              role: Role.ASSISTANT,
+              taskId,
             });
-            break;
+          }
+        } else if (desired === 'needs_help') {
+          await this.tasksService.update(taskId, {
+            status: TaskStatus.NEEDS_HELP,
+          });
         }
       }
 
@@ -399,6 +420,59 @@ export class AgentProcessor {
         this.isProcessing = false;
         this.currentTaskId = null;
       }
+    }
+  }
+
+  /**
+   * Basic completion gate: ensure at least one meaningful action occurred
+   * (click/type/paste/press_keys/drag/application/write/read_file), optionally
+   * with verification (document or screenshot present in history).
+   */
+  private async canMarkCompleted(taskId: string): Promise<boolean> {
+    try {
+      const history = await this.messagesService.findEvery(taskId);
+      let hasAction = false;
+      let hasVerification = false;
+
+      const ACTION_NAMES = new Set<string>([
+        'computer_click_mouse',
+        'computer_type_text',
+        'computer_paste_text',
+        'computer_press_keys',
+        'computer_drag_mouse',
+        'computer_application',
+        'computer_write_file',
+        'computer_read_file',
+      ]);
+
+      for (const msg of history) {
+        const blocks = (msg.content as MessageContentBlock[]) || [];
+        for (const block of blocks) {
+          if (block.type === MessageContentType.ToolUse) {
+            const name = (block as any).name as string;
+            if (ACTION_NAMES.has(name)) {
+              hasAction = true;
+            }
+          }
+          if (block.type === MessageContentType.ToolResult) {
+            const tr = block as any;
+            // Evidence: any document result or any image result
+            const content = (tr.content || []) as any[];
+            if (content.some((c) => c.type === MessageContentType.Document)) {
+              hasVerification = true;
+            }
+            if (content.some((c) => c.type === MessageContentType.Image)) {
+              hasVerification = true;
+            }
+          }
+        }
+      }
+
+      // Minimal requirement: at least one action and some verification artifact
+      return hasAction && hasVerification;
+    } catch (e) {
+      this.logger.warn(`canMarkCompleted: fallback to allow completion due to error: ${(e as Error).message}`);
+      return false;
     }
   }
 

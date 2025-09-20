@@ -12,6 +12,8 @@ import {
 import {
   ComputerToolUseContentBlock,
   isScreenshotToolUseBlock,
+  isScreenshotRegionToolUseBlock,
+  isScreenshotCustomRegionToolUseBlock,
   isWaitToolUseBlock,
   isTypeKeysToolUseBlock,
   isTypeTextToolUseBlock,
@@ -26,7 +28,9 @@ import {
   isApplicationToolUseBlock,
   isPasteTextToolUseBlock,
   isReadFileToolUseBlock,
+  isWriteFileToolUseBlock,
 } from "@bytebot/shared";
+import { isScreenInfoToolUseBlock } from "@bytebot/shared";
 
 // Define the IconType for proper type checking
 export type IconType =
@@ -43,6 +47,13 @@ export type IconType =
 export function getIcon(block: ComputerToolUseContentBlock): IconType {
   if (isScreenshotToolUseBlock(block)) {
     return Camera01Icon;
+  }
+  if (isScreenshotRegionToolUseBlock(block) || isScreenshotCustomRegionToolUseBlock(block)) {
+    return Camera01Icon;
+  }
+
+  if (isScreenInfoToolUseBlock(block)) {
+    return User03Icon;
   }
 
   if (isWaitToolUseBlock(block)) {
@@ -85,12 +96,26 @@ export function getIcon(block: ComputerToolUseContentBlock): IconType {
     return FileIcon;
   }
 
+  if (isWriteFileToolUseBlock(block)) {
+    return FileIcon;
+  }
+
   return User03Icon;
 }
 
 export function getLabel(block: ComputerToolUseContentBlock) {
   if (isScreenshotToolUseBlock(block)) {
     return "Screenshot";
+  }
+  if (isScreenshotRegionToolUseBlock(block)) {
+    return "Region Screenshot";
+  }
+  if (isScreenshotCustomRegionToolUseBlock(block)) {
+    return "Custom Region Screenshot";
+  }
+
+  if (isScreenInfoToolUseBlock(block)) {
+    return "Screen Info";
   }
 
   if (isWaitToolUseBlock(block)) {
@@ -160,6 +185,10 @@ export function getLabel(block: ComputerToolUseContentBlock) {
 
   if (isReadFileToolUseBlock(block)) {
     return "Read File";
+  }
+
+  if (isWriteFileToolUseBlock(block)) {
+    return "Write File";
   }
 
   return "Unknown";

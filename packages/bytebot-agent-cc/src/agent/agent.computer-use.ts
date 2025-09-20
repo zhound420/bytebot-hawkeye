@@ -3,9 +3,12 @@ import {
   Coordinates,
   Press,
   ComputerToolUseContentBlock,
+  MessageContentBlock,
   ToolResultContentBlock,
   MessageContentType,
   isScreenshotToolUseBlock,
+  isScreenshotRegionToolUseBlock,
+  isScreenshotCustomRegionToolUseBlock,
   isCursorPositionToolUseBlock,
   isMoveMouseToolUseBlock,
   isTraceMouseToolUseBlock,
@@ -20,6 +23,7 @@ import {
   isApplicationToolUseBlock,
   isPasteTextToolUseBlock,
   isReadFileToolUseBlock,
+  isScreenInfoToolUseBlock,
 } from '@bytebot/shared';
 import { Logger } from '@nestjs/common';
 
@@ -70,6 +74,89 @@ export async function handleComputerToolUse(
     }
   }
 
+  if (isScreenshotRegionToolUseBlock(block)) {
+    logger.debug('Processing focused region screenshot request');
+    try {
+      const { image, offset } = await screenshotRegion(block.input);
+      const content: Array<{ type: MessageContentType; [key: string]: any }> = [
+        {
+          type: MessageContentType.Image,
+          source: {
+            data: image,
+            media_type: 'image/png',
+            type: 'base64',
+          },
+        },
+      ];
+
+      if (offset) {
+        content.push({
+          type: MessageContentType.Text,
+          text: JSON.stringify({ offset }),
+        });
+      }
+
+      return {
+        type: MessageContentType.ToolResult,
+        tool_use_id: block.id,
+        content,
+      };
+    } catch (error) {
+      logger.error(
+        `Focused region screenshot failed: ${error.message}`,
+        error.stack,
+      );
+      return {
+        type: MessageContentType.ToolResult,
+        tool_use_id: block.id,
+        content: [
+          {
+            type: MessageContentType.Text,
+            text: 'ERROR: Failed to capture focused region screenshot',
+          },
+        ],
+        is_error: true,
+      };
+    }
+  }
+
+  if (isScreenshotCustomRegionToolUseBlock(block)) {
+    logger.debug('Processing custom region screenshot request');
+    try {
+      const { image } = await screenshotCustomRegion(block.input);
+      return {
+        type: MessageContentType.ToolResult,
+        tool_use_id: block.id,
+        content: [
+          {
+            type: MessageContentType.Image,
+            source: {
+              data: image,
+              media_type: 'image/png',
+              type: 'base64',
+            },
+          },
+        ],
+      };
+    } catch (error) {
+      logger.error(
+        `Custom region screenshot failed: ${error.message}`,
+        error.stack,
+      );
+      return {
+        type: MessageContentType.ToolResult,
+        tool_use_id: block.id,
+        content: [
+          {
+            type: MessageContentType.Text,
+            text: 'ERROR: Failed to capture custom region screenshot',
+          },
+        ],
+        is_error: true,
+      };
+    }
+  }
+
   if (isCursorPositionToolUseBlock(block)) {
     logger.debug('Processing cursor position request');
     try {
@@ -99,6 +186,40 @@ export async function handleComputerToolUse(
           {
             type: MessageContentType.Text,
             text: 'ERROR: Failed to get cursor position',
+          },
+        ],
+        is_error: true,
+      };
+    }
+  }
+
+  if (isScreenInfoToolUseBlock(block)) {
+    logger.debug('Processing screen info request');
+    try {
+      const info = await screenInfo();
+      logger.debug(`Screen info obtained: ${info.width}x${info.height}`);
+
+      return {
+        type: MessageContentType.ToolResult,
+        tool_use_id: block.id,
+        content: [
+          {
+            type: MessageContentType.Text,
+            text: `Screen size: ${info.width} x ${info.height}`,
+          },
+        ],
+      };
+    } catch (error) {
+      logger.error(
+        `Getting screen info failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      return {
+        type: MessageContentType.ToolResult,
+        tool_use_id: block.id,
+        content: [
+          {
+            type: MessageContentType.Text,
+            text: 'ERROR: Failed to get screen info',
           },
         ],
         is_error: true,
@@ -518,6 +639,27 @@ async function cursorPosition(): Promise<Coordinates> {
   }
 }
 
+async function screenInfo(): Promise<{ width: number; height: number }> {
+  console.log('Getting screen info');
+  try {
+    const response = await fetch(`${BYTEBOT_DESKTOP_BASE_URL}/computer-use`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'screen_info' }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to get screen info: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return { width: data.width, height: data.height };
+  } catch (error) {
+    console.error('Error in screen_info action:', error);
+    throw error;
+  }
+}
+
 async function screenshot(): Promise<string> {
   console.log('Taking screenshot');
 
@@ -545,6 +687,91 @@ async function screenshot(): Promise<string> {
     return data.image; // Base64 encoded image
   } catch (error) {
     console.error('Error in screenshot action:', error);
+    throw error;
+  }
+}
+
+async function screenshotRegion(input: {
+  region: string;
+  gridSize?: number | null;
+  enhance?: boolean | null;
+  includeOffset?: boolean | null;
+}): Promise<{ image: string; offset?: { x: number; y: number } }> {
+  console.log(`Taking focused screenshot for region: ${input.region}`);
+
+  try {
+    const response = await fetch(`${BYTEBOT_DESKTOP_BASE_URL}/computer-use`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'screenshot_region',
+        region: input.region,
+        gridSize: input.gridSize ?? undefined,
+        enhance: input.enhance ?? undefined,
+        includeOffset: input.includeOffset ?? undefined,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to take focused screenshot: ${response.statusText}`,
+      );
+    }
+
+    const data = await response.json();
+    if (!data.image) {
+      throw new Error('No image returned for focused screenshot');
+    }
+
+    return {
+      image: data.image,
+      offset: data.offset,
+    };
+  } catch (error) {
+    console.error('Error in screenshot_region action:', error);
+    throw error;
+  }
+}
+
+async function screenshotCustomRegion(input: {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  gridSize?: number | null;
+}): Promise<{ image: string }> {
+  console.log(
+    `Taking custom region screenshot at (${input.x}, ${input.y}) ${input.width}x${input.height}`,
+  );
+
+  try {
+    const response = await fetch(`${BYTEBOT_DESKTOP_BASE_URL}/computer-use`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'screenshot_custom_region',
+        x: input.x,
+        y: input.y,
+        width: input.width,
+        height: input.height,
+        gridSize: input.gridSize ?? undefined,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to take custom region screenshot: ${response.statusText}`,
+      );
+    }
+
+    const data = await response.json();
+    if (!data.image) {
+      throw new Error('No image returned for custom region screenshot');
+    }
+
+    return { image: data.image };
+  } catch (error) {
+    console.error('Error in screenshot_custom_region action:', error);
     throw error;
   }
 }

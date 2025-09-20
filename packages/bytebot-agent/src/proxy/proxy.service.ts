@@ -161,109 +161,171 @@ export class ProxyService implements BytebotAgentService {
           }
         }
       } else {
-        for (const block of messageContentBlocks) {
-          switch (block.type) {
-            case MessageContentType.Text: {
-              chatMessages.push({
-                role: message.role === Role.USER ? 'user' : 'assistant',
-                content: block.text,
-              });
-              break;
-            }
-            case MessageContentType.Image: {
-              const imageBlock = block as ImageContentBlock;
-              chatMessages.push({
-                role: 'user',
-                content: [
-                  {
-                    type: 'image_url',
-                    image_url: {
-                      url: `data:${imageBlock.source.media_type};base64,${imageBlock.source.data}`,
-                      detail: 'high',
-                    },
-                  },
-                ],
-              });
-              break;
-            }
-            case MessageContentType.ToolUse: {
-              const toolBlock = block as ToolUseContentBlock;
-              chatMessages.push({
-                role: 'assistant',
-                tool_calls: [
-                  {
-                    id: toolBlock.id,
-                    type: 'function',
-                    function: {
-                      name: toolBlock.name,
-                      arguments: JSON.stringify(toolBlock.input),
-                    },
-                  },
-                ],
-              });
-              break;
-            }
-            case MessageContentType.Thinking: {
-              const thinkingBlock = block as ThinkingContentBlock;
-              const message: ChatCompletionMessageParam = {
-                role: 'assistant',
-                content: null,
-              };
-              message['reasoning_content'] = thinkingBlock.thinking;
-              chatMessages.push(message);
-              break;
-            }
-            case MessageContentType.ToolResult: {
-              const toolResultBlock = block as ToolResultContentBlock;
+        // Group assistant messages into a single ChatCompletion message with combined content/tool_calls/reasoning
+        if (message.role === Role.ASSISTANT) {
+          const textParts: string[] = [];
+          const toolCalls: any[] = [];
+          let reasoningContent: string | null = null;
 
-              if (
-                toolResultBlock.content.every(
-                  (content) => content.type === MessageContentType.Image,
-                )
-              ) {
-                chatMessages.push({
-                  role: 'tool',
-                  tool_call_id: toolResultBlock.tool_use_id,
-                  content: 'screenshot',
+          for (const block of messageContentBlocks) {
+            switch (block.type) {
+              case MessageContentType.Text:
+                textParts.push((block as TextContentBlock).text);
+                break;
+              case MessageContentType.ToolUse: {
+                const toolBlock = block as ToolUseContentBlock;
+                toolCalls.push({
+                  id: toolBlock.id,
+                  type: 'function',
+                  function: {
+                    name: toolBlock.name,
+                    arguments: JSON.stringify(toolBlock.input),
+                  },
                 });
+                break;
               }
+              case MessageContentType.Thinking:
+                reasoningContent = (block as ThinkingContentBlock).thinking;
+                break;
+              default:
+                // ignore other types in assistant message
+                break;
+            }
+          }
 
-              toolResultBlock.content.forEach((content) => {
-                if (content.type === MessageContentType.Text) {
-                  chatMessages.push({
-                    role: 'tool',
-                    tool_call_id: toolResultBlock.tool_use_id,
-                    content: content.text,
-                  });
+          const assistantMsg: ChatCompletionMessageParam = {
+            role: 'assistant',
+            content: textParts.length ? textParts.join('\n') : '',
+          } as ChatCompletionMessageParam;
+          if (toolCalls.length) (assistantMsg as any).tool_calls = toolCalls;
+          if (reasoningContent) (assistantMsg as any).reasoning_content = reasoningContent;
+          chatMessages.push(assistantMsg);
+        } else {
+          // Handle user messages normally, including tool results
+          for (const block of messageContentBlocks) {
+            switch (block.type) {
+              case MessageContentType.Text:
+                chatMessages.push({ role: 'user', content: (block as TextContentBlock).text });
+                break;
+              case MessageContentType.Image: {
+                const imageBlock = block as ImageContentBlock;
+                chatMessages.push({
+                  role: 'user',
+                  content: [
+                    {
+                      type: 'image_url',
+                      image_url: {
+                        url: `data:${imageBlock.source.media_type};base64,${imageBlock.source.data}`,
+                        detail: 'high',
+                      },
+                    },
+                  ],
+                });
+                break;
+              }
+              case MessageContentType.ToolResult: {
+                const toolResultBlock = block as ToolResultContentBlock;
+                // 1) Respond to tool_calls with role='tool' messages immediately
+                let responded = false;
+                const pendingImages: { media_type: string; data: string }[] = [];
+                for (const content of toolResultBlock.content) {
+                  if (content.type === MessageContentType.Text) {
+                    chatMessages.push({
+                      role: 'tool',
+                      tool_call_id: toolResultBlock.tool_use_id,
+                      content: content.text,
+                    });
+                    responded = true;
+                  } else if (content.type === MessageContentType.Image) {
+                    // Summarize via tool message; queue actual image for a follow-up user message
+                    if (!responded) {
+                      chatMessages.push({
+                        role: 'tool',
+                        tool_call_id: toolResultBlock.tool_use_id,
+                        content: 'screenshot',
+                      });
+                      responded = true;
+                    }
+                    pendingImages.push({
+                      media_type: content.source.media_type,
+                      data: content.source.data,
+                    });
+                  }
                 }
-
-                if (content.type === MessageContentType.Image) {
+                // 2) After tool responses, provide the actual screenshot(s) as a user image message
+                if (pendingImages.length > 0) {
                   chatMessages.push({
                     role: 'user',
                     content: [
-                      {
-                        type: 'text',
-                        text: 'Screenshot',
-                      },
-                      {
+                      { type: 'text', text: 'Screenshot' },
+                      ...pendingImages.map((img) => ({
                         type: 'image_url',
                         image_url: {
-                          url: `data:${content.source.media_type};base64,${content.source.data}`,
+                          url: `data:${img.media_type};base64,${img.data}`,
                           detail: 'high',
                         },
-                      },
+                      } as ChatCompletionContentPart)),
                     ],
                   });
                 }
-              });
-              break;
+                break;
+              }
+              default:
+                // ignore
+                break;
             }
           }
         }
       }
     }
 
-    return chatMessages;
+    return this.sanitizeChatMessages(chatMessages);
+  }
+
+  /**
+   * Ensures Chat Completions sequence validity:
+   * - Any role='tool' must immediately respond to a preceding assistant message with tool_calls
+   * - If a stray tool message is found (no pending tool_calls), convert it to a user text message
+   */
+  private sanitizeChatMessages(
+    messages: ChatCompletionMessageParam[],
+  ): ChatCompletionMessageParam[] {
+    const result: ChatCompletionMessageParam[] = [];
+    let pendingToolCallIds: Set<string> = new Set();
+
+    for (const msg of messages) {
+      const toolCalls: any[] = (msg as any).tool_calls || [];
+      if (msg.role === 'assistant' && Array.isArray(toolCalls) && toolCalls.length > 0) {
+        // Start a new pending tool_calls window
+        pendingToolCallIds = new Set(
+          toolCalls
+            .filter((tc) => tc && typeof tc.id === 'string')
+            .map((tc) => tc.id as string),
+        );
+        result.push(msg);
+        continue;
+      }
+
+      if (msg.role === 'tool') {
+        const callId = (msg as any).tool_call_id as string | undefined;
+        if (callId && pendingToolCallIds.has(callId)) {
+          // Valid response
+          pendingToolCallIds.delete(callId);
+          result.push(msg);
+        } else {
+          // Fallback: convert to user text to avoid API 400, include hint
+          const content = (msg as any).content ?? '[tool result]';
+          result.push({ role: 'user', content: `[tool:${callId ?? 'unknown'}] ${content}` });
+        }
+        continue;
+      }
+
+      // Any non-tool message breaks the immediate requirement; clear pending
+      pendingToolCallIds.clear();
+      result.push(msg);
+    }
+
+    return result;
   }
 
   /**

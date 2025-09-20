@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>ByteBot Smart Focus - Live Progress</title>
+  <style>
+    body {
+      font-family: 'SF Mono', Monaco, monospace;
+      background: #0d1117;
+      color: #c9d1d9;
+      padding: 20px;
+      margin: 0;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 30px;
+      padding: 20px;
+      background: #161b22;
+      border-radius: 10px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .stat-card {
+      background: #161b22;
+      padding: 20px;
+      border-radius: 8px;
+      border-left: 4px solid #4CAF50;
+    }
+
+    .stat-value {
+      font-size: 36px;
+      color: #4CAF50;
+      font-weight: bold;
+    }
+
+    .progress-container {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .progress-step {
+      background: #161b22;
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+
+    .progress-step.active {
+      border: 2px solid #4CAF50;
+      transform: scale(1.05);
+    }
+
+    .progress-step img {
+      width: 100%;
+      border-radius: 4px;
+      margin-top: 10px;
+    }
+
+    .step-label {
+      font-size: 14px;
+      color: #8b949e;
+      margin-bottom: 5px;
+    }
+
+    .step-title {
+      font-size: 18px;
+      color: #c9d1d9;
+      margin-bottom: 10px;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.6; }
+      100% { opacity: 1; }
+    }
+
+    .processing {
+      animation: pulse 1.5s infinite;
+    }
+
+    .timeline {
+      background: #161b22;
+      padding: 20px;
+      border-radius: 8px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .timeline-entry {
+      padding: 10px;
+      border-left: 2px solid #30363d;
+      margin-left: 10px;
+      position: relative;
+    }
+
+    .timeline-entry::before {
+      content: '';
+      width: 10px;
+      height: 10px;
+      background: #4CAF50;
+      border-radius: 50%;
+      position: absolute;
+      left: -6px;
+      top: 15px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🎯 ByteBot Smart Focus - Live Progress</h1>
+  </div>
+
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-label">Current Accuracy</div>
+      <div class="stat-value" id="accuracy-value">--</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Clicks Today</div>
+      <div class="stat-value" id="clicks-value">--</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Avg Time</div>
+      <div class="stat-value" id="avg-time-value">--</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Success Rate</div>
+      <div class="stat-value" id="success-value">--</div>
+    </div>
+  </div>
+
+  <h2 id="current-task">Current Task: Waiting...</h2>
+
+  <div class="progress-container">
+    <div class="progress-step" id="step-1">
+      <div class="step-label">STEP 1</div>
+      <div class="step-title">Full Screen Scan</div>
+      <img src="/progress/current/01-full-screen.png" alt="Full screen" />
+      <p id="step-1-text">Awaiting data...</p>
+    </div>
+
+    <div class="progress-step" id="step-2">
+      <div class="step-label">STEP 2</div>
+      <div class="step-title">Region Focus</div>
+      <img src="/progress/current/02-region.png" alt="Region" />
+      <p id="step-2-text">Awaiting data...</p>
+    </div>
+
+    <div class="progress-step" id="step-3">
+      <div class="step-label">STEP 3</div>
+      <div class="step-title">Target Lock</div>
+      <img src="/progress/current/03-target.png" alt="Target" />
+      <p id="step-3-text">Awaiting data...</p>
+    </div>
+  </div>
+
+  <div class="timeline">
+    <h3>Activity Log</h3>
+    <div id="timeline-entries"></div>
+  </div>
+
+  <script>
+    const ws = new WebSocket('ws://' + location.hostname + ':8081');
+
+    const timeline = document.getElementById('timeline-entries');
+    const taskHeading = document.getElementById('current-task');
+    const stepElements = [
+      document.getElementById('step-1'),
+      document.getElementById('step-2'),
+      document.getElementById('step-3'),
+    ];
+    const stepTexts = [
+      document.getElementById('step-1-text'),
+      document.getElementById('step-2-text'),
+      document.getElementById('step-3-text'),
+    ];
+
+    ws.addEventListener('message', (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type !== 'progress') {
+        return;
+      }
+
+      taskHeading.textContent = `Current Task: ${data.description}`;
+
+      const entry = document.createElement('div');
+      entry.className = 'timeline-entry';
+      entry.textContent = `${new Date(data.timestamp).toLocaleTimeString()} - ${data.description}`;
+      timeline.prepend(entry);
+
+      if (data.step && stepElements[data.step - 1]) {
+        stepElements.forEach((el, index) => {
+          el.classList.toggle('active', index === data.step - 1);
+          el.classList.toggle('processing', index === data.step);
+        });
+
+        if (data.screenshot) {
+          const img = stepElements[data.step - 1].querySelector('img');
+          img.src = `data:image/png;base64,${data.screenshot}`;
+        }
+
+        stepTexts[data.step - 1].textContent = data.description;
+      }
+    });
+  </script>
+</body>
+</html>

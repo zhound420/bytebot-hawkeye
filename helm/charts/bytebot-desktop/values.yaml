@@ -31,6 +31,33 @@ affinity: {}
 env:
   - name: DISPLAY
     value: ":0"
+  # Grid overlay and accuracy features
+  - name: BYTEBOT_GRID_OVERLAY
+    value: "true"
+  - name: BYTEBOT_GRID_DEBUG
+    value: "false"
+  - name: BYTEBOT_POST_CLICK_CALIBRATION
+    value: "true"
+  - name: BYTEBOT_DRIFT_COMPENSATION
+    value: "true"
+  - name: BYTEBOT_DRIFT_SMOOTHING
+    value: "0.2"
+  - name: BYTEBOT_PRECLICK_SNAP
+    value: "true"
+  - name: BYTEBOT_SNAP_RADIUS
+    value: "6"
+  - name: BYTEBOT_SNAP_PENALTY
+    value: "0.25"
+  - name: BYTEBOT_CLICK_RETRY_ON_NOCHANGE
+    value: "true"
+  - name: BYTEBOT_CLICK_VERIFY_DELAY
+    value: "250"
+  - name: BYTEBOT_CLICK_VERIFY_RADIUS
+    value: "12"
+  - name: BYTEBOT_CLICK_VERIFY_THRESHOLD
+    value: "4.0"
+  - name: BYTEBOT_CLICK_RETRY_MAX
+    value: "1"
 
 shm:
   enabled: true

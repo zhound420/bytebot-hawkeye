@@ -11,7 +11,10 @@ import {
   TypeTextAction,
   WaitAction,
   ScreenshotAction,
+  ScreenshotRegionAction,
+  ScreenshotCustomRegionAction,
   CursorPositionAction,
+  ScreenInfoAction,
   ApplicationAction,
   PasteTextAction,
   WriteFileAction,
@@ -60,8 +63,16 @@ export const isTypeTextAction =
 export const isWaitAction = createActionTypeGuard<WaitAction>("wait");
 export const isScreenshotAction =
   createActionTypeGuard<ScreenshotAction>("screenshot");
+export const isScreenshotRegionAction =
+  createActionTypeGuard<ScreenshotRegionAction>("screenshot_region");
+export const isScreenshotCustomRegionAction =
+  createActionTypeGuard<ScreenshotCustomRegionAction>(
+    "screenshot_custom_region"
+  );
 export const isCursorPositionAction =
   createActionTypeGuard<CursorPositionAction>("cursor_position");
+export const isScreenInfoAction =
+  createActionTypeGuard<ScreenInfoAction>("screen_info");
 export const isApplicationAction =
   createActionTypeGuard<ApplicationAction>("application");
 
@@ -126,6 +137,22 @@ export function convertClickMouseActionToToolUseBlock(
   action: ClickMouseAction,
   toolUseId: string
 ): ComputerToolUseContentBlock {
+  const context = action.context
+    ? conditionallyAdd(
+        {},
+        [
+          [typeof action.context.region !== "undefined", "region", action.context.region],
+          [typeof action.context.zoomLevel === "number", "zoomLevel", action.context.zoomLevel],
+          [
+            typeof action.context.targetDescription === "string",
+            "targetDescription",
+            action.context.targetDescription,
+          ],
+          [typeof action.context.source === "string", "source", action.context.source],
+        ]
+      )
+    : undefined;
+
   return createToolUseBlock(
     "computer_click_mouse",
     toolUseId,
@@ -137,6 +164,8 @@ export function convertClickMouseActionToToolUseBlock(
       [
         [action.coordinates !== undefined, "coordinates", action.coordinates],
         [action.holdKeys !== undefined, "holdKeys", action.holdKeys],
+        [action.description !== undefined, "description", action.description],
+        [typeof context !== "undefined", "context", context],
       ]
     )
   );
@@ -255,7 +284,101 @@ export function convertScreenshotActionToToolUseBlock(
   action: ScreenshotAction,
   toolUseId: string
 ): ComputerToolUseContentBlock {
-  return createToolUseBlock("computer_screenshot", toolUseId, {});
+  return createToolUseBlock(
+    "computer_screenshot",
+    toolUseId,
+    conditionallyAdd(
+      {},
+      [
+        [typeof action.gridOverlay === "boolean", "gridOverlay", action.gridOverlay],
+        [typeof action.gridSize === "number", "gridSize", action.gridSize],
+        [
+          typeof action.highlightRegions === "boolean",
+          "highlightRegions",
+          action.highlightRegions,
+        ],
+        [typeof action.progressStep === "number", "progressStep", action.progressStep],
+        [
+          typeof action.progressMessage === "string",
+          "progressMessage",
+          action.progressMessage,
+        ],
+        [
+          typeof action.progressTaskId === "string",
+          "progressTaskId",
+          action.progressTaskId,
+        ],
+        [
+          typeof action.markTarget !== "undefined",
+          "markTarget",
+          action.markTarget,
+        ],
+      ]
+    )
+  );
+}
+
+export function convertScreenshotRegionActionToToolUseBlock(
+  action: ScreenshotRegionAction,
+  toolUseId: string
+): ComputerToolUseContentBlock {
+  return createToolUseBlock(
+    "computer_screenshot_region",
+    toolUseId,
+    conditionallyAdd(
+      {
+        region: action.region,
+      },
+      [
+        [typeof action.gridSize === "number", "gridSize", action.gridSize],
+        [typeof action.enhance === "boolean", "enhance", action.enhance],
+        [
+          typeof action.includeOffset === "boolean",
+          "includeOffset",
+          action.includeOffset,
+        ],
+        [
+          typeof action.addHighlight === "boolean",
+          "addHighlight",
+          action.addHighlight,
+        ],
+        [typeof action.zoomLevel === "number", "zoomLevel", action.zoomLevel],
+        [typeof action.progressStep === "number", "progressStep", action.progressStep],
+        [
+          typeof action.progressMessage === "string",
+          "progressMessage",
+          action.progressMessage,
+        ],
+        [
+          typeof action.progressTaskId === "string",
+          "progressTaskId",
+          action.progressTaskId,
+        ],
+      ]
+    )
+  );
+}
+
+export function convertScreenshotCustomRegionActionToToolUseBlock(
+  action: ScreenshotCustomRegionAction,
+  toolUseId: string
+): ComputerToolUseContentBlock {
+  return createToolUseBlock(
+    "computer_screenshot_custom_region",
+    toolUseId,
+    conditionallyAdd(
+      {
+        x: action.x,
+        y: action.y,
+        width: action.width,
+        height: action.height,
+      },
+      [
+        [typeof action.gridSize === "number", "gridSize", action.gridSize],
+        [typeof action.zoomLevel === "number", "zoomLevel", action.zoomLevel],
+      ]
+    )
+  );
 }
 
 export function convertCursorPositionActionToToolUseBlock(
@@ -263,6 +386,13 @@ export function convertCursorPositionActionToToolUseBlock(
   toolUseId: string
 ): ComputerToolUseContentBlock {
   return createToolUseBlock("computer_cursor_position", toolUseId, {});
+}
+
+export function convertScreenInfoActionToToolUseBlock(
+  action: ScreenInfoAction,
+  toolUseId: string
+): ComputerToolUseContentBlock {
+  return createToolUseBlock("computer_screen_info", toolUseId, {});
 }
 
 export function convertApplicationActionToToolUseBlock(
@@ -325,8 +455,17 @@ export function convertComputerActionToToolUseBlock(
       return convertWaitActionToToolUseBlock(action, toolUseId);
     case "screenshot":
       return convertScreenshotActionToToolUseBlock(action, toolUseId);
+    case "screenshot_region":
+      return convertScreenshotRegionActionToToolUseBlock(action, toolUseId);
+    case "screenshot_custom_region":
+      return convertScreenshotCustomRegionActionToToolUseBlock(
+        action,
+        toolUseId
+      );
     case "cursor_position":
       return convertCursorPositionActionToToolUseBlock(action, toolUseId);
+    case "screen_info":
+      return convertScreenInfoActionToToolUseBlock(action as ScreenInfoAction, toolUseId);
     case "application":
       return convertApplicationActionToToolUseBlock(action, toolUseId);
     case "write_file":

@@ -12,10 +12,16 @@ import { BytebotMcpModule } from './mcp';
     ConfigModule.forRoot({
       isGlobal: true, // Explicitly makes it globally available
     }),
-    ServeStaticModule.forRoot({
-      rootPath: '/opt/noVNC',
-      serveRoot: '/novnc',
-    }),
+    ServeStaticModule.forRoot(
+      {
+        rootPath: '/opt/noVNC',
+        serveRoot: '/novnc',
+      },
+      {
+        rootPath: '/app/progress',
+        serveRoot: '/progress',
+      },
+    ),
     ComputerUseModule,
     InputTrackingModule,
     BytebotMcpModule,

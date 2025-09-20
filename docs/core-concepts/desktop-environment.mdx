@@ -197,21 +197,39 @@ deploy:
 ### Essential Security Steps
 
 1. **Change Default Passwords**
-   ```bash
+  ```bash
    # Set user password
    passwd bytebot
    ```
 
 2. **Limit Network Access**
-   ```yaml
-   # Whitelist specific domains
-   environment:
-     - ALLOWED_DOMAINS=company.com,trusted-site.com
-   
-   # Or restrict to local network only
-   ports:
-     - "10.0.0.0/8:9990:9990"
-   ```
+  ```yaml
+  # Whitelist specific domains
+  environment:
+    - ALLOWED_DOMAINS=company.com,trusted-site.com
+  
+  # Or restrict to local network only
+  ports:
+    - "10.0.0.0/8:9990:9990"
+  ```
+
+## Precision Controls
+
+The desktop includes built‑in accuracy aids to improve pointing reliability and reduce retries:
+
+- Grid Overlay: `BYTEBOT_GRID_OVERLAY=true` draws labeled coordinate grids on screenshots for precise targeting.
+- Progressive Zoom: Region and custom‑region captures include grid + zoom for exact coordinate selection.
+- Pre‑click Snap: `BYTEBOT_PRECLICK_SNAP=true` slightly adjusts click targets toward nearby high‑contrast features (default ±6px).
+- Post‑click Verification: `BYTEBOT_CLICK_RETRY_ON_NOCHANGE=true` compares a small region before/after click and retries once if unchanged.
+
+Recommended defaults are enabled in Docker/Helm; tune via envs:
+```
+BYTEBOT_PRECLICK_SNAP=true
+BYTEBOT_SNAP_RADIUS=6
+BYTEBOT_CLICK_RETRY_ON_NOCHANGE=true
+BYTEBOT_CLICK_VERIFY_DELAY=250
+BYTEBOT_GRID_OVERLAY=true
+```
 
 ## Troubleshooting
 
