@@ -354,6 +354,12 @@ export const _screenshotRegionTool = {
         description: 'Include global screen offset labels in the grid',
         nullable: true,
       },
+      source: {
+        type: 'string' as const,
+        enum: ['manual', 'smart_focus', 'progressive_zoom', 'binary_search'],
+        description: 'Optional telemetry source identifier for the capture',
+        nullable: true,
+      },
     },
     required: ['region'],
   },
@@ -385,6 +391,12 @@ export const _screenshotCustomRegionTool = {
       gridSize: {
         type: 'integer' as const,
         description: 'Optional grid size in pixels for the custom capture',
+        nullable: true,
+      },
+      source: {
+        type: 'string' as const,
+        enum: ['manual', 'smart_focus', 'progressive_zoom', 'binary_search'],
+        description: 'Optional telemetry source identifier for the capture',
         nullable: true,
       },
     },

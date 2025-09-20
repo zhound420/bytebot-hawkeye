@@ -1,7 +1,42 @@
 import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { TelemetryService } from './telemetry.service';
 import * as fs from 'fs/promises';
-import * as path from 'path';
+
+export function extractSource(entry: any): string | undefined {
+  if (!entry || typeof entry !== 'object') {
+    return undefined;
+  }
+
+  const sourceCandidates = [
+    entry.source,
+    entry.metadata?.source,
+    entry.data?.source,
+    entry.context?.source,
+  ];
+
+  for (const candidate of sourceCandidates) {
+    if (typeof candidate === 'string' && candidate.length > 0) {
+      return candidate;
+    }
+  }
+
+  if (typeof entry.type === 'string') {
+    if (entry.type === 'progressive_zoom') {
+      return 'progressive_zoom';
+    }
+  }
+
+  if (
+    entry.type === 'action' &&
+    typeof entry.name === 'string' &&
+    (entry.name === 'screenshot_region' ||
+      entry.name === 'screenshot_custom_region')
+  ) {
+    return 'progressive_zoom';
+  }
+
+  return undefined;
+}
 
 @Controller('telemetry')
 export class TelemetryController {
@@ -76,15 +111,17 @@ export class TelemetryController {
             const d = Number(obj.diff) || 0;
             postCount++;
             postSum += d;
-          } else if (obj.type === 'action' && obj.name) {
+          }
+
+          const source = extractSource(obj);
+          if (source === 'progressive_zoom') {
+            progressiveZooms += 1;
+          }
+
+          if (obj.type === 'action' && obj.name) {
             actionCounts.set(obj.name, (actionCounts.get(obj.name) || 0) + 1);
-            if (obj.name === 'screenshot_region' || obj.name === 'screenshot_custom_region') {
-              progressiveZooms += 1;
-            }
           } else if (obj.type === 'smart_click_complete' && obj.success === true) {
             smartClicks += 1;
-          } else if (obj.type === 'progressive_zoom') {
-            progressiveZooms += 1;
           }
         } catch {}
       }

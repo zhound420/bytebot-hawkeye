@@ -241,6 +241,7 @@ export class ProgressiveZoomHelper {
         height,
         gridSize: 25,
         zoomLevel,
+        source: 'progressive_zoom',
       },
     };
 

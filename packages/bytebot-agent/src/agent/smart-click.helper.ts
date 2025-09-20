@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { ClickContext } from '@bytebot/shared';
+import { ActionSource, ClickContext } from '@bytebot/shared';
 
 export interface SmartClickAI {
   askAboutScreenshot(image: string, prompt: string): Promise<string>;
@@ -40,6 +40,7 @@ interface ScreenshotRegionOptions {
   progressMessage?: string;
   progressTaskId?: string;
   zoomLevel?: number;
+  source?: ActionSource;
 }
 
 interface ScreenshotCustomRegionOptions {
@@ -49,6 +50,7 @@ interface ScreenshotCustomRegionOptions {
   height: number;
   gridSize?: number;
   zoomLevel?: number;
+  source?: ActionSource;
 }
 
 interface ScreenshotTargetOptions {
@@ -181,6 +183,7 @@ export class SmartClickHelper {
         progressMessage: `Focused on region ${regionName}`,
         progressTaskId: this.currentTaskId,
         zoomLevel: 2.0,
+        source: 'progressive_zoom',
       });
       await this.emitTelemetryEvent('progressive_zoom', { region: regionName, zoom: 2.0 });
 
@@ -231,6 +234,7 @@ export class SmartClickHelper {
               h,
               25,
               3.0,
+              'progressive_zoom',
             );
             await this.emitTelemetryEvent('progressive_zoom', { region: 'custom', zoom: 3.0 });
 
@@ -423,6 +427,7 @@ export class SmartClickHelper {
     height: number,
     gridSize?: number,
     zoomLevel?: number,
+    source?: ActionSource,
   ): Promise<string> {
     const result = await this.screenshotCustomRegionFn({
       x,
@@ -431,6 +436,7 @@ export class SmartClickHelper {
       height,
       gridSize,
       zoomLevel,
+      source,
     });
 
     return result.image;

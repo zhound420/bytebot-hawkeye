@@ -214,7 +214,14 @@ export class ComputerUseService {
         }
 
         // Record progressive zoom event
-        await this.recordActionEvent('screenshot_custom_region');
+        const customRegionMetadata =
+          typeof action.source === 'string'
+            ? { source: action.source }
+            : undefined;
+        await this.recordActionEvent(
+          'screenshot_custom_region',
+          customRegionMetadata,
+        );
         return {
           image: base64,
           offset: customRegion.offset,
@@ -476,8 +483,12 @@ export class ComputerUseService {
   }
 
   // Record non-click actions for panel visibility
-  private async recordActionEvent(name: string): Promise<void> {
-    await this.telemetryService.recordEvent('action', { name });
+  private async recordActionEvent(
+    name: string,
+    metadata?: Record<string, any>,
+  ): Promise<void> {
+    const payload = metadata ? { name, ...metadata } : { name };
+    await this.telemetryService.recordEvent('action', payload);
   }
 
   private inferIntent(desc?: string): 'button' | 'link' | 'field' | 'icon' | 'menu' | 'unknown' {
@@ -732,7 +743,11 @@ export class ComputerUseService {
     }
 
     // Record progressive zoom event
-    await this.recordActionEvent('screenshot_region');
+    const regionMetadata =
+      typeof action.source === 'string'
+        ? { source: action.source }
+        : undefined;
+    await this.recordActionEvent('screenshot_region', regionMetadata);
 
     return {
       image: base64,

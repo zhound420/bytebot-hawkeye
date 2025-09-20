@@ -287,6 +287,10 @@ export class ScreenshotRegionFocusActionDto extends BaseActionDto {
   @IsOptional()
   @IsString()
   progressTaskId?: string;
+
+  @IsOptional()
+  @IsIn(Object.values(ClickSourceType))
+  source?: ClickSourceType;
 }
 
 export class ScreenshotCustomRegionActionDto extends BaseActionDto {
@@ -313,6 +317,10 @@ export class ScreenshotCustomRegionActionDto extends BaseActionDto {
   @IsNumber()
   @Min(5)
   gridSize?: number;
+
+  @IsOptional()
+  @IsIn(Object.values(ClickSourceType))
+  source?: ClickSourceType;
 }
 
 export class CursorPositionActionDto extends BaseActionDto {

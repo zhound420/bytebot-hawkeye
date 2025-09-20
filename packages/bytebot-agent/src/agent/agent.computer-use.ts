@@ -25,6 +25,7 @@ import {
   isReadFileToolUseBlock,
   isScreenInfoToolUseBlock,
   ClickContext,
+  ActionSource,
 } from '@bytebot/shared';
 import { Logger } from '@nestjs/common';
 import OpenAI from 'openai';
@@ -652,6 +653,8 @@ function createSmartClickHelper(): SmartClickHelper | null {
     progressStep?: number;
     progressMessage?: string;
     progressTaskId?: string;
+    zoomLevel?: number;
+    source?: ActionSource;
   }) => {
     return screenshotRegion(options);
   };
@@ -662,6 +665,8 @@ function createSmartClickHelper(): SmartClickHelper | null {
     width: number;
     height: number;
     gridSize?: number;
+    zoomLevel?: number;
+    source?: ActionSource;
   }) => {
     return screenshotCustomRegion(options);
   };
@@ -1103,6 +1108,7 @@ async function screenshotRegion(input: {
   progressMessage?: string | null;
   progressTaskId?: string | null;
   zoomLevel?: number | null;
+  source?: ActionSource | null;
 }): Promise<{
   image: string;
   offset?: { x: number; y: number };
@@ -1126,6 +1132,7 @@ async function screenshotRegion(input: {
         progressMessage: input.progressMessage ?? undefined,
         progressTaskId: input.progressTaskId ?? undefined,
         zoomLevel: input.zoomLevel ?? undefined,
+        source: input.source ?? undefined,
       }),
     });
 
@@ -1163,6 +1170,7 @@ async function screenshotCustomRegion(input: {
   progressStep?: number | null;
   progressMessage?: string | null;
   progressTaskId?: string | null;
+  source?: ActionSource | null;
 }): Promise<{
   image: string;
   offset?: { x: number; y: number };
@@ -1189,6 +1197,7 @@ async function screenshotCustomRegion(input: {
         progressStep: input.progressStep ?? undefined,
         progressMessage: input.progressMessage ?? undefined,
         progressTaskId: input.progressTaskId ?? undefined,
+        source: input.source ?? undefined,
       }),
     });
 
