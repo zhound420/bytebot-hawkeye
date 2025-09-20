@@ -42,7 +42,7 @@ export function useScrollScreenshot({ messages, scrollContainerRef }: UseScrollS
         }
       }, 300);
     }
-  }, [messages, scrollContainerRef]);
+  }, [messages, scrollContainerRef, currentScreenshot]);
 
   // After initial render, force a re-check for screenshot markers using MutationObserver
   useEffect(() => {
