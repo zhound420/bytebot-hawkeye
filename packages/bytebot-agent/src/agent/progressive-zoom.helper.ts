@@ -509,9 +509,10 @@ Respond ONLY with JSON: {"x":<number>,"y":<number>}.
     }
 
     const lower = trimmed.toLowerCase();
-    const regionName = this.createSmartRegions()
+    const regionNames = this.createSmartRegions()
       .map(region => region.name)
-      .find(name => lower.includes(name));
+      .sort((a, b) => b.length - a.length);
+    const regionName = regionNames.find(name => lower.includes(name));
 
     if (regionName) {
       return { region: regionName };
@@ -520,7 +521,11 @@ Respond ONLY with JSON: {"x":<number>,"y":<number>}.
     return null;
   }
 
-  private resolveRegionBounds(name: string, screenWidth?: number, screenHeight?: number): RegionBounds | null {
+  private resolveRegionBounds(
+    name: string,
+    screenWidth?: number,
+    screenHeight?: number,
+  ): RegionBounds | null {
     const normalized = name?.toLowerCase().trim();
     if (!normalized) {
       return null;
@@ -535,53 +540,122 @@ Respond ONLY with JSON: {"x":<number>,"y":<number>}.
   /**
    * Creates smart regions for common UI areas
    */
-  createSmartRegions(screenWidth: number = 1920, screenHeight: number = 1080): Array<{
+  createSmartRegions(
+    screenWidth: number = 1920,
+    screenHeight: number = 1080,
+  ): Array<{
     name: string;
     region: RegionBounds;
     description: string;
   }> {
-    return [
-      {
-        name: 'top-left',
-        region: { x: 0, y: 0, width: Math.floor(screenWidth / 2), height: Math.floor(screenHeight / 2) },
-        description: 'Top-left quadrant - typically menus, toolbars, navigation',
-      },
-      {
-        name: 'top-right',
-        region: { x: Math.floor(screenWidth / 2), y: 0, width: Math.floor(screenWidth / 2), height: Math.floor(screenHeight / 2) },
-        description: 'Top-right quadrant - typically controls, buttons, settings',
-      },
-      {
-        name: 'bottom-left',
-        region: { x: 0, y: Math.floor(screenHeight / 2), width: Math.floor(screenWidth / 2), height: Math.floor(screenHeight / 2) },
-        description: 'Bottom-left quadrant - typically status, navigation, sidebar',
-      },
-      {
-        name: 'bottom-right',
-        region: { x: Math.floor(screenWidth / 2), y: Math.floor(screenHeight / 2), width: Math.floor(screenWidth / 2), height: Math.floor(screenHeight / 2) },
-        description: 'Bottom-right quadrant - typically content, scrollbars, actions',
-      },
-      {
+    const descriptions: Record<string, string> = {
+      'top-left': 'Top-left quadrant - typically menus, toolbars, navigation',
+      'top-center': 'Top-center region - typically tabs, search bars, or key navigation',
+      'top-right': 'Top-right quadrant - typically controls, buttons, settings',
+      'middle-left': 'Middle-left region - typically navigation, sidebars, or secondary menus',
+      'middle-center': 'Middle-center region - typically main content, dialogs, forms',
+      'middle-right': 'Middle-right region - typically inspector panes, actions, or chat widgets',
+      'bottom-left': 'Bottom-left quadrant - typically status, navigation, sidebar',
+      'bottom-center': 'Bottom-center region - typically footers, console output, or progress',
+      'bottom-right': 'Bottom-right quadrant - typically content, scrollbars, actions',
+      center: 'Center region - alias for middle-center region',
+      'top-strip': 'Top strip - typically title bars, tabs, main navigation',
+      'bottom-strip': 'Bottom strip - typically status bars, taskbars, notifications',
+    };
+
+    const xSegments = this.calculateSegments(screenWidth);
+    const ySegments = this.calculateSegments(screenHeight);
+
+    const verticalPositions: Array<{ key: 'top' | 'middle' | 'bottom'; rowIndex: 0 | 1 | 2 }> = [
+      { key: 'top', rowIndex: 0 },
+      { key: 'middle', rowIndex: 1 },
+      { key: 'bottom', rowIndex: 2 },
+    ];
+
+    const horizontalPositions: Array<{ key: 'left' | 'center' | 'right'; colIndex: 0 | 1 | 2 }> = [
+      { key: 'left', colIndex: 0 },
+      { key: 'center', colIndex: 1 },
+      { key: 'right', colIndex: 2 },
+    ];
+
+    const regions: Array<{ name: string; region: RegionBounds; description: string }> = [];
+
+    for (const vertical of verticalPositions) {
+      for (const horizontal of horizontalPositions) {
+        const name = `${vertical.key}-${horizontal.key}`;
+        const region: RegionBounds = {
+          x: xSegments.start[horizontal.colIndex],
+          y: ySegments.start[vertical.rowIndex],
+          width: xSegments.size[horizontal.colIndex],
+          height: ySegments.size[vertical.rowIndex],
+        };
+
+        regions.push({
+          name,
+          region,
+          description: descriptions[name] ?? 'Smart focus region',
+        });
+      }
+    }
+
+    const middleCenter = regions.find(region => region.name === 'middle-center');
+    if (middleCenter) {
+      regions.push({
         name: 'center',
-        region: {
-          x: Math.floor(screenWidth * 0.25),
-          y: Math.floor(screenHeight * 0.25),
-          width: Math.floor(screenWidth * 0.5),
-          height: Math.floor(screenHeight * 0.5),
-        },
-        description: 'Center region - typically main content, dialogs, forms',
-      },
+        region: middleCenter.region,
+        description: descriptions.center,
+      });
+    }
+
+    regions.push(
       {
         name: 'top-strip',
-        region: { x: 0, y: 0, width: screenWidth, height: Math.floor(screenHeight * 0.2) },
-        description: 'Top strip - typically title bars, tabs, main navigation',
+        region: {
+          x: 0,
+          y: 0,
+          width: screenWidth,
+          height: Math.max(Math.floor(screenHeight * 0.2), 1),
+        },
+        description: descriptions['top-strip'],
       },
       {
         name: 'bottom-strip',
-        region: { x: 0, y: Math.floor(screenHeight * 0.8), width: screenWidth, height: Math.floor(screenHeight * 0.2) },
-        description: 'Bottom strip - typically status bars, taskbars, notifications',
+        region: {
+          x: 0,
+          y: Math.max(screenHeight - Math.floor(screenHeight * 0.2), 0),
+          width: screenWidth,
+          height: Math.max(Math.floor(screenHeight * 0.2), 1),
+        },
+        description: descriptions['bottom-strip'],
       },
+    );
+
+    return regions;
+  }
+
+  private calculateSegments(total: number): {
+    start: [number, number, number];
+    size: [number, number, number];
+  } {
+    const firstBoundary = Math.round(total / 3);
+    const secondBoundary = Math.round((2 * total) / 3);
+
+    const start: [number, number, number] = [0, firstBoundary, secondBoundary];
+    const size: [number, number, number] = [
+      Math.max(firstBoundary, 1),
+      Math.max(secondBoundary - firstBoundary, 1),
+      Math.max(total - secondBoundary, 1),
     ];
+
+    size[1] = Math.max(secondBoundary - firstBoundary, 1);
+    size[2] = Math.max(total - secondBoundary, 1);
+
+    const covered = start[2] + size[2];
+    if (covered !== total) {
+      size[2] = Math.max(total - start[2], 1);
+    }
+
+    return { start, size };
   }
 }
 
