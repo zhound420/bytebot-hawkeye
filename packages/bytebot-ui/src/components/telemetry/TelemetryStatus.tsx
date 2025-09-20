@@ -66,7 +66,7 @@ export function TelemetryStatus({ className = "" }: Props) {
             Avg Δ: <span className="font-semibold">{data?.avgAbsDelta ?? "-"}</span>
           </span>
           <span>
-            Smart: <span className="font-semibold">{data?.smartClicks ?? 0}</span>
+            Smart (completed): <span className="font-semibold">{data?.smartClicks ?? 0}</span>
           </span>
           <span>
             Zooms: <span className="font-semibold">{data?.progressiveZooms ?? 0}</span>
@@ -149,7 +149,9 @@ export function TelemetryStatus({ className = "" }: Props) {
 
             {/* Chips row 2 */}
             <div className="mt-1 grid grid-cols-3 gap-2 text-[11px] text-gray-700">
-              <div className="rounded bg-indigo-50 px-2 py-1 text-indigo-700">Smart: <span className="font-medium">{data?.smartClicks ?? 0}</span></div>
+              <div className="rounded bg-indigo-50 px-2 py-1 text-indigo-700" title="Count of successful smart clicks">
+                Smart (completed): <span className="font-medium">{data?.smartClicks ?? 0}</span>
+              </div>
               <div className="rounded bg-sky-50 px-2 py-1 text-sky-700">Zooms: <span className="font-medium">{data?.progressiveZooms ?? 0}</span></div>
               <div className="rounded bg-amber-50 px-2 py-1 text-amber-700">Retries: <span className="font-medium">{data?.retryClicks ?? 0}</span></div>
             </div>

@@ -231,7 +231,9 @@ export default function Home() {
                     <div className="rounded bg-gray-50 px-2 py-1">Screens: <span className="font-medium">{telemetry.actionCounts?.["screenshot"] ?? 0}</span></div>
                   </div>
                   <div className="mt-1 grid grid-cols-3 gap-2 text-[11px] text-gray-700">
-                    <div className="rounded bg-indigo-50 px-2 py-1 text-indigo-700">Smart: <span className="font-medium">{telemetry.smartClicks ?? 0}</span></div>
+                    <div className="rounded bg-indigo-50 px-2 py-1 text-indigo-700" title="Successful smart click completions">
+                      Smart (completed): <span className="font-medium">{telemetry.smartClicks ?? 0}</span>
+                    </div>
                     <div className="rounded bg-sky-50 px-2 py-1 text-sky-700">Zooms: <span className="font-medium">{telemetry.progressiveZooms ?? 0}</span></div>
                     <div className="rounded bg-amber-50 px-2 py-1 text-amber-700">Retries: <span className="font-medium">{telemetry.retryClicks ?? 0}</span></div>
                   </div>

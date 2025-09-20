@@ -81,7 +81,7 @@ export class TelemetryController {
             if (obj.name === 'screenshot_region' || obj.name === 'screenshot_custom_region') {
               progressiveZooms += 1;
             }
-          } else if (obj.type === 'smart_click' || obj.type === 'smart_click_complete') {
+          } else if (obj.type === 'smart_click_complete' && obj.success === true) {
             smartClicks += 1;
           } else if (obj.type === 'progressive_zoom') {
             progressiveZooms += 1;
