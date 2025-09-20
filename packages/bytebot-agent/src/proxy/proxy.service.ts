@@ -292,16 +292,63 @@ export class ProxyService implements BytebotAgentService {
   ): ChatCompletionMessageParam[] {
     const result: ChatCompletionMessageParam[] = [];
     let pendingToolCallIds: Set<string> = new Set();
+    let lastAssistantWithToolCalls: ChatCompletionMessageParam | null = null;
+
+    const flushPendingToolCalls = () => {
+      if (
+        pendingToolCallIds.size === 0 ||
+        !lastAssistantWithToolCalls ||
+        !(lastAssistantWithToolCalls as any).tool_calls
+      ) {
+        pendingToolCallIds = new Set();
+        lastAssistantWithToolCalls = null;
+        return;
+      }
+
+      const assistant = lastAssistantWithToolCalls as any;
+      const unresolvedCalls = (assistant.tool_calls as any[]).filter(
+        (tc: any) => tc && typeof tc.id === 'string' && pendingToolCallIds.has(tc.id),
+      );
+
+      if (unresolvedCalls.length > 0) {
+        delete assistant.tool_calls;
+
+        const fallbackText = unresolvedCalls
+          .map((tc: any) => {
+            const name = tc?.function?.name ?? 'unknown';
+            return `[tool-call:${name}] unresolved`;
+          })
+          .join('\n');
+
+        if (Array.isArray(assistant.content)) {
+          assistant.content = [
+            ...assistant.content,
+            { type: 'text', text: fallbackText } as ChatCompletionContentPart,
+          ];
+        } else {
+          const existingContent =
+            typeof assistant.content === 'string' ? assistant.content : '';
+          assistant.content = existingContent
+            ? `${existingContent}\n${fallbackText}`
+            : fallbackText;
+        }
+      }
+
+      pendingToolCallIds = new Set();
+      lastAssistantWithToolCalls = null;
+    };
 
     for (const msg of messages) {
       const toolCalls: any[] = (msg as any).tool_calls || [];
       if (msg.role === 'assistant' && Array.isArray(toolCalls) && toolCalls.length > 0) {
+        flushPendingToolCalls();
         // Start a new pending tool_calls window
         pendingToolCallIds = new Set(
           toolCalls
             .filter((tc) => tc && typeof tc.id === 'string')
             .map((tc) => tc.id as string),
         );
+        lastAssistantWithToolCalls = msg;
         result.push(msg);
         continue;
       }
@@ -311,19 +358,26 @@ export class ProxyService implements BytebotAgentService {
         if (callId && pendingToolCallIds.has(callId)) {
           // Valid response
           pendingToolCallIds.delete(callId);
+          if (pendingToolCallIds.size === 0) {
+            pendingToolCallIds = new Set();
+            lastAssistantWithToolCalls = null;
+          }
           result.push(msg);
         } else {
           // Fallback: convert to user text to avoid API 400, include hint
           const content = (msg as any).content ?? '[tool result]';
           result.push({ role: 'user', content: `[tool:${callId ?? 'unknown'}] ${content}` });
+          flushPendingToolCalls();
         }
         continue;
       }
 
       // Any non-tool message breaks the immediate requirement; clear pending
-      pendingToolCallIds.clear();
+      flushPendingToolCalls();
       result.push(msg);
     }
+
+    flushPendingToolCalls();
 
     return result;
   }
