@@ -6,7 +6,7 @@ import { Header } from "@/components/layout/Header";
 import { ChatInput } from "@/components/messages/ChatInput";
 import { useRouter } from "next/navigation";
 import { startTask } from "@/utils/taskUtils";
-import { Model, TelemetrySummary } from "@/types";
+import { Model } from "@/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TaskList } from "@/components/tasks/TaskList";
 import { TelemetryStatus } from "@/components/telemetry/TelemetryStatus";
@@ -41,8 +41,6 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [models, setModels] = useState<Model[]>([]);
   const [selectedModel, setSelectedModel] = useState<Model | null>(null);
-  const [telemetry, setTelemetry] = useState<TelemetrySummary | null>(null);
-  // No per‑app filter — report aggregate accuracy
   const [uploadedFiles, setUploadedFiles] = useState<FileWithBase64[]>([]);
   const router = useRouter();
   const [activePopoverIndex, setActivePopoverIndex] = useState<number | null>(
@@ -59,18 +57,7 @@ export default function Home() {
         if (data.length > 0) setSelectedModel(data[0]);
       })
       .catch((err) => console.error("Failed to load models", err));
-    refreshTelemetry();
-    // Auto-refresh telemetry every 10s
-    const t = setInterval(() => refreshTelemetry(), 10000);
-    return () => clearInterval(t);
   }, []);
-
-  const refreshTelemetry = () => {
-    fetch(`/api/tasks/telemetry/summary`, { cache: 'no-store' })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => setTelemetry(data))
-      .catch((err) => console.error("Failed to load telemetry summary", err));
-  };
 
   // Close popover when clicking outside or pressing ESC
   useEffect(() => {
@@ -198,67 +185,6 @@ export default function Home() {
                 title="Latest Tasks"
                 description="You'll see tasks that are completed, scheduled, or require your attention."
               />
-              {/* Accuracy Telemetry Panel */}
-              {telemetry && (
-                <div className="mt-4 w-full rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
-                  <div className="mb-2 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 ring-1 ring-emerald-200">live</span>
-                      <h3 className="text-[13px] font-semibold text-gray-800">Desktop Accuracy</h3>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button className="rounded border px-2 py-0.5 text-[11px] text-gray-700 hover:bg-gray-50" onClick={refreshTelemetry}>Refresh</button>
-                      <button className="rounded border border-red-200 bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-700 hover:bg-red-100" onClick={() => { fetch('/api/tasks/telemetry/reset', { method: 'POST' }).then(() => refreshTelemetry()).catch(() => {}); }}>Reset</button>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 text-[12px]">
-                    <div className="rounded-md p-2 ring-1 ring-gray-200">
-                      <div className="text-[10px] text-gray-500">Targeted</div>
-                      <div className="text-[14px] font-semibold">{telemetry.targetedClicks}</div>
-                    </div>
-                    <div className="rounded-md p-2 ring-1 ring-gray-200">
-                      <div className="text-[10px] text-gray-500">Untargeted</div>
-                      <div className="text-[14px] font-semibold">{telemetry.untargetedClicks}</div>
-                    </div>
-                    <div className="rounded-md p-2 ring-1 ring-gray-200">
-                      <div className="text-[10px] text-gray-500">Avg Δ (px)</div>
-                      <div className="text-[14px] font-semibold">{telemetry.avgAbsDelta ?? '-'}</div>
-                    </div>
-                  </div>
-                  <div className="mt-1 grid grid-cols-3 gap-2 text-[11px] text-gray-700">
-                    <div className="rounded bg-gray-50 px-2 py-1">Keys: <span className="font-medium">{telemetry.actionCounts?.["type_keys"] ?? 0}</span></div>
-                    <div className="rounded bg-gray-50 px-2 py-1">Scrolls: <span className="font-medium">{telemetry.actionCounts?.["scroll"] ?? 0}</span></div>
-                    <div className="rounded bg-gray-50 px-2 py-1">Screens: <span className="font-medium">{telemetry.actionCounts?.["screenshot"] ?? 0}</span></div>
-                  </div>
-                  <div className="mt-1 grid grid-cols-3 gap-2 text-[11px] text-gray-700">
-                    <div className="rounded bg-indigo-50 px-2 py-1 text-indigo-700" title="Successful smart click completions">
-                      Smart (completed): <span className="font-medium">{telemetry.smartClicks ?? 0}</span>
-                    </div>
-                    <div className="rounded bg-sky-50 px-2 py-1 text-sky-700">Zooms: <span className="font-medium">{telemetry.progressiveZooms ?? 0}</span></div>
-                    <div className="rounded bg-amber-50 px-2 py-1 text-amber-700">Retries: <span className="font-medium">{telemetry.retryClicks ?? 0}</span></div>
-                  </div>
-                  <div className="mt-1 grid grid-cols-2 gap-2 text-[11px] text-gray-700">
-                    <div className="rounded bg-gray-50 px-2 py-1">Hover Δ avg: <span className="font-medium">{telemetry.hoverProbes?.avgDiff?.toFixed(2) ?? '-'}</span> ({telemetry.hoverProbes?.count ?? 0})</div>
-                    <div className="rounded bg-gray-50 px-2 py-1">Post Δ avg: <span className="font-medium">{telemetry.postClickDiff?.avgDiff?.toFixed(2) ?? '-'}</span> ({telemetry.postClickDiff?.count ?? 0})</div>
-                  </div>
-                  {Array.isArray(telemetry.recentAbsDeltas) && telemetry.recentAbsDeltas.length > 0 && (
-                    <div className="mt-2 flex h-4 items-end gap-[2px]">
-                      {telemetry.recentAbsDeltas.map((v, i) => {
-                        const max = Math.max(...telemetry.recentAbsDeltas!);
-                        const h = max > 0 ? Math.max(1, Math.round((v / max) * 16)) : 1;
-                        return (
-                          <div key={i} style={{ height: `${h}px` }} className="w-[4px] rounded bg-gray-500/50" title={`${v.toFixed(1)} px`} />
-                        );
-                      })}
-                    </div>
-                  )}
-                  <div className="mt-1 grid grid-cols-3 gap-2 text-[11px] text-gray-700">
-                    <div className="rounded bg-gray-50 px-2 py-1">Δx: <span className="font-medium">{telemetry.avgDeltaX ?? '-'}</span></div>
-                    <div className="rounded bg-gray-50 px-2 py-1">Δy: <span className="font-medium">{telemetry.avgDeltaY ?? '-'}</span></div>
-                    <div className="rounded bg-gray-50 px-2 py-1">Calib: <span className="font-medium">{telemetry.calibrationSnapshots}</span></div>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 
