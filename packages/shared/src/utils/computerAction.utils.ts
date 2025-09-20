@@ -354,6 +354,7 @@ export function convertScreenshotRegionActionToToolUseBlock(
           "progressTaskId",
           action.progressTaskId,
         ],
+        [typeof action.source === "string", "source", action.source],
       ]
     )
   );
@@ -376,6 +377,7 @@ export function convertScreenshotCustomRegionActionToToolUseBlock(
       [
         [typeof action.gridSize === "number", "gridSize", action.gridSize],
         [typeof action.zoomLevel === "number", "zoomLevel", action.zoomLevel],
+        [typeof action.source === "string", "source", action.source],
       ]
     )
   );

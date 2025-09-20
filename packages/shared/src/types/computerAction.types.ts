@@ -32,11 +32,17 @@ export type ClickMouseAction = {
   context?: ClickContext;
 };
 
+export type ActionSource =
+  | "manual"
+  | "smart_focus"
+  | "progressive_zoom"
+  | "binary_search";
+
 export type ClickContext = {
   region?: { x: number; y: number; width: number; height: number };
   zoomLevel?: number;
   targetDescription?: string;
-  source?: "manual" | "smart_focus" | "progressive_zoom" | "binary_search";
+  source?: ActionSource;
   clickTaskId?: string;
 };
 
@@ -125,6 +131,7 @@ export type ScreenshotRegionAction = {
   progressStep?: number;
   progressMessage?: string;
   progressTaskId?: string;
+  source?: ActionSource;
 };
 
 export type ScreenshotCustomRegionAction = {
@@ -145,6 +152,7 @@ export type ScreenshotCustomRegionAction = {
   progressStep?: number;
   progressMessage?: string;
   progressTaskId?: string;
+  source?: ActionSource;
 };
 
 export type CursorPositionAction = {
