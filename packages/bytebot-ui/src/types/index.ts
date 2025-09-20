@@ -101,7 +101,7 @@ export interface TelemetrySummary {
   retryClicks?: number;
   hoverProbes?: { count: number; avgDiff: number | null };
   postClickDiff?: { count: number; avgDiff: number | null };
-  smartClicks?: number;
+  smartClicks?: number; // Successful smart click completions
   progressiveZooms?: number;
 }
 
