@@ -221,6 +221,10 @@ export class NutService {
     try {
       for (let i = 0; i < text.length; i++) {
         const char = text[i];
+
+        if (char === '\r' && text[i + 1] === '\n') {
+          continue;
+        }
         const keyInfo = this.charToKeyInfo(char);
         if (keyInfo) {
           if (keyInfo.withShift) {
@@ -303,6 +307,8 @@ export class NutService {
     }
 
     // Handle special characters
+    const newlineChar = '\n';
+    const carriageReturnChar = '\r';
     const specialCharMap: Record<string, { keyCode: Key; withShift: boolean }> =
       {
         ' ': { keyCode: Key.Space, withShift: false },
@@ -340,7 +346,8 @@ export class NutService {
         '>': { keyCode: Key.Period, withShift: true },
         '?': { keyCode: Key.Slash, withShift: true },
         '~': { keyCode: Key.Grave, withShift: true },
-        '\n': { keyCode: Key.Enter, withShift: false },
+        [newlineChar]: { keyCode: Key.Enter, withShift: false },
+        [carriageReturnChar]: { keyCode: Key.Enter, withShift: false },
       };
 
     return specialCharMap[char] || null;
