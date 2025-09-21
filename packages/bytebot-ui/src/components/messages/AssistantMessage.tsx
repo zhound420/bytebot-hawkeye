@@ -18,16 +18,20 @@ export function AssistantMessage({
   messageIdToIndex,
 }: AssistantMessageProps) {
   return (
-    <div className={
-      cn(
-        "bg-bytebot-bronze-light-3 flex items-start justify-start gap-2 px-4 py-3 border-x border-bytebot-bronze-light-7",
-        ![TaskStatus.RUNNING, TaskStatus.NEEDS_HELP].includes(taskStatus) && !group.take_over && "border-b border-bytebot-bronze-light-7 rounded-b-lg"
-      )}
+    <div
+      className={
+        cn(
+          "flex items-start justify-start gap-2 border-x border-border bg-card px-4 py-3 text-card-foreground",
+          ![TaskStatus.RUNNING, TaskStatus.NEEDS_HELP].includes(taskStatus) &&
+            !group.take_over &&
+            "border-b border-border rounded-b-lg"
+        )
+      }
     >
       <MessageAvatar role={group.role} />
 
       {group.take_over ? (
-        <div className="border-bytebot-bronze-light-a6 bg-bytebot-bronze-light-a1 w-full rounded-2xl border p-2">
+        <div className="w-full rounded-2xl border border-border bg-card p-2">
           <div className="flex items-center gap-2">
             <Image
               src="/indicators/indicator-pink.png"
@@ -35,11 +39,11 @@ export function AssistantMessage({
               width={15}
               height={15}
             />
-            <p className="text-bytebot-bronze-light-12 text-[12px] font-medium">
+            <p className="text-[12px] font-medium text-card-foreground">
               You took control
             </p>
           </div>
-          <div className="bg-bytebot-bronze-light-2 mt-2 space-y-0.5 rounded-2xl p-1">
+          <div className="mt-2 space-y-0.5 rounded-2xl border border-border/60 bg-muted/60 p-1">
             {group.messages.map((message) => (
               <div
                 key={message.id}
