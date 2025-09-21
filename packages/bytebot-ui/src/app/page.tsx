@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import { Header } from "@/components/layout/Header";
 import { ChatInput } from "@/components/messages/ChatInput";
@@ -9,6 +9,7 @@ import { startTask } from "@/utils/taskUtils";
 import { Model } from "@/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TaskList } from "@/components/tasks/TaskList";
+import { MODEL_STORAGE_KEY, selectInitialModel } from "./modelStorage";
 
 interface StockPhotoProps {
   src: string;
@@ -48,15 +49,37 @@ export default function Home() {
   const popoverRef = useRef<HTMLDivElement>(null);
   const buttonsRef = useRef<HTMLDivElement>(null);
 
+  const updateSelectedModel = useCallback(
+    (model: Model | null) => {
+      setSelectedModel(model);
+      if (typeof window !== "undefined") {
+        if (model) {
+          window.localStorage.setItem(MODEL_STORAGE_KEY, model.name);
+        } else {
+          window.localStorage.removeItem(MODEL_STORAGE_KEY);
+        }
+      }
+    },
+    [],
+  );
+
   useEffect(() => {
     fetch("/api/tasks/models")
       .then((res) => res.json())
       .then((data) => {
         setModels(data);
-        if (data.length > 0) setSelectedModel(data[0]);
+        if (data.length > 0) {
+          const storedName =
+            typeof window !== "undefined"
+              ? window.localStorage.getItem(MODEL_STORAGE_KEY)
+              : null;
+          updateSelectedModel(selectInitialModel(data, storedName));
+        } else {
+          updateSelectedModel(null);
+        }
       })
       .catch((err) => console.error("Failed to load models", err));
-  }, []);
+  }, [updateSelectedModel]);
 
   // Close popover when clicking outside or pressing ESC
   useEffect(() => {
@@ -113,6 +136,7 @@ export default function Home() {
       const task = await startTask(taskData);
 
       if (task && task.id) {
+        updateSelectedModel(selectedModel);
         // Redirect to the task page
         router.push(`/tasks/${task.id}`);
       } else {
@@ -159,7 +183,7 @@ export default function Home() {
                   <Select
                     value={selectedModel?.name}
                     onValueChange={(val) =>
-                      setSelectedModel(
+                      updateSelectedModel(
                         models.find((m) => m.name === val) || null,
                       )
                     }
@@ -217,7 +241,7 @@ export default function Home() {
                   <Select
                     value={selectedModel?.name}
                     onValueChange={(val) =>
-                      setSelectedModel(
+                      updateSelectedModel(
                         models.find((m) => m.name === val) || null,
                       )
                     }
