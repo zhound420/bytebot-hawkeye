@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import * as Dialog from "@radix-ui/react-dialog"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { CloseCircleIcon } from "@hugeicons/core-free-icons"
+import { CancelCircleIcon } from "@hugeicons/core-free-icons"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -180,7 +180,7 @@ export function ApiKeySettingsDialog({
                 aria-label="Close"
                 className="text-muted-foreground transition hover:text-foreground"
               >
-                <HugeiconsIcon icon={CloseCircleIcon} className="h-6 w-6" />
+                <HugeiconsIcon icon={CancelCircleIcon} className="h-6 w-6" />
               </button>
             </Dialog.Close>
           </div>
