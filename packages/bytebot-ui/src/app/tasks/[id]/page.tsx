@@ -136,22 +136,22 @@ export default function TaskPage() {
       <Header />
 
       <main className="m-2 flex-1 overflow-hidden px-2 py-4">
-        <div className="mb-4 flex flex-col gap-1 rounded-lg border border-bytebot-bronze-light-7 bg-bytebot-bronze-light-2 px-4 py-3">
-          <span className="text-xs font-semibold uppercase tracking-wide text-bytebot-bronze-light-11">
-            Active Model
-          </span>
-          <span className="text-sm font-semibold text-bytebot-bronze-dark-7">
-            {modelIdentifier || "Model unavailable"}
-          </span>
-          {modelNameDetails && (
-            <span className="text-xs text-bytebot-bronze-light-10">
-              Identifier: {modelNameDetails}
-            </span>
-          )}
-        </div>
         <div className="grid h-full grid-cols-7 gap-4">
           {/* Main container */}
           <div className="col-span-4 flex flex-col gap-3">
+            <div className="flex flex-col gap-1 rounded-lg border border-bytebot-bronze-light-7 bg-bytebot-bronze-light-2 px-4 py-3">
+              <span className="text-xs font-semibold uppercase tracking-wide text-bytebot-bronze-light-11">
+                Active Model
+              </span>
+              <span className="text-sm font-semibold text-bytebot-bronze-dark-7">
+                {modelIdentifier || "Model unavailable"}
+              </span>
+              {modelNameDetails && (
+                <span className="text-xs text-bytebot-bronze-light-10">
+                  Identifier: {modelNameDetails}
+                </span>
+              )}
+            </div>
             <DesktopContainer
               screenshot={taskInactive ? currentScreenshot : null}
               viewOnly={vncViewOnly()}
