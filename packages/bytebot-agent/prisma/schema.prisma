@@ -41,47 +41,47 @@ enum TaskType {
 }
 
 model Task {
-  id            String        @id @default(uuid())
-  description   String
-  type          TaskType      @default(IMMEDIATE)
-  status        TaskStatus    @default(PENDING)
-  priority      TaskPriority  @default(MEDIUM)
-  control       Role          @default(ASSISTANT)
-  createdAt     DateTime      @default(now())
-  createdBy     Role          @default(USER)
-  scheduledFor  DateTime?
-  updatedAt     DateTime      @updatedAt
-  executedAt    DateTime?
-  completedAt   DateTime?
-  queuedAt      DateTime?
-  error         String?
-  result        Json?
+  id           String       @id @default(uuid())
+  description  String
+  type         TaskType     @default(IMMEDIATE)
+  status       TaskStatus   @default(PENDING)
+  priority     TaskPriority @default(MEDIUM)
+  control      Role         @default(ASSISTANT)
+  createdAt    DateTime     @default(now())
+  createdBy    Role         @default(USER)
+  scheduledFor DateTime?
+  updatedAt    DateTime     @updatedAt
+  executedAt   DateTime?
+  completedAt  DateTime?
+  queuedAt     DateTime?
+  error        String?
+  result       Json?
   // Example: 
   // { "provider": "anthropic", "name": "claude-opus-4-20250514", "title": "Claude Opus 4" }
-  model         Json
-  messages      Message[]
-  summaries     Summary[]
-  files         File[]
+  model        Json
+  messages     Message[]
+  summaries    Summary[]
+  files        File[]
 }
 
 model Summary {
-  id             String     @id @default(uuid())
-  content        String
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
-  messages       Message[]  // One-to-many relationship: one Summary has many Messages
+  id        String    @id @default(uuid())
+  content   String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  messages  Message[] // One-to-many relationship: one Summary has many Messages
 
-  task      Task        @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  taskId    String
-  
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId String
+
   // Self-referential relationship
-  parentSummary  Summary?   @relation("SummaryHierarchy", fields: [parentId], references: [id])
+  parentSummary  Summary?  @relation("SummaryHierarchy", fields: [parentId], references: [id])
   parentId       String?
-  childSummaries Summary[]  @relation("SummaryHierarchy")
+  childSummaries Summary[] @relation("SummaryHierarchy")
 }
 
 model Message {
-  id        String      @id @default(uuid())
+  id        String   @id @default(uuid())
   // Content field follows Anthropic's content blocks structure
   // Example: 
   // [
@@ -89,26 +89,37 @@ model Message {
   //   {"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": "..."}}
   // ]
   content   Json
-  role      Role @default(ASSISTANT)
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-  task      Task        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  role      Role     @default(ASSISTANT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
   taskId    String
-  summary   Summary?    @relation(fields: [summaryId], references: [id])
-  summaryId String?     // Optional foreign key to Summary
+  summary   Summary? @relation(fields: [summaryId], references: [id])
+  summaryId String? // Optional foreign key to Summary
 }
 
 model File {
-  id            String      @id @default(uuid())
-  name          String
-  type          String      // MIME type
-  size          Int         // Size in bytes
-  data          String      // Base64 encoded file data
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  
+  id        String   @id @default(uuid())
+  name      String
+  type      String // MIME type
+  size      Int // Size in bytes
+  data      String // Base64 encoded file data
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  task          Task        @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  taskId        String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId String
 }
 
+model ApiKey {
+  id           String   @id @default(uuid())
+  name         String   @unique
+  encryptedKey String
+  iv           String
+  authTag      String
+  length       Int
+  lastFour     String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}

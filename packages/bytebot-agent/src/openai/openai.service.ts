@@ -23,21 +23,13 @@ import {
 
 @Injectable()
 export class OpenAIService implements BytebotAgentService {
-  private readonly openai: OpenAI;
+  private openai: OpenAI | null = null;
+  private currentApiKey: string | null = null;
+  private hasLoggedMissingKey = false;
   private readonly logger = new Logger(OpenAIService.name);
 
   constructor(private readonly configService: ConfigService) {
-    const apiKey = this.configService.get<string>('OPENAI_API_KEY');
-
-    if (!apiKey) {
-      this.logger.warn(
-        'OPENAI_API_KEY is not set. OpenAIService will not work properly.',
-      );
-    }
-
-    this.openai = new OpenAI({
-      apiKey: apiKey || 'dummy-key-for-initialization',
-    });
+    this.initializeClient();
   }
 
   async generateMessage(
@@ -49,10 +41,11 @@ export class OpenAIService implements BytebotAgentService {
   ): Promise<BytebotAgentResponse> {
     const isReasoning = model.startsWith('o');
     try {
+      const openaiClient = this.getOpenAIClient();
       const openaiMessages = this.formatMessagesForOpenAI(messages);
 
       const maxTokens = 8192;
-      const response = await this.openai.responses.create(
+      const response = await openaiClient.responses.create(
         {
           model,
           max_output_tokens: maxTokens,
@@ -87,6 +80,56 @@ export class OpenAIService implements BytebotAgentService {
         error.stack,
       );
       throw error;
+    }
+  }
+
+  private initializeClient() {
+    const apiKey = this.configService.get<string>('OPENAI_API_KEY');
+
+    if (!apiKey) {
+      this.logMissingKey();
+      this.openai = new OpenAI({
+        apiKey: 'dummy-key-for-initialization',
+      });
+      this.currentApiKey = null;
+      return;
+    }
+
+    this.openai = new OpenAI({ apiKey });
+    this.currentApiKey = apiKey;
+    this.hasLoggedMissingKey = false;
+  }
+
+  private getOpenAIClient(): OpenAI {
+    const apiKey = this.configService.get<string>('OPENAI_API_KEY');
+
+    if (apiKey && apiKey !== this.currentApiKey) {
+      this.openai = new OpenAI({ apiKey });
+      this.currentApiKey = apiKey;
+      this.hasLoggedMissingKey = false;
+    }
+
+    if (!apiKey) {
+      this.logMissingKey();
+
+      if (!this.openai) {
+        this.openai = new OpenAI({
+          apiKey: 'dummy-key-for-initialization',
+        });
+      }
+
+      this.currentApiKey = null;
+    }
+
+    return this.openai!;
+  }
+
+  private logMissingKey() {
+    if (!this.hasLoggedMissingKey) {
+      this.logger.warn(
+        'OPENAI_API_KEY is not set. OpenAIService will not work properly.',
+      );
+      this.hasLoggedMissingKey = true;
     }
   }
 
