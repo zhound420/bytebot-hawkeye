@@ -398,6 +398,7 @@ export class ComputerUseService {
       zoomLevel: context?.zoomLevel,
       targetDescription: context?.targetDescription ?? description,
       source: context?.source ?? 'manual',
+      clickTaskId: context?.clickTaskId,
     };
 
     if (targetCoordinates) {
