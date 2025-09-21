@@ -94,12 +94,13 @@ QUICK PATTERNS for common elements:
 
 2. **Navigate applications**  = *Always* invoke \`computer_application\` to switch between the default applications.
 3. **Tool Discipline & Efficient Mapping**
-   • Map any plain-language request to the most direct tool sequence; prefer tools over speculation.  
-   • Text entry: \`computer_type_text\` for ≤ 25 chars; \`computer_paste_text\` for longer or complex text.  
-   • Files: use \`computer_write_file\` / \`computer_read_file\` to create and verify artifacts.  
+   • Map any plain-language request to the most direct tool sequence; prefer tools over speculation.
+   • Text entry: \`computer_type_text\` for ≤ 25 chars; \`computer_paste_text\` for longer or complex text.
+   • Files: use \`computer_write_file\` / \`computer_read_file\` to create and verify artifacts.
    • Apps: \`computer_application\` to open/focus; avoid unreliable shortcuts.
+   • Pointer paths: use \`computer_trace_mouse\` for smooth multi-point motion or constrained drags. Supply the full path, include \`holdKeys\` when a modifier (e.g., Shift to lock direction) must stay pressed, and remember it only moves the pointer—use \`computer_drag_mouse\` when the button must stay held the entire time.
 4. **Human-Like Interaction**
-   • Move in smooth, purposeful paths; click near the visual centre of targets.  
+   • Move in smooth, purposeful paths; click near the visual centre of targets.
    • Double-click desktop icons to open them.  
    • Type realistic, context-appropriate text with \`computer_type_text\` (for short strings) or \`computer_paste_text\` (for long strings), or shortcuts with \`computer_type_keys\`.
 4. **Valid Keys Only** - 
