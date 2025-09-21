@@ -1,5 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Message, Role, TaskStatus, Task, GroupedMessages } from "@/types";
+import {
+  Message,
+  Role,
+  TaskStatus,
+  Task,
+  GroupedMessages,
+  Model,
+} from "@/types";
 import {
   addMessage,
   fetchTaskMessages,
@@ -25,6 +32,7 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(
     initialTaskId || null,
   );
+  const [taskModel, setTaskModel] = useState<Model | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingSession, setIsLoadingSession] = useState(true);
   const [isLoadingMoreMessages, setIsLoadingMoreMessages] = useState(false);
@@ -39,6 +47,7 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
       if (task.id === currentTaskId) {
         setTaskStatus(task.status);
         setControl(task.control);
+        setTaskModel(task.model ?? null);
       }
     },
     [currentTaskId],
@@ -183,6 +192,7 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
             setCurrentTaskId(task.id);
             setTaskStatus(task.status); // Set the task status when loading
             setControl(task.control);
+            setTaskModel(task.model ?? null);
 
             // Set grouped messages for chat UI
             setGroupedMessages(processedMessages);
@@ -280,6 +290,7 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
       const updatedTask = await takeOverTask(currentTaskId);
       if (updatedTask) {
         setControl(updatedTask.control);
+        setTaskModel(updatedTask.model ?? null);
       }
     } catch (error) {
       console.error("Error taking over task:", error);
@@ -293,6 +304,7 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
       const updatedTask = await resumeTask(currentTaskId);
       if (updatedTask) {
         setControl(updatedTask.control);
+        setTaskModel(updatedTask.model ?? null);
       }
     } catch (error) {
       console.error("Error resuming task:", error);
@@ -307,6 +319,7 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
       if (updatedTask) {
         setTaskStatus(updatedTask.status);
         setControl(updatedTask.control);
+        setTaskModel(updatedTask.model ?? null);
       }
     } catch (error) {
       console.error("Error cancelling task:", error);
@@ -321,6 +334,7 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
     input,
     setInput,
     currentTaskId,
+    taskModel,
     isLoading,
     isLoadingSession,
     isLoadingMoreMessages,

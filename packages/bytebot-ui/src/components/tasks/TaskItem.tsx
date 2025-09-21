@@ -51,6 +51,19 @@ const STATUS_CONFIGS: Record<TaskStatus, StatusIconConfig> = {
   },
 };
 
+export const getTaskModelLabel = (task: Task): string | null => {
+  const modelTitle = task.model?.title?.trim() || task.model?.name?.trim();
+  const modelProvider = task.model?.provider?.trim();
+
+  if (modelTitle) {
+    return modelProvider && modelProvider !== modelTitle
+      ? `${modelTitle} (${modelProvider})`
+      : modelTitle;
+  }
+
+  return modelProvider || null;
+};
+
 export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
   // Format date to match the screenshot (e.g., "Today 9:13am" or "April 13, 2025, 12:01pm")
   const formatDate = (dateString: string) => {
@@ -67,6 +80,13 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
     const formatted = format(date, formatString).toLowerCase();
     return capitalizeFirstChar(formatted);
   };
+
+  const metadataSegments = [] as string[];
+  const modelLabel = getTaskModelLabel(task);
+  if (modelLabel) {
+    metadataSegments.push(modelLabel);
+  }
+  metadataSegments.push(formatDate(task.createdAt));
 
   const StatusIcon = ({ status }: { status: TaskStatus }) => {
     const config = STATUS_CONFIGS[status];
@@ -99,10 +119,15 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
               {capitalizeFirstChar(task.description)}
             </div>
           </div>
-          <div className="ml-7 flex items-center justify-start space-x-1.5 text-xs">
-            <span className="text-bytebot-bronze-light-10">
-              {formatDate(task.createdAt)}
-            </span>
+          <div className="ml-7 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs">
+            {metadataSegments.map((segment, index) => (
+              <React.Fragment key={`${segment}-${index}`}>
+                {index > 0 && (
+                  <span className="text-bytebot-bronze-light-9">•</span>
+                )}
+                <span className="text-bytebot-bronze-light-10">{segment}</span>
+              </React.Fragment>
+            ))}
           </div>
         </div>
       </div>
