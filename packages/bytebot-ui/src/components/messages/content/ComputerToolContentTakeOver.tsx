@@ -9,9 +9,12 @@ import {
   isScrollToolUseBlock,
 } from "@bytebot/shared";
 import { getIcon, getLabel } from "./ComputerToolUtils";
+import { MessageTimestampMeta } from "@/lib/datetime";
+import { MessageTimestamp } from "../MessageTimestamp";
 
 interface ComputerToolContentTakeOverProps {
   block: ComputerToolUseContentBlock;
+  timestamp?: MessageTimestampMeta | null;
 }
 
 function ToolDetailsTakeOver({ block }: { block: ComputerToolUseContentBlock }) {
@@ -76,7 +79,10 @@ function ToolDetailsTakeOver({ block }: { block: ComputerToolUseContentBlock }) 
   );
 }
 
-export function ComputerToolContentTakeOver({ block }: ComputerToolContentTakeOverProps) {
+export function ComputerToolContentTakeOver({
+  block,
+  timestamp,
+}: ComputerToolContentTakeOverProps) {
   // Don't render screenshot tool use blocks here - they're handled separately
   if (getLabel(block) === "Screenshot") {
     return null;
@@ -84,7 +90,7 @@ export function ComputerToolContentTakeOver({ block }: ComputerToolContentTakeOv
 
   return (
     <div className="max-w-4/5">
-      <div className="flex items-center justify-start gap-2 text-muted-foreground">
+      <div className="flex flex-wrap items-center justify-start gap-2 text-muted-foreground">
         <div className="flex h-7 w-7 items-center justify-center text-primary">
           <HugeiconsIcon
             icon={getIcon(block)}
@@ -94,8 +100,13 @@ export function ComputerToolContentTakeOver({ block }: ComputerToolContentTakeOv
         <p className="text-xs">
           {getLabel(block)}
         </p>
+        <MessageTimestamp
+          timestamp={timestamp}
+          className="text-[10px] normal-case"
+          prefix="Action at"
+        />
         <ToolDetailsTakeOver block={block} />
       </div>
     </div>
   );
-} 
+}
