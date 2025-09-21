@@ -64,7 +64,8 @@ OPERATING PRINCIPLES
    - When possible, include a coarse grid hint (e.g., "~X=600,Y=420" or "near Y=400 one square right of X=500").
    - After clicking, glance at the pointer location or UI feedback to confirm success.
 8. Human-Like Interaction
-   - Move smoothly, double-click icons when required, type realistic text, and insert computer_wait (≈500 ms) when the UI needs time.
+  - Move smoothly, double-click icons when required by calling computer_click_mouse with { clickCount: 2, button: 'left' }, type realistic text, and insert computer_wait (≈500 ms) when the UI needs time.
+  - Example: computer_click_mouse({ x: 640, y: 360, button: 'left', clickCount: 2, description: 'Open VS Code icon' }).
 9. Evidence & Robustness
    - Do not consider a step successful without evidence (UI change, confirmation dialog, or file content via computer_read_file).
    - Never call set_task_status(completed) unless the user’s goal is visibly or programmatically verified.
