@@ -117,7 +117,7 @@ export function TelemetryStatus({ className = "" }: Props) {
       return (
         <div
           key={i}
-          className="w-[3px] rounded bg-gray-500/50"
+          className="w-[3px] rounded bg-bytebot-bronze-light-9 opacity-50 dark:bg-bytebot-bronze-dark-9"
           style={{ height: `${h}px` }}
           title={`${v.toFixed(1)} px`}
         />
@@ -128,8 +128,8 @@ export function TelemetryStatus({ className = "" }: Props) {
   return (
     <div className={className}>
       {/* Status strip */}
-      <div className="flex items-center justify-between rounded-md border border-gray-200 bg-white px-2 py-1 shadow-sm">
-        <div className="flex items-center gap-3 text-[11px] text-gray-800">
+      <div className="flex items-center justify-between rounded-md border border-border bg-card px-2 py-1 text-card-foreground shadow-sm dark:bg-muted">
+        <div className="flex items-center gap-3 text-[11px] text-muted-foreground dark:text-card-foreground">
           <span className="inline-flex items-center rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 ring-1 ring-emerald-200">
             live
           </span>
@@ -149,14 +149,14 @@ export function TelemetryStatus({ className = "" }: Props) {
         </div>
         <div className="flex items-center gap-2">
           <button
-            className="rounded border px-2 py-0.5 text-[11px] text-gray-700 hover:bg-gray-50"
+            className="rounded border border-border px-2 py-0.5 text-[11px] text-card-foreground transition-colors hover:bg-muted/70 dark:hover:bg-muted/40"
             onClick={refresh}
             disabled={busy}
           >
             Refresh
           </button>
           <button
-            className="rounded border px-2 py-0.5 text-[11px] text-gray-700 hover:bg-gray-50"
+            className="rounded border border-border px-2 py-0.5 text-[11px] text-card-foreground transition-colors hover:bg-muted/70 dark:hover:bg-muted/40"
             onClick={() => setOpen(true)}
           >
             Details
@@ -168,29 +168,29 @@ export function TelemetryStatus({ className = "" }: Props) {
       {open && (
         <div className="fixed inset-0 z-50 flex">
           <div
-            className="flex-1 bg-black/20"
+            className="flex-1 bg-black/30 dark:bg-black/60"
             onClick={() => setOpen(false)}
           />
-          <div className="h-full w-[360px] overflow-y-auto bg-white p-3 shadow-xl ring-1 ring-gray-200">
+          <div className="h-full w-[360px] overflow-y-auto border border-border bg-card p-3 text-card-foreground shadow-xl dark:bg-muted">
             <div className="mb-2 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-gray-800">Desktop Accuracy</h3>
+              <h3 className="text-sm font-semibold text-card-foreground">Desktop Accuracy</h3>
               <div className="flex items-center gap-2">
                 <button
-                  className="rounded border px-2 py-0.5 text-[11px] text-gray-700 hover:bg-gray-50"
+                  className="rounded border border-border px-2 py-0.5 text-[11px] text-card-foreground transition-colors hover:bg-muted/70 dark:hover:bg-muted/40"
                   onClick={refresh}
                   disabled={busy}
                 >
                   Refresh
                 </button>
                 <button
-                  className="rounded border border-red-200 bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-700 hover:bg-red-100"
+                  className="rounded border border-red-200 bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-700 transition-colors hover:bg-red-100 dark:border-red-400/40 dark:bg-red-500/20 dark:text-red-200 dark:hover:bg-red-500/30"
                   onClick={reset}
                   disabled={busy}
                 >
                   Reset
                 </button>
                 <button
-                  className="rounded border px-2 py-0.5 text-[11px] text-gray-700 hover:bg-gray-50"
+                  className="rounded border border-border px-2 py-0.5 text-[11px] text-card-foreground transition-colors hover:bg-muted/70 dark:hover:bg-muted/40"
                   onClick={() => setOpen(false)}
                 >
                   Close
@@ -200,40 +200,57 @@ export function TelemetryStatus({ className = "" }: Props) {
 
             {/* Primary metrics */}
             <div className="grid grid-cols-3 gap-2 text-[12px]">
-              <div className="rounded-md p-2 ring-1 ring-gray-200">
-                <div className="text-[10px] text-gray-500">Targeted</div>
-                <div className="text-[14px] font-semibold">{data?.targetedClicks ?? 0}</div>
+              <div className="rounded-md border border-bytebot-bronze-light-6 bg-bytebot-bronze-light-1 p-2 dark:border-bytebot-bronze-dark-6 dark:bg-bytebot-bronze-dark-2">
+                <div className="text-[10px] text-bytebot-bronze-light-10 dark:text-bytebot-bronze-dark-10">Targeted</div>
+                <div className="text-[14px] font-semibold text-bytebot-bronze-light-12 dark:text-bytebot-bronze-dark-12">{data?.targetedClicks ?? 0}</div>
               </div>
-              <div className="rounded-md p-2 ring-1 ring-gray-200">
-                <div className="text-[10px] text-gray-500">Untargeted</div>
-                <div className="text-[14px] font-semibold">{data?.untargetedClicks ?? 0}</div>
+              <div className="rounded-md border border-bytebot-bronze-light-6 bg-bytebot-bronze-light-1 p-2 dark:border-bytebot-bronze-dark-6 dark:bg-bytebot-bronze-dark-2">
+                <div className="text-[10px] text-bytebot-bronze-light-10 dark:text-bytebot-bronze-dark-10">Untargeted</div>
+                <div className="text-[14px] font-semibold text-bytebot-bronze-light-12 dark:text-bytebot-bronze-dark-12">{data?.untargetedClicks ?? 0}</div>
               </div>
-              <div className="rounded-md p-2 ring-1 ring-gray-200">
-                <div className="text-[10px] text-gray-500">Avg Δ (px)</div>
-                <div className="text-[14px] font-semibold">{data?.avgAbsDelta ?? '-'}</div>
+              <div className="rounded-md border border-bytebot-bronze-light-6 bg-bytebot-bronze-light-1 p-2 dark:border-bytebot-bronze-dark-6 dark:bg-bytebot-bronze-dark-2">
+                <div className="text-[10px] text-bytebot-bronze-light-10 dark:text-bytebot-bronze-dark-10">Avg Δ (px)</div>
+                <div className="text-[14px] font-semibold text-bytebot-bronze-light-12 dark:text-bytebot-bronze-dark-12">{data?.avgAbsDelta ?? '-'}</div>
               </div>
             </div>
 
             {/* Chips row 1 */}
-            <div className="mt-2 grid grid-cols-3 gap-2 text-[11px] text-gray-700">
-              <div className="rounded bg-gray-50 px-2 py-1">Keys: <span className="font-medium">{data?.actionCounts?.["type_keys"] ?? 0}</span></div>
-              <div className="rounded bg-gray-50 px-2 py-1">Scrolls: <span className="font-medium">{data?.actionCounts?.["scroll"] ?? 0}</span></div>
-              <div className="rounded bg-gray-50 px-2 py-1">Screens: <span className="font-medium">{data?.actionCounts?.["screenshot"] ?? 0}</span></div>
+            <div className="mt-2 grid grid-cols-3 gap-2 text-[11px] text-card-foreground">
+              <div className="rounded border border-bytebot-bronze-light-6 bg-bytebot-bronze-light-2 px-2 py-1 dark:border-bytebot-bronze-dark-6 dark:bg-bytebot-bronze-dark-2 dark:text-bytebot-bronze-dark-12">
+                Keys: <span className="font-medium text-bytebot-bronze-light-12 dark:text-bytebot-bronze-dark-12">{data?.actionCounts?.["type_keys"] ?? 0}</span>
+              </div>
+              <div className="rounded border border-bytebot-bronze-light-6 bg-bytebot-bronze-light-2 px-2 py-1 dark:border-bytebot-bronze-dark-6 dark:bg-bytebot-bronze-dark-2 dark:text-bytebot-bronze-dark-12">
+                Scrolls: <span className="font-medium text-bytebot-bronze-light-12 dark:text-bytebot-bronze-dark-12">{data?.actionCounts?.["scroll"] ?? 0}</span>
+              </div>
+              <div className="rounded border border-bytebot-bronze-light-6 bg-bytebot-bronze-light-2 px-2 py-1 dark:border-bytebot-bronze-dark-6 dark:bg-bytebot-bronze-dark-2 dark:text-bytebot-bronze-dark-12">
+                Screens: <span className="font-medium text-bytebot-bronze-light-12 dark:text-bytebot-bronze-dark-12">{data?.actionCounts?.["screenshot"] ?? 0}</span>
+              </div>
             </div>
 
             {/* Chips row 2 */}
-            <div className="mt-1 grid grid-cols-3 gap-2 text-[11px] text-gray-700">
-              <div className="rounded bg-indigo-50 px-2 py-1 text-indigo-700" title="Count of successful smart clicks">
-                Smart (completed): <span className="font-medium">{data?.smartClicks ?? 0}</span>
+            <div className="mt-1 grid grid-cols-3 gap-2 text-[11px] text-card-foreground">
+              <div
+                className="rounded border border-bytebot-bronze-light-7 bg-bytebot-bronze-light-a3 px-2 py-1 text-bytebot-bronze-light-12 dark:border-bytebot-bronze-dark-7 dark:bg-bytebot-bronze-dark-a3 dark:text-bytebot-bronze-dark-12"
+                title="Count of successful smart clicks"
+              >
+                Smart (completed): <span className="font-medium text-bytebot-bronze-light-12 dark:text-bytebot-bronze-dark-12">{data?.smartClicks ?? 0}</span>
               </div>
-              <div className="rounded bg-sky-50 px-2 py-1 text-sky-700">Zooms: <span className="font-medium">{data?.progressiveZooms ?? 0}</span></div>
-              <div className="rounded bg-amber-50 px-2 py-1 text-amber-700">Retries: <span className="font-medium">{data?.retryClicks ?? 0}</span></div>
+              <div className="rounded border border-bytebot-bronze-light-7 bg-bytebot-bronze-light-a3 px-2 py-1 text-bytebot-bronze-light-12 dark:border-bytebot-bronze-dark-7 dark:bg-bytebot-bronze-dark-a3 dark:text-bytebot-bronze-dark-12">
+                Zooms: <span className="font-medium text-bytebot-bronze-light-12 dark:text-bytebot-bronze-dark-12">{data?.progressiveZooms ?? 0}</span>
+              </div>
+              <div className="rounded border border-bytebot-bronze-light-7 bg-bytebot-bronze-light-a3 px-2 py-1 text-bytebot-bronze-light-12 dark:border-bytebot-bronze-dark-7 dark:bg-bytebot-bronze-dark-a3 dark:text-bytebot-bronze-dark-12">
+                Retries: <span className="font-medium text-bytebot-bronze-light-12 dark:text-bytebot-bronze-dark-12">{data?.retryClicks ?? 0}</span>
+              </div>
             </div>
 
             {/* Deltas */}
-            <div className="mt-1 grid grid-cols-2 gap-2 text-[11px] text-gray-700">
-              <div className="rounded bg-gray-50 px-2 py-1">Hover Δ avg: <span className="font-medium">{data?.hoverProbes?.avgDiff?.toFixed(2) ?? '-'}</span> ({data?.hoverProbes?.count ?? 0})</div>
-              <div className="rounded bg-gray-50 px-2 py-1">Post Δ avg: <span className="font-medium">{data?.postClickDiff?.avgDiff?.toFixed(2) ?? '-'}</span> ({data?.postClickDiff?.count ?? 0})</div>
+            <div className="mt-1 grid grid-cols-2 gap-2 text-[11px] text-card-foreground">
+              <div className="rounded border border-bytebot-bronze-light-6 bg-bytebot-bronze-light-2 px-2 py-1 dark:border-bytebot-bronze-dark-6 dark:bg-bytebot-bronze-dark-2 dark:text-bytebot-bronze-dark-12">
+                Hover Δ avg: <span className="font-medium text-bytebot-bronze-light-12 dark:text-bytebot-bronze-dark-12">{data?.hoverProbes?.avgDiff?.toFixed(2) ?? '-'}</span> ({data?.hoverProbes?.count ?? 0})
+              </div>
+              <div className="rounded border border-bytebot-bronze-light-6 bg-bytebot-bronze-light-2 px-2 py-1 dark:border-bytebot-bronze-dark-6 dark:bg-bytebot-bronze-dark-2 dark:text-bytebot-bronze-dark-12">
+                Post Δ avg: <span className="font-medium text-bytebot-bronze-light-12 dark:text-bytebot-bronze-dark-12">{data?.postClickDiff?.avgDiff?.toFixed(2) ?? '-'}</span> ({data?.postClickDiff?.count ?? 0})
+              </div>
             </div>
 
             {/* Large sparkline */}
@@ -243,17 +260,28 @@ export function TelemetryStatus({ className = "" }: Props) {
                   const max = Math.max(...(data!.recentAbsDeltas as number[]));
                   const h = max > 0 ? Math.max(2, Math.round((v / max) * 28)) : 2;
                   return (
-                    <div key={i} style={{ height: `${h}px` }} className="w-[5px] rounded bg-gray-500/60" title={`${v.toFixed(1)} px`} />
+                    <div
+                      key={i}
+                      style={{ height: `${h}px` }}
+                      className="w-[5px] rounded bg-bytebot-bronze-light-9 opacity-60 dark:bg-bytebot-bronze-dark-9"
+                      title={`${v.toFixed(1)} px`}
+                    />
                   );
                 })}
               </div>
             )}
 
             {/* Footer cards */}
-            <div className="mt-2 grid grid-cols-3 gap-2 text-[11px] text-gray-700">
-              <div className="rounded bg-gray-50 px-2 py-1">Δx: <span className="font-medium">{data?.avgDeltaX ?? '-'}</span></div>
-              <div className="rounded bg-gray-50 px-2 py-1">Δy: <span className="font-medium">{data?.avgDeltaY ?? '-'}</span></div>
-              <div className="rounded bg-gray-50 px-2 py-1">Calib: <span className="font-medium">{data?.calibrationSnapshots ?? 0}</span></div>
+            <div className="mt-2 grid grid-cols-3 gap-2 text-[11px] text-card-foreground">
+              <div className="rounded border border-bytebot-bronze-light-6 bg-bytebot-bronze-light-2 px-2 py-1 dark:border-bytebot-bronze-dark-6 dark:bg-bytebot-bronze-dark-2 dark:text-bytebot-bronze-dark-12">
+                Δx: <span className="font-medium text-bytebot-bronze-light-12 dark:text-bytebot-bronze-dark-12">{data?.avgDeltaX ?? '-'}</span>
+              </div>
+              <div className="rounded border border-bytebot-bronze-light-6 bg-bytebot-bronze-light-2 px-2 py-1 dark:border-bytebot-bronze-dark-6 dark:bg-bytebot-bronze-dark-2 dark:text-bytebot-bronze-dark-12">
+                Δy: <span className="font-medium text-bytebot-bronze-light-12 dark:text-bytebot-bronze-dark-12">{data?.avgDeltaY ?? '-'}</span>
+              </div>
+              <div className="rounded border border-bytebot-bronze-light-6 bg-bytebot-bronze-light-2 px-2 py-1 dark:border-bytebot-bronze-dark-6 dark:bg-bytebot-bronze-dark-2 dark:text-bytebot-bronze-dark-12">
+                Calib: <span className="font-medium text-bytebot-bronze-light-12 dark:text-bytebot-bronze-dark-12">{data?.calibrationSnapshots ?? 0}</span>
+              </div>
             </div>
           </div>
         </div>
