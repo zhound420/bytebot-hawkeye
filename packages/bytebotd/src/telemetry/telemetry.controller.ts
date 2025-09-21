@@ -146,7 +146,8 @@ export class TelemetryController {
 
   @Post('reset')
   async reset(@Query('session') sessionId?: string) {
-    await this.telemetry.resetAll(sessionId);
+    const targetSession = sessionId?.trim();
+    await this.telemetry.resetAll(targetSession || undefined);
     return { ok: true };
   }
 

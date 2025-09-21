@@ -329,13 +329,14 @@ export class TelemetryService {
     await this.ready;
     const targetSession = sessionId || this.currentSessionId;
     try {
-      await this.ensureSessionDirectories(targetSession);
+      if (sessionId) {
+        await this.startSession(targetSession);
+      } else {
+        await this.ensureSessionDirectories(targetSession);
+      }
       const driftFile = this.getDriftFilePath(targetSession);
       const zeroDrift = { x: 0, y: 0 };
       await fs.writeFile(driftFile, JSON.stringify(zeroDrift), 'utf8');
-      if (targetSession === this.currentSessionId) {
-        this.drift = zeroDrift;
-      }
 
       // Truncate click telemetry log
       await fs.writeFile(this.getLogFilePath(targetSession), '', 'utf8');
@@ -353,6 +354,10 @@ export class TelemetryService {
         );
       } catch (error) {
         // Ignore cleanup failures when resetting calibration snapshots
+      }
+
+      if (targetSession === this.currentSessionId) {
+        await this.loadDriftForSession(targetSession);
       }
     } catch (e) {
       this.logger.warn(`Failed to reset telemetry: ${(e as Error).message}`);
