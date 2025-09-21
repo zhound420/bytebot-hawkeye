@@ -20,7 +20,7 @@ const StockPhoto: React.FC<StockPhotoProps> = ({
   alt = "Decorative image",
 }) => {
   return (
-    <div className="h-full w-full overflow-hidden rounded-lg bg-white">
+    <div className="h-full w-full overflow-hidden rounded-lg bg-card shadow-sm dark:bg-muted">
       <div className="relative h-full w-full">
         <Image src={src} alt={alt} fill className="object-cover" priority />
       </div>
@@ -141,12 +141,12 @@ export default function Home() {
           <div className="flex flex-col items-center overflow-y-auto">
             <div className="flex w-full max-w-xl flex-col items-center">
               <div className="mb-6 flex w-full flex-col items-start justify-start">
-                <h1 className="text-bytebot-bronze-light-12 mb-1 text-2xl">
+                <h1 className="mb-1 text-2xl text-foreground">
                   What can I help you get done?
                 </h1>
               </div>
 
-              <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-7 mb-10 w-full rounded-2xl border p-2">
+              <div className="mb-10 w-full rounded-2xl border border-border bg-card p-2 shadow-sm dark:bg-muted">
                 <ChatInput
                   input={input}
                   isLoading={isLoading}
@@ -199,12 +199,12 @@ export default function Home() {
           <div className="flex flex-1 flex-col items-center overflow-y-auto px-4 pt-10">
             <div className="flex w-full max-w-xl flex-col items-center pb-10">
               <div className="mb-6 flex w-full flex-col items-start justify-start">
-                <h1 className="text-bytebot-bronze-light-12 mb-1 text-2xl">
+                <h1 className="mb-1 text-2xl text-foreground">
                   What can I help you get done?
                 </h1>
               </div>
 
-              <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-5 borderw-full mb-10 rounded-2xl p-2">
+              <div className="mb-10 w-full rounded-2xl border border-border bg-card p-2 shadow-sm dark:bg-muted">
                 <ChatInput
                   input={input}
                   isLoading={isLoading}
