@@ -9,12 +9,17 @@ import {
   TaskDaily01Icon,
   Home01Icon,
   ComputerIcon,
+  Settings01Icon,
 } from "@hugeicons/core-free-icons";
 import { usePathname } from "next/navigation";
+
+import { Button } from "@/components/ui/button";
+import { ApiKeySettingsDialog } from "@/components/settings/ApiKeySettingsDialog";
 
 export function Header() {
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const pathname = usePathname();
 
   // After mounting, we can safely show the theme-dependent content
@@ -88,7 +93,18 @@ export function Header() {
           </Link>
         </div>
       </div>
-      <div className="flex items-center gap-3"></div>
+      <div className="flex items-center gap-3">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={() => setSettingsOpen(true)}
+          aria-label="Open API key settings"
+        >
+          <HugeiconsIcon icon={Settings01Icon} className="h-5 w-5" />
+        </Button>
+        <ApiKeySettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+      </div>
     </header>
   );
 }
