@@ -40,6 +40,13 @@ enum TaskType {
   SCHEDULED
 }
 
+enum ApiKeyName {
+  ANTHROPIC_API_KEY
+  OPENAI_API_KEY
+  GEMINI_API_KEY
+  OPENROUTER_API_KEY
+}
+
 model Task {
   id            String        @id @default(uuid())
   description   String
@@ -106,9 +113,19 @@ model File {
   data          String      // Base64 encoded file data
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
-  
+
   // Relations
   task          Task        @relation(fields: [taskId], references: [id], onDelete: Cascade)
   taskId        String
+}
+
+model ApiKey {
+  name      ApiKeyName @id
+  value     String?
+  lastFour  String?
+  length    Int?
+  revokedAt DateTime?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 }
 

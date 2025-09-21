@@ -12,31 +12,23 @@ import {
 } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
-import { Message, Task } from '@prisma/client';
+import { ApiKeyName, Message, Task } from '@prisma/client';
 import { AddTaskMessageDto } from './dto/add-task-message.dto';
 import { MessagesService } from '../messages/messages.service';
 import { ANTHROPIC_MODELS } from '../anthropic/anthropic.constants';
 import { OPENAI_MODELS } from '../openai/openai.constants';
 import { GOOGLE_MODELS } from '../google/google.constants';
 import { BytebotAgentModel } from 'src/agent/agent.types';
-
-const geminiApiKey = process.env.GEMINI_API_KEY;
-const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
-const openaiApiKey = process.env.OPENAI_API_KEY;
-
-const proxyUrl = process.env.BYTEBOT_LLM_PROXY_URL;
-
-const models = [
-  ...(anthropicApiKey ? ANTHROPIC_MODELS : []),
-  ...(openaiApiKey ? OPENAI_MODELS : []),
-  ...(geminiApiKey ? GOOGLE_MODELS : []),
-];
+import { ApiKeysService } from '../settings/api-keys.service';
+import { ConfigService } from '@nestjs/config';
 
 @Controller('tasks')
 export class TasksController {
   constructor(
     private readonly tasksService: TasksService,
     private readonly messagesService: MessagesService,
+    private readonly apiKeysService: ApiKeysService,
+    private readonly configService: ConfigService,
   ) {}
 
   @Post()
@@ -67,7 +59,9 @@ export class TasksController {
   }
 
   @Get('models')
-  async getModels() {
+  async getModels(): Promise<BytebotAgentModel[]> {
+    const proxyUrl = this.configService.get<string>('BYTEBOT_LLM_PROXY_URL');
+
     if (proxyUrl) {
       try {
         const response = await fetch(`${proxyUrl}/model/info`, {
@@ -107,7 +101,34 @@ export class TasksController {
         );
       }
     }
-    return models;
+    const configuredNames = await this.apiKeysService.getConfiguredKeyNames();
+    const configured = new Set<ApiKeyName>(configuredNames);
+
+    const fallbackEnvVars: Array<[ApiKeyName, string]> = [
+      [ApiKeyName.ANTHROPIC_API_KEY, 'ANTHROPIC_API_KEY'],
+      [ApiKeyName.OPENAI_API_KEY, 'OPENAI_API_KEY'],
+      [ApiKeyName.GEMINI_API_KEY, 'GEMINI_API_KEY'],
+    ];
+
+    for (const [name, envVar] of fallbackEnvVars) {
+      if (this.configService.get<string>(envVar)) {
+        configured.add(name);
+      }
+    }
+
+    const availableModels: BytebotAgentModel[] = [];
+
+    if (configured.has(ApiKeyName.ANTHROPIC_API_KEY)) {
+      availableModels.push(...ANTHROPIC_MODELS);
+    }
+    if (configured.has(ApiKeyName.OPENAI_API_KEY)) {
+      availableModels.push(...OPENAI_MODELS);
+    }
+    if (configured.has(ApiKeyName.GEMINI_API_KEY)) {
+      availableModels.push(...GOOGLE_MODELS);
+    }
+
+    return availableModels;
   }
 
   @Get('telemetry/summary')
