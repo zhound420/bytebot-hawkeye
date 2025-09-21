@@ -103,13 +103,33 @@ export interface TelemetrySummary {
   postClickDiff?: { count: number; avgDiff: number | null };
   smartClicks?: number; // Successful smart click completions
   progressiveZooms?: number;
+  sessionStart?: string | null;
+  sessionEnd?: string | null;
+  sessionDurationMs?: number | null;
+  events?: TelemetryEvent[];
 }
 
 export interface TelemetryApps {
   apps: Array<{ name: string; count: number }>;
 }
 
+export interface TelemetryEvent {
+  type: string;
+  timestamp: string;
+  app?: string | null;
+  [key: string]: unknown;
+}
+
+export interface TelemetrySessionInfo {
+  id: string;
+  label?: string | null;
+  startedAt?: string | null;
+  endedAt?: string | null;
+  lastEventAt?: string | null;
+  eventCount?: number;
+}
+
 export interface TelemetrySessions {
-  current: string | null;
-  sessions: string[];
+  current: TelemetrySessionInfo | null;
+  sessions: TelemetrySessionInfo[];
 }

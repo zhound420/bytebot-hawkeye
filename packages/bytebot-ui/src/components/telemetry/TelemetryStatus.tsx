@@ -1,7 +1,26 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { format } from "date-fns";
+
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { TelemetrySummary, TelemetrySessions } from "@/types";
+import {
+  NormalizedTelemetryEvent,
+  NormalizedTelemetrySession,
+  coalesceSessionTimestamps,
+  formatSessionDurationFromTiming,
+  normalizeTelemetryEvents,
+  normalizeTelemetrySession,
+  parseIsoDate,
+} from "./TelemetryStatus.helpers";
 
 type Props = {
   className?: string;
@@ -11,17 +30,34 @@ export function TelemetryStatus({ className = "" }: Props) {
   const [open, setOpen] = useState(false);
   const [data, setData] = useState<TelemetrySummary | null>(null);
   const [busy, setBusy] = useState(false);
-  const [sessions, setSessions] = useState<string[]>([]);
-  const [currentSession, setCurrentSession] = useState<string | null>(null);
+  const [sessions, setSessions] = useState<
+    NormalizedTelemetrySession[]
+  >([]);
+  const [reportedSessionId, setReportedSessionId] = useState<string | null>(
+    null,
+  );
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(
+    null,
+  );
+  const activeSessionId = useMemo(() => {
+    if (selectedSessionId) {
+      return selectedSessionId;
+    }
+    if (reportedSessionId) {
+      return reportedSessionId;
+    }
+    return sessions[0]?.id ?? "";
+  }, [reportedSessionId, selectedSessionId, sessions]);
   const activeSession = useMemo(
-    () => currentSession ?? sessions[0] ?? "",
-    [currentSession, sessions],
+    () =>
+      sessions.find((session) => session.id === activeSessionId) ?? null,
+    [sessions, activeSessionId],
   );
 
   const refresh = useCallback(async () => {
     setBusy(true);
     const params = new URLSearchParams();
-    const session = activeSession;
+    const session = activeSessionId;
     if (session) {
       params.set("session", session);
     }
@@ -43,12 +79,12 @@ export function TelemetryStatus({ className = "" }: Props) {
     } finally {
       setBusy(false);
     }
-  }, [activeSession]);
+  }, [activeSessionId]);
 
   const reset = useCallback(async () => {
     setBusy(true);
     const params = new URLSearchParams();
-    const session = activeSession;
+    const session = activeSessionId;
     if (session) {
       params.set("session", session);
     }
@@ -64,7 +100,7 @@ export function TelemetryStatus({ className = "" }: Props) {
     } catch {
       setBusy(false);
     }
-  }, [activeSession, refresh]);
+  }, [activeSessionId, refresh]);
 
   const refreshSessions = useCallback(async () => {
     try {
@@ -74,22 +110,35 @@ export function TelemetryStatus({ className = "" }: Props) {
       if (!res.ok) return;
       const payload = (await res.json()) as TelemetrySessions;
       const rawSessions = Array.isArray(payload?.sessions)
-        ? payload.sessions.filter(
-            (session): session is string =>
-              typeof session === "string" && session.length > 0,
-          )
+        ? (payload.sessions as unknown[])
         : [];
-      const dedupedSessions = Array.from(new Set(rawSessions));
-      const reportedCurrent =
-        typeof payload?.current === "string" && payload.current.length > 0
-          ? payload.current
-          : null;
-      const combinedSessions =
-        reportedCurrent && !dedupedSessions.includes(reportedCurrent)
-          ? [reportedCurrent, ...dedupedSessions]
-          : dedupedSessions;
-      setSessions(combinedSessions);
-      setCurrentSession(reportedCurrent);
+      const normalizedSessions = rawSessions
+        .map((session) => normalizeTelemetrySession(session))
+        .filter(
+          (session): session is NormalizedTelemetrySession => session !== null,
+        );
+      const reportedCurrent = normalizeTelemetrySession(payload?.current);
+
+      const deduped: NormalizedTelemetrySession[] = [];
+      const seen = new Set<string>();
+      const ordered = reportedCurrent
+        ? [reportedCurrent, ...normalizedSessions]
+        : normalizedSessions;
+      for (const session of ordered) {
+        if (!seen.has(session.id)) {
+          deduped.push(session);
+          seen.add(session.id);
+        }
+      }
+
+      setSessions(deduped);
+      setReportedSessionId(reportedCurrent?.id ?? null);
+      setSelectedSessionId((prev) => {
+        if (!prev) {
+          return prev;
+        }
+        return deduped.some((session) => session.id === prev) ? prev : null;
+      });
     } catch (error) {
       void error;
       // Ignore session discovery failures and keep the existing list
@@ -107,6 +156,46 @@ export function TelemetryStatus({ className = "" }: Props) {
     const t = setInterval(refresh, 10000);
     return () => clearInterval(t);
   }, [refresh]);
+
+  const normalizedEvents = useMemo<NormalizedTelemetryEvent[]>(
+    () => normalizeTelemetryEvents(data?.events),
+    [data],
+  );
+
+  const { start: sessionStartIso, end: sessionEndIso } = useMemo(
+    () =>
+      coalesceSessionTimestamps(
+        data?.sessionStart ?? null,
+        data?.sessionEnd ?? null,
+        activeSession,
+      ),
+    [activeSession, data?.sessionEnd, data?.sessionStart],
+  );
+
+  const sessionStartLabel = useMemo(() => {
+    const date = parseIsoDate(sessionStartIso);
+    return date ? format(date, "MMM d, yyyy HH:mm:ss") : null;
+  }, [sessionStartIso]);
+
+  const sessionEndLabel = useMemo(() => {
+    const date = parseIsoDate(sessionEndIso);
+    return date ? format(date, "MMM d, yyyy HH:mm:ss") : null;
+  }, [sessionEndIso]);
+
+  const sessionDurationLabel = useMemo(
+    () =>
+      formatSessionDurationFromTiming(
+        data
+          ? {
+              sessionDurationMs: data.sessionDurationMs ?? null,
+              sessionStart: data.sessionStart ?? null,
+              sessionEnd: data.sessionEnd ?? null,
+            }
+          : null,
+        activeSession,
+      ),
+    [activeSession, data],
+  );
 
   const sparkBars = useMemo(() => {
     const vals = data?.recentAbsDeltas || [];
@@ -198,6 +287,70 @@ export function TelemetryStatus({ className = "" }: Props) {
               </div>
             </div>
 
+            <div className="rounded-md border border-border bg-muted/30 p-2 text-[11px] text-card-foreground dark:bg-muted/40">
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Session overview
+                </div>
+                <div className="min-w-[160px]">
+                  <Select
+                    value={
+                      sessions.length
+                        ? activeSessionId &&
+                          sessions.some((session) => session.id === activeSessionId)
+                          ? activeSessionId
+                          : sessions[0].id
+                        : ""
+                    }
+                    onValueChange={(value) => setSelectedSessionId(value)}
+                    disabled={!sessions.length}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select session" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {sessions.map((session) => (
+                        <SelectItem key={session.id} value={session.id}>
+                          {session.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="mt-2 grid grid-cols-3 gap-2">
+                <div className="rounded border border-border/70 bg-card/40 px-2 py-1 dark:bg-muted/40">
+                  <div className="text-[10px] text-muted-foreground">Start</div>
+                  <div className="text-[11px] font-medium text-card-foreground">
+                    {sessionStartLabel ?? "Pending"}
+                  </div>
+                </div>
+                <div className="rounded border border-border/70 bg-card/40 px-2 py-1 dark:bg-muted/40">
+                  <div className="text-[10px] text-muted-foreground">End</div>
+                  <div className="text-[11px] font-medium text-card-foreground">
+                    {sessionEndLabel ??
+                      (sessionStartLabel ? "In progress" : "Pending")}
+                  </div>
+                </div>
+                <div className="rounded border border-border/70 bg-card/40 px-2 py-1 dark:bg-muted/40">
+                  <div className="text-[10px] text-muted-foreground">Duration</div>
+                  <div className="text-[11px] font-medium text-card-foreground">
+                    {sessionDurationLabel ?? "Not yet available"}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                <div className="rounded border border-border/70 bg-card/40 px-2 py-1 text-[11px] text-card-foreground dark:bg-muted/40">
+                  Events: <span className="font-semibold">{activeSession?.eventCount ?? normalizedEvents.length}</span>
+                </div>
+                <div className="rounded border border-border/70 bg-card/40 px-2 py-1 text-[11px] text-card-foreground dark:bg-muted/40">
+                  Session ID: <span className="font-mono text-[10px]">{activeSession?.id ?? "(current)"}</span>
+                </div>
+              </div>
+            </div>
+
             {/* Primary metrics */}
             <div className="grid grid-cols-3 gap-2 text-[12px]">
               <div className="rounded-md border border-bytebot-bronze-light-6 bg-bytebot-bronze-light-1 p-2 dark:border-bytebot-bronze-dark-6 dark:bg-bytebot-bronze-dark-2">
@@ -281,6 +434,59 @@ export function TelemetryStatus({ className = "" }: Props) {
               </div>
               <div className="rounded border border-bytebot-bronze-light-6 bg-bytebot-bronze-light-2 px-2 py-1 dark:border-bytebot-bronze-dark-6 dark:bg-bytebot-bronze-dark-2 dark:text-bytebot-bronze-dark-12">
                 Calib: <span className="font-medium text-bytebot-bronze-light-12 dark:text-bytebot-bronze-dark-12">{data?.calibrationSnapshots ?? 0}</span>
+              </div>
+            </div>
+
+            <div className="mt-3">
+              <div className="text-[11px] font-semibold text-card-foreground">Recent events</div>
+              <div className="mt-1 rounded-md border border-border bg-card/80 dark:bg-muted/40">
+                <ScrollArea className="h-48">
+                  <div className="divide-y divide-border/70">
+                    {normalizedEvents.length === 0 ? (
+                      <div className="px-3 py-4 text-[11px] text-muted-foreground">
+                        No events recorded yet for this session.
+                      </div>
+                    ) : (
+                      normalizedEvents.map((event, idx) => {
+                        const timestamp = event.timestamp
+                          ? parseIsoDate(event.timestamp)
+                          : null;
+                        const formattedTimestamp = timestamp
+                          ? format(timestamp, "MMM d, yyyy HH:mm:ss")
+                          : "—";
+                        const metadataEntries = Object.entries(event.metadata).filter(
+                          ([, value]) => value !== undefined && value !== null,
+                        );
+                        const metadataDisplay = metadataEntries.length
+                          ? JSON.stringify(Object.fromEntries(metadataEntries), null, 2)
+                          : "—";
+
+                        return (
+                          <div
+                            key={`${event.type}-${event.timestamp ?? idx}`}
+                            className="grid grid-cols-[150px_120px_1fr] items-start gap-2 px-3 py-2 text-[11px] text-card-foreground"
+                          >
+                            <div className="font-mono text-[10px] text-muted-foreground">
+                              {formattedTimestamp}
+                            </div>
+                            <div className="font-medium text-card-foreground">
+                              {event.type}
+                            </div>
+                            <div className="min-w-0">
+                              {metadataDisplay === "—" ? (
+                                <span className="text-muted-foreground">—</span>
+                              ) : (
+                                <pre className="whitespace-pre-wrap break-words font-mono text-[10px] leading-snug text-muted-foreground">
+                                  {metadataDisplay}
+                                </pre>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </ScrollArea>
               </div>
             </div>
           </div>
