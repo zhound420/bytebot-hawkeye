@@ -1,7 +1,6 @@
 import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { TelemetryService } from './telemetry.service';
 import * as fs from 'fs/promises';
-import * as path from 'path';
 
 @Controller('telemetry')
 export class TelemetryController {
@@ -11,6 +10,7 @@ export class TelemetryController {
   async summary(
     @Query('app') app?: string,
     @Query('limit') limitStr?: string,
+    @Query('session') sessionId?: string,
   ): Promise<{
     targetedClicks: number;
     untargetedClicks: number;
@@ -26,7 +26,7 @@ export class TelemetryController {
     smartClicks?: number;
     progressiveZooms?: number;
   }> {
-    const logPath = this.telemetry.getLogFilePath();
+    const logPath = this.telemetry.getLogFilePath(sessionId);
     let targeted = 0;
     let untargeted = 0;
     let sumAbs = 0;
@@ -96,16 +96,22 @@ export class TelemetryController {
           } else if (obj.type === 'progressive_zoom') {
             progressiveZooms += 1;
           }
-        } catch {}
+        } catch (error) {
+          // Ignore malformed telemetry entries in summary parsing
+        }
       }
-    } catch {}
+    } catch (error) {
+      // Ignore missing or unreadable telemetry log when building summary
+    }
 
     let calibrationSnapshots = 0;
     try {
-      const dir = this.telemetry.getCalibrationDir();
+      const dir = this.telemetry.getCalibrationDir(sessionId);
       const files = await fs.readdir(dir);
       calibrationSnapshots = files.filter((f) => f.endsWith('.png')).length;
-    } catch {}
+    } catch (error) {
+      // Ignore missing calibration directories
+    }
 
     return {
       targetedClicks: targeted,
@@ -139,8 +145,8 @@ export class TelemetryController {
   }
 
   @Post('reset')
-  async reset() {
-    await this.telemetry.resetAll();
+  async reset(@Query('session') sessionId?: string) {
+    await this.telemetry.resetAll(sessionId);
     return { ok: true };
   }
 
@@ -148,8 +154,9 @@ export class TelemetryController {
   async apps(
     @Query('limit') limitStr?: string,
     @Query('window') windowStr?: string,
+    @Query('session') sessionId?: string,
   ): Promise<{ apps: Array<{ name: string; count: number }> }> {
-    const logPath = this.telemetry.getLogFilePath();
+    const logPath = this.telemetry.getLogFilePath(sessionId);
     const limit = Math.max(
       1,
       Math.min(parseInt(limitStr || '10', 10) || 10, 50),
@@ -169,14 +176,24 @@ export class TelemetryController {
           const obj = JSON.parse(lines[i]);
           if (!obj.app) continue;
           counts.set(obj.app, (counts.get(obj.app) || 0) + 1);
-        } catch {}
+        } catch (error) {
+          // Ignore malformed telemetry entries in app aggregation
+        }
       }
-    } catch {}
+    } catch (error) {
+      // Ignore missing telemetry log when aggregating app usage
+    }
 
     const apps = Array.from(counts.entries())
       .map(([name, count]) => ({ name, count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, limit);
     return { apps };
+  }
+
+  @Get('sessions')
+  async sessions(): Promise<{ sessions: string[] }> {
+    const sessions = await this.telemetry.listSessions();
+    return { sessions };
   }
 }
