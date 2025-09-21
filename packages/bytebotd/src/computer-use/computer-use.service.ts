@@ -94,6 +94,12 @@ export class ComputerUseService {
   private readonly hoverProbeThreshold = Number.parseFloat(
     process.env.BYTEBOT_HOVER_PROBE_THRESHOLD ?? '1.5',
   );
+  private readonly smartClickSuccessRadius = (() => {
+    const raw = Number.parseFloat(
+      process.env.BYTEBOT_SMART_CLICK_SUCCESS_RADIUS ?? '12',
+    );
+    return Number.isFinite(raw) ? raw : 12;
+  })();
 
   async action(params: ComputerAction): Promise<any> {
     this.logger.log(`Executing computer action: ${params.action}`);
@@ -399,6 +405,25 @@ export class ComputerUseService {
       targetDescription: context?.targetDescription ?? description,
       source: context?.source ?? 'manual',
     };
+
+    const finalTarget = destination ?? targetCoordinates;
+    if (finalTarget) {
+      const deltaToTarget = {
+        x: actualPointer.x - finalTarget.x,
+        y: actualPointer.y - finalTarget.y,
+      };
+      const distance = Math.hypot(deltaToTarget.x, deltaToTarget.y);
+      const success = distance <= this.smartClickSuccessRadius;
+      await this.telemetryService.recordEvent('smart_click_complete', {
+        success,
+        distance,
+        delta: deltaToTarget,
+        target: targetCoordinates ?? undefined,
+        adjusted: destination ?? undefined,
+        actual: actualPointer,
+        clickTaskId: context?.clickTaskId,
+      });
+    }
 
     if (targetCoordinates) {
       await this.telemetryService.recordClick(
