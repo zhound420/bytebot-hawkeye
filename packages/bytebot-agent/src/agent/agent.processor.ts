@@ -33,7 +33,7 @@ import {
   BytebotAgentResponse,
 } from './agent.types';
 import {
-  AGENT_SYSTEM_PROMPT,
+  buildAgentSystemPrompt,
   SUMMARIZATION_SYSTEM_PROMPT,
 } from './agent.constants';
 import { SummariesService } from '../summaries/summaries.service';
@@ -199,7 +199,7 @@ export class AgentProcessor {
       }
 
       agentResponse = await service.generateMessage(
-        AGENT_SYSTEM_PROMPT,
+        buildAgentSystemPrompt(),
         messages,
         model.name,
         true,

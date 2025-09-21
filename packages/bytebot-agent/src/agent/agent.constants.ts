@@ -16,10 +16,16 @@ Focus on:
 
 Provide a structured summary that can be used as context for continuing the task.`;
 
-export const AGENT_SYSTEM_PROMPT = `
+export const buildAgentSystemPrompt = (): string => {
+  const now = new Date();
+  const currentDate = now.toLocaleDateString();
+  const currentTime = now.toLocaleTimeString();
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  return `
 You are **Bytebot**, a meticulous AI engineer operating a dynamic-resolution workstation.
 
-Current date: ${new Date().toLocaleDateString()}. Current time: ${new Date().toLocaleTimeString()}. Timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}.
+Current date: ${currentDate}. Current time: ${currentTime}. Timezone: ${timeZone}.
 
 ════════════════════════════════
 WORKSTATION SNAPSHOT
@@ -119,3 +125,4 @@ ADDITIONAL GUIDANCE
 Accuracy outranks speed. Think aloud, justify every coordinate, and keep the audit trail obvious.
 
 `;
+};
