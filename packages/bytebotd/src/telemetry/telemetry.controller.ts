@@ -1,5 +1,9 @@
 import { Body, Controller, Get, Post, Query } from '@nestjs/common';
-import { TelemetryService } from './telemetry.service';
+import {
+  TelemetryActionEventSummary,
+  SessionSummaryInfo,
+  TelemetryService,
+} from './telemetry.service';
 import * as fs from 'fs/promises';
 
 @Controller('telemetry')
@@ -25,8 +29,13 @@ export class TelemetryController {
     postClickDiff?: { count: number; avgDiff: number | null };
     smartClicks?: number;
     progressiveZooms?: number;
+    sessionStart: string | null;
+    sessionEnd: string | null;
+    sessionDurationMs: number | null;
+    events: TelemetryActionEventSummary[];
   }> {
     const logPath = this.telemetry.getLogFilePath(sessionId);
+    const timeline = await this.telemetry.getSessionTimeline(sessionId);
     let targeted = 0;
     let untargeted = 0;
     let sumAbs = 0;
@@ -165,6 +174,10 @@ export class TelemetryController {
       },
       smartClicks,
       progressiveZooms,
+      sessionStart: timeline.sessionStart,
+      sessionEnd: timeline.sessionEnd,
+      sessionDurationMs: timeline.sessionDurationMs,
+      events: timeline.events,
     };
   }
 
@@ -229,7 +242,10 @@ export class TelemetryController {
   }
 
   @Get('sessions')
-  async sessions(): Promise<{ current: string; sessions: string[] }> {
+  async sessions(): Promise<{
+    current: string;
+    sessions: SessionSummaryInfo[];
+  }> {
     return this.telemetry.listSessions();
   }
 }

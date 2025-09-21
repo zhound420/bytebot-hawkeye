@@ -18,6 +18,26 @@ export interface ClickContextMeta {
   clickTaskId?: string;
 }
 
+export interface TelemetryActionEventSummary {
+  type: string;
+  timestamp: string;
+  metadata: Record<string, any>;
+}
+
+export interface SessionTimelineSummary {
+  sessionStart: string | null;
+  sessionEnd: string | null;
+  sessionDurationMs: number | null;
+  events: TelemetryActionEventSummary[];
+}
+
+export interface SessionSummaryInfo {
+  id: string;
+  sessionStart: string | null;
+  sessionEnd: string | null;
+  sessionDurationMs: number | null;
+}
+
 interface ClickTelemetryPayload {
   target: { x: number; y: number };
   adjusted?: { x: number; y: number };
@@ -103,7 +123,10 @@ export class TelemetryService {
     await this.loadDriftForSession(sessionId);
   }
 
-  async listSessions(): Promise<{ current: string; sessions: string[] }> {
+  async listSessions(): Promise<{
+    current: string;
+    sessions: SessionSummaryInfo[];
+  }> {
     await this.ready;
     try {
       const entries = await fs.readdir(this.telemetryDir, {
@@ -117,12 +140,36 @@ export class TelemetryService {
         sessions.unshift(this.currentSessionId);
       }
       const uniqueSessions = Array.from(new Set(sessions));
-      return { current: this.currentSessionId, sessions: uniqueSessions };
+      const summaries = await Promise.all(
+        uniqueSessions.map(async (id) => {
+          const timeline = await this.getSessionTimeline(id, { eventLimit: 0 });
+          return {
+            id,
+            sessionStart: timeline.sessionStart,
+            sessionEnd: timeline.sessionEnd,
+            sessionDurationMs: timeline.sessionDurationMs,
+          } satisfies SessionSummaryInfo;
+        }),
+      );
+      return { current: this.currentSessionId, sessions: summaries };
     } catch (error) {
       this.logger.warn(
         `Failed to enumerate telemetry sessions: ${(error as Error).message}`,
       );
-      return { current: this.currentSessionId, sessions: [this.currentSessionId] };
+      const fallback = await this.getSessionTimeline(this.currentSessionId, {
+        eventLimit: 0,
+      });
+      return {
+        current: this.currentSessionId,
+        sessions: [
+          {
+            id: this.currentSessionId,
+            sessionStart: fallback.sessionStart,
+            sessionEnd: fallback.sessionEnd,
+            sessionDurationMs: fallback.sessionDurationMs,
+          },
+        ],
+      };
     }
   }
 
@@ -419,5 +466,120 @@ export class TelemetryService {
       );
       this.drift = { x: 0, y: 0 };
     }
+  }
+
+  async getSessionTimeline(
+    sessionId?: string,
+    options?: { eventLimit?: number },
+  ): Promise<SessionTimelineSummary> {
+    await this.ready;
+    const limitRaw = options?.eventLimit ?? 20;
+    const eventLimit = Number.isFinite(limitRaw)
+      ? Math.max(0, Math.min(Math.trunc(limitRaw), 100))
+      : 20;
+    const logPath = this.getLogFilePath(sessionId);
+    const defaultSummary: SessionTimelineSummary = {
+      sessionStart: null,
+      sessionEnd: null,
+      sessionDurationMs: null,
+      events: [],
+    };
+
+    try {
+      const content = await fs.readFile(logPath, 'utf8');
+      if (!content.trim()) {
+        return defaultSummary;
+      }
+
+      const lines = content.split('\n').filter(Boolean);
+      const parsedEntries: Array<{
+        type: string | null;
+        timestamp: string | null;
+        timestampMs: number | null;
+        metadata?: Record<string, any>;
+      }> = [];
+
+      let sessionStart: { timestamp: string; ms: number } | null = null;
+      let sessionEnd: { timestamp: string; ms: number } | null = null;
+
+      for (const line of lines) {
+        try {
+          const obj = JSON.parse(line);
+          const type = typeof obj?.type === 'string' ? obj.type : null;
+          const ts = typeof obj?.timestamp === 'string' ? obj.timestamp : null;
+          const ms = ts ? Date.parse(ts) : Number.NaN;
+          const timestampMs = Number.isFinite(ms) ? ms : null;
+
+          if (timestampMs !== null) {
+            if (!sessionStart || timestampMs < sessionStart.ms) {
+              sessionStart = { timestamp: ts!, ms: timestampMs };
+            }
+            if (!sessionEnd || timestampMs > sessionEnd.ms) {
+              sessionEnd = { timestamp: ts!, ms: timestampMs };
+            }
+          }
+
+          let metadata: Record<string, any> | undefined;
+          if (type === 'action') {
+            metadata = this.extractActionMetadata(obj);
+          }
+
+          parsedEntries.push({
+            type,
+            timestamp: ts,
+            timestampMs,
+            metadata,
+          });
+        } catch (error) {
+          // ignore malformed log lines when building timeline summary
+        }
+      }
+
+      const events: TelemetryActionEventSummary[] = [];
+      if (eventLimit > 0) {
+        for (let i = parsedEntries.length - 1; i >= 0; i--) {
+          if (events.length >= eventLimit) {
+            break;
+          }
+          const entry = parsedEntries[i];
+          if (
+            entry.type === 'action' &&
+            entry.timestamp &&
+            entry.metadata &&
+            entry.timestampMs !== null
+          ) {
+            events.push({
+              type: entry.type,
+              timestamp: entry.timestamp,
+              metadata: entry.metadata,
+            });
+          }
+        }
+        events.reverse();
+      }
+
+      const sessionDurationMs =
+        sessionStart && sessionEnd ? sessionEnd.ms - sessionStart.ms : null;
+
+      return {
+        sessionStart: sessionStart?.timestamp ?? null,
+        sessionEnd: sessionEnd?.timestamp ?? null,
+        sessionDurationMs: sessionDurationMs !== null ? sessionDurationMs : null,
+        events,
+      };
+    } catch (error) {
+      return defaultSummary;
+    }
+  }
+
+  private extractActionMetadata(entry: Record<string, any>): Record<string, any> {
+    const metadata: Record<string, any> = {};
+    for (const [key, value] of Object.entries(entry ?? {})) {
+      if (key === 'type' || key === 'timestamp' || key === 'app') {
+        continue;
+      }
+      metadata[key] = value;
+    }
+    return metadata;
   }
 }
