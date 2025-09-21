@@ -47,6 +47,8 @@ export class TelemetryController {
     let smartClicks = 0;
     let progressiveZooms = 0;
 
+    const smartClickTaskIds = new Set<string>();
+
     try {
       const content = await fs.readFile(logPath, 'utf8');
       const lines = content.split('\n').filter(Boolean);
@@ -57,9 +59,45 @@ export class TelemetryController {
           if (app && obj.app && obj.app !== app) {
             continue;
           }
+          if (obj.type === 'smart_click_complete') {
+            const taskId =
+              typeof obj.clickTaskId === 'string' ? obj.clickTaskId : undefined;
+            if (taskId) {
+              smartClickTaskIds.add(taskId);
+            }
+
+            const delta =
+              obj && typeof obj.delta === 'object' ? obj.delta : undefined;
+            if (delta) {
+              const dx = Number(delta.x) || 0;
+              const dy = Number(delta.y) || 0;
+              targeted++;
+              sumDx += dx;
+              sumDy += dy;
+              const providedDistance = Number(obj.distance);
+              const distance = Number.isFinite(providedDistance)
+                ? providedDistance
+                : Math.hypot(dx, dy);
+              sumAbs += distance;
+              if (recentAbsDeltas.length < limit) {
+                recentAbsDeltas.push(distance);
+              }
+            }
+
+            if (obj.success === true) {
+              smartClicks += 1;
+            }
+            continue;
+          }
+
           if (obj.type === 'untargeted_click') {
             untargeted++;
           } else if (obj.target && obj.actual && obj.delta) {
+            const clickTaskId =
+              typeof obj.clickTaskId === 'string' ? obj.clickTaskId : undefined;
+            if (clickTaskId && smartClickTaskIds.has(clickTaskId)) {
+              continue;
+            }
             targeted++;
             const dx = Number(obj.delta.x) || 0;
             const dy = Number(obj.delta.y) || 0;
@@ -87,12 +125,6 @@ export class TelemetryController {
             ) {
               progressiveZooms += 1;
             }
-          } else if (
-            obj.type === 'smart_click_complete' &&
-            obj.success === true
-          ) {
-            // Only count smart click completions when they succeed.
-            smartClicks += 1;
           } else if (obj.type === 'progressive_zoom') {
             progressiveZooms += 1;
           }
