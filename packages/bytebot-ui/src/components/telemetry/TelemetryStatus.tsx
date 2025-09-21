@@ -17,14 +17,14 @@ export function TelemetryStatus({ className = "" }: Props) {
   const [selectedSession, setSelectedSession] = useState<string>("");
 
   const effectiveSession = useMemo(() => {
-    if (currentSession && sessions.includes(currentSession)) {
-      return currentSession;
-    }
     if (preferredSession && sessions.includes(preferredSession)) {
       return preferredSession;
     }
     if (selectedSession && sessions.includes(selectedSession)) {
       return selectedSession;
+    }
+    if (currentSession && sessions.includes(currentSession)) {
+      return currentSession;
     }
     return sessions[0] ?? "";
   }, [currentSession, preferredSession, selectedSession, sessions]);
