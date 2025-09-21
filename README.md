@@ -29,6 +29,18 @@
 
 ---
 
+## Hawkeye Fork Enhancements
+
+The Hawkeye edition layers precision-oriented upgrades on top of upstream Bytebot so the agent can land clicks with far greater reliability:
+
+- **Grid overlay guidance** draws the desktop with 100 px reference lines and labeled axes, giving the model a persistent map before every action, with debug controls exposed through `BYTEBOT_GRID_OVERLAY` and `BYTEBOT_GRID_DEBUG`.
+- **Progressive zoom capture** lets the agent request focused screenshots with cyan micro-grids so it can translate local coordinates back into global positions with 100% verified accuracy.
+- **Measured accuracy gains** combine the overlay, zoom pipeline, and calibration passes to reach ~70% coordinate precision in testing—check out the full breakdown in [Coordinate Accuracy Improvements](COORDINATE_ACCURACY_IMPROVEMENTS.md).
+
+### Smart Focus Targeting (Hawkeye Exclusive)
+
+The fork’s Smart Focus workflow narrows attention in three deliberate passes—coarse region selection, focused capture, and final click—so the agent can reason about targets instead of guessing. Enable or tune it with `BYTEBOT_SMART_FOCUS`, `BYTEBOT_OVERVIEW_GRID`, `BYTEBOT_REGION_GRID`, `BYTEBOT_FOCUSED_GRID`, and related knobs documented in [docs/SMART_FOCUS_SYSTEM.md](docs/SMART_FOCUS_SYSTEM.md).
+
 https://github.com/user-attachments/assets/f271282a-27a3-43f3-9b99-b34007fdd169
 
 https://github.com/user-attachments/assets/72a43cf2-bd87-44c5-a582-e7cbe176f37f
@@ -90,19 +102,31 @@ Just click and add your AI provider API key.
 **Option 2: Docker Compose**
 
 ```bash
-git clone https://github.com/bytebot-ai/bytebot.git
-cd bytebot
+git clone https://github.com/hawkeye-ai/bytebot-hawkeye.git
+cd bytebot-hawkeye
 
-# Add your AI provider key (choose one)
+# Add your AI provider key (choose one or more)
 echo "ANTHROPIC_API_KEY=sk-ant-..." > docker/.env
-# Or: echo "OPENAI_API_KEY=sk-..." > docker/.env
-# Or: echo "GEMINI_API_KEY=..." > docker/.env
-# Or: echo "OPENROUTER_API_KEY=..." > docker/.env
+# Or: echo "OPENAI_API_KEY=sk-..." >> docker/.env
+# Or: echo "GEMINI_API_KEY=..." >> docker/.env
+# Or: echo "OPENROUTER_API_KEY=..." >> docker/.env
 
-docker-compose -f docker/docker-compose.yml up -d
+docker compose -f docker/docker-compose.yml up -d
 
 # Open http://localhost:9992
 ```
+
+Need Hawkeye’s full service layout? Use the proxy stack to launch the bundled LiteLLM relay and feed the agent from `packages/bytebot-llm-proxy/litellm-config.yaml`, or swap in the Claude-Code tuned API service when you only want code models:
+
+```bash
+# Run with the LiteLLM proxy (adds the bytebot-llm-proxy container on :4000)
+docker compose -f docker/docker-compose.proxy.yml up -d
+
+# Run with the Claude Code agent (replaces bytebot-agent with bytebot-agent-cc)
+docker compose -f docker/docker-compose-claude-code.yml up -d
+```
+
+The extra services read the same API keys from `docker/.env`, so no additional secrets are required—just make sure the keys you provide match the models listed in the LiteLLM config.
 
 [Full deployment guide →](https://docs.bytebot.ai/quickstart)
 
