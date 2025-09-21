@@ -33,7 +33,7 @@ import {
   BytebotAgentResponse,
 } from './agent.types';
 import {
-  AGENT_SYSTEM_PROMPT,
+  buildAgentSystemPrompt,
   SUMMARIZATION_SYSTEM_PROMPT,
 } from './agent.constants';
 import { query } from '@anthropic-ai/claude-code';
@@ -187,7 +187,7 @@ export class AgentProcessor {
         prompt: task.description,
         options: {
           abortController: this.abortController,
-          appendSystemPrompt: AGENT_SYSTEM_PROMPT,
+          appendSystemPrompt: buildAgentSystemPrompt(),
           permissionMode: 'bypassPermissions',
           mcpServers: {
             desktop: {
