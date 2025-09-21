@@ -217,18 +217,18 @@ export class ZoomScreenshotService {
     // X-axis labels (showing both local and global coordinates)
     for (let x = gridSize; x <= width; x += gridSize) {
       const globalCoords = mapping.localToGlobal(x, 0);
-      const label = showGlobalCoordinates ?
-        `${x}(${Math.round(globalCoords.x)})` :
-        `${x}`;
+      const label = showGlobalCoordinates
+        ? `${Math.round(globalCoords.x)} (local ${x})`
+        : `${x}`;
       svgContent += `<text x="${x}" y="${fontSize + 2}" text-anchor="middle">${label}</text>`;
     }
 
     // Y-axis labels (showing both local and global coordinates)
     for (let y = gridSize; y <= height; y += gridSize) {
       const globalCoords = mapping.localToGlobal(0, y);
-      const label = showGlobalCoordinates ?
-        `${y}(${Math.round(globalCoords.y)})` :
-        `${y}`;
+      const label = showGlobalCoordinates
+        ? `${Math.round(globalCoords.y)} (local ${y})`
+        : `${y}`;
       svgContent += `<text x="2" y="${y + fontSize/2}" text-anchor="start">${label}</text>`;
     }
 
