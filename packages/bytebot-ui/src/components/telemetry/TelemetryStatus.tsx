@@ -13,37 +13,15 @@ export function TelemetryStatus({ className = "" }: Props) {
   const [busy, setBusy] = useState(false);
   const [sessions, setSessions] = useState<string[]>([]);
   const [currentSession, setCurrentSession] = useState<string | null>(null);
-  const [preferredSession, setPreferredSession] = useState<string>("");
-  const [selectedSession, setSelectedSession] = useState<string>("");
-
-  const effectiveSession = useMemo(() => {
-    if (preferredSession && sessions.includes(preferredSession)) {
-      return preferredSession;
-    }
-    if (selectedSession && sessions.includes(selectedSession)) {
-      return selectedSession;
-    }
-    if (currentSession && sessions.includes(currentSession)) {
-      return currentSession;
-    }
-    return sessions[0] ?? "";
-  }, [currentSession, preferredSession, selectedSession, sessions]);
-
-  useEffect(() => {
-    if (effectiveSession !== selectedSession) {
-      setSelectedSession(effectiveSession);
-    }
-  }, [effectiveSession, selectedSession]);
-
-  const availableSessions = useMemo(() => {
-    if (sessions.length > 0) return sessions;
-    return effectiveSession ? [effectiveSession] : [];
-  }, [sessions, effectiveSession]);
+  const activeSession = useMemo(
+    () => currentSession ?? sessions[0] ?? "",
+    [currentSession, sessions],
+  );
 
   const refresh = useCallback(async () => {
     setBusy(true);
     const params = new URLSearchParams();
-    const session = effectiveSession;
+    const session = activeSession;
     if (session) {
       params.set("session", session);
     }
@@ -65,12 +43,12 @@ export function TelemetryStatus({ className = "" }: Props) {
     } finally {
       setBusy(false);
     }
-  }, [effectiveSession]);
+  }, [activeSession]);
 
   const reset = useCallback(async () => {
     setBusy(true);
     const params = new URLSearchParams();
-    const session = effectiveSession;
+    const session = activeSession;
     if (session) {
       params.set("session", session);
     }
@@ -86,7 +64,7 @@ export function TelemetryStatus({ className = "" }: Props) {
     } catch {
       setBusy(false);
     }
-  }, [effectiveSession, refresh]);
+  }, [activeSession, refresh]);
 
   const refreshSessions = useCallback(async () => {
     try {
@@ -112,10 +90,6 @@ export function TelemetryStatus({ className = "" }: Props) {
           : dedupedSessions;
       setSessions(combinedSessions);
       setCurrentSession(reportedCurrent);
-      setPreferredSession((prev) => {
-        if (!prev) return prev;
-        return combinedSessions.includes(prev) ? prev : "";
-      });
     } catch (error) {
       void error;
       // Ignore session discovery failures and keep the existing list
@@ -174,24 +148,6 @@ export function TelemetryStatus({ className = "" }: Props) {
           <div className="ml-1 flex h-4 items-end gap-[2px]">{sparkBars}</div>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1">
-            <span className="text-[10px] text-gray-500">Session</span>
-            <select
-              className="rounded border border-gray-200 bg-white px-1 py-0.5 text-[11px] text-gray-700"
-              value={selectedSession || ""}
-              onChange={(event) => {
-                const value = event.target.value;
-                setPreferredSession(value);
-                setSelectedSession(value);
-              }}
-            >
-              {availableSessions.map((session) => (
-                <option key={session} value={session}>
-                  {session}
-                </option>
-              ))}
-            </select>
-          </div>
           <button
             className="rounded border px-2 py-0.5 text-[11px] text-gray-700 hover:bg-gray-50"
             onClick={refresh}
@@ -219,24 +175,6 @@ export function TelemetryStatus({ className = "" }: Props) {
             <div className="mb-2 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-gray-800">Desktop Accuracy</h3>
               <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-gray-500">Session</span>
-                  <select
-                    className="rounded border border-gray-200 bg-white px-1 py-0.5 text-[11px] text-gray-700"
-                    value={selectedSession || ""}
-                    onChange={(event) => {
-                      const value = event.target.value;
-                      setPreferredSession(value);
-                      setSelectedSession(value);
-                    }}
-                  >
-                    {availableSessions.map((session) => (
-                      <option key={session} value={session}>
-                        {session}
-                      </option>
-                    ))}
-                  </select>
-                </div>
                 <button
                   className="rounded border px-2 py-0.5 text-[11px] text-gray-700 hover:bg-gray-50"
                   onClick={refresh}
