@@ -23,6 +23,26 @@ import { TasksGateway } from './tasks.gateway';
 import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
+const buildRunnableTaskFilter = (
+  now: Date = new Date(),
+): Prisma.TaskWhereInput => ({
+  OR: [
+    {
+      queuedAt: {
+        not: null,
+      },
+    },
+    {
+      scheduledFor: null,
+    },
+    {
+      scheduledFor: {
+        lte: now,
+      },
+    },
+  ],
+});
+
 @Injectable()
 export class TasksService {
   private readonly logger = new Logger(TasksService.name);
@@ -131,6 +151,7 @@ export class TasksService {
   async findNextTask(): Promise<(Task & { files: File[] }) | null> {
     const task = await this.prisma.task.findFirst({
       where: {
+        ...buildRunnableTaskFilter(),
         status: {
           in: [TaskStatus.RUNNING, TaskStatus.PENDING],
         },
