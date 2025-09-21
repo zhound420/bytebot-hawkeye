@@ -8,6 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { ANTHROPIC_MODELS } from '../anthropic/anthropic.constants';
 import { OPENAI_MODELS } from '../openai/openai.constants';
 import { GOOGLE_MODELS } from '../google/google.constants';
+import { ModelAvailabilityService } from './model-availability.service';
 
 class InMemoryApiKeysService {
   private configured = new Set<ApiKeyName>();
@@ -49,10 +50,14 @@ describe('TasksController - getModels', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [TasksController],
       providers: [
-        { provide: TasksService, useValue: { create: jest.fn(), findAll: jest.fn() } },
+        {
+          provide: TasksService,
+          useValue: { create: jest.fn(), findAll: jest.fn() },
+        },
         { provide: MessagesService, useValue: {} },
         { provide: ApiKeysService, useValue: apiKeysService },
         { provide: ConfigService, useValue: configService },
+        ModelAvailabilityService,
       ],
     }).compile();
 

@@ -12,23 +12,20 @@ import {
 } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
-import { ApiKeyName, Message, Task } from '@prisma/client';
+import { Message, Task } from '@prisma/client';
 import { AddTaskMessageDto } from './dto/add-task-message.dto';
 import { MessagesService } from '../messages/messages.service';
-import { ANTHROPIC_MODELS } from '../anthropic/anthropic.constants';
-import { OPENAI_MODELS } from '../openai/openai.constants';
-import { GOOGLE_MODELS } from '../google/google.constants';
 import { BytebotAgentModel } from 'src/agent/agent.types';
-import { ApiKeysService } from '../settings/api-keys.service';
 import { ConfigService } from '@nestjs/config';
+import { ModelAvailabilityService } from './model-availability.service';
 
 @Controller('tasks')
 export class TasksController {
   constructor(
     private readonly tasksService: TasksService,
     private readonly messagesService: MessagesService,
-    private readonly apiKeysService: ApiKeysService,
     private readonly configService: ConfigService,
+    private readonly modelAvailabilityService: ModelAvailabilityService,
   ) {}
 
   @Post()
@@ -101,34 +98,7 @@ export class TasksController {
         );
       }
     }
-    const configuredNames = await this.apiKeysService.getConfiguredKeyNames();
-    const configured = new Set<ApiKeyName>(configuredNames);
-
-    const fallbackEnvVars: Array<[ApiKeyName, string]> = [
-      [ApiKeyName.ANTHROPIC_API_KEY, 'ANTHROPIC_API_KEY'],
-      [ApiKeyName.OPENAI_API_KEY, 'OPENAI_API_KEY'],
-      [ApiKeyName.GEMINI_API_KEY, 'GEMINI_API_KEY'],
-    ];
-
-    for (const [name, envVar] of fallbackEnvVars) {
-      if (this.configService.get<string>(envVar)) {
-        configured.add(name);
-      }
-    }
-
-    const availableModels: BytebotAgentModel[] = [];
-
-    if (configured.has(ApiKeyName.ANTHROPIC_API_KEY)) {
-      availableModels.push(...ANTHROPIC_MODELS);
-    }
-    if (configured.has(ApiKeyName.OPENAI_API_KEY)) {
-      availableModels.push(...OPENAI_MODELS);
-    }
-    if (configured.has(ApiKeyName.GEMINI_API_KEY)) {
-      availableModels.push(...GOOGLE_MODELS);
-    }
-
-    return availableModels;
+    return this.modelAvailabilityService.listAvailableModels();
   }
 
   @Get('telemetry/summary')
