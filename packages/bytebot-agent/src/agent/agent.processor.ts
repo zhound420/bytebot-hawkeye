@@ -399,6 +399,18 @@ export class AgentProcessor {
           await this.tasksService.update(taskId, {
             status: TaskStatus.NEEDS_HELP,
           });
+        } else if (desired === 'failed') {
+          const failureTimestamp = new Date();
+          const failureReason =
+            setTaskStatusToolUseBlock.input.description ?? 'no description provided';
+          this.logger.warn(
+            `Task ${taskId} marked as failed via set_task_status tool: ${failureReason}`,
+          );
+          await this.tasksService.update(taskId, {
+            status: TaskStatus.FAILED,
+            completedAt: failureTimestamp,
+            executedAt: task.executedAt ?? failureTimestamp,
+          });
         }
       }
 
