@@ -114,23 +114,34 @@ export class TasksController {
   async telemetrySummary(
     @Query('app') app?: string,
     @Query('limit') limit?: string,
+    @Query('session') session?: string,
   ) {
     const base = process.env.BYTEBOT_DESKTOP_BASE_URL;
     if (!base) {
-      throw new HttpException('Desktop base URL not configured', HttpStatus.BAD_GATEWAY);
+      throw new HttpException(
+        'Desktop base URL not configured',
+        HttpStatus.BAD_GATEWAY,
+      );
     }
     const qs: string[] = [];
     if (app) qs.push(`app=${encodeURIComponent(app)}`);
     if (limit) qs.push(`limit=${encodeURIComponent(limit)}`);
+    if (session) qs.push(`session=${encodeURIComponent(session)}`);
     const url = `${base}/telemetry/summary${qs.length ? `?${qs.join('&')}` : ''}`;
     try {
       const res = await fetch(url);
       if (!res.ok) {
-        throw new HttpException(`Failed to fetch telemetry: ${res.statusText}`, HttpStatus.BAD_GATEWAY);
+        throw new HttpException(
+          `Failed to fetch telemetry: ${res.statusText}`,
+          HttpStatus.BAD_GATEWAY,
+        );
       }
       return await res.json();
     } catch (e: any) {
-      throw new HttpException(`Error fetching telemetry: ${e.message}`, HttpStatus.BAD_GATEWAY);
+      throw new HttpException(
+        `Error fetching telemetry: ${e.message}`,
+        HttpStatus.BAD_GATEWAY,
+      );
     }
   }
 
@@ -138,41 +149,90 @@ export class TasksController {
   async telemetryApps(
     @Query('limit') limit?: string,
     @Query('window') window?: string,
+    @Query('session') session?: string,
   ) {
     const base = process.env.BYTEBOT_DESKTOP_BASE_URL;
     if (!base) {
-      throw new HttpException('Desktop base URL not configured', HttpStatus.BAD_GATEWAY);
+      throw new HttpException(
+        'Desktop base URL not configured',
+        HttpStatus.BAD_GATEWAY,
+      );
     }
     const qs: string[] = [];
     if (limit) qs.push(`limit=${encodeURIComponent(limit)}`);
     if (window) qs.push(`window=${encodeURIComponent(window)}`);
+    if (session) qs.push(`session=${encodeURIComponent(session)}`);
     const url = `${base}/telemetry/apps${qs.length ? `?${qs.join('&')}` : ''}`;
     try {
       const res = await fetch(url);
       if (!res.ok) {
-        throw new HttpException(`Failed to fetch apps: ${res.statusText}`, HttpStatus.BAD_GATEWAY);
+        throw new HttpException(
+          `Failed to fetch apps: ${res.statusText}`,
+          HttpStatus.BAD_GATEWAY,
+        );
       }
       return await res.json();
     } catch (e: any) {
-      throw new HttpException(`Error fetching apps: ${e.message}`, HttpStatus.BAD_GATEWAY);
+      throw new HttpException(
+        `Error fetching apps: ${e.message}`,
+        HttpStatus.BAD_GATEWAY,
+      );
     }
   }
 
   @Post('telemetry/reset')
-  async telemetryReset() {
+  async telemetryReset(@Query('session') session?: string) {
     const base = process.env.BYTEBOT_DESKTOP_BASE_URL;
     if (!base) {
-      throw new HttpException('Desktop base URL not configured', HttpStatus.BAD_GATEWAY);
+      throw new HttpException(
+        'Desktop base URL not configured',
+        HttpStatus.BAD_GATEWAY,
+      );
     }
-    const url = `${base}/telemetry/reset`;
+    const url = `${base}/telemetry/reset${
+      session ? `?session=${encodeURIComponent(session)}` : ''
+    }`;
     try {
       const res = await fetch(url, { method: 'POST' });
       if (!res.ok) {
-        throw new HttpException(`Failed to reset telemetry: ${res.statusText}`, HttpStatus.BAD_GATEWAY);
+        throw new HttpException(
+          `Failed to reset telemetry: ${res.statusText}`,
+          HttpStatus.BAD_GATEWAY,
+        );
       }
       return await res.json();
     } catch (e: any) {
-      throw new HttpException(`Error resetting telemetry: ${e.message}`, HttpStatus.BAD_GATEWAY);
+      throw new HttpException(
+        `Error resetting telemetry: ${e.message}`,
+        HttpStatus.BAD_GATEWAY,
+      );
+    }
+  }
+
+  @Get('telemetry/sessions')
+  async telemetrySessions() {
+    const base = process.env.BYTEBOT_DESKTOP_BASE_URL;
+    if (!base) {
+      throw new HttpException(
+        'Desktop base URL not configured',
+        HttpStatus.BAD_GATEWAY,
+      );
+    }
+    const url = `${base}/telemetry/sessions`;
+    try {
+      const res = await fetch(url);
+      if (!res.ok) {
+        throw new HttpException(
+          `Failed to fetch sessions: ${res.statusText}`,
+          HttpStatus.BAD_GATEWAY,
+        );
+      }
+      return await res.json();
+    } catch (e: any) {
+      throw new HttpException(
+        `Error fetching sessions: ${e.message}`,
+        HttpStatus.BAD_GATEWAY,
+      );
     }
   }
 

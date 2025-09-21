@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
-import { TelemetrySummary } from "@/types";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { TelemetrySummary, TelemetrySessions } from "@/types";
 
 type Props = {
   className?: string;
@@ -11,28 +11,97 @@ export function TelemetryStatus({ className = "" }: Props) {
   const [open, setOpen] = useState(false);
   const [data, setData] = useState<TelemetrySummary | null>(null);
   const [busy, setBusy] = useState(false);
+  const [sessions, setSessions] = useState<string[]>([]);
+  const [selectedSession, setSelectedSession] = useState<string>("default");
 
-  const refresh = () => {
-    setBusy(true);
-    fetch("/api/tasks/telemetry/summary", { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((j) => setData(j))
-      .finally(() => setBusy(false))
-      .catch(() => setBusy(false));
-  };
+  const availableSessions = useMemo(() => {
+    if (sessions.length > 0) return sessions;
+    return selectedSession ? [selectedSession] : [];
+  }, [sessions, selectedSession]);
 
-  const reset = () => {
+  const refresh = useCallback(async () => {
     setBusy(true);
-    fetch("/api/tasks/telemetry/reset", { method: "POST" })
-      .then(() => refresh())
-      .catch(() => setBusy(false));
-  };
+    const params = new URLSearchParams();
+    if (selectedSession) {
+      params.set("session", selectedSession);
+    }
+    const query = params.toString();
+    try {
+      const res = await fetch(
+        `/api/tasks/telemetry/summary${query ? `?${query}` : ""}`,
+        { cache: "no-store" },
+      );
+      if (!res.ok) {
+        setData(null);
+        return;
+      }
+      const json = (await res.json()) as TelemetrySummary;
+      setData(json);
+    } catch (error) {
+      void error;
+      // Preserve the previous snapshot when the summary request fails
+    } finally {
+      setBusy(false);
+    }
+  }, [selectedSession]);
+
+  const reset = useCallback(async () => {
+    setBusy(true);
+    const params = new URLSearchParams();
+    if (selectedSession) {
+      params.set("session", selectedSession);
+    }
+    const query = params.toString();
+    try {
+      const res = await fetch(`/api/tasks/telemetry/reset${query ? `?${query}` : ""}`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        throw new Error("Failed to reset telemetry");
+      }
+      await refresh();
+    } catch {
+      setBusy(false);
+    }
+  }, [refresh, selectedSession]);
+
+  const refreshSessions = useCallback(async () => {
+    try {
+      const res = await fetch("/api/tasks/telemetry/sessions", {
+        cache: "no-store",
+      });
+      if (!res.ok) return;
+      const payload = (await res.json()) as TelemetrySessions;
+      const list = Array.isArray(payload?.sessions)
+        ? Array.from(new Set(payload.sessions))
+        : [];
+      setSessions(list);
+      setSelectedSession((prev) => {
+        if (prev && list.includes(prev)) {
+          return prev;
+        }
+        if (list.length > 0) {
+          return list[0];
+        }
+        return prev;
+      });
+    } catch (error) {
+      void error;
+      // Ignore session discovery failures and keep the existing list
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshSessions();
+    const t = setInterval(refreshSessions, 30000);
+    return () => clearInterval(t);
+  }, [refreshSessions]);
 
   useEffect(() => {
     refresh();
     const t = setInterval(refresh, 10000);
     return () => clearInterval(t);
-  }, []);
+  }, [refresh]);
 
   const sparkBars = useMemo(() => {
     const vals = data?.recentAbsDeltas || [];
@@ -74,6 +143,20 @@ export function TelemetryStatus({ className = "" }: Props) {
           <div className="ml-1 flex h-4 items-end gap-[2px]">{sparkBars}</div>
         </div>
         <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] text-gray-500">Session</span>
+            <select
+              className="rounded border border-gray-200 bg-white px-1 py-0.5 text-[11px] text-gray-700"
+              value={selectedSession}
+              onChange={(event) => setSelectedSession(event.target.value)}
+            >
+              {availableSessions.map((session) => (
+                <option key={session} value={session}>
+                  {session}
+                </option>
+              ))}
+            </select>
+          </div>
           <button
             className="rounded border px-2 py-0.5 text-[11px] text-gray-700 hover:bg-gray-50"
             onClick={refresh}
@@ -101,6 +184,20 @@ export function TelemetryStatus({ className = "" }: Props) {
             <div className="mb-2 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-gray-800">Desktop Accuracy</h3>
               <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] text-gray-500">Session</span>
+                  <select
+                    className="rounded border border-gray-200 bg-white px-1 py-0.5 text-[11px] text-gray-700"
+                    value={selectedSession}
+                    onChange={(event) => setSelectedSession(event.target.value)}
+                  >
+                    {availableSessions.map((session) => (
+                      <option key={session} value={session}>
+                        {session}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <button
                   className="rounded border px-2 py-0.5 text-[11px] text-gray-700 hover:bg-gray-50"
                   onClick={refresh}

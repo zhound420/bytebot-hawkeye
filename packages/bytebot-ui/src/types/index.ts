@@ -108,3 +108,7 @@ export interface TelemetrySummary {
 export interface TelemetryApps {
   apps: Array<{ name: string; count: number }>;
 }
+
+export interface TelemetrySessions {
+  sessions: string[];
+}

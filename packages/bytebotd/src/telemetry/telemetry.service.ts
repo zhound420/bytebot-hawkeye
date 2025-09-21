@@ -44,48 +44,31 @@ export class TelemetryService {
   private readonly telemetryDir = path.resolve(
     process.env.BYTEBOT_TELEMETRY_DIR ?? path.join('/tmp', 'bytebot-telemetry'),
   );
-  private readonly calibrationDir = path.join(
-    this.telemetryDir,
-    'calibration',
-  );
-  private readonly driftFile = path.join(this.telemetryDir, 'drift.json');
-  private readonly logFile = path.join(this.telemetryDir, 'click-telemetry.log');
   private readonly ready: Promise<void>;
+  private currentSessionId = 'default';
   private drift: DriftOffset = { x: 0, y: 0 };
 
   constructor() {
     this.ready = this.initialise();
   }
 
-  getLogFilePath(): string {
-    return this.logFile;
+  getLogFilePath(sessionId?: string): string {
+    return this.resolveLogFilePath(sessionId);
   }
 
-  getCalibrationDir(): string {
-    return this.calibrationDir;
+  getCalibrationDir(sessionId?: string): string {
+    return this.resolveCalibrationDir(sessionId);
   }
 
   private async initialise(): Promise<void> {
     try {
       await fs.mkdir(this.telemetryDir, { recursive: true });
-      await fs.mkdir(this.calibrationDir, { recursive: true });
-
-      const driftRaw = await fs
-        .readFile(this.driftFile, 'utf8')
-        .catch(() => null);
-      if (driftRaw) {
-        const parsed = JSON.parse(driftRaw) as DriftOffset;
-        if (
-          typeof parsed.x === 'number' &&
-          Number.isFinite(parsed.x) &&
-          typeof parsed.y === 'number' &&
-          Number.isFinite(parsed.y)
-        ) {
-          this.drift = parsed;
-        }
-      }
+      await this.ensureSessionDirectories(this.currentSessionId);
+      await this.loadDriftForSession(this.currentSessionId);
     } catch (error) {
-      this.logger.warn(`Failed to initialise telemetry: ${(error as Error).message}`);
+      this.logger.warn(
+        `Failed to initialise telemetry: ${(error as Error).message}`,
+      );
     }
   }
 
@@ -110,6 +93,38 @@ export class TelemetryService {
     return { ...this.drift };
   }
 
+  async startSession(sessionId: string): Promise<void> {
+    if (!sessionId) {
+      return;
+    }
+    await this.ready;
+    await this.ensureSessionDirectories(sessionId);
+    this.currentSessionId = sessionId;
+    await this.loadDriftForSession(sessionId);
+  }
+
+  async listSessions(): Promise<string[]> {
+    await this.ready;
+    try {
+      const entries = await fs.readdir(this.telemetryDir, {
+        withFileTypes: true,
+      });
+      const sessions = entries
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => entry.name)
+        .sort();
+      if (!sessions.includes(this.currentSessionId)) {
+        sessions.unshift(this.currentSessionId);
+      }
+      return Array.from(new Set(sessions));
+    } catch (error) {
+      this.logger.warn(
+        `Failed to enumerate telemetry sessions: ${(error as Error).message}`,
+      );
+      return [this.currentSessionId];
+    }
+  }
+
   async recordClick(
     target: { x: number; y: number },
     actual: { x: number; y: number },
@@ -130,7 +145,10 @@ export class TelemetryService {
     this.updateDrift(delta);
 
     const appName = await this.getActiveAppName();
-    const payload: ClickTelemetryPayload & { app?: string; clickTaskId?: string } = {
+    const payload: ClickTelemetryPayload & {
+      app?: string;
+      clickTaskId?: string;
+    } = {
       target,
       adjusted,
       actual,
@@ -145,7 +163,11 @@ export class TelemetryService {
     };
 
     try {
-      await fs.appendFile(this.logFile, JSON.stringify(payload) + '\n', 'utf8');
+      await fs.appendFile(
+        this.getLogFilePath(),
+        JSON.stringify(payload) + '\n',
+        'utf8',
+      );
     } catch (error) {
       this.logger.warn(
         `Failed to append click telemetry: ${(error as Error).message}`,
@@ -173,7 +195,11 @@ export class TelemetryService {
     };
 
     try {
-      await fs.appendFile(this.logFile, JSON.stringify(payload) + '\n', 'utf8');
+      await fs.appendFile(
+        this.getLogFilePath(),
+        JSON.stringify(payload) + '\n',
+        'utf8',
+      );
     } catch (error) {
       this.logger.warn(
         `Failed to append untargeted click telemetry: ${(error as Error).message}`,
@@ -213,9 +239,15 @@ export class TelemetryService {
       timestamp: new Date().toISOString(),
     };
     try {
-      await fs.appendFile(this.logFile, JSON.stringify(payload) + '\n', 'utf8');
+      await fs.appendFile(
+        this.getLogFilePath(),
+        JSON.stringify(payload) + '\n',
+        'utf8',
+      );
     } catch (err) {
-      this.logger.warn(`Failed to append event telemetry: ${(err as Error).message}`);
+      this.logger.warn(
+        `Failed to append event telemetry: ${(err as Error).message}`,
+      );
     }
   }
 
@@ -235,7 +267,9 @@ export class TelemetryService {
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const fileName = `calibration-${timestamp}.png`;
-    const filePath = path.join(this.calibrationDir, fileName);
+    const calibrationDir = this.getCalibrationDir();
+    await fs.mkdir(calibrationDir, { recursive: true });
+    const filePath = path.join(calibrationDir, fileName);
 
     try {
       await fs.writeFile(filePath, image);
@@ -247,7 +281,11 @@ export class TelemetryService {
         context: meta.context,
         timestamp: new Date().toISOString(),
       };
-      await fs.appendFile(this.logFile, JSON.stringify(payload) + '\n', 'utf8');
+      await fs.appendFile(
+        this.getLogFilePath(),
+        JSON.stringify(payload) + '\n',
+        'utf8',
+      );
     } catch (error) {
       this.logger.warn(
         `Failed to persist calibration snapshot: ${(error as Error).message}`,
@@ -274,7 +312,11 @@ export class TelemetryService {
 
   private async persistDrift(): Promise<void> {
     try {
-      await fs.writeFile(this.driftFile, JSON.stringify(this.drift), 'utf8');
+      await fs.writeFile(
+        this.getDriftFilePath(),
+        JSON.stringify(this.drift),
+        'utf8',
+      );
     } catch (error) {
       this.logger.warn(
         `Failed to persist drift offset: ${(error as Error).message}`,
@@ -282,25 +324,94 @@ export class TelemetryService {
     }
   }
 
-  async resetAll(): Promise<void> {
+  async resetAll(sessionId?: string): Promise<void> {
+    await this.ready;
+    const targetSession = sessionId || this.currentSessionId;
     try {
-      // Reset drift
-      this.drift = { x: 0, y: 0 };
-      await this.persistDrift();
+      await this.ensureSessionDirectories(targetSession);
+      const driftFile = this.getDriftFilePath(targetSession);
+      const zeroDrift = { x: 0, y: 0 };
+      await fs.writeFile(driftFile, JSON.stringify(zeroDrift), 'utf8');
+      if (targetSession === this.currentSessionId) {
+        this.drift = zeroDrift;
+      }
 
       // Truncate click telemetry log
-      await fs.writeFile(this.logFile, '', 'utf8');
+      await fs.writeFile(this.getLogFilePath(targetSession), '', 'utf8');
 
       // Clear calibration snapshots
       try {
-        const files = await fs.readdir(this.calibrationDir);
+        const calibrationDir = this.getCalibrationDir(targetSession);
+        const files = await fs.readdir(calibrationDir);
         await Promise.all(
-          files.map((f) => fs.unlink(path.join(this.calibrationDir, f)).catch(() => {})),
+          files.map((f) =>
+            fs
+              .unlink(path.join(calibrationDir, f))
+              .catch(() => undefined),
+          ),
         );
-      } catch {}
+      } catch (error) {
+        // Ignore cleanup failures when resetting calibration snapshots
+      }
     } catch (e) {
       this.logger.warn(`Failed to reset telemetry: ${(e as Error).message}`);
       // Do not rethrow; reset is best-effort
+    }
+  }
+
+  private resolveSessionDir(sessionId?: string): string {
+    const effectiveSession = sessionId || this.currentSessionId;
+    return path.join(this.telemetryDir, effectiveSession);
+  }
+
+  private resolveLogFilePath(sessionId?: string): string {
+    return path.join(this.resolveSessionDir(sessionId), 'click-telemetry.log');
+  }
+
+  private resolveCalibrationDir(sessionId?: string): string {
+    return path.join(this.resolveSessionDir(sessionId), 'calibration');
+  }
+
+  private getDriftFilePath(sessionId?: string): string {
+    return path.join(this.resolveSessionDir(sessionId), 'drift.json');
+  }
+
+  private async ensureSessionDirectories(sessionId: string): Promise<void> {
+    const sessionDir = this.resolveSessionDir(sessionId);
+    const calibrationDir = this.resolveCalibrationDir(sessionId);
+    const logFile = this.resolveLogFilePath(sessionId);
+    await fs.mkdir(sessionDir, { recursive: true });
+    await fs.mkdir(calibrationDir, { recursive: true });
+    try {
+      await fs.access(logFile);
+    } catch {
+      await fs.writeFile(logFile, '', 'utf8');
+    }
+  }
+
+  private async loadDriftForSession(sessionId: string): Promise<void> {
+    try {
+      const driftRaw = await fs
+        .readFile(this.getDriftFilePath(sessionId), 'utf8')
+        .catch(() => null);
+      if (driftRaw) {
+        const parsed = JSON.parse(driftRaw) as DriftOffset;
+        if (
+          typeof parsed.x === 'number' &&
+          Number.isFinite(parsed.x) &&
+          typeof parsed.y === 'number' &&
+          Number.isFinite(parsed.y)
+        ) {
+          this.drift = parsed;
+          return;
+        }
+      }
+      this.drift = { x: 0, y: 0 };
+    } catch (error) {
+      this.logger.warn(
+        `Failed to load drift for session ${sessionId}: ${(error as Error).message}`,
+      );
+      this.drift = { x: 0, y: 0 };
     }
   }
 }
