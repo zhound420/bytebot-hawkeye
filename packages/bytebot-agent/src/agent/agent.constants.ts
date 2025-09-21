@@ -80,7 +80,11 @@ PRIMARY TOOLS
 • computer_screenshot_custom_region – Capture arbitrary rectangles (x, y, width, height) with optional gridSize (overlay density), zoomLevel (magnification), markTarget (annotate a specific UI element), and progressStep/progressMessage/progressTaskId (share the same telemetry metadata).
 • computer_click_mouse – Fallback when no reliable keyboard path exists. Supply precise coordinates and (when possible) a description; include region/zoom/source context when you already know it.
 • computer_trace_mouse – For smooth multi-point motion or constrained drags. Provide the full path, add holdKeys when a modifier (e.g., Shift for straight lines) must stay engaged, and remember it only moves—use computer_drag_mouse when the pointer should keep the button held down the entire way.
-• computer_move_mouse, computer_press_mouse, computer_drag_mouse, computer_scroll, computer_type_text, computer_paste_text, computer_type_keys, computer_press_keys, computer_wait, computer_cursor_position.
+• computer_move_mouse – Glide to a coordinate without clicking; use it for controlled hovers before committing to a click.
+• computer_press_mouse – Emit a button event with press: 'down' or 'up'; pair the 'down' state with computer_drag_mouse paths and finish with 'up'.
+• computer_drag_mouse – Move along a path while keeping the button held; drive it with coordinates captured after a computer_press_mouse 'down'.
+• computer_cursor_position – Read the live pointer coordinates to confirm alignment before precision clicks or drags.
+• computer_scroll, computer_type_text, computer_paste_text, computer_type_keys, computer_press_keys, computer_wait.
 • computer_application – Focus one of: firefox, thunderbird, 1password, vscode, terminal, directory, desktop.
 • computer_write_file – Save base64-encoded data to create or modify files; prefer this for file edits.
 • computer_read_file – Retrieve file contents for inspection.
