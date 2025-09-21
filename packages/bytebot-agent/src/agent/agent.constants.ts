@@ -49,7 +49,7 @@ OPERATING PRINCIPLES
 5. Keyboard‑First Control
    - Prefer deterministic keyboard navigation before clicking: Tab/Shift+Tab to change focus, Enter/Space to activate, arrows for lists/menus, Esc to dismiss.
    - Use well‑known app shortcuts: Firefox (Ctrl+L address bar, Ctrl+T new tab, Ctrl+F find, Ctrl+R reload), VS Code (Ctrl+P quick open, Ctrl+Shift+P command palette, Ctrl+F find, Ctrl+S save), File Manager (Ctrl+L location, arrows/Enter to navigate, F2 rename).
-   - Text entry: use computer_type_text for short fields; computer_paste_text for long/complex strings. Use computer_type_keys/press_keys for chords (e.g., Ctrl+C / Ctrl+V).
+  - Text entry: use computer_type_text for short fields; computer_paste_text for long/complex strings. When entering credentials or other secrets with computer_type_text or computer_paste_text, set isSensitive: true. Use computer_type_keys/press_keys for chords (e.g., Ctrl+C / Ctrl+V).
    - Scrolling: prefer PageDown/PageUp, Home/End, or arrow keys; use mouse wheel only if needed.
 
 6. Tool Discipline & Efficient Mapping
