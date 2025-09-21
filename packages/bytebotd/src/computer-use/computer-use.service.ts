@@ -422,7 +422,7 @@ export class ComputerUseService {
         success,
         distance,
         delta: deltaToTarget,
-        target: targetCoordinates ?? undefined,
+        target: targetCoordinates ?? finalTarget,
         adjusted: destination ?? undefined,
         actual: actualPointer,
         clickTaskId,

@@ -272,6 +272,20 @@ helm install bytebot ./helm \
 
 [Enterprise deployment guide →](https://docs.bytebot.ai/deployment/helm)
 
+## Operations & Tuning
+
+### Smart Click Success Radius
+
+Smart click telemetry now records the real cursor landing position. Tune the
+pass/fail threshold by setting an environment variable on the desktop daemon:
+
+```bash
+export BYTEBOT_SMART_CLICK_SUCCESS_RADIUS=12  # pixels of acceptable drift
+```
+
+Increase the value if the VNC stream or hardware introduces more cursor drift,
+or decrease it to tighten the definition of a successful AI-guided click.
+
 ## Community & Support
 
 - **Discord**: [Join our community](https://discord.com/invite/d9ewZkWPTP) for help and discussions

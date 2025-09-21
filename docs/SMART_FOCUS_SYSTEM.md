@@ -36,7 +36,15 @@ export BYTEBOT_SEARCH_DEPTH=4
 # Screenshot caching
 export BYTEBOT_CACHE_SCREENSHOTS=true
 export BYTEBOT_CACHE_TTL=100       # Cache duration in milliseconds
+
+# Smart click success tolerance (pixels)
+export BYTEBOT_SMART_CLICK_SUCCESS_RADIUS=12
 ```
+
+Increase `BYTEBOT_SMART_CLICK_SUCCESS_RADIUS` if your hardware or VNC stream has
+more drift, or decrease it to demand tighter clustering before a smart click is
+considered successful. The daemon compares the cursor position after the click
+against the final target point using this radius.
 
 ## Expected Accuracy Improvements
 
