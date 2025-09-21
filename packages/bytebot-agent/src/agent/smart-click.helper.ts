@@ -106,14 +106,21 @@ export class SmartClickHelper {
     this.ensureDirectory(this.progressDir);
   }
 
-  private async emitTelemetryEvent(type: string, data: Record<string, any> = {}): Promise<void> {
+  private async emitTelemetryEvent(
+    type: string,
+    data: Record<string, any> = {},
+  ): Promise<void> {
     try {
       const base = process.env.BYTEBOT_DESKTOP_BASE_URL;
       if (!base) return;
+      const payload =
+        type === 'smart_click_complete' && this.currentTaskId
+          ? { clickTaskId: this.currentTaskId, ...data }
+          : data;
       await fetch(`${base}/telemetry/event`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type, ...data }),
+        body: JSON.stringify({ type, ...payload }),
       });
     } catch {
       // ignore
