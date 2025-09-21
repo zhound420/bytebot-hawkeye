@@ -21,6 +21,7 @@ interface ScreenshotFnOptions {
   gridOverlay?: boolean;
   gridSize?: number;
   highlightRegions?: boolean;
+  showCursor?: boolean;
   progressStep?: number;
   progressMessage?: string;
   progressTaskId?: string;
@@ -36,6 +37,7 @@ interface ScreenshotRegionOptions {
   enhance?: boolean;
   includeOffset?: boolean;
   addHighlight?: boolean;
+  showCursor?: boolean;
   progressStep?: number;
   progressMessage?: string;
   progressTaskId?: string;
@@ -49,6 +51,7 @@ interface ScreenshotCustomRegionOptions {
   height: number;
   gridSize?: number;
   zoomLevel?: number;
+  showCursor?: boolean;
 }
 
 interface ScreenshotTargetOptions {
@@ -57,6 +60,7 @@ interface ScreenshotTargetOptions {
   progressStep?: number;
   progressMessage?: string;
   progressTaskId?: string;
+  showCursor?: boolean;
 }
 
 export interface SmartClickResult {
@@ -130,7 +134,10 @@ export class SmartClickHelper {
   async performSmartClick(
     targetDescription: string,
   ): Promise<SmartClickResult | null> {
-    await this.emitTelemetryEvent('smart_click', { phase: 'start', targetDescription });
+    await this.emitTelemetryEvent('smart_click', {
+      phase: 'start',
+      targetDescription,
+    });
     if (!this.proxyUrl || !this.ai) {
       console.log('Smart Focus not configured, falling back to standard click');
       return null;
@@ -154,6 +161,7 @@ export class SmartClickHelper {
         progressStep: 1,
         progressMessage: `Full screen analysis for "${targetDescription}"`,
         progressTaskId: this.currentTaskId,
+        showCursor: true,
       });
 
       this.saveImage(taskDir, '01-full-screen.png', fullScreen.image);
@@ -188,8 +196,12 @@ export class SmartClickHelper {
         progressMessage: `Focused on region ${regionName}`,
         progressTaskId: this.currentTaskId,
         zoomLevel: 2.0,
+        showCursor: true,
       });
-      await this.emitTelemetryEvent('progressive_zoom', { region: regionName, zoom: 2.0 });
+      await this.emitTelemetryEvent('progressive_zoom', {
+        region: regionName,
+        zoom: 2.0,
+      });
 
       const regionFile = `02-region-${regionName
         .replace(/\s+/g, '-')
@@ -226,7 +238,9 @@ export class SmartClickHelper {
           const nearBottom = region.y + region.height - coordinates.y < margin;
           const nearEdge = nearLeft || nearRight || nearTop || nearBottom;
           if (nearEdge) {
-            console.log('   Refining coordinates with precision zoom (near edge) ...');
+            console.log(
+              '   Refining coordinates with precision zoom (near edge) ...',
+            );
             const w = 240;
             const h = 180;
             const rx = Math.max(0, coordinates.x - Math.floor(w / 2));
@@ -239,13 +253,19 @@ export class SmartClickHelper {
               25,
               3.0,
             );
-            await this.emitTelemetryEvent('progressive_zoom', { region: 'custom', zoom: 3.0 });
+            await this.emitTelemetryEvent('progressive_zoom', {
+              region: 'custom',
+              zoom: 3.0,
+            });
 
             this.saveImage(taskDir, '03a-refine.png', refineShot);
             this.saveImage(currentDir, '03a-refine.png', refineShot);
 
             const refinePrompt = `Refine the exact screen coordinates for "${targetDescription}" with this higher-zoom image.`;
-            const refined = await this.ai.getCoordinates(refineShot, refinePrompt);
+            const refined = await this.ai.getCoordinates(
+              refineShot,
+              refinePrompt,
+            );
             if (
               Number.isFinite(refined.x) &&
               Number.isFinite(refined.y) &&
@@ -272,6 +292,7 @@ export class SmartClickHelper {
         progressStep: 3,
         progressMessage: `Target locked at (${coordinates.x}, ${coordinates.y})`,
         progressTaskId: this.currentTaskId,
+        showCursor: true,
       });
 
       this.saveImage(taskDir, '03-target-marked.png', finalShot.image);
@@ -305,7 +326,10 @@ export class SmartClickHelper {
     } catch (error) {
       console.error('Smart Focus failed:', error);
       console.log('Falling back to standard click');
-      await this.emitTelemetryEvent('smart_click_complete', { success: false, clickTaskId: this.currentTaskId });
+      await this.emitTelemetryEvent('smart_click_complete', {
+        success: false,
+        clickTaskId: this.currentTaskId,
+      });
       if (this.currentTaskId) {
         try {
           const taskDir = path.join(this.progressDir, this.currentTaskId);
@@ -329,7 +353,9 @@ export class SmartClickHelper {
     maxIterations: number = 4,
   ): Promise<SmartClickResult | null> {
     if (!this.proxyUrl || !this.ai) {
-      console.log('Binary search unavailable without Smart Focus configuration');
+      console.log(
+        'Binary search unavailable without Smart Focus configuration',
+      );
       return null;
     }
 
@@ -337,7 +363,7 @@ export class SmartClickHelper {
     // Derive screen dimensions from a quick full screenshot to avoid hardcoding
     let full: ScreenshotResponse | null = null;
     try {
-      full = await this.screenshot({ gridOverlay: true });
+      full = await this.screenshot({ gridOverlay: true, showCursor: true });
     } catch {
       // ignore – will fall back to defaults
     }
@@ -413,13 +439,21 @@ export class SmartClickHelper {
   private screenshot(
     options?: ScreenshotFnOptions,
   ): Promise<ScreenshotResponse> {
-    return this.screenshotFn(options);
+    const mergedOptions: ScreenshotFnOptions = {
+      ...(options ?? {}),
+      showCursor: options?.showCursor ?? true,
+    };
+    return this.screenshotFn(mergedOptions);
   }
 
   private async screenshotRegion(
     options: ScreenshotRegionOptions,
   ): Promise<ScreenshotResponse> {
-    return this.screenshotRegionFn(options);
+    const mergedOptions: ScreenshotRegionOptions = {
+      ...options,
+      showCursor: options.showCursor ?? true,
+    };
+    return this.screenshotRegionFn(mergedOptions);
   }
 
   private async screenshotCustomRegion(
@@ -429,6 +463,7 @@ export class SmartClickHelper {
     height: number,
     gridSize?: number,
     zoomLevel?: number,
+    showCursor?: boolean,
   ): Promise<string> {
     const result = await this.screenshotCustomRegionFn({
       x,
@@ -437,6 +472,7 @@ export class SmartClickHelper {
       height,
       gridSize,
       zoomLevel,
+      showCursor: showCursor ?? true,
     });
 
     return result.image;
@@ -454,6 +490,7 @@ export class SmartClickHelper {
         coordinates: options.coordinates,
         label: options.label,
       },
+      showCursor: options.showCursor ?? true,
     });
   }
 
@@ -542,13 +579,20 @@ export class SmartClickHelper {
       console.error('Failed to write Smart Focus progress summary:', error);
     }
   }
-  private getPngDimensions(base64Png: string): { width: number; height: number } | null {
+  private getPngDimensions(
+    base64Png: string,
+  ): { width: number; height: number } | null {
     try {
       const buf = Buffer.from(base64Png, 'base64');
       if (buf.length < 24) return null;
       const width = buf.readUInt32BE(16);
       const height = buf.readUInt32BE(20);
-      if (!Number.isFinite(width) || !Number.isFinite(height) || width === 0 || height === 0) {
+      if (
+        !Number.isFinite(width) ||
+        !Number.isFinite(height) ||
+        width === 0 ||
+        height === 0
+      ) {
         return null;
       }
       return { width, height };

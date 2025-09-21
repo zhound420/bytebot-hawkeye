@@ -102,6 +102,7 @@ export type ScreenshotAction = {
   gridOverlay?: boolean;
   gridSize?: number;
   highlightRegions?: boolean;
+  showCursor?: boolean;
   progressStep?: number;
   progressMessage?: string;
   progressTaskId?: string;
@@ -127,6 +128,7 @@ export type ScreenshotRegionAction = {
   enhance?: boolean;
   includeOffset?: boolean;
   addHighlight?: boolean;
+  showCursor?: boolean;
   zoomLevel?: number;
   progressStep?: number;
   progressMessage?: string;
@@ -142,6 +144,7 @@ export type ScreenshotCustomRegionAction = {
   height: number;
   gridSize?: number;
   zoomLevel?: number;
+  showCursor?: boolean;
   // Optional: draw a target marker within the returned image.
   // Coordinates are in GLOBAL screen space; daemon maps to local image coords.
   markTarget?: {

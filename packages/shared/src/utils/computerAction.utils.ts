@@ -29,7 +29,7 @@ import {
  * Type guard factory for computer actions
  */
 function createActionTypeGuard<T extends ComputerAction>(
-  actionType: T["action"]
+  actionType: T["action"],
 ): (obj: unknown) => obj is T {
   return (obj: unknown): obj is T => {
     if (!obj || typeof obj !== "object") {
@@ -67,7 +67,7 @@ export const isScreenshotRegionAction =
   createActionTypeGuard<ScreenshotRegionAction>("screenshot_region");
 export const isScreenshotCustomRegionAction =
   createActionTypeGuard<ScreenshotCustomRegionAction>(
-    "screenshot_custom_region"
+    "screenshot_custom_region",
   );
 export const isCursorPositionAction =
   createActionTypeGuard<CursorPositionAction>("cursor_position");
@@ -82,7 +82,7 @@ export const isApplicationAction =
 function createToolUseBlock(
   toolName: string,
   toolUseId: string,
-  input: Record<string, any>
+  input: Record<string, any>,
 ): ComputerToolUseContentBlock {
   return {
     type: MessageContentType.ToolUse,
@@ -97,7 +97,7 @@ function createToolUseBlock(
  */
 function conditionallyAdd<T extends Record<string, any>>(
   obj: T,
-  conditions: Array<[boolean | undefined, string, any]>
+  conditions: Array<[boolean | undefined, string, any]>,
 ): T {
   const result: Record<string, any> = { ...obj };
   conditions.forEach(([condition, key, value]) => {
@@ -113,7 +113,7 @@ function conditionallyAdd<T extends Record<string, any>>(
  */
 export function convertMoveMouseActionToToolUseBlock(
   action: MoveMouseAction,
-  toolUseId: string
+  toolUseId: string,
 ): ComputerToolUseContentBlock {
   return createToolUseBlock("computer_move_mouse", toolUseId, {
     coordinates: action.coordinates,
@@ -122,35 +122,44 @@ export function convertMoveMouseActionToToolUseBlock(
 
 export function convertTraceMouseActionToToolUseBlock(
   action: TraceMouseAction,
-  toolUseId: string
+  toolUseId: string,
 ): ComputerToolUseContentBlock {
   return createToolUseBlock(
     "computer_trace_mouse",
     toolUseId,
     conditionallyAdd({ path: action.path }, [
       [action.holdKeys !== undefined, "holdKeys", action.holdKeys],
-    ])
+    ]),
   );
 }
 
 export function convertClickMouseActionToToolUseBlock(
   action: ClickMouseAction,
-  toolUseId: string
+  toolUseId: string,
 ): ComputerToolUseContentBlock {
   const context = action.context
-    ? conditionallyAdd(
-        {},
+    ? conditionallyAdd({}, [
         [
-          [typeof action.context.region !== "undefined", "region", action.context.region],
-          [typeof action.context.zoomLevel === "number", "zoomLevel", action.context.zoomLevel],
-          [
-            typeof action.context.targetDescription === "string",
-            "targetDescription",
-            action.context.targetDescription,
-          ],
-          [typeof action.context.source === "string", "source", action.context.source],
-        ]
-      )
+          typeof action.context.region !== "undefined",
+          "region",
+          action.context.region,
+        ],
+        [
+          typeof action.context.zoomLevel === "number",
+          "zoomLevel",
+          action.context.zoomLevel,
+        ],
+        [
+          typeof action.context.targetDescription === "string",
+          "targetDescription",
+          action.context.targetDescription,
+        ],
+        [
+          typeof action.context.source === "string",
+          "source",
+          action.context.source,
+        ],
+      ])
     : undefined;
 
   return createToolUseBlock(
@@ -166,14 +175,14 @@ export function convertClickMouseActionToToolUseBlock(
         [action.holdKeys !== undefined, "holdKeys", action.holdKeys],
         [action.description !== undefined, "description", action.description],
         [typeof context !== "undefined", "context", context],
-      ]
-    )
+      ],
+    ),
   );
 }
 
 export function convertPressMouseActionToToolUseBlock(
   action: PressMouseAction,
-  toolUseId: string
+  toolUseId: string,
 ): ComputerToolUseContentBlock {
   return createToolUseBlock(
     "computer_press_mouse",
@@ -183,14 +192,14 @@ export function convertPressMouseActionToToolUseBlock(
         button: action.button,
         press: action.press,
       },
-      [[action.coordinates !== undefined, "coordinates", action.coordinates]]
-    )
+      [[action.coordinates !== undefined, "coordinates", action.coordinates]],
+    ),
   );
 }
 
 export function convertDragMouseActionToToolUseBlock(
   action: DragMouseAction,
-  toolUseId: string
+  toolUseId: string,
 ): ComputerToolUseContentBlock {
   return createToolUseBlock(
     "computer_drag_mouse",
@@ -200,14 +209,14 @@ export function convertDragMouseActionToToolUseBlock(
         path: action.path,
         button: action.button,
       },
-      [[action.holdKeys !== undefined, "holdKeys", action.holdKeys]]
-    )
+      [[action.holdKeys !== undefined, "holdKeys", action.holdKeys]],
+    ),
   );
 }
 
 export function convertScrollActionToToolUseBlock(
   action: ScrollAction,
-  toolUseId: string
+  toolUseId: string,
 ): ComputerToolUseContentBlock {
   return createToolUseBlock(
     "computer_scroll",
@@ -220,27 +229,27 @@ export function convertScrollActionToToolUseBlock(
       [
         [action.coordinates !== undefined, "coordinates", action.coordinates],
         [action.holdKeys !== undefined, "holdKeys", action.holdKeys],
-      ]
-    )
+      ],
+    ),
   );
 }
 
 export function convertTypeKeysActionToToolUseBlock(
   action: TypeKeysAction,
-  toolUseId: string
+  toolUseId: string,
 ): ComputerToolUseContentBlock {
   return createToolUseBlock(
     "computer_type_keys",
     toolUseId,
     conditionallyAdd({ keys: action.keys }, [
       [typeof action.delay === "number", "delay", action.delay],
-    ])
+    ]),
   );
 }
 
 export function convertPressKeysActionToToolUseBlock(
   action: PressKeysAction,
-  toolUseId: string
+  toolUseId: string,
 ): ComputerToolUseContentBlock {
   return createToolUseBlock("computer_press_keys", toolUseId, {
     keys: action.keys,
@@ -250,7 +259,7 @@ export function convertPressKeysActionToToolUseBlock(
 
 export function convertTypeTextActionToToolUseBlock(
   action: TypeTextAction,
-  toolUseId: string
+  toolUseId: string,
 ): ComputerToolUseContentBlock {
   return createToolUseBlock(
     "computer_type_text",
@@ -258,13 +267,13 @@ export function convertTypeTextActionToToolUseBlock(
     conditionallyAdd({ text: action.text }, [
       [typeof action.delay === "number", "delay", action.delay],
       [typeof action.sensitive === "boolean", "isSensitive", action.sensitive],
-    ])
+    ]),
   );
 }
 
 export function convertPasteTextActionToToolUseBlock(
   action: PasteTextAction,
-  toolUseId: string
+  toolUseId: string,
 ): ComputerToolUseContentBlock {
   return createToolUseBlock("computer_paste_text", toolUseId, {
     text: action.text,
@@ -273,7 +282,7 @@ export function convertPasteTextActionToToolUseBlock(
 
 export function convertWaitActionToToolUseBlock(
   action: WaitAction,
-  toolUseId: string
+  toolUseId: string,
 ): ComputerToolUseContentBlock {
   return createToolUseBlock("computer_wait", toolUseId, {
     duration: action.duration,
@@ -282,45 +291,51 @@ export function convertWaitActionToToolUseBlock(
 
 export function convertScreenshotActionToToolUseBlock(
   action: ScreenshotAction,
-  toolUseId: string
+  toolUseId: string,
 ): ComputerToolUseContentBlock {
   return createToolUseBlock(
     "computer_screenshot",
     toolUseId,
-    conditionallyAdd(
-      {},
+    conditionallyAdd({}, [
       [
-        [typeof action.gridOverlay === "boolean", "gridOverlay", action.gridOverlay],
-        [typeof action.gridSize === "number", "gridSize", action.gridSize],
-        [
-          typeof action.highlightRegions === "boolean",
-          "highlightRegions",
-          action.highlightRegions,
-        ],
-        [typeof action.progressStep === "number", "progressStep", action.progressStep],
-        [
-          typeof action.progressMessage === "string",
-          "progressMessage",
-          action.progressMessage,
-        ],
-        [
-          typeof action.progressTaskId === "string",
-          "progressTaskId",
-          action.progressTaskId,
-        ],
-        [
-          typeof action.markTarget !== "undefined",
-          "markTarget",
-          action.markTarget,
-        ],
-      ]
-    )
+        typeof action.gridOverlay === "boolean",
+        "gridOverlay",
+        action.gridOverlay,
+      ],
+      [typeof action.gridSize === "number", "gridSize", action.gridSize],
+      [
+        typeof action.highlightRegions === "boolean",
+        "highlightRegions",
+        action.highlightRegions,
+      ],
+      [typeof action.showCursor === "boolean", "showCursor", action.showCursor],
+      [
+        typeof action.progressStep === "number",
+        "progressStep",
+        action.progressStep,
+      ],
+      [
+        typeof action.progressMessage === "string",
+        "progressMessage",
+        action.progressMessage,
+      ],
+      [
+        typeof action.progressTaskId === "string",
+        "progressTaskId",
+        action.progressTaskId,
+      ],
+      [
+        typeof action.markTarget !== "undefined",
+        "markTarget",
+        action.markTarget,
+      ],
+    ]),
   );
 }
 
 export function convertScreenshotRegionActionToToolUseBlock(
   action: ScreenshotRegionAction,
-  toolUseId: string
+  toolUseId: string,
 ): ComputerToolUseContentBlock {
   return createToolUseBlock(
     "computer_screenshot_region",
@@ -342,8 +357,17 @@ export function convertScreenshotRegionActionToToolUseBlock(
           "addHighlight",
           action.addHighlight,
         ],
+        [
+          typeof action.showCursor === "boolean",
+          "showCursor",
+          action.showCursor,
+        ],
         [typeof action.zoomLevel === "number", "zoomLevel", action.zoomLevel],
-        [typeof action.progressStep === "number", "progressStep", action.progressStep],
+        [
+          typeof action.progressStep === "number",
+          "progressStep",
+          action.progressStep,
+        ],
         [
           typeof action.progressMessage === "string",
           "progressMessage",
@@ -355,14 +379,14 @@ export function convertScreenshotRegionActionToToolUseBlock(
           action.progressTaskId,
         ],
         [typeof action.source === "string", "source", action.source],
-      ]
-    )
+      ],
+    ),
   );
 }
 
 export function convertScreenshotCustomRegionActionToToolUseBlock(
   action: ScreenshotCustomRegionAction,
-  toolUseId: string
+  toolUseId: string,
 ): ComputerToolUseContentBlock {
   return createToolUseBlock(
     "computer_screenshot_custom_region",
@@ -377,29 +401,34 @@ export function convertScreenshotCustomRegionActionToToolUseBlock(
       [
         [typeof action.gridSize === "number", "gridSize", action.gridSize],
         [typeof action.zoomLevel === "number", "zoomLevel", action.zoomLevel],
+        [
+          typeof action.showCursor === "boolean",
+          "showCursor",
+          action.showCursor,
+        ],
         [typeof action.source === "string", "source", action.source],
-      ]
-    )
+      ],
+    ),
   );
 }
 
 export function convertCursorPositionActionToToolUseBlock(
   action: CursorPositionAction,
-  toolUseId: string
+  toolUseId: string,
 ): ComputerToolUseContentBlock {
   return createToolUseBlock("computer_cursor_position", toolUseId, {});
 }
 
 export function convertScreenInfoActionToToolUseBlock(
   action: ScreenInfoAction,
-  toolUseId: string
+  toolUseId: string,
 ): ComputerToolUseContentBlock {
   return createToolUseBlock("computer_screen_info", toolUseId, {});
 }
 
 export function convertApplicationActionToToolUseBlock(
   action: ApplicationAction,
-  toolUseId: string
+  toolUseId: string,
 ): ComputerToolUseContentBlock {
   return createToolUseBlock("computer_application", toolUseId, {
     application: action.application,
@@ -408,7 +437,7 @@ export function convertApplicationActionToToolUseBlock(
 
 export function convertWriteFileActionToToolUseBlock(
   action: WriteFileAction,
-  toolUseId: string
+  toolUseId: string,
 ): ComputerToolUseContentBlock {
   return createToolUseBlock("computer_write_file", toolUseId, {
     path: action.path,
@@ -418,7 +447,7 @@ export function convertWriteFileActionToToolUseBlock(
 
 export function convertReadFileActionToToolUseBlock(
   action: ReadFileAction,
-  toolUseId: string
+  toolUseId: string,
 ): ComputerToolUseContentBlock {
   return createToolUseBlock("computer_read_file", toolUseId, {
     path: action.path,
@@ -430,7 +459,7 @@ export function convertReadFileActionToToolUseBlock(
  */
 export function convertComputerActionToToolUseBlock(
   action: ComputerAction,
-  toolUseId: string
+  toolUseId: string,
 ): ComputerToolUseContentBlock {
   switch (action.action) {
     case "move_mouse":
@@ -462,12 +491,15 @@ export function convertComputerActionToToolUseBlock(
     case "screenshot_custom_region":
       return convertScreenshotCustomRegionActionToToolUseBlock(
         action,
-        toolUseId
+        toolUseId,
       );
     case "cursor_position":
       return convertCursorPositionActionToToolUseBlock(action, toolUseId);
     case "screen_info":
-      return convertScreenInfoActionToToolUseBlock(action as ScreenInfoAction, toolUseId);
+      return convertScreenInfoActionToToolUseBlock(
+        action as ScreenInfoAction,
+        toolUseId,
+      );
     case "application":
       return convertApplicationActionToToolUseBlock(action, toolUseId);
     case "write_file":
@@ -477,7 +509,7 @@ export function convertComputerActionToToolUseBlock(
     default:
       const exhaustiveCheck: never = action;
       throw new Error(
-        `Unknown action type: ${(exhaustiveCheck as any).action}`
+        `Unknown action type: ${(exhaustiveCheck as any).action}`,
       );
   }
 }

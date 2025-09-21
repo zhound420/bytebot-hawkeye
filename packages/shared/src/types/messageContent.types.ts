@@ -1,4 +1,9 @@
-import { Button, Coordinates, Press, ClickContext } from "./computerAction.types";
+import {
+  Button,
+  Coordinates,
+  Press,
+  ClickContext,
+} from "./computerAction.types";
 
 // Content block types
 export enum MessageContentType {
@@ -162,6 +167,7 @@ export type ScreenshotToolUseBlock = ToolUseContentBlock & {
     gridOverlay?: boolean;
     gridSize?: number;
     highlightRegions?: boolean;
+    showCursor?: boolean;
     progressStep?: number;
     progressMessage?: string;
     progressTaskId?: string;
@@ -189,6 +195,7 @@ export type ScreenshotRegionToolUseBlock = ToolUseContentBlock & {
     enhance?: boolean;
     includeOffset?: boolean;
     addHighlight?: boolean;
+    showCursor?: boolean;
     progressStep?: number;
     progressMessage?: string;
     progressTaskId?: string;
@@ -203,6 +210,7 @@ export type ScreenshotCustomRegionToolUseBlock = ToolUseContentBlock & {
     width: number;
     height: number;
     gridSize?: number;
+    showCursor?: boolean;
   };
 };
 

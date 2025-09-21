@@ -78,7 +78,7 @@ export async function handleComputerToolUse(
     logger.debug('Processing focused region screenshot request');
     try {
       const { image, offset } = await screenshotRegion(block.input);
-      const content: Array<{ type: MessageContentType; [key: string]: any }> = [
+      const content: MessageContentBlock[] = [
         {
           type: MessageContentType.Image,
           source: {
@@ -666,6 +666,7 @@ async function screenshot(): Promise<string> {
   try {
     const requestBody = {
       action: 'screenshot',
+      showCursor: true,
     };
 
     const response = await fetch(`${BYTEBOT_DESKTOP_BASE_URL}/computer-use`, {
@@ -709,6 +710,7 @@ async function screenshotRegion(input: {
         gridSize: input.gridSize ?? undefined,
         enhance: input.enhance ?? undefined,
         includeOffset: input.includeOffset ?? undefined,
+        showCursor: true,
       }),
     });
 
@@ -755,6 +757,7 @@ async function screenshotCustomRegion(input: {
         width: input.width,
         height: input.height,
         gridSize: input.gridSize ?? undefined,
+        showCursor: true,
       }),
     });
 
