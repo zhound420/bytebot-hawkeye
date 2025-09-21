@@ -6,7 +6,8 @@
     "dev": "npm run build --prefix ../shared && tsx server.ts",
     "build": "npm run build --prefix ../shared && next build",
     "start": "npm run build --prefix ../shared && tsx server.ts",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "tsx --test src/components/tasks/__tests__/TaskItem.test.tsx"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
