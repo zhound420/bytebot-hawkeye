@@ -221,6 +221,10 @@ export class ScreenshotActionDto extends BaseActionDto {
   highlightRegions?: boolean;
 
   @IsOptional()
+  @IsBoolean()
+  showCursor?: boolean;
+
+  @IsOptional()
   @IsNumber()
   progressStep?: number;
 
@@ -277,6 +281,10 @@ export class ScreenshotRegionFocusActionDto extends BaseActionDto {
   addHighlight?: boolean;
 
   @IsOptional()
+  @IsBoolean()
+  showCursor?: boolean;
+
+  @IsOptional()
   @IsNumber()
   progressStep?: number;
 
@@ -313,6 +321,10 @@ export class ScreenshotCustomRegionActionDto extends BaseActionDto {
   @IsNumber()
   @Min(5)
   gridSize?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  showCursor?: boolean;
 }
 
 export class CursorPositionActionDto extends BaseActionDto {

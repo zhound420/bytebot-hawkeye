@@ -18,13 +18,13 @@ export class GridOverlayService {
   private readonly logger = new Logger(GridOverlayService.name);
 
   private readonly defaultOptions: GridOverlayOptions = {
-    gridSize: 100,           // Grid lines every 100 pixels
-    lineColor: '#00FF00',    // Bright green for visibility
-    lineOpacity: 0.4,        // Semi-transparent lines
-    textColor: '#00FF00',    // Bright green text
-    textOpacity: 0.8,        // More opaque text for readability
-    fontSize: 12,            // Font size for coordinate labels
-    lineWidth: 1,            // Line thickness
+    gridSize: 100, // Grid lines every 100 pixels
+    lineColor: '#00FF00', // Bright green for visibility
+    lineOpacity: 0.4, // Semi-transparent lines
+    textColor: '#00FF00', // Bright green text
+    textOpacity: 0.8, // More opaque text for readability
+    fontSize: 12, // Font size for coordinate labels
+    lineWidth: 1, // Line thickness
     showGlobalCoords: true,
     globalOffset: { x: 0, y: 0 },
   };
@@ -67,7 +67,10 @@ export class GridOverlayService {
       this.logger.debug('Grid overlay added successfully');
       return result;
     } catch (error) {
-      this.logger.error(`Error adding grid overlay: ${error.message}`, error.stack);
+      this.logger.error(
+        `Error adding grid overlay: ${error.message}`,
+        error.stack,
+      );
       // Return original image on error
       return imageBuffer;
     }
@@ -183,7 +186,7 @@ export class GridOverlayService {
       gridSize?: number;
       showGlobalCoords?: boolean;
       globalOffset?: { x: number; y: number };
-    } = {}
+    } = {},
   ): Promise<Buffer> {
     return this.addGridOverlay(imageBuffer, {
       gridSize: options.gridSize ?? this.defaultOptions.gridSize,
@@ -239,15 +242,6 @@ export class GridOverlayService {
       );
     }
 
-    if (options.coordinates) {
-      const { x, y } = options.coordinates;
-      overlays.push(
-        `<line x1="${x - 20}" y1="${y}" x2="${x + 20}" y2="${y}" stroke="#FF0000" stroke-width="2" />` +
-          `<line x1="${x}" y1="${y - 20}" x2="${x}" y2="${y + 20}" stroke="#FF0000" stroke-width="2" />` +
-          `<circle cx="${x}" cy="${y}" r="5" fill="#FF0000" />`,
-      );
-    }
-
     const progressOverlay = `
       <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
         <rect x="10" y="10" width="360" height="90" rx="10" ry="10" fill="rgba(13,17,23,0.75)" />
@@ -259,10 +253,81 @@ export class GridOverlayService {
       </svg>
     `;
 
-    return image
+    const annotated = await image
       .composite([
         {
           input: Buffer.from(progressOverlay),
+          top: 0,
+          left: 0,
+        },
+      ])
+      .png()
+      .toBuffer();
+
+    if (!options.coordinates) {
+      return annotated;
+    }
+
+    return this.addCursorIndicator(annotated, options.coordinates);
+  }
+
+  async addCursorIndicator(
+    imageBuffer: Buffer,
+    coordinates: { x: number; y: number },
+    options: {
+      color?: string;
+      lineLength?: number;
+      lineWidth?: number;
+      radius?: number;
+    } = {},
+  ): Promise<Buffer> {
+    const image = sharp(imageBuffer);
+    const metadata = await image.metadata();
+    const width = metadata.width ?? 0;
+    const height = metadata.height ?? 0;
+
+    if (width === 0 || height === 0) {
+      return imageBuffer;
+    }
+
+    const x = Math.round(coordinates.x);
+    const y = Math.round(coordinates.y);
+
+    if (!Number.isFinite(x) || !Number.isFinite(y)) {
+      return imageBuffer;
+    }
+
+    if (x < 0 || x > width || y < 0 || y > height) {
+      return imageBuffer;
+    }
+
+    const {
+      color = '#FF0000',
+      lineLength = 20,
+      lineWidth = 2,
+      radius = 5,
+    } = options;
+
+    const horizontalStart = Math.max(0, x - lineLength);
+    const horizontalEnd = Math.min(width, x + lineLength);
+    const verticalStart = Math.max(0, y - lineLength);
+    const verticalEnd = Math.min(height, y + lineLength);
+
+    const cursorOverlay = `
+      <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+        <line x1="${horizontalStart}" y1="${y}" x2="${horizontalEnd}" y2="${y}" stroke="${color}" stroke-width="${lineWidth}" />
+        <line x1="${x}" y1="${verticalStart}" x2="${x}" y2="${verticalEnd}" stroke="${color}" stroke-width="${lineWidth}" />
+        <circle cx="${x}" cy="${y}" r="${radius}" fill="${color}" fill-opacity="0.6" stroke="${color}" stroke-width="${Math.max(
+          1,
+          lineWidth / 2,
+        )}" />
+      </svg>
+    `;
+
+    return image
+      .composite([
+        {
+          input: Buffer.from(cursorOverlay),
           top: 0,
           left: 0,
         },
@@ -278,15 +343,21 @@ export class GridOverlayService {
   ): { x: number; y: number; width: number; height: number } {
     const [vertical, horizontal] = region.split('-');
     const rowIndex =
-      vertical === 'top' ? 0 : vertical === 'middle' ? 1 : vertical === 'bottom' ? 2 : 1;
+      vertical === 'top'
+        ? 0
+        : vertical === 'middle'
+          ? 1
+          : vertical === 'bottom'
+            ? 2
+            : 1;
     const colIndex =
       horizontal === 'left'
         ? 0
         : horizontal === 'center'
-        ? 1
-        : horizontal === 'right'
-        ? 2
-        : 1;
+          ? 1
+          : horizontal === 'right'
+            ? 2
+            : 1;
 
     const regionWidth = width / 3;
     const regionHeight = height / 3;

@@ -120,7 +120,12 @@ export class ComputerUseTools {
           zoomLevel: z.number().optional(),
           targetDescription: z.string().optional(),
           source: z
-            .enum(['manual', 'smart_focus', 'progressive_zoom', 'binary_search'])
+            .enum([
+              'manual',
+              'smart_focus',
+              'progressive_zoom',
+              'binary_search',
+            ])
             .optional(),
         })
         .optional()
@@ -591,6 +596,7 @@ V, W, X, Y, Z
         gridOverlay: z.boolean().optional(),
         gridSize: z.number().optional(),
         highlightRegions: z.boolean().optional(),
+        showCursor: z.boolean().optional(),
         progressStep: z.number().optional(),
         progressMessage: z.string().optional(),
         progressTaskId: z.string().optional(),
@@ -607,6 +613,7 @@ V, W, X, Y, Z
     gridOverlay,
     gridSize,
     highlightRegions,
+    showCursor,
     progressStep,
     progressMessage,
     progressTaskId,
@@ -615,6 +622,7 @@ V, W, X, Y, Z
     gridOverlay?: boolean;
     gridSize?: number;
     highlightRegions?: boolean;
+    showCursor?: boolean;
     progressStep?: number;
     progressMessage?: string;
     progressTaskId?: string;
@@ -626,6 +634,7 @@ V, W, X, Y, Z
         gridOverlay,
         gridSize,
         highlightRegions,
+        showCursor,
         progressStep,
         progressMessage,
         progressTaskId,
@@ -684,6 +693,7 @@ V, W, X, Y, Z
         .boolean()
         .optional()
         .describe('Highlight this region in the output.'),
+      showCursor: z.boolean().optional(),
       progressStep: z.number().optional(),
       progressMessage: z.string().optional(),
       progressTaskId: z.string().optional(),
@@ -695,6 +705,7 @@ V, W, X, Y, Z
     enhance,
     includeOffset,
     addHighlight,
+    showCursor,
     progressStep,
     progressMessage,
     progressTaskId,
@@ -713,6 +724,7 @@ V, W, X, Y, Z
     enhance?: boolean;
     includeOffset?: boolean;
     addHighlight?: boolean;
+    showCursor?: boolean;
     progressStep?: number;
     progressMessage?: string;
     progressTaskId?: string;
@@ -725,6 +737,7 @@ V, W, X, Y, Z
         enhance,
         includeOffset,
         addHighlight,
+        showCursor,
         progressStep,
         progressMessage,
         progressTaskId,
@@ -768,6 +781,7 @@ V, W, X, Y, Z
         .number()
         .optional()
         .describe('Optional grid spacing in pixels for the custom capture.'),
+      showCursor: z.boolean().optional(),
     }),
   })
   async screenshotCustomRegion({
@@ -776,12 +790,14 @@ V, W, X, Y, Z
     width,
     height,
     gridSize,
+    showCursor,
   }: {
     x: number;
     y: number;
     width: number;
     height: number;
     gridSize?: number;
+    showCursor?: boolean;
   }) {
     try {
       const shot = (await this.computerUse.action({
@@ -791,6 +807,7 @@ V, W, X, Y, Z
         width,
         height,
         gridSize,
+        showCursor,
       })) as { image: string };
 
       return {

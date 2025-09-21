@@ -176,6 +176,28 @@ export class ComputerUseService {
 
         let buffer = customRegion.image;
 
+        const shouldShowCursor = action.showCursor ?? true;
+        let cursorLocal: { x: number; y: number } | undefined;
+
+        if (shouldShowCursor) {
+          try {
+            const cursor = await this.nutService.getCursorPosition();
+            cursorLocal = this.mapCursorToRegion(
+              cursor,
+              customRegion.offset,
+              {
+                width: customRegion.region.width,
+                height: customRegion.region.height,
+              },
+              customRegion.zoomLevel ?? 1,
+            );
+          } catch (error) {
+            this.logger.warn(
+              `Failed to fetch cursor position for custom region screenshot: ${(error as Error).message}`,
+            );
+          }
+        }
+
         // If a markTarget is provided, map global → local (respecting zoom) and draw crosshair
         if (action.markTarget?.coordinates) {
           try {
@@ -203,6 +225,19 @@ export class ComputerUseService {
               `Failed to annotate custom region with target: ${
                 (err as Error).message
               }`,
+            );
+          }
+        }
+
+        if (cursorLocal) {
+          try {
+            buffer = await this.gridOverlayService.addCursorIndicator(
+              buffer,
+              cursorLocal,
+            );
+          } catch (error) {
+            this.logger.warn(
+              `Failed to annotate cursor on custom region screenshot: ${(error as Error).message}`,
             );
           }
         }
@@ -315,8 +350,14 @@ export class ComputerUseService {
         width: number;
         height: number;
       };
-      const clampedX = Math.max(r.x, Math.min(destination.x, r.x + r.width - 1));
-      const clampedY = Math.max(r.y, Math.min(destination.y, r.y + r.height - 1));
+      const clampedX = Math.max(
+        r.x,
+        Math.min(destination.x, r.x + r.width - 1),
+      );
+      const clampedY = Math.max(
+        r.y,
+        Math.min(destination.y, r.y + r.height - 1),
+      );
       if (clampedX !== destination.x || clampedY !== destination.y) {
         this.logger.debug(
           `Clamped click target (${destination.x}, ${destination.y}) to region [${r.x},${r.y},${r.width}x${r.height}] → (${clampedX}, ${clampedY})`,
@@ -329,7 +370,10 @@ export class ComputerUseService {
     if (destination && this.preClickSnapEnabled) {
       try {
         const refined = await this.refineClickTarget(destination);
-        if (refined && (refined.x !== destination.x || refined.y !== destination.y)) {
+        if (
+          refined &&
+          (refined.x !== destination.x || refined.y !== destination.y)
+        ) {
           this.logger.debug(
             `Pre-click snap adjusted target (${destination.x}, ${destination.y}) → (${refined.x}, ${refined.y})`,
           );
@@ -357,7 +401,10 @@ export class ComputerUseService {
     if (this.clickVerifyEnabled) {
       try {
         roiCenter = destination ?? (await this.nutService.getCursorPosition());
-        preClickROI = await this.captureRoiGray(roiCenter, this.clickVerifyRadius);
+        preClickROI = await this.captureRoiGray(
+          roiCenter,
+          this.clickVerifyRadius,
+        );
       } catch (e) {
         this.logger.warn(
           `Failed to capture pre-click ROI: ${(e as Error)?.message ?? String(e)}`,
@@ -368,7 +415,8 @@ export class ComputerUseService {
     // Hover-probe before clicking: sample ROI at current and slight offset
     if (this.hoverProbeEnabled) {
       try {
-        const center = destination ?? (await this.nutService.getCursorPosition());
+        const center =
+          destination ?? (await this.nutService.getCursorPosition());
         const roiA = await this.captureRoiGray(center, 15);
         const offsetPt = { x: center.x + this.hoverProbeOffset, y: center.y };
         await this.nutService.mouseMoveEvent(offsetPt);
@@ -376,8 +424,12 @@ export class ComputerUseService {
         // move back to center
         await this.nutService.mouseMoveEvent(center);
         const hoverDiff = this.meanAbsoluteDifference(roiA, roiB);
-        this.logger.debug(`Hover probe diff: ${hoverDiff.toFixed(2)} (thr ${this.hoverProbeThreshold})`);
-        await this.telemetryService.recordEvent('hover_probe', { diff: hoverDiff });
+        this.logger.debug(
+          `Hover probe diff: ${hoverDiff.toFixed(2)} (thr ${this.hoverProbeThreshold})`,
+        );
+        await this.telemetryService.recordEvent('hover_probe', {
+          diff: hoverDiff,
+        });
         // Note: we currently log this as a signal. Future: adjust destination if diff is too low and intent suggests hoverable.
       } catch (e) {
         this.logger.warn(`Hover probe failed: ${(e as Error).message}`);
@@ -449,7 +501,10 @@ export class ComputerUseService {
       }
     } else {
       // Record untargeted click for visibility
-      await this.telemetryService.recordUntargetedClick(actualPointer, telemetryContext);
+      await this.telemetryService.recordUntargetedClick(
+        actualPointer,
+        telemetryContext,
+      );
     }
 
     // Post-click verification: compare pre/post ROI and retry once if unchanged
@@ -457,22 +512,31 @@ export class ComputerUseService {
       try {
         // Delay a bit more to let UI settle
         await this.delay(this.clickVerifyDelayMs);
-        const postROI = await this.captureRoiGray(roiCenter, this.clickVerifyRadius);
+        const postROI = await this.captureRoiGray(
+          roiCenter,
+          this.clickVerifyRadius,
+        );
         const diff = this.meanAbsoluteDifference(preClickROI, postROI);
         this.logger.debug(
           `Post-click ROI mean abs diff: ${diff.toFixed(2)} (threshold ${this.clickVerifyThreshold})`,
         );
         await this.telemetryService.recordEvent('post_click_diff', { diff });
         if (diff < this.clickVerifyThreshold && this.clickRetryMax > 0) {
-          const hasTargetMeta = !!targetCoordinates || !!telemetryContext.targetDescription;
+          const hasTargetMeta =
+            !!targetCoordinates || !!telemetryContext.targetDescription;
           if (hasTargetMeta) {
             this.logger.warn(
               `Minimal UI change detected near (${roiCenter.x}, ${roiCenter.y}); retrying click with slight offsets…`,
             );
-            const intent = this.inferIntent(telemetryContext.targetDescription ?? description);
+            const intent = this.inferIntent(
+              telemetryContext.targetDescription ?? description,
+            );
             const offsets = this.getRetryOffsetsForIntent(intent);
             const attempts = Math.min(this.clickRetryMax, offsets.length);
-            await this.telemetryService.recordEvent('retry_click', { attempts, intent });
+            await this.telemetryService.recordEvent('retry_click', {
+              attempts,
+              intent,
+            });
             for (let i = 0; i < attempts; i++) {
               const o = offsets[i];
               const nx = roiCenter.x + o.dx;
@@ -481,7 +545,9 @@ export class ComputerUseService {
                 await this.nutService.mouseMoveEvent({ x: nx, y: ny });
                 await this.nutService.mouseClickEvent(button);
               } catch (re) {
-                this.logger.warn(`Offset retry click failed: ${(re as Error).message}`);
+                this.logger.warn(
+                  `Offset retry click failed: ${(re as Error).message}`,
+                );
               }
             }
           } else {
@@ -490,9 +556,14 @@ export class ComputerUseService {
             );
             try {
               await this.nutService.mouseClickEvent(button);
-              await this.telemetryService.recordEvent('retry_click', { attempts: 1, intent: 'unknown' });
+              await this.telemetryService.recordEvent('retry_click', {
+                attempts: 1,
+                intent: 'unknown',
+              });
             } catch (re) {
-              this.logger.warn(`Simple retry click failed: ${(re as Error).message}`);
+              this.logger.warn(
+                `Simple retry click failed: ${(re as Error).message}`,
+              );
             }
           }
         }
@@ -509,29 +580,58 @@ export class ComputerUseService {
     await this.telemetryService.recordEvent('action', { name });
   }
 
-  private inferIntent(desc?: string): 'button' | 'link' | 'field' | 'icon' | 'menu' | 'unknown' {
+  private inferIntent(
+    desc?: string,
+  ): 'button' | 'link' | 'field' | 'icon' | 'menu' | 'unknown' {
     const d = (desc || '').toLowerCase();
     if (/button|cta|submit|ok|apply|save/.test(d)) return 'button';
     if (/link|anchor|hyperlink/.test(d)) return 'link';
-    if (/field|input|textbox|search|address|email|password/.test(d)) return 'field';
+    if (/field|input|textbox|search|address|email|password/.test(d))
+      return 'field';
     if (/icon|favicon|glyph|checkbox|radio/.test(d)) return 'icon';
     if (/menu|dropdown|toolbar|tab/.test(d)) return 'menu';
     return 'unknown';
   }
 
-  private getRetryOffsetsForIntent(intent: string): Array<{ dx: number; dy: number }> {
+  private getRetryOffsetsForIntent(
+    intent: string,
+  ): Array<{ dx: number; dy: number }> {
     switch (intent) {
       case 'icon':
-        return [{ dx: 0, dy: 0 }, { dx: 2, dy: 0 }, { dx: -2, dy: 0 }, { dx: 0, dy: 2 }, { dx: 0, dy: -2 }];
+        return [
+          { dx: 0, dy: 0 },
+          { dx: 2, dy: 0 },
+          { dx: -2, dy: 0 },
+          { dx: 0, dy: 2 },
+          { dx: 0, dy: -2 },
+        ];
       case 'field':
-        return [{ dx: 0, dy: 0 }, { dx: 1, dy: 0 }, { dx: -1, dy: 0 }];
+        return [
+          { dx: 0, dy: 0 },
+          { dx: 1, dy: 0 },
+          { dx: -1, dy: 0 },
+        ];
       case 'button':
       case 'menu':
-        return [{ dx: 0, dy: 0 }, { dx: 3, dy: 0 }, { dx: -3, dy: 0 }, { dx: 0, dy: 3 }, { dx: 0, dy: -3 }];
+        return [
+          { dx: 0, dy: 0 },
+          { dx: 3, dy: 0 },
+          { dx: -3, dy: 0 },
+          { dx: 0, dy: 3 },
+          { dx: 0, dy: -3 },
+        ];
       case 'link':
-        return [{ dx: 0, dy: 0 }, { dx: 2, dy: 1 }, { dx: -2, dy: -1 }];
+        return [
+          { dx: 0, dy: 0 },
+          { dx: 2, dy: 1 },
+          { dx: -2, dy: -1 },
+        ];
       default:
-        return [{ dx: 0, dy: 0 }, { dx: 3, dy: 0 }, { dx: 0, dy: 3 }];
+        return [
+          { dx: 0, dy: 0 },
+          { dx: 3, dy: 0 },
+          { dx: 0, dy: 3 },
+        ];
     }
   }
 
@@ -631,11 +731,27 @@ export class ComputerUseService {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  async screenshot(
-    action?: ScreenshotAction,
-  ): Promise<{ image: string; width?: number; height?: number; offset?: { x: number; y: number } }> {
+  async screenshot(action?: ScreenshotAction): Promise<{
+    image: string;
+    width?: number;
+    height?: number;
+    offset?: { x: number; y: number };
+  }> {
     this.logger.log(`Taking screenshot`);
     let buffer = await this.nutService.screendump();
+
+    const shouldShowCursor = action?.showCursor ?? true;
+    let cursorPosition: { x: number; y: number } | undefined;
+
+    if (shouldShowCursor) {
+      try {
+        cursorPosition = await this.nutService.getCursorPosition();
+      } catch (error) {
+        this.logger.warn(
+          `Failed to fetch cursor position for screenshot: ${(error as Error).message}`,
+        );
+      }
+    }
 
     const gridOverlayEnabled =
       action?.gridOverlay !== undefined
@@ -681,7 +797,22 @@ export class ComputerUseService {
       }
     }
 
-    const meta = await sharp(buffer).metadata().catch(() => ({} as any));
+    if (cursorPosition) {
+      try {
+        buffer = await this.gridOverlayService.addCursorIndicator(
+          buffer,
+          cursorPosition,
+        );
+      } catch (error) {
+        this.logger.warn(
+          `Failed to annotate cursor on screenshot: ${(error as Error).message}`,
+        );
+      }
+    }
+
+    const meta = await sharp(buffer)
+      .metadata()
+      .catch(() => ({}) as any);
     const width = typeof meta.width === 'number' ? meta.width : undefined;
     const height = typeof meta.height === 'number' ? meta.height : undefined;
     const base64 = buffer.toString('base64');
@@ -700,9 +831,7 @@ export class ComputerUseService {
     return { image: base64, width, height };
   }
 
-  private async screenshotRegion(
-    action: ScreenshotRegionAction,
-  ): Promise<{
+  private async screenshotRegion(action: ScreenshotRegionAction): Promise<{
     image: string;
     offset?: { x: number; y: number };
     region?: { x: number; y: number; width: number; height: number };
@@ -725,6 +854,28 @@ export class ComputerUseService {
 
     let buffer = regionResult.image;
 
+    const shouldShowCursor = action.showCursor ?? true;
+    let cursorLocal: { x: number; y: number } | undefined;
+
+    if (shouldShowCursor) {
+      try {
+        const cursor = await this.nutService.getCursorPosition();
+        cursorLocal = this.mapCursorToRegion(
+          cursor,
+          regionResult.offset,
+          {
+            width: regionResult.region.width,
+            height: regionResult.region.height,
+          },
+          regionResult.zoomLevel ?? 1,
+        );
+      } catch (error) {
+        this.logger.warn(
+          `Failed to fetch cursor position for region screenshot: ${(error as Error).message}`,
+        );
+      }
+    }
+
     if (
       action.addHighlight ||
       action.progressStep !== undefined ||
@@ -743,6 +894,19 @@ export class ComputerUseService {
       } catch (error) {
         this.logger.warn(
           `Failed to add progress indicators to region screenshot: ${error.message}`,
+        );
+      }
+    }
+
+    if (cursorLocal) {
+      try {
+        buffer = await this.gridOverlayService.addCursorIndicator(
+          buffer,
+          cursorLocal,
+        );
+      } catch (error) {
+        this.logger.warn(
+          `Failed to annotate cursor on region screenshot: ${(error as Error).message}`,
         );
       }
     }
@@ -776,6 +940,29 @@ export class ComputerUseService {
     return await this.nutService.getCursorPosition();
   }
 
+  private mapCursorToRegion(
+    cursor: { x: number; y: number } | undefined,
+    offset: { x: number; y: number },
+    size: { width: number; height: number },
+    zoomLevel: number = 1,
+  ): { x: number; y: number } | undefined {
+    if (!cursor) {
+      return undefined;
+    }
+
+    const withinX = cursor.x >= offset.x && cursor.x < offset.x + size.width;
+    const withinY = cursor.y >= offset.y && cursor.y < offset.y + size.height;
+
+    if (!withinX || !withinY) {
+      return undefined;
+    }
+
+    return {
+      x: Math.round((cursor.x - offset.x) * zoomLevel),
+      y: Math.round((cursor.y - offset.y) * zoomLevel),
+    };
+  }
+
   private async screen_info(): Promise<{ width: number; height: number }> {
     this.logger.log(`Getting screen info`);
     try {
@@ -790,7 +977,10 @@ export class ComputerUseService {
     }
   }
 
-  private async refineClickTarget(target: { x: number; y: number }): Promise<{ x: number; y: number }> {
+  private async refineClickTarget(target: {
+    x: number;
+    y: number;
+  }): Promise<{ x: number; y: number }> {
     try {
       const full = await this.nutService.screendump();
       const meta = await sharp(full).metadata();
@@ -831,7 +1021,10 @@ export class ComputerUseService {
         const dx = x - cx;
         const dy = y - cy;
         const dist = Math.hypot(dx, dy);
-        return local - (Number.isFinite(this.snapPenalty) ? this.snapPenalty : 0.25) * dist;
+        return (
+          local -
+          (Number.isFinite(this.snapPenalty) ? this.snapPenalty : 0.25) * dist
+        );
       };
 
       const baseScore = scoreAt(cx, cy);
@@ -895,7 +1088,11 @@ export class ComputerUseService {
     a: { data: Buffer; width: number; height: number },
     b: { data: Buffer; width: number; height: number },
   ): number {
-    if (a.width !== b.width || a.height !== b.height || a.data.length !== b.data.length) {
+    if (
+      a.width !== b.width ||
+      a.height !== b.height ||
+      a.data.length !== b.data.length
+    ) {
       return Number.POSITIVE_INFINITY; // treat as changed
     }
     const len = a.data.length;
@@ -906,9 +1103,10 @@ export class ComputerUseService {
     return sum / len;
   }
 
-  private async captureCalibrationSnapshot(
-    actual: { x: number; y: number },
-  ): Promise<Buffer | null> {
+  private async captureCalibrationSnapshot(actual: {
+    x: number;
+    y: number;
+  }): Promise<Buffer | null> {
     const halfWindow = Math.max(Math.floor(this.calibrationWindow / 2), 50);
     const width = Math.max(this.calibrationWindow, 100);
     const height = Math.max(this.calibrationWindow, 100);

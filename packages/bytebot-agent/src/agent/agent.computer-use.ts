@@ -34,6 +34,7 @@ interface ScreenshotOptions {
   gridOverlay?: boolean;
   gridSize?: number;
   highlightRegions?: boolean;
+  showCursor?: boolean;
   progressStep?: number;
   progressMessage?: string;
   progressTaskId?: string;
@@ -51,7 +52,9 @@ interface ScreenshotResponse {
 }
 
 const BYTEBOT_DESKTOP_BASE_URL = process.env.BYTEBOT_DESKTOP_BASE_URL as string;
-const BYTEBOT_LLM_PROXY_URL = process.env.BYTEBOT_LLM_PROXY_URL as string | undefined;
+const BYTEBOT_LLM_PROXY_URL = process.env.BYTEBOT_LLM_PROXY_URL as
+  | string
+  | undefined;
 const SMART_FOCUS_MODEL =
   process.env.BYTEBOT_SMART_FOCUS_MODEL || 'gpt-4o-mini';
 const SMART_FOCUS_ENABLED = process.env.BYTEBOT_SMART_FOCUS !== 'false';
@@ -103,7 +106,9 @@ export async function handleComputerToolUse(
   if (isScreenshotRegionToolUseBlock(block)) {
     logger.debug('Processing focused region screenshot request');
     try {
-      const { image, offset, region, zoomLevel } = await screenshotRegion(block.input);
+      const { image, offset, region, zoomLevel } = await screenshotRegion(
+        block.input,
+      );
       const content: MessageContentBlock[] = [
         {
           type: MessageContentType.Image,
@@ -252,7 +257,9 @@ export async function handleComputerToolUse(
         ],
       };
     } catch (error) {
-      logger.error(`Getting screen info failed: ${error instanceof Error ? error.message : String(error)}`);
+      logger.error(
+        `Getting screen info failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
       return {
         type: MessageContentType.ToolResult,
         tool_use_id: block.id,
@@ -295,7 +302,10 @@ export async function handleComputerToolUse(
             try {
               coords = await cursorPosition();
             } catch (err) {
-              console.warn('Unable to get cursor position for verification:', err);
+              console.warn(
+                'Unable to get cursor position for verification:',
+                err,
+              );
             }
           }
 
@@ -400,7 +410,9 @@ export async function handleComputerToolUse(
         logger.debug(`Waiting ${delayMs}ms before taking screenshot`);
         await new Promise((resolve) => setTimeout(resolve, delayMs));
 
-        logger.debug('Taking screenshot after tool execution (gridOverlay=true)');
+        logger.debug(
+          'Taking screenshot after tool execution (gridOverlay=true)',
+        );
         screenshotResult = (await screenshot({ gridOverlay: true })).image;
         logger.debug('Screenshot captured successfully');
       }
@@ -444,7 +456,10 @@ export async function handleComputerToolUse(
     return toolResult;
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
-    logger.error(`Error executing ${block.name} tool: ${msg}`, (error as any)?.stack);
+    logger.error(
+      `Error executing ${block.name} tool: ${msg}`,
+      (error as any)?.stack,
+    );
     const friendly =
       block.name === 'computer_click_mouse' && msg.startsWith('Click rejected:')
         ? 'Click rejected: provide coordinates or a short target description so Smart Focus can compute exact coordinates.'
@@ -733,7 +748,7 @@ export function createSmartClickAI(): SmartClickAI | null {
               typeof part === 'string' ? part : 'text' in part ? part.text : '',
             )
             .join('')
-        : message.content ?? '';
+        : (message.content ?? '');
 
       return (content || '').trim();
     },
@@ -773,7 +788,9 @@ export function createSmartClickAI(): SmartClickAI | null {
 
       const message = completion.choices[0]?.message;
       if (!message) {
-        throw new Error('Smart focus coordinate identification returned no result');
+        throw new Error(
+          'Smart focus coordinate identification returned no result',
+        );
       }
 
       const rawContent = Array.isArray(message.content)
@@ -782,7 +799,7 @@ export function createSmartClickAI(): SmartClickAI | null {
               typeof part === 'string' ? part : 'text' in part ? part.text : '',
             )
             .join('')
-        : message.content ?? '';
+        : (message.content ?? '');
 
       const parsed = parseCoordinateResponse(rawContent);
       if (!parsed) {
@@ -1123,6 +1140,7 @@ async function screenshot(
         gridOverlay: options?.gridOverlay ?? undefined,
         gridSize: options?.gridSize ?? undefined,
         highlightRegions: options?.highlightRegions ?? undefined,
+        showCursor: options?.showCursor ?? true,
         progressStep: options?.progressStep ?? undefined,
         progressMessage: options?.progressMessage ?? undefined,
         progressTaskId: options?.progressTaskId ?? undefined,
@@ -1174,6 +1192,7 @@ async function screenshotRegion(input: {
   enhance?: boolean | null;
   includeOffset?: boolean | null;
   addHighlight?: boolean | null;
+  showCursor?: boolean | null;
   progressStep?: number | null;
   progressMessage?: string | null;
   progressTaskId?: string | null;
@@ -1197,6 +1216,7 @@ async function screenshotRegion(input: {
         enhance: input.enhance ?? undefined,
         includeOffset: input.includeOffset ?? undefined,
         addHighlight: input.addHighlight ?? undefined,
+        showCursor: input.showCursor ?? true,
         progressStep: input.progressStep ?? undefined,
         progressMessage: input.progressMessage ?? undefined,
         progressTaskId: input.progressTaskId ?? undefined,
@@ -1235,6 +1255,7 @@ async function screenshotCustomRegion(input: {
   gridSize?: number | null;
   zoomLevel?: number | null;
   markTarget?: { coordinates: Coordinates; label?: string } | null;
+  showCursor?: boolean | null;
   progressStep?: number | null;
   progressMessage?: string | null;
   progressTaskId?: string | null;
@@ -1261,6 +1282,7 @@ async function screenshotCustomRegion(input: {
         gridSize: input.gridSize ?? undefined,
         zoomLevel: input.zoomLevel ?? undefined,
         markTarget: input.markTarget ?? undefined,
+        showCursor: input.showCursor ?? true,
         progressStep: input.progressStep ?? undefined,
         progressMessage: input.progressMessage ?? undefined,
         progressTaskId: input.progressTaskId ?? undefined,
