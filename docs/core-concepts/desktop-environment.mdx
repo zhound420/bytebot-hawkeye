@@ -221,6 +221,7 @@ The desktop includes built‑in accuracy aids to improve pointing reliability an
 - Progressive Zoom: Region and custom‑region captures include grid + zoom for exact coordinate selection.
 - Pre‑click Snap: `BYTEBOT_PRECLICK_SNAP=true` slightly adjusts click targets toward nearby high‑contrast features (default ±6px).
 - Post‑click Verification: `BYTEBOT_CLICK_RETRY_ON_NOCHANGE=true` compares a small region before/after click and retries once if unchanged.
+- Smart Click Success Radius: `BYTEBOT_SMART_CLICK_SUCCESS_RADIUS=12` defines the acceptable pointer drift (in pixels) when validating Smart Focus clicks.
 
 Recommended defaults are enabled in Docker/Helm; tune via envs:
 ```
@@ -229,6 +230,7 @@ BYTEBOT_SNAP_RADIUS=6
 BYTEBOT_CLICK_RETRY_ON_NOCHANGE=true
 BYTEBOT_CLICK_VERIFY_DELAY=250
 BYTEBOT_GRID_OVERLAY=true
+BYTEBOT_SMART_CLICK_SUCCESS_RADIUS=12
 ```
 
 ## Troubleshooting

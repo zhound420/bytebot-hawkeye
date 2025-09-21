@@ -294,7 +294,6 @@ export class SmartClickHelper {
         clickTaskId: this.currentTaskId,
       };
 
-      await this.emitTelemetryEvent('smart_click_complete', { success: true, clickTaskId: this.currentTaskId });
       return { coordinates, context };
     } catch (error) {
       console.error('Smart Focus failed:', error);
