@@ -7,6 +7,8 @@ interface AccuracyPanelProps {
   onRefresh: () => void;
   onReset: () => void;
   className?: string;
+  refreshTitle?: string;
+  resetTitle?: string;
 }
 
 export const AccuracyPanel: React.FC<AccuracyPanelProps> = ({
@@ -14,6 +16,8 @@ export const AccuracyPanel: React.FC<AccuracyPanelProps> = ({
   onRefresh,
   onReset,
   className,
+  refreshTitle = undefined,
+  resetTitle = undefined,
 }) => {
   if (!telemetry) {
     return null;
@@ -45,12 +49,14 @@ export const AccuracyPanel: React.FC<AccuracyPanelProps> = ({
           <button
             className="rounded border px-2 py-0.5 text-[11px] text-gray-700 hover:bg-gray-50"
             onClick={onRefresh}
+            title={refreshTitle}
           >
             Refresh
           </button>
           <button
             className="rounded border border-red-200 bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-700 hover:bg-red-100"
             onClick={onReset}
+            title={resetTitle}
           >
             Reset
           </button>
