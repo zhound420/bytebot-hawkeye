@@ -39,13 +39,15 @@ export function Header() {
   // Get classes for navigation links based on active state
   const getLinkClasses = (path: string) => {
     const baseClasses =
-      "flex items-center gap-1.5 transition-colors px-3 py-1.5 rounded-lg";
+      "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
     const activeClasses =
-      "bg-bytebot-bronze-light-a3 text-bytebot-bronze-light-12";
+      "bg-muted text-foreground shadow-sm dark:bg-muted dark:text-foreground";
     const inactiveClasses =
-      "text-bytebot-bronze-dark-9 hover:bg-bytebot-bronze-light-a1 hover:text-bytebot-bronze-light-12";
+      "text-muted-foreground hover:bg-muted/80 hover:text-foreground dark:text-muted-foreground dark:hover:bg-muted/60";
 
-    return `${baseClasses} ${isActive(path) ? activeClasses : inactiveClasses}`;
+    return `${baseClasses} ${
+      isActive(path) ? activeClasses : inactiveClasses
+    }`;
   };
 
   return (
@@ -69,7 +71,7 @@ export function Header() {
             <div className="h-8 w-[110px]" />
           )}
         </div>
-        <div className="border-bytebot-bronze-dark-11 h-5 border border-l-[0.5px]"></div>
+        <div className="h-5 border border-l-[0.5px] border-border/60 dark:border-border"></div>
         <div className="flex items-center gap-2">
           <Link href="/" className={getLinkClasses("/")}>
             <HugeiconsIcon icon={Home01Icon} className="h-4 w-4" />
