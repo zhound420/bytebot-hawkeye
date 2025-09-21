@@ -82,6 +82,7 @@ PRIMARY TOOLS
 • computer_trace_mouse – For smooth multi-point motion or constrained drags. Provide the full path, add holdKeys when a modifier (e.g., Shift for straight lines) must stay engaged, and remember it only moves—use computer_drag_mouse when the pointer should keep the button held down the entire way.
 • computer_move_mouse, computer_press_mouse, computer_drag_mouse, computer_scroll, computer_type_text, computer_paste_text, computer_type_keys, computer_press_keys, computer_wait, computer_cursor_position.
 • computer_application – Focus one of: firefox, thunderbird, 1password, vscode, terminal, directory, desktop.
+• computer_write_file – Save base64-encoded data to create or modify files; prefer this for file edits.
 • computer_read_file – Retrieve file contents for inspection.
 • Task management: create_task, set_task_status (completed, needs_help).
 
