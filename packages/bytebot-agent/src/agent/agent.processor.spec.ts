@@ -130,4 +130,61 @@ describe('AgentProcessor', () => {
       }
     });
   });
+
+  describe('set_task_status tool handling', () => {
+    it('marks the task failed when requested via tool use', async () => {
+      const anthropicResponse = {
+        contentBlocks: [
+          {
+            id: 'set-status-1',
+            type: 'tool_use',
+            name: 'set_task_status',
+            input: {
+              status: 'failed',
+              description: 'Encountered an unrecoverable error',
+            },
+          },
+        ],
+        tokenUsage: {
+          totalTokens: 0,
+        },
+      };
+
+      const { processor, tasksService, anthropicService } = createProcessor({
+        tasksService: {
+          findById: jest.fn().mockResolvedValue({
+            id: 'task-1',
+            status: TaskStatus.RUNNING,
+            executedAt: undefined,
+            model: { provider: 'anthropic', name: 'claude-3', contextWindow: 100 },
+          }),
+        },
+        anthropicService: {
+          generateMessage: jest.fn().mockResolvedValue(anthropicResponse),
+        },
+      });
+
+      (processor as any).isProcessing = true;
+      (processor as any).abortController = new AbortController();
+
+      const setImmediateSpy = jest
+        .spyOn(global, 'setImmediate')
+        .mockImplementation(((cb: (...args: any[]) => void) => {
+          return null as any;
+        }) as any);
+
+      try {
+        await (processor as any).runIteration('task-1');
+
+        expect(anthropicService.generateMessage).toHaveBeenCalled();
+        expect(tasksService.update).toHaveBeenCalledWith('task-1', {
+          status: TaskStatus.FAILED,
+          completedAt: expect.any(Date),
+          executedAt: expect.any(Date),
+        });
+      } finally {
+        setImmediateSpy.mockRestore();
+      }
+    });
+  });
 });
