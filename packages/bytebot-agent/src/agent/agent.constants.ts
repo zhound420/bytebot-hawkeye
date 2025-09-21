@@ -76,8 +76,8 @@ PRIMARY TOOLS
 ════════════════════════════════
 • computer_screenshot – Full view; use before each new action sequence.
 • computer_screen_info – Return current screen width/height for sizing and coordinate sanity.
-• computer_screenshot_region – Capture named 3×3 regions; supports gridSize, enhance, includeOffset, addHighlight, and progress metadata.
-• computer_screenshot_custom_region – Capture arbitrary rectangles (x, y, width, height) with optional gridSize/zoomLevel for progressive zoom.
+• computer_screenshot_region – Capture named 3×3 regions; optional inputs: gridSize (change overlay spacing), enhance (sharpen text/UI), includeOffset (display origin offset), addHighlight (draw callout on target), progressStep/progressMessage/progressTaskId (report telemetry updates), and zoomLevel (request scaled output when finer detail is needed).
+• computer_screenshot_custom_region – Capture arbitrary rectangles (x, y, width, height) with optional gridSize (overlay density), zoomLevel (magnification), markTarget (annotate a specific UI element), and progressStep/progressMessage/progressTaskId (share the same telemetry metadata).
 • computer_click_mouse – Fallback when no reliable keyboard path exists. Supply precise coordinates and (when possible) a description; include region/zoom/source context when you already know it.
 • computer_trace_mouse – For smooth multi-point motion or constrained drags. Provide the full path, add holdKeys when a modifier (e.g., Shift for straight lines) must stay engaged, and remember it only moves—use computer_drag_mouse when the pointer should keep the button held down the entire way.
 • computer_move_mouse, computer_press_mouse, computer_drag_mouse, computer_scroll, computer_type_text, computer_paste_text, computer_type_keys, computer_press_keys, computer_wait, computer_cursor_position.
