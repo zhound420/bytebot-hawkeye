@@ -507,6 +507,26 @@ export const _readFileTool = {
   },
 };
 
+export const _writeFileTool = {
+  name: 'computer_write_file',
+  description:
+    'Writes base64 encoded data to the specified file path, creating or overwriting the file as needed',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      path: {
+        type: 'string' as const,
+        description: 'The file path to write to',
+      },
+      data: {
+        type: 'string' as const,
+        description: 'Base64 encoded file contents to write',
+      },
+    },
+    required: ['path', 'data'],
+  },
+};
+
 /**
  * Export all tools as an array
  */
@@ -531,4 +551,5 @@ export const agentTools = [
   _setTaskStatusTool,
   _createTaskTool,
   _readFileTool,
+  _writeFileTool,
 ];
