@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import { Header } from "@/components/layout/Header";
 import { ChatContainer } from "@/components/messages/ChatContainer";
 import { DesktopContainer } from "@/components/ui/desktop-container";
 import { useChatSession } from "@/hooks/useChatSession";
 import { useScrollScreenshot } from "@/hooks/useScrollScreenshot";
 import { useParams, useRouter } from "next/navigation";
-import { Role, TaskStatus, TelemetrySummary } from "@/types";
+import { Role, TaskStatus } from "@/types";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   MoreVerticalCircle01Icon,
@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { VirtualDesktopStatus } from "@/components/VirtualDesktopStatusHeader";
-import { AccuracyPanel } from "@/components/telemetry/AccuracyPanel";
+import { TelemetryStatus } from "@/components/telemetry/TelemetryStatus";
 
 export default function TaskPage() {
   const params = useParams();
@@ -90,28 +90,6 @@ export default function TaskPage() {
   });
 
   const taskInactive = isTaskInactive();
-
-  // Accuracy telemetry (auto-refresh)
-  const [telemetry, setTelemetry] = useState<TelemetrySummary | null>(null);
-  // No per‑app filter — report aggregate accuracy
-  const refreshTelemetry = useCallback(() => {
-    fetch(`/api/tasks/telemetry/summary`, { cache: "no-store" })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => setTelemetry(data))
-      .catch(() => {});
-  }, []);
-
-  const resetTelemetry = useCallback(() => {
-    fetch("/api/tasks/telemetry/reset", { method: "POST" })
-      .then(() => refreshTelemetry())
-      .catch(() => {});
-  }, [refreshTelemetry]);
-
-  useEffect(() => {
-    refreshTelemetry();
-    const timer = setInterval(refreshTelemetry, 10000); // refresh every 10s
-    return () => clearInterval(timer);
-  }, [refreshTelemetry]);
 
   // For inactive tasks, auto-load all messages for proper screenshot navigation
   useEffect(() => {
@@ -216,14 +194,7 @@ export default function TaskPage() {
           {/* Chat Area */}
           <div className="col-span-3 flex h-full min-h-0 flex-col">
             {/* Accuracy Telemetry Panel */}
-            <AccuracyPanel
-              telemetry={telemetry}
-              onRefresh={refreshTelemetry}
-              onReset={resetTelemetry}
-              className="mb-3"
-              refreshTitle="Refresh"
-              resetTitle="Reset accuracy stats"
-            />
+            <TelemetryStatus className="mb-3" />
             {/* Messages scrollable area */}
             <div
               ref={chatContainerRef}
