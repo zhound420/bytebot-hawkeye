@@ -97,6 +97,7 @@ cd bytebot
 echo "ANTHROPIC_API_KEY=sk-ant-..." > docker/.env
 # Or: echo "OPENAI_API_KEY=sk-..." > docker/.env
 # Or: echo "GEMINI_API_KEY=..." > docker/.env
+# Or: echo "OPENROUTER_API_KEY=..." > docker/.env
 
 docker-compose -f docker/docker-compose.yml up -d
 
