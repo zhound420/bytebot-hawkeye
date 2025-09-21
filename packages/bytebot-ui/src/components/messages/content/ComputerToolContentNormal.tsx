@@ -13,9 +13,12 @@ import {
   isReadFileToolUseBlock,
 } from "@bytebot/shared";
 import { getIcon, getLabel } from "./ComputerToolUtils";
+import { MessageTimestampMeta } from "@/lib/datetime";
+import { MessageTimestamp } from "../MessageTimestamp";
 
 interface ComputerToolContentNormalProps {
   block: ComputerToolUseContentBlock;
+  timestamp?: MessageTimestampMeta | null;
 }
 
 const applicationMap: Record<Application, string> = {
@@ -98,6 +101,7 @@ function ToolDetailsNormal({ block }: { block: ComputerToolUseContentBlock }) {
 
 export function ComputerToolContentNormal({
   block,
+  timestamp,
 }: ComputerToolContentNormalProps) {
   // Don't render screenshot tool use blocks here - they're handled separately
   if (getLabel(block) === "Screenshot") {
@@ -106,7 +110,7 @@ export function ComputerToolContentNormal({
 
   return (
     <div className="mb-3 max-w-4/5">
-      <div className="flex items-center gap-2 text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-2 text-muted-foreground">
         <HugeiconsIcon
           icon={getIcon(block)}
           className="h-4 w-4"
@@ -114,6 +118,11 @@ export function ComputerToolContentNormal({
         <p className="text-xs">
           {getLabel(block)}
         </p>
+        <MessageTimestamp
+          timestamp={timestamp}
+          className="text-[10px] normal-case"
+          prefix="Action at"
+        />
         <ToolDetailsNormal block={block} />
       </div>
     </div>

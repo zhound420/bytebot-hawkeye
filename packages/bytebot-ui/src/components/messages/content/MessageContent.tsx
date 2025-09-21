@@ -6,6 +6,7 @@ import {
   isComputerToolUseContentBlock,
   isToolResultContentBlock,
 } from "@bytebot/shared";
+import { MessageTimestampMeta } from "@/lib/datetime";
 import { TextContent } from "./TextContent";
 import { ImageContent } from "./ImageContent";
 import { ComputerToolContent } from "./ComputerToolContent";
@@ -14,11 +15,15 @@ import { ErrorContent } from "./ErrorContent";
 interface MessageContentProps {
   content: MessageContentBlock[];
   isTakeOver?: boolean;
+  timestamp?: MessageTimestampMeta | null;
+  showInlineTimestamp?: boolean;
 }
 
 export function MessageContent({
   content,
   isTakeOver = false,
+  timestamp,
+  showInlineTimestamp = false,
 }: MessageContentProps) {
   // Filter content blocks and check if any visible content remains
   const visibleBlocks = content.filter((block) => {
@@ -45,39 +50,57 @@ export function MessageContent({
     return null;
   }
 
+  let inlineTimestampMeta = showInlineTimestamp ? timestamp : null;
+
   return (
     <div className="w-full">
-      {visibleBlocks.map((block, index) => (
-        <div key={index}>
-          {isTextContentBlock(block) && <TextContent block={block} />}
+      {visibleBlocks.map((block, index) => {
+        const shouldAttachInlineTimestamp =
+          !!inlineTimestampMeta && isComputerToolUseContentBlock(block);
+        const timestampForBlock = shouldAttachInlineTimestamp
+          ? inlineTimestampMeta
+          : null;
 
-          {isToolResultContentBlock(block) &&
-            !block.is_error &&
-            block.content.map((contentBlock, contentBlockIndex) => {
-              if (isImageContentBlock(contentBlock)) {
-                return (
-                  <ImageContent key={contentBlockIndex} block={contentBlock} />
-                );
-              }
-              return null;
-            })}
+        if (shouldAttachInlineTimestamp) {
+          inlineTimestampMeta = null;
+        }
 
-          {isComputerToolUseContentBlock(block) && (
-            <ComputerToolContent block={block} isTakeOver={isTakeOver} />
-          )}
+        return (
+          <div key={index}>
+            {isTextContentBlock(block) && <TextContent block={block} />}
 
-          {isToolResultContentBlock(block) && block.is_error && (
-            <ErrorContent block={block} />
-          )}
+            {isToolResultContentBlock(block) &&
+              !block.is_error &&
+              block.content.map((contentBlock, contentBlockIndex) => {
+                if (isImageContentBlock(contentBlock)) {
+                  return (
+                    <ImageContent key={contentBlockIndex} block={contentBlock} />
+                  );
+                }
+                return null;
+              })}
 
-          {isToolResultContentBlock(block) &&
-            !block.is_error &&
-            block.tool_use_id === "set_task_status" &&
-            block.content?.[0].type === "text" && (
-              <TextContent block={block.content?.[0]} />
+            {isComputerToolUseContentBlock(block) && (
+              <ComputerToolContent
+                block={block}
+                isTakeOver={isTakeOver}
+                timestamp={timestampForBlock}
+              />
             )}
-        </div>
-      ))}
+
+            {isToolResultContentBlock(block) && block.is_error && (
+              <ErrorContent block={block} />
+            )}
+
+            {isToolResultContentBlock(block) &&
+              !block.is_error &&
+              block.tool_use_id === "set_task_status" &&
+              block.content?.[0].type === "text" && (
+                <TextContent block={block.content?.[0]} />
+              )}
+          </div>
+        );
+      })}
     </div>
   );
 }
