@@ -126,7 +126,7 @@ export default function TaskPage() {
       <main className="m-2 flex-1 overflow-hidden px-2 py-4">
         <div className="grid h-full grid-cols-7 gap-4">
           {/* Main container */}
-          <div className="col-span-4">
+          <div className="col-span-4 flex flex-col gap-3">
             <DesktopContainer
               screenshot={taskInactive ? currentScreenshot : null}
               viewOnly={vncViewOnly()}
@@ -189,12 +189,11 @@ export default function TaskPage() {
                 </DropdownMenu>
               )}
             </DesktopContainer>
+            <TelemetryStatus />
           </div>
 
           {/* Chat Area */}
           <div className="col-span-3 flex h-full min-h-0 flex-col">
-            {/* Accuracy Telemetry Panel */}
-            <TelemetryStatus className="mb-3" />
             {/* Messages scrollable area */}
             <div
               ref={chatContainerRef}
