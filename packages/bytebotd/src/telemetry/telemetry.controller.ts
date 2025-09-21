@@ -192,8 +192,7 @@ export class TelemetryController {
   }
 
   @Get('sessions')
-  async sessions(): Promise<{ sessions: string[] }> {
-    const sessions = await this.telemetry.listSessions();
-    return { sessions };
+  async sessions(): Promise<{ current: string; sessions: string[] }> {
+    return this.telemetry.listSessions();
   }
 }

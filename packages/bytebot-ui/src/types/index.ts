@@ -110,5 +110,6 @@ export interface TelemetryApps {
 }
 
 export interface TelemetrySessions {
+  current: string | null;
   sessions: string[];
 }

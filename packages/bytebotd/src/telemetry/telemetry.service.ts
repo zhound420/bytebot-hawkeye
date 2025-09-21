@@ -103,7 +103,7 @@ export class TelemetryService {
     await this.loadDriftForSession(sessionId);
   }
 
-  async listSessions(): Promise<string[]> {
+  async listSessions(): Promise<{ current: string; sessions: string[] }> {
     await this.ready;
     try {
       const entries = await fs.readdir(this.telemetryDir, {
@@ -116,12 +116,13 @@ export class TelemetryService {
       if (!sessions.includes(this.currentSessionId)) {
         sessions.unshift(this.currentSessionId);
       }
-      return Array.from(new Set(sessions));
+      const uniqueSessions = Array.from(new Set(sessions));
+      return { current: this.currentSessionId, sessions: uniqueSessions };
     } catch (error) {
       this.logger.warn(
         `Failed to enumerate telemetry sessions: ${(error as Error).message}`,
       );
-      return [this.currentSessionId];
+      return { current: this.currentSessionId, sessions: [this.currentSessionId] };
     }
   }
 

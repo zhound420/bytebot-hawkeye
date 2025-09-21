@@ -210,7 +210,10 @@ export class TasksController {
   }
 
   @Get('telemetry/sessions')
-  async telemetrySessions() {
+  async telemetrySessions(): Promise<{
+    current: string | null;
+    sessions: string[];
+  }> {
     const base = process.env.BYTEBOT_DESKTOP_BASE_URL;
     if (!base) {
       throw new HttpException(
@@ -227,7 +230,28 @@ export class TasksController {
           HttpStatus.BAD_GATEWAY,
         );
       }
-      return await res.json();
+      const payload = (await res.json()) as {
+        current?: unknown;
+        sessions?: unknown;
+      };
+      const sessions = Array.isArray(payload.sessions)
+        ? Array.from(
+            new Set(
+              payload.sessions.filter(
+                (session): session is string =>
+                  typeof session === 'string' && session.length > 0,
+              ),
+            ),
+          )
+        : [];
+      const current =
+        typeof payload.current === 'string' && payload.current.length > 0
+          ? payload.current
+          : null;
+      if (current && !sessions.includes(current)) {
+        sessions.unshift(current);
+      }
+      return { current, sessions };
     } catch (e: any) {
       throw new HttpException(
         `Error fetching sessions: ${e.message}`,
