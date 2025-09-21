@@ -12,18 +12,40 @@ export function TelemetryStatus({ className = "" }: Props) {
   const [data, setData] = useState<TelemetrySummary | null>(null);
   const [busy, setBusy] = useState(false);
   const [sessions, setSessions] = useState<string[]>([]);
-  const [selectedSession, setSelectedSession] = useState<string>("default");
+  const [currentSession, setCurrentSession] = useState<string | null>(null);
+  const [preferredSession, setPreferredSession] = useState<string>("");
+  const [selectedSession, setSelectedSession] = useState<string>("");
+
+  const effectiveSession = useMemo(() => {
+    if (currentSession && sessions.includes(currentSession)) {
+      return currentSession;
+    }
+    if (preferredSession && sessions.includes(preferredSession)) {
+      return preferredSession;
+    }
+    if (selectedSession && sessions.includes(selectedSession)) {
+      return selectedSession;
+    }
+    return sessions[0] ?? "";
+  }, [currentSession, preferredSession, selectedSession, sessions]);
+
+  useEffect(() => {
+    if (effectiveSession !== selectedSession) {
+      setSelectedSession(effectiveSession);
+    }
+  }, [effectiveSession, selectedSession]);
 
   const availableSessions = useMemo(() => {
     if (sessions.length > 0) return sessions;
-    return selectedSession ? [selectedSession] : [];
-  }, [sessions, selectedSession]);
+    return effectiveSession ? [effectiveSession] : [];
+  }, [sessions, effectiveSession]);
 
   const refresh = useCallback(async () => {
     setBusy(true);
     const params = new URLSearchParams();
-    if (selectedSession) {
-      params.set("session", selectedSession);
+    const session = effectiveSession;
+    if (session) {
+      params.set("session", session);
     }
     const query = params.toString();
     try {
@@ -43,13 +65,14 @@ export function TelemetryStatus({ className = "" }: Props) {
     } finally {
       setBusy(false);
     }
-  }, [selectedSession]);
+  }, [effectiveSession]);
 
   const reset = useCallback(async () => {
     setBusy(true);
     const params = new URLSearchParams();
-    if (selectedSession) {
-      params.set("session", selectedSession);
+    const session = effectiveSession;
+    if (session) {
+      params.set("session", session);
     }
     const query = params.toString();
     try {
@@ -63,7 +86,7 @@ export function TelemetryStatus({ className = "" }: Props) {
     } catch {
       setBusy(false);
     }
-  }, [refresh, selectedSession]);
+  }, [effectiveSession, refresh]);
 
   const refreshSessions = useCallback(async () => {
     try {
@@ -72,18 +95,26 @@ export function TelemetryStatus({ className = "" }: Props) {
       });
       if (!res.ok) return;
       const payload = (await res.json()) as TelemetrySessions;
-      const list = Array.isArray(payload?.sessions)
-        ? Array.from(new Set(payload.sessions))
+      const rawSessions = Array.isArray(payload?.sessions)
+        ? payload.sessions.filter(
+            (session): session is string =>
+              typeof session === "string" && session.length > 0,
+          )
         : [];
-      setSessions(list);
-      setSelectedSession((prev) => {
-        if (prev && list.includes(prev)) {
-          return prev;
-        }
-        if (list.length > 0) {
-          return list[0];
-        }
-        return prev;
+      const dedupedSessions = Array.from(new Set(rawSessions));
+      const reportedCurrent =
+        typeof payload?.current === "string" && payload.current.length > 0
+          ? payload.current
+          : null;
+      const combinedSessions =
+        reportedCurrent && !dedupedSessions.includes(reportedCurrent)
+          ? [reportedCurrent, ...dedupedSessions]
+          : dedupedSessions;
+      setSessions(combinedSessions);
+      setCurrentSession(reportedCurrent);
+      setPreferredSession((prev) => {
+        if (!prev) return prev;
+        return combinedSessions.includes(prev) ? prev : "";
       });
     } catch (error) {
       void error;
@@ -147,8 +178,12 @@ export function TelemetryStatus({ className = "" }: Props) {
             <span className="text-[10px] text-gray-500">Session</span>
             <select
               className="rounded border border-gray-200 bg-white px-1 py-0.5 text-[11px] text-gray-700"
-              value={selectedSession}
-              onChange={(event) => setSelectedSession(event.target.value)}
+              value={selectedSession || ""}
+              onChange={(event) => {
+                const value = event.target.value;
+                setPreferredSession(value);
+                setSelectedSession(value);
+              }}
             >
               {availableSessions.map((session) => (
                 <option key={session} value={session}>
@@ -188,8 +223,12 @@ export function TelemetryStatus({ className = "" }: Props) {
                   <span className="text-[10px] text-gray-500">Session</span>
                   <select
                     className="rounded border border-gray-200 bg-white px-1 py-0.5 text-[11px] text-gray-700"
-                    value={selectedSession}
-                    onChange={(event) => setSelectedSession(event.target.value)}
+                    value={selectedSession || ""}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      setPreferredSession(value);
+                      setSelectedSession(value);
+                    }}
                   >
                     {availableSessions.map((session) => (
                       <option key={session} value={session}>
