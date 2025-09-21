@@ -14,6 +14,7 @@ import {
   ComputerAction,
   MoveMouseAction,
   TraceMouseAction,
+  ClickContext,
   ClickMouseAction,
   PressMouseAction,
   DragMouseAction,
@@ -399,12 +400,14 @@ export class ComputerUseService {
     await this.delay(this.calibrationDelayMs);
     const actualPointer = await this.nutService.getCursorPosition();
 
-    const telemetryContext = {
+    const clickTaskId = context?.clickTaskId;
+
+    const telemetryContext: ClickContext = {
       region: context?.region,
       zoomLevel: context?.zoomLevel,
       targetDescription: context?.targetDescription ?? description,
       source: context?.source ?? 'manual',
-      clickTaskId: context?.clickTaskId,
+      clickTaskId,
     };
 
     const finalTarget = destination ?? targetCoordinates;
@@ -422,7 +425,7 @@ export class ComputerUseService {
         target: targetCoordinates ?? undefined,
         adjusted: destination ?? undefined,
         actual: actualPointer,
-        clickTaskId: context?.clickTaskId,
+        clickTaskId,
       });
     }
 
