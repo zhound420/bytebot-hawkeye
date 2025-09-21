@@ -221,6 +221,8 @@ export default function TaskPage() {
               onRefresh={refreshTelemetry}
               onReset={resetTelemetry}
               className="mb-3"
+              refreshTitle="Refresh"
+              resetTitle="Reset accuracy stats"
             />
             {/* Messages scrollable area */}
             <div
