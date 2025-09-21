@@ -25,29 +25,29 @@ interface StatusIconConfig {
 const STATUS_CONFIGS: Record<TaskStatus, StatusIconConfig> = {
   [TaskStatus.COMPLETED]: {
     icon: Tick02Icon,
-    color: "text-bytebot-green-8",
+    color: "text-emerald-500 dark:text-emerald-400",
   },
   [TaskStatus.RUNNING]: {
     useLoader: true,
   },
   [TaskStatus.NEEDS_HELP]: {
     icon: AlertCircleIcon,
-    color: "text-[#FF9D00]",
+    color: "text-amber-500 dark:text-amber-400",
   },
   [TaskStatus.PENDING]: {
     useLoader: true,
   },
   [TaskStatus.FAILED]: {
     icon: AlertCircleIcon,
-    color: "text-bytebot-red-light-9",
+    color: "text-destructive",
   },
   [TaskStatus.NEEDS_REVIEW]: {
     icon: AlertCircleIcon,
-    color: "text-[#FF9D00]",
+    color: "text-amber-500 dark:text-amber-400",
   },
   [TaskStatus.CANCELLED]: {
     icon: CancelCircleIcon,
-    color: "text-bytebot-bronze-light-10",
+    color: "text-muted-foreground",
   },
 };
 
@@ -111,11 +111,11 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
 
   return (
     <Link href={`/tasks/${task.id}`} className="block">
-      <div className="bg-bytebot-bronze-light-2 border-bytebot-bronze-light-7 hover:bg-bytebot-bronze-light-3 flex min-h-24 items-start rounded-lg border p-5 transition-colors">
+      <div className="flex min-h-24 items-start rounded-lg border border-border bg-card p-5 transition-colors hover:bg-muted/70">
         <div className="mb-0.5 flex-1 space-y-2">
           <div className="flex items-center justify-start space-x-2">
             <StatusIcon status={task.status} />
-            <div className="text-bytebot-bronze-dark-7 text-sm font-medium">
+            <div className="text-sm font-medium text-foreground">
               {capitalizeFirstChar(task.description)}
             </div>
           </div>
@@ -123,9 +123,9 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
             {metadataSegments.map((segment, index) => (
               <React.Fragment key={`${segment}-${index}`}>
                 {index > 0 && (
-                  <span className="text-bytebot-bronze-light-9">•</span>
+                  <span className="text-muted-foreground">•</span>
                 )}
-                <span className="text-bytebot-bronze-light-10">{segment}</span>
+                <span className="text-muted-foreground">{segment}</span>
               </React.Fragment>
             ))}
           </div>
