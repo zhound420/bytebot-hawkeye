@@ -22,21 +22,13 @@ import {
 
 @Injectable()
 export class AnthropicService implements BytebotAgentService {
-  private readonly anthropic: Anthropic;
+  private anthropic: Anthropic | null = null;
+  private currentApiKey: string | null = null;
+  private hasLoggedMissingKey = false;
   private readonly logger = new Logger(AnthropicService.name);
 
   constructor(private readonly configService: ConfigService) {
-    const apiKey = this.configService.get<string>('ANTHROPIC_API_KEY');
-
-    if (!apiKey) {
-      this.logger.warn(
-        'ANTHROPIC_API_KEY is not set. AnthropicService will not work properly.',
-      );
-    }
-
-    this.anthropic = new Anthropic({
-      apiKey: apiKey || 'dummy-key-for-initialization',
-    });
+    this.initializeClient();
   }
 
   async generateMessage(
@@ -47,6 +39,7 @@ export class AnthropicService implements BytebotAgentService {
     signal?: AbortSignal,
   ): Promise<BytebotAgentResponse> {
     try {
+      const anthropicClient = this.getAnthropicClient();
       const maxTokens = 8192;
 
       // Convert our message content blocks to Anthropic's expected format
@@ -58,7 +51,7 @@ export class AnthropicService implements BytebotAgentService {
       };
 
       // Make the API call
-      const response = await this.anthropic.messages.create(
+      const response = await anthropicClient.messages.create(
         {
           model,
           max_tokens: maxTokens * 2,
@@ -98,6 +91,58 @@ export class AnthropicService implements BytebotAgentService {
         error.stack,
       );
       throw error;
+    }
+  }
+
+  private initializeClient() {
+    const apiKey = this.configService.get<string>('ANTHROPIC_API_KEY');
+
+    if (!apiKey) {
+      this.logMissingKey();
+      this.anthropic = new Anthropic({
+        apiKey: 'dummy-key-for-initialization',
+      });
+      this.currentApiKey = null;
+      return;
+    }
+
+    this.anthropic = new Anthropic({
+      apiKey,
+    });
+    this.currentApiKey = apiKey;
+    this.hasLoggedMissingKey = false;
+  }
+
+  private getAnthropicClient(): Anthropic {
+    const apiKey = this.configService.get<string>('ANTHROPIC_API_KEY');
+
+    if (apiKey && apiKey !== this.currentApiKey) {
+      this.anthropic = new Anthropic({ apiKey });
+      this.currentApiKey = apiKey;
+      this.hasLoggedMissingKey = false;
+    }
+
+    if (!apiKey) {
+      this.logMissingKey();
+
+      if (!this.anthropic) {
+        this.anthropic = new Anthropic({
+          apiKey: 'dummy-key-for-initialization',
+        });
+      }
+
+      this.currentApiKey = null;
+    }
+
+    return this.anthropic!;
+  }
+
+  private logMissingKey() {
+    if (!this.hasLoggedMissingKey) {
+      this.logger.warn(
+        'ANTHROPIC_API_KEY is not set. AnthropicService will not work properly.',
+      );
+      this.hasLoggedMissingKey = true;
     }
   }
 

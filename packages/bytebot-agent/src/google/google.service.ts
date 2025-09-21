@@ -28,21 +28,13 @@ import { DEFAULT_MODEL } from './google.constants';
 
 @Injectable()
 export class GoogleService implements BytebotAgentService {
-  private readonly google: GoogleGenAI;
+  private google: GoogleGenAI | null = null;
+  private currentApiKey: string | null = null;
+  private hasLoggedMissingKey = false;
   private readonly logger = new Logger(GoogleService.name);
 
   constructor(private readonly configService: ConfigService) {
-    const apiKey = this.configService.get<string>('GEMINI_API_KEY');
-
-    if (!apiKey) {
-      this.logger.warn(
-        'GEMINI_API_KEY is not set. GoogleService will not work properly.',
-      );
-    }
-
-    this.google = new GoogleGenAI({
-      apiKey: apiKey || 'dummy-key-for-initialization',
-    });
+    this.initializeClient();
   }
 
   async generateMessage(
@@ -53,13 +45,14 @@ export class GoogleService implements BytebotAgentService {
     signal?: AbortSignal,
   ): Promise<BytebotAgentResponse> {
     try {
+      const googleClient = this.getGoogleClient();
       const maxTokens = 8192;
 
       // Convert our message content blocks to Anthropic's expected format
       const googleMessages = this.formatMessagesForGoogle(messages);
 
       const response: GenerateContentResponse =
-        await this.google.models.generateContent({
+        await googleClient.models.generateContent({
           model,
           contents: googleMessages,
           config: {
@@ -112,6 +105,56 @@ export class GoogleService implements BytebotAgentService {
         error.stack,
       );
       throw error;
+    }
+  }
+
+  private initializeClient() {
+    const apiKey = this.configService.get<string>('GEMINI_API_KEY');
+
+    if (!apiKey) {
+      this.logMissingKey();
+      this.google = new GoogleGenAI({
+        apiKey: 'dummy-key-for-initialization',
+      });
+      this.currentApiKey = null;
+      return;
+    }
+
+    this.google = new GoogleGenAI({ apiKey });
+    this.currentApiKey = apiKey;
+    this.hasLoggedMissingKey = false;
+  }
+
+  private getGoogleClient(): GoogleGenAI {
+    const apiKey = this.configService.get<string>('GEMINI_API_KEY');
+
+    if (apiKey && apiKey !== this.currentApiKey) {
+      this.google = new GoogleGenAI({ apiKey });
+      this.currentApiKey = apiKey;
+      this.hasLoggedMissingKey = false;
+    }
+
+    if (!apiKey) {
+      this.logMissingKey();
+
+      if (!this.google) {
+        this.google = new GoogleGenAI({
+          apiKey: 'dummy-key-for-initialization',
+        });
+      }
+
+      this.currentApiKey = null;
+    }
+
+    return this.google!;
+  }
+
+  private logMissingKey() {
+    if (!this.hasLoggedMissingKey) {
+      this.logger.warn(
+        'GEMINI_API_KEY is not set. GoogleService will not work properly.',
+      );
+      this.hasLoggedMissingKey = true;
     }
   }
 
