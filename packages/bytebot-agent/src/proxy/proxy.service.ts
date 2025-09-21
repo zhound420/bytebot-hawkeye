@@ -306,12 +306,23 @@ export class ProxyService implements BytebotAgentService {
       }
 
       const assistant = lastAssistantWithToolCalls as any;
-      const unresolvedCalls = (assistant.tool_calls as any[]).filter(
+      const originalToolCalls = Array.isArray(assistant.tool_calls)
+        ? (assistant.tool_calls as any[])
+        : [];
+      const unresolvedCalls = originalToolCalls.filter(
         (tc: any) => tc && typeof tc.id === 'string' && pendingToolCallIds.has(tc.id),
       );
 
       if (unresolvedCalls.length > 0) {
-        delete assistant.tool_calls;
+        const resolvedCalls = originalToolCalls.filter(
+          (tc: any) => tc && typeof tc.id === 'string' && !pendingToolCallIds.has(tc.id),
+        );
+
+        if (resolvedCalls.length > 0) {
+          assistant.tool_calls = resolvedCalls;
+        } else {
+          delete assistant.tool_calls;
+        }
 
         const fallbackText = unresolvedCalls
           .map((tc: any) => {
