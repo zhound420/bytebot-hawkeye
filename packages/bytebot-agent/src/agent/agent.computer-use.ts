@@ -796,7 +796,41 @@ export function createSmartClickAI(): SmartClickAI | null {
   };
 }
 
-function parseCoordinateResponse(
+function extractAxisValue(response: string, axis: 'x' | 'y'): number | null {
+  const normalizedAxis = axis.toLowerCase();
+  const patterns = [
+    new RegExp(
+      `(?:global[_\\s]*${normalizedAxis}|${normalizedAxis}[_\\s]*global)\\s*[=:]\\s*(-?\\d+(?:\\.\\d+)?)`,
+      'ig',
+    ),
+    new RegExp(
+      `${normalizedAxis}\\s*[=:]\\s*global\\s*(-?\\d+(?:\\.\\d+)?)`,
+      'ig',
+    ),
+    new RegExp(
+      `${normalizedAxis}\\s*[=:]\\s*(-?\\d+(?:\\.\\d+)?)(?:\\s*\\(\\s*(-?\\d+(?:\\.\\d+)?)\\s*\\))?`,
+      'ig',
+    ),
+  ];
+
+  for (const pattern of patterns) {
+    const matches = Array.from(response.matchAll(pattern));
+    if (matches.length === 0) {
+      continue;
+    }
+
+    const lastMatch = matches[matches.length - 1];
+    const candidate = lastMatch[2] ?? lastMatch[1];
+    const value = Number.parseFloat(candidate);
+    if (!Number.isNaN(value)) {
+      return value;
+    }
+  }
+
+  return null;
+}
+
+export function parseCoordinateResponse(
   response: string,
 ): { x: number; y: number } | null {
   const trimmed = response.trim();
@@ -809,19 +843,60 @@ function parseCoordinateResponse(
     // Ignore JSON parse errors and fall through to regex parsing.
   }
 
-  const match = trimmed.match(/(-?\d+(?:\.\d+)?)[^\d-]+(-?\d+(?:\.\d+)?)/);
-  if (!match) {
+  let xValue = extractAxisValue(trimmed, 'x');
+  let yValue = extractAxisValue(trimmed, 'y');
+
+  if (xValue != null && yValue != null) {
+    return { x: Math.round(xValue), y: Math.round(yValue) };
+  }
+
+  const globalPairMatch = trimmed.match(
+    /global[^\d-]*(-?\d+(?:\.\d+)?)[^\d-]+(-?\d+(?:\.\d+)?)/i,
+  );
+  if (globalPairMatch) {
+    const globalX = Number.parseFloat(globalPairMatch[1]);
+    const globalY = Number.parseFloat(globalPairMatch[2]);
+    if (!Number.isNaN(globalX) && !Number.isNaN(globalY)) {
+      if (xValue == null) {
+        xValue = globalX;
+      }
+      if (yValue == null) {
+        yValue = globalY;
+      }
+      if (xValue != null && yValue != null) {
+        return { x: Math.round(xValue), y: Math.round(yValue) };
+      }
+    }
+  }
+
+  const numericMatches = trimmed.match(/-?\d+(?:\.\d+)?/g);
+  if (!numericMatches || numericMatches.length < 2) {
     return null;
   }
 
-  const x = Number.parseFloat(match[1]);
-  const y = Number.parseFloat(match[2]);
+  const numericValues = numericMatches
+    .map((value) => Number.parseFloat(value))
+    .filter((value) => !Number.isNaN(value));
 
-  if (Number.isNaN(x) || Number.isNaN(y)) {
+  if (numericValues.length < 2) {
     return null;
   }
 
-  return { x: Math.round(x), y: Math.round(y) };
+  if (xValue == null || yValue == null) {
+    const [fallbackX, fallbackY] = numericValues.slice(-2);
+    if (xValue == null) {
+      xValue = fallbackX;
+    }
+    if (yValue == null) {
+      yValue = fallbackY;
+    }
+  }
+
+  if (xValue == null || yValue == null) {
+    return null;
+  }
+
+  return { x: Math.round(xValue), y: Math.round(yValue) };
 }
 
 async function pressMouse(input: {
