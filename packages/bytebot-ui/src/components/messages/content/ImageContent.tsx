@@ -13,17 +13,17 @@ export function ImageContent({ block }: ImageContentProps) {
   const width = 250;
   const height = 250;
   return (
-    <div className="max-w-4/5 mb-3">
-      <div className="flex items-center gap-2 mb-2">
+    <div className="mb-3 max-w-4/5">
+      <div className="mb-2 flex items-center gap-2 text-muted-foreground">
         <HugeiconsIcon
           icon={Camera01Icon}
-          className="text-bytebot-bronze-dark-9 h-4 w-4"
+          className="h-4 w-4"
         />
-        <p className="text-bytebot-bronze-light-11 text-xs">
+        <p className="text-xs">
           Screenshot taken
         </p>
       </div>
-      <div className="border border-bytebot-bronze-light-7 rounded-md overflow-hidden inline-block">
+      <div className="inline-block overflow-hidden rounded-md border border-border">
         <Image
           src={`data:image/png;base64,${block.source.data}`}
           alt="Screenshot"

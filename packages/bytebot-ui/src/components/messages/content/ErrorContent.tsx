@@ -9,13 +9,13 @@ interface ErrorContentProps {
 
 export function ErrorContent({ block }: ErrorContentProps) {
   return (
-    <div className="mb-3 rounded-md border border-red-200 bg-red-100 p-2">
+    <div className="mb-3 rounded-md border border-destructive/50 bg-destructive/10 p-2 text-destructive">
       <div className="flex items-center justify-start gap-2">
         <HugeiconsIcon
           icon={AlertCircleIcon}
-          className="h-5 w-5 text-red-800"
+          className="h-5 w-5"
         />
-        <div className="prose prose-sm max-w-none text-sm text-red-800">
+        <div className="prose prose-sm max-w-none text-sm text-destructive">
           {isTextContentBlock(block.content?.[0])
             ? block.content?.[0].text
             : "Error running tool"}

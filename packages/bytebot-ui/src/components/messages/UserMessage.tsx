@@ -16,8 +16,8 @@ interface UserMessageProps {
 export function UserMessage({ group, messageIdToIndex }: UserMessageProps) {
   if (messageIdToIndex[group.messages[0].id] === 0) {
     return (
-      <div className="sticky top-0 z-10 bg-bytebot-bronze-light-4">
-        <div className="border-bytebot-bronze-light-7 flex items-start justify-start gap-2 border px-4 py-3 bg-bytebot-bronze-light-2 rounded-t-lg">
+      <div className="sticky top-0 z-10 bg-background">
+        <div className="flex items-start justify-start gap-2 rounded-t-lg border border-border bg-card px-4 py-3 text-card-foreground">
           <MessageAvatar role={group.role} />
 
           <div>
@@ -57,11 +57,11 @@ export function UserMessage({ group, messageIdToIndex }: UserMessageProps) {
                   }
                   return null;
                 })}
-                <div className="bg-bytebot-bronze-light-4 space-y-2 rounded-md px-2 py-1">
+                <div className="space-y-2 rounded-md bg-muted/60 px-2 py-1">
                   {message.content.map((block, index) => (
                     <div
                       key={index}
-                      className="text-bytebot-bronze-light-12 text-sm"
+                      className="text-sm text-card-foreground"
                     >
                       {isTextContentBlock(block) && (
                         <ReactMarkdown>{block.text}</ReactMarkdown>
@@ -78,7 +78,7 @@ export function UserMessage({ group, messageIdToIndex }: UserMessageProps) {
   }
 
   return (
-    <div className="bg-bytebot-bronze-light-3 flex items-start justify-end gap-2 px-4 py-3 border-x border-bytebot-bronze-light-7">
+    <div className="flex items-start justify-end gap-2 border-x border-border bg-card px-4 py-3 text-card-foreground">
       <div>
         {group.messages.map((message) => (
           <div
@@ -116,9 +116,9 @@ export function UserMessage({ group, messageIdToIndex }: UserMessageProps) {
               }
               return null;
             })}
-            <div className="space-y-2 rounded-md text-fuchsia-600">
+            <div className="space-y-2 rounded-md bg-muted/60 p-2 text-card-foreground">
               {message.content.map((block, index) => (
-                <div key={index} className="prose prose-sm max-w-none text-sm">
+                <div key={index} className="prose prose-sm max-w-none text-sm text-card-foreground">
                   {isTextContentBlock(block) && (
                     <ReactMarkdown>{block.text}</ReactMarkdown>
                   )}

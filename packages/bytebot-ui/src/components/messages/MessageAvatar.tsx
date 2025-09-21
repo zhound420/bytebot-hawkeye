@@ -9,7 +9,8 @@ interface MessageAvatarProps {
 }
 
 export function MessageAvatar({ role }: MessageAvatarProps) {
-  const baseClasses = "flex flex-shrink-0 items-center justify-center rounded-md border border-bytebot-bronze-light-7 bg-bytebot-bronze-light-1 h-[28px] w-[28px]";
+  const baseClasses =
+    "flex h-[28px] w-[28px] flex-shrink-0 items-center justify-center rounded-md border border-border bg-muted text-muted-foreground";
 
   if (role === Role.ASSISTANT) {
     return (
@@ -29,7 +30,7 @@ export function MessageAvatar({ role }: MessageAvatarProps) {
     <div className={baseClasses}>
       <HugeiconsIcon
         icon={User03Icon}
-        className="text-bytebot-bronze-dark-9 w-4 h-4"
+        className="h-4 w-4"
       />
     </div>
   );
