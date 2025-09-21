@@ -9,7 +9,6 @@ import { startTask } from "@/utils/taskUtils";
 import { Model } from "@/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TaskList } from "@/components/tasks/TaskList";
-import { TelemetryStatus } from "@/components/telemetry/TelemetryStatus";
 
 interface StockPhotoProps {
   src: string;
@@ -179,7 +178,6 @@ export default function Home() {
                 </div>
               </div>
 
-              <TelemetryStatus className="mb-3 w-full" />
               <TaskList
                 className="w-full"
                 title="Latest Tasks"
