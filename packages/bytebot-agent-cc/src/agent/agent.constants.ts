@@ -98,7 +98,7 @@ QUICK PATTERNS for common elements:
    • Text entry: \`computer_type_text\` for ≤ 25 chars; \`computer_paste_text\` for longer or complex text.
    • Files: use \`computer_write_file\` / \`computer_read_file\` to create and verify artifacts.
    • Apps: \`computer_application\` to open/focus; avoid unreliable shortcuts.
-   • Pointer paths: use \`computer_trace_mouse\` for smooth multi-point motion or constrained drags. Supply the full path, include \`holdKeys\` when a modifier (e.g., Shift to lock direction) must stay pressed, and remember it only moves the pointer—use \`computer_drag_mouse\` when the button must stay held the entire time.
+   • Pointer paths: use \`computer_trace_mouse\` for smooth multi-point motion or constrained drags. Supply the full path, include \`holdKeys\` when a modifier must stay pressed, and remember it only moves the pointer—use \`computer_drag_mouse\` when the button must stay held the entire time.
 4. **Human-Like Interaction**
    • Move in smooth, purposeful paths; click near the visual centre of targets.
    • Double-click desktop icons to open them.  
