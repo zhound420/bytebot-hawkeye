@@ -161,14 +161,14 @@ export function ChatInput({
       />
       
       {errorMessage && (
-        <div className="mb-2 rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">
+        <div className="mb-2 rounded-md bg-destructive/15 px-3 py-2 text-sm text-destructive dark:bg-destructive/20">
           {errorMessage}
         </div>
       )}
-      
+
       {selectedFiles.length > 0 && (
         <div className="mb-2">
-          <div className="mb-1 flex items-center justify-between text-xs text-gray-500">
+          <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground dark:text-muted-foreground">
             <span>{selectedFiles.length} / {MAX_FILES} files</span>
             <span>Max 30MB per file</span>
           </div>
@@ -176,17 +176,17 @@ export function ChatInput({
             {selectedFiles.map((file, index) => (
               <div
                 key={index}
-                className="flex items-center gap-1 rounded-md bg-gray-100 px-2 py-1 text-sm"
+                className="flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-sm dark:bg-muted/60"
               >
                 <span className="max-w-[200px] truncate">{file.name}</span>
                 <button
                   type="button"
                   onClick={() => removeFile(index)}
-                  className="ml-1 rounded-sm hover:bg-gray-200"
+                  className="ml-1 rounded-sm hover:bg-muted/80 focus-visible:bg-muted/80 dark:hover:bg-muted/60 dark:focus-visible:bg-muted/60"
                 >
                   <HugeiconsIcon
                     icon={Cancel01Icon}
-                    className="h-3 w-3 text-gray-600"
+                    className="h-3 w-3 text-muted-foreground dark:text-muted-foreground"
                   />
                 </button>
               </div>
@@ -221,13 +221,13 @@ export function ChatInput({
             type="button"
             variant="ghost"
             size="icon"
-            className="h-6 w-6 cursor-pointer rounded-sm hover:bg-gray-100"
+            className="h-6 w-6 cursor-pointer rounded-sm hover:bg-muted/80 focus-visible:bg-muted/80 dark:hover:bg-muted/60 dark:focus-visible:bg-muted/60"
             onClick={triggerFileInput}
             disabled={isLoading}
           >
             <HugeiconsIcon
               icon={Attachment01Icon}
-              className="h-4 w-4 text-gray-600"
+              className="h-4 w-4 text-muted-foreground dark:text-muted-foreground"
             />
           </Button>
           
