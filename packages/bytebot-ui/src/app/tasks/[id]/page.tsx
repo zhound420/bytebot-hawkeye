@@ -136,9 +136,9 @@ export default function TaskPage() {
       <Header />
 
       <main className="m-2 flex-1 overflow-hidden px-2 py-4">
-        <div className="grid h-full grid-cols-7 gap-4">
+        <div className="grid h-full grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
           {/* Main container */}
-          <div className="col-span-4 flex flex-1 flex-col gap-3">
+          <div className="flex flex-1 flex-col gap-3">
             <div className="flex flex-col gap-1 rounded-lg border border-border bg-card px-4 py-3 dark:border-border/60 dark:bg-muted">
               <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Active Model
@@ -153,6 +153,7 @@ export default function TaskPage() {
               )}
             </div>
             <DesktopContainer
+              className="max-h-[calc(100vh-12rem)]"
               screenshot={taskInactive ? currentScreenshot : null}
               viewOnly={vncViewOnly()}
               status={
@@ -218,7 +219,7 @@ export default function TaskPage() {
           </div>
 
           {/* Chat Area */}
-          <div className="col-span-3 flex h-full min-h-0 flex-col">
+          <div className="flex h-full min-h-0 flex-col">
             {/* Messages scrollable area */}
             <div
               ref={chatContainerRef}
