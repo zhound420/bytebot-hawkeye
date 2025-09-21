@@ -115,7 +115,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
         <div className="mb-0.5 flex-1 space-y-2">
           <div className="flex items-center justify-start space-x-2">
             <StatusIcon status={task.status} />
-            <div className="text-byhtebot-bronze-dark-7 text-sm font-medium">
+            <div className="text-bytebot-bronze-dark-7 text-sm font-medium">
               {capitalizeFirstChar(task.description)}
             </div>
           </div>
