@@ -5,7 +5,7 @@ import {
   ScreenshotResponse,
   SmartClickAI,
 } from '../agent/smart-click.types';
-import { Calibrator } from './calibrator';
+import { Calibrator, RecordCorrectionOptions } from './calibrator';
 import { CoordinateParser } from './coordinate-parser';
 import { CoordinateTeacher } from './coordinate-teacher';
 import {
@@ -75,8 +75,12 @@ export class UniversalCoordinateSystem {
   recordCorrection(
     actual: Coordinates,
     predicted: Coordinates,
-    source?: string,
+    options?: RecordCorrectionOptions,
   ) {
-    return this.calibrator.recordCorrection(actual, predicted, source);
+    return this.calibrator.recordCorrection(
+      actual,
+      predicted,
+      options ?? 'correction',
+    );
   }
 }
