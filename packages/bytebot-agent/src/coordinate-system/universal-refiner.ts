@@ -85,7 +85,6 @@ export class UniversalCoordinateRefiner {
     const fullPrompt = this.teacher.buildFullFramePrompt({
       targetDescription,
       offsetHint: this.calibrator.getCurrentOffset(),
-      samplePoint: { x: 100, y: 100 },
     });
 
     const fullRaw = await this.ai.askAboutScreenshot(

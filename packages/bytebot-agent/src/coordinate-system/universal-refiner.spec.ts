@@ -80,6 +80,13 @@ describe('UniversalCoordinateRefiner heuristics', () => {
 
     const result = await refiner.locate('Test button');
 
+    const prompt = result.steps[0].prompt;
+    expect(prompt).toContain('Corner callouts display');
+    expect(prompt).toContain('Lime rulers along the top and left edges');
+    expect(prompt).toContain('Grid lines span the frame every interval');
+    expect(prompt).not.toContain('example');
+    expect(prompt).not.toContain('Reminder banner');
+
     expect(ai.askAboutScreenshot).toHaveBeenCalledTimes(2);
     expect(capture.zoom).toHaveBeenCalledTimes(1);
     expect(result.steps.some((step) => step.id === 'zoom-refine')).toBe(true);

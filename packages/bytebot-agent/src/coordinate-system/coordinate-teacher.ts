@@ -3,7 +3,6 @@ import { Coordinates } from '../agent/smart-click.types';
 export interface FullFramePromptOptions {
   targetDescription: string;
   offsetHint?: Coordinates | null;
-  samplePoint?: Coordinates | null;
 }
 
 export interface ZoomPromptOptions {
@@ -17,11 +16,9 @@ export interface ZoomPromptOptions {
 export class CoordinateTeacher {
   private readonly overlayLegend = [
     '🟩 Overlay legend:',
-    '  • Bright corner labels show (0,0), (width,0), (0,height), (width,height).',
-    '  • Lime rulers hug the top/left edges every 100 px with numeric ticks.',
-    '  • Crosshair lines run every 100 px across the frame to form a lattice.',
-    '  • A cyan "example" dot is pinned at (100,100) with its coordinates annotated.',
-    '  • Reminder banner: global = overlay origin + measured grid delta.',
+    '  • Corner callouts display (0,0), (width,0), (0,height), (width,height).',
+    '  • Lime rulers along the top and left edges tick every grid interval.',
+    '  • Grid lines span the frame every interval to form a square lattice.',
   ].join('\n');
 
   getOverlayLegend(): string {
@@ -42,12 +39,6 @@ export class CoordinateTeacher {
     if (options.offsetHint) {
       parts.push(
         `Calibration: recent offset applied (${options.offsetHint.x}, ${options.offsetHint.y}). Add this drift correction to your calculation if the overlay looks shifted.`,
-      );
-    }
-
-    if (options.samplePoint) {
-      parts.push(
-        `Example: the overlay marks a reference point at (${options.samplePoint.x}, ${options.samplePoint.y}). Use it to verify you understand the scale.`,
       );
     }
 
