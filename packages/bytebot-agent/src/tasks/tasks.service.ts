@@ -22,6 +22,7 @@ import { AddTaskMessageDto } from './dto/add-task-message.dto';
 import { TasksGateway } from './tasks.gateway';
 import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { FileStorageService } from './file-storage.service';
 
 const buildRunnableTaskFilter = (
   now: Date = new Date(),
@@ -53,6 +54,7 @@ export class TasksService {
     private readonly tasksGateway: TasksGateway,
     private readonly configService: ConfigService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly fileStorageService: FileStorageService,
   ) {
     this.logger.log('TasksService initialized');
   }
@@ -89,20 +91,19 @@ export class TasksService {
         );
         filesDescription += `\n`;
 
-        const filePromises = createTaskDto.files.map((file) => {
-          // Extract base64 data without the data URL prefix
-          const base64Data = file.base64.includes('base64,')
-            ? file.base64.split('base64,')[1]
-            : file.base64;
+        const filePromises = createTaskDto.files.map(async (file) => {
+          const { storagePath, storageProvider } =
+            await this.fileStorageService.saveTaskFile(task.id, file);
 
-          filesDescription += `\nFile ${file.name} written to desktop.`;
+          filesDescription += `\nFile ${file.name} staged for desktop upload.`;
 
           return prisma.file.create({
             data: {
               name: file.name,
               type: file.type || 'application/octet-stream',
               size: file.size,
-              data: base64Data,
+              storagePath,
+              storageProvider,
               taskId: task.id,
             },
           });

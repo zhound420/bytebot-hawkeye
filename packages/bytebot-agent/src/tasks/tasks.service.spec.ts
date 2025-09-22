@@ -66,11 +66,19 @@ describe('TasksService', () => {
     const configService = {};
     const eventEmitter = { emit: jest.fn() };
 
+    const fileStorageService = {
+      saveTaskFile: jest.fn().mockResolvedValue({
+        storagePath: '/tmp/file.txt',
+        storageProvider: 'test',
+      }),
+    };
+
     const service = new TasksService(
       prisma as any,
       tasksGateway as any,
       configService as any,
       eventEmitter as any,
+      fileStorageService as any,
     );
 
     return { service, prisma };
