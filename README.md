@@ -92,6 +92,8 @@ Bytebot isn't limited to web interfaces. It can:
 
 ## Quick Start
 
+> **Model requirements:** Bytebot needs multimodal models that can both understand screenshots and call tools. When adding a new provider, pick a model whose LiteLLM config sets `supports_vision: true` and `supports_function_calling: true` so the agent can see the desktop and invoke actions. You can verify capability metadata with the [`/tasks/models` endpoint](https://docs.bytebot.ai/reference/tasks-controller#gettasksmodels) or your LiteLLM proxy dashboard.
+
 ### Deploy in 2 Minutes
 
 **Option 1: Railway (Easiest)**
