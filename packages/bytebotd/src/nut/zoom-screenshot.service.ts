@@ -251,6 +251,23 @@ export class ZoomScreenshotService {
     // Add zoom level indicator
     svgContent += `<text x="${width/2}" y="${fontSize + 2}" text-anchor="middle" fill="${textColor}" fill-opacity="1.0" font-size="${fontSize + 2}px">ZOOM: ${mapping.zoomLevel}x | REGION: ${mapping.region.width}×${mapping.region.height}</text>`;
 
+    const zoomBannerLabel = `${mapping.zoomLevel.toFixed(0)}X ZOOM`;
+    const regionStartLabel = `Region starts at (${Math.round(mapping.region.x)},${Math.round(mapping.region.y)})`;
+    const sampleLocalPoint = { x: 120, y: 80 };
+    const sampleGlobalPoint = mapping.localToGlobal(
+      sampleLocalPoint.x,
+      sampleLocalPoint.y,
+    );
+    const transformExampleLabel = `Local(${sampleLocalPoint.x},${sampleLocalPoint.y}) + Offset = Global(${Math.round(sampleGlobalPoint.x)},${Math.round(sampleGlobalPoint.y)})`;
+
+    const bannerY = fontSize * 3;
+    const regionInfoY = bannerY + fontSize * 1.5;
+    const transformInfoY = regionInfoY + fontSize * 1.5;
+
+    svgContent += `<text x="${width / 2}" y="${bannerY}" text-anchor="middle" fill="${textColor}" fill-opacity="1.0" font-size="${fontSize + 8}px">${zoomBannerLabel}</text>`;
+    svgContent += `<text x="${width / 2}" y="${regionInfoY}" text-anchor="middle" fill="${textColor}" fill-opacity="${textOpacity}" font-size="${fontSize + 2}px">${regionStartLabel}</text>`;
+    svgContent += `<text x="${width / 2}" y="${transformInfoY}" text-anchor="middle" fill="${textColor}" fill-opacity="${textOpacity}" font-size="${fontSize + 2}px">${transformExampleLabel}</text>`;
+
     svgContent += '</g>';
     svgContent += '</svg>';
 
