@@ -482,15 +482,16 @@ export function TelemetryStatus({ className = "" }: Props) {
             <div className="mt-3">
               <div className="text-[11px] font-semibold text-card-foreground">Recent events</div>
               <div className="mt-1 overflow-hidden rounded-md border border-border bg-card/80 shadow-inner dark:bg-muted/40">
-                <div className="grid grid-cols-[150px_120px_1fr] items-center gap-2 border-b border-border/70 bg-card/70 px-3 py-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground dark:bg-muted/50">
-                  <span>Timestamp</span>
-                  <span>Type</span>
-                  <span>Metadata</span>
+                <div className="flex items-center justify-between gap-2 border-b border-border/70 bg-card/70 px-3 py-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground dark:bg-muted/50">
+                  <span>Recent actions</span>
+                  <span className="font-mono text-[10px] font-normal text-muted-foreground">
+                    {normalizedEvents.length}
+                  </span>
                 </div>
                 <ScrollArea className="max-h-56 pr-1">
-                  <div className="divide-y divide-border/70 px-3">
+                  <div className="space-y-2 px-3 py-2">
                     {normalizedEvents.length === 0 ? (
-                      <div className="py-4 text-[11px] text-muted-foreground">
+                      <div className="rounded-md border border-dashed border-border/70 bg-card/60 px-3 py-3 text-center text-[11px] text-muted-foreground">
                         No events recorded yet for this session.
                       </div>
                     ) : (
@@ -511,19 +512,21 @@ export function TelemetryStatus({ className = "" }: Props) {
                         return (
                           <div
                             key={`${event.type}-${event.timestamp ?? idx}`}
-                            className="grid grid-cols-[150px_120px_1fr] items-start gap-2 py-2 text-[11px] text-card-foreground transition-colors hover:bg-card/60 dark:hover:bg-muted/60"
+                            className="rounded-lg border border-border/60 bg-card/70 px-3 py-2 text-[11px] text-card-foreground shadow-sm transition-colors hover:border-border hover:bg-card dark:bg-muted/40 dark:hover:bg-muted/60"
                           >
-                            <div className="font-mono text-[10px] text-muted-foreground">
-                              {formattedTimestamp}
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <span className="rounded-md bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground dark:bg-black/30">
+                                {event.type}
+                              </span>
+                              <span className="font-mono text-[10px] text-muted-foreground">
+                                {formattedTimestamp}
+                              </span>
                             </div>
-                            <div className="font-medium text-card-foreground">
-                              {event.type}
-                            </div>
-                            <div className="min-w-0">
+                            <div className="mt-2 min-w-0">
                               {metadataDisplay === "—" ? (
-                                <span className="text-muted-foreground">—</span>
+                                <span className="text-[10px] italic text-muted-foreground/80">No metadata</span>
                               ) : (
-                                <pre className="whitespace-pre-wrap break-words rounded bg-muted/30 px-2 py-1 font-mono text-[10px] leading-snug text-muted-foreground dark:bg-black/20">
+                                <pre className="whitespace-pre-wrap break-words rounded bg-muted/40 px-2 py-1 font-mono text-[10px] leading-snug text-muted-foreground dark:bg-black/30">
                                   {metadataDisplay}
                                 </pre>
                               )}
