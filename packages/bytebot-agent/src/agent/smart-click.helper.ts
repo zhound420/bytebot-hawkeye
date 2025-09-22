@@ -164,8 +164,10 @@ export class SmartClickHelper {
         showCursor: true,
       });
 
-      this.saveImage(taskDir, '01-full-screen.png', fullScreen.image);
-      this.saveImage(currentDir, '01-full-screen.png', fullScreen.image);
+      await Promise.all([
+        this.saveImage(taskDir, '01-full-screen.png', fullScreen.image),
+        this.saveImage(currentDir, '01-full-screen.png', fullScreen.image),
+      ]);
 
       const regionPrompt = `
         Looking at this screenshot with a 3x3 region grid:
@@ -198,16 +200,18 @@ export class SmartClickHelper {
         zoomLevel: 2.0,
         showCursor: true,
       });
-      await this.emitTelemetryEvent('progressive_zoom', {
-        region: regionName,
-        zoom: 2.0,
-      });
 
       const regionFile = `02-region-${regionName
         .replace(/\s+/g, '-')
         .toLowerCase()}.png`;
-      this.saveImage(taskDir, regionFile, focusedShot.image);
-      this.saveImage(currentDir, '02-region.png', focusedShot.image);
+      await Promise.all([
+        this.saveImage(taskDir, regionFile, focusedShot.image),
+        this.saveImage(currentDir, '02-region.png', focusedShot.image),
+      ]);
+      await this.emitTelemetryEvent('progressive_zoom', {
+        region: regionName,
+        zoom: 2.0,
+      });
 
       const precisePrompt = `
         This is a zoomed view of the ${regionName} region.
@@ -253,13 +257,14 @@ export class SmartClickHelper {
               25,
               3.0,
             );
+            await Promise.all([
+              this.saveImage(taskDir, '03a-refine.png', refineShot),
+              this.saveImage(currentDir, '03a-refine.png', refineShot),
+            ]);
             await this.emitTelemetryEvent('progressive_zoom', {
               region: 'custom',
               zoom: 3.0,
             });
-
-            this.saveImage(taskDir, '03a-refine.png', refineShot);
-            this.saveImage(currentDir, '03a-refine.png', refineShot);
 
             const refinePrompt = `Refine the exact screen coordinates for "${targetDescription}" with this higher-zoom image.`;
             const refined = await this.ai.getCoordinates(
@@ -295,8 +300,10 @@ export class SmartClickHelper {
         showCursor: true,
       });
 
-      this.saveImage(taskDir, '03-target-marked.png', finalShot.image);
-      this.saveImage(currentDir, '03-target.png', finalShot.image);
+      await Promise.all([
+        this.saveImage(taskDir, '03-target-marked.png', finalShot.image),
+        this.saveImage(currentDir, '03-target.png', finalShot.image),
+      ]);
 
       await this.generateProgressSummary(
         taskDir,
@@ -510,12 +517,33 @@ export class SmartClickHelper {
     return 25; // sensible default
   }
 
-  private saveImage(taskDir: string, fileName: string, base64: string): void {
-    try {
-      const filePath = path.join(taskDir, fileName);
-      fs.writeFileSync(filePath, Buffer.from(base64, 'base64'));
-    } catch (error) {
-      console.error('Failed to save Smart Focus image:', error);
+  private async saveImage(
+    taskDir: string,
+    fileName: string,
+    base64: string,
+  ): Promise<void> {
+    const filePath = path.join(taskDir, fileName);
+    const payload = Buffer.from(base64, 'base64');
+    const maxAttempts = 3;
+    let attempt = 0;
+    let delay = 50;
+
+    while (attempt < maxAttempts) {
+      try {
+        await fs.promises.writeFile(filePath, payload);
+        return;
+      } catch (error) {
+        attempt += 1;
+        if (attempt >= maxAttempts) {
+          console.error('Failed to save Smart Focus image:', error);
+          return;
+        }
+        console.warn(
+          `Retrying Smart Focus image save for ${fileName} (attempt ${attempt}/${maxAttempts})`,
+        );
+        await new Promise<void>((resolve) => setTimeout(resolve, delay));
+        delay *= 2;
+      }
     }
   }
 
