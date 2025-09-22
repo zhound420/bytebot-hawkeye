@@ -40,6 +40,7 @@ export interface ProgressiveZoomResult {
 
 export class ProgressiveZoomHelper {
   private readonly logger = new Logger(ProgressiveZoomHelper.name);
+  private readonly zoomEnabled: boolean;
   private readonly smartClickAI: SmartClickAI | null;
   private readonly aiEnabled: boolean;
 
@@ -51,9 +52,18 @@ export class ProgressiveZoomHelper {
   };
 
   constructor() {
+    this.zoomEnabled =
+      (process.env.BYTEBOT_ZOOM_REFINEMENT ?? 'true').toLowerCase() !==
+      'false';
+
     const aiFlag = process.env.BYTEBOT_PROGRESSIVE_ZOOM_USE_AI ?? 'true';
-    this.smartClickAI = aiFlag !== 'false' ? createSmartClickAI() : null;
-    this.aiEnabled = aiFlag !== 'false' && this.smartClickAI !== null;
+    if (this.zoomEnabled && aiFlag !== 'false') {
+      this.smartClickAI = createSmartClickAI();
+      this.aiEnabled = this.smartClickAI !== null;
+    } else {
+      this.smartClickAI = null;
+      this.aiEnabled = false;
+    }
   }
 
   /**
@@ -84,6 +94,13 @@ export class ProgressiveZoomHelper {
     targetDescription: string,
     config: Partial<ProgressiveZoomConfig> = {},
   ): Promise<ProgressiveZoomResult> {
+    if (!this.zoomEnabled) {
+      this.logger.warn(
+        'Zoom refinement disabled via BYTEBOT_ZOOM_REFINEMENT flag; skipping progressive zoom.',
+      );
+      return { success: false, steps: [], totalSteps: 0, confidence: 0 };
+    }
+
     const cfg = { ...this.defaultConfig, ...config };
     const steps: ZoomStep[] = [];
 

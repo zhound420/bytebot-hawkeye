@@ -22,6 +22,10 @@ services:
       - "9990:9990" # bytebotd service & noVNC
     environment:
       - DISPLAY=:0
+      - BYTEBOT_UNIVERSAL_TEACHING=${BYTEBOT_UNIVERSAL_TEACHING:-true}
+      - BYTEBOT_ADAPTIVE_CALIBRATION=${BYTEBOT_ADAPTIVE_CALIBRATION:-true}
+      - BYTEBOT_ZOOM_REFINEMENT=${BYTEBOT_ZOOM_REFINEMENT:-true}
+      - BYTEBOT_COORDINATE_METRICS=${BYTEBOT_COORDINATE_METRICS:-true}
     networks:
       - bytebot-network
 

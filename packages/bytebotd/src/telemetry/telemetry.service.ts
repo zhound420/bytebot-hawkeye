@@ -4,6 +4,7 @@ import { exec as execCb } from 'child_process';
 import { promisify } from 'util';
 const exec = promisify(execCb);
 import * as path from 'path';
+import { COORDINATE_SYSTEM_CONFIG } from '../config/coordinate-system.config';
 
 export class InvalidSessionIdError extends Error {
   constructor(public readonly sessionId: string | undefined) {
@@ -61,10 +62,15 @@ export class TelemetryService {
   private static readonly SESSION_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
 
   private readonly logger = new Logger(TelemetryService.name);
-  private readonly telemetryEnabled = process.env.BYTEBOT_TELEMETRY !== 'false';
+  private readonly coordinateMetricsEnabled =
+    COORDINATE_SYSTEM_CONFIG.coordinateMetrics;
+  private readonly telemetryEnabled =
+    this.coordinateMetricsEnabled &&
+    process.env.BYTEBOT_TELEMETRY !== 'false';
   private readonly driftCompensationEnabled =
     process.env.BYTEBOT_DRIFT_COMPENSATION !== 'false';
   private readonly calibrationEnabled =
+    COORDINATE_SYSTEM_CONFIG.adaptiveCalibration &&
     process.env.BYTEBOT_POST_CLICK_CALIBRATION === 'true';
   private readonly smoothingFactor = Number.parseFloat(
     process.env.BYTEBOT_DRIFT_SMOOTHING ?? '0.2',

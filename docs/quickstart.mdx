@@ -42,6 +42,12 @@ Out of the box, Bytebot prioritizes keyboard navigation and uses zoomed, grid‑
   - `BYTEBOT_POST_ACTION_SCREENSHOT=false` – skip generic full screenshot unless opted‑in
   - `BYTEBOT_INCLUDE_FULL_AFTER_VERIFY=false` – include full view only if explicitly enabled
 
+- Coordinate system master toggles (default `true` in Compose/Helm):
+  - `BYTEBOT_UNIVERSAL_TEACHING` – disables every overlay and grid assist when set to `false`.
+  - `BYTEBOT_ADAPTIVE_CALIBRATION` – turns off post-click calibration captures when `false`.
+  - `BYTEBOT_ZOOM_REFINEMENT` – skips precision zoom capture and AI refinement when `false`.
+  - `BYTEBOT_COORDINATE_METRICS` – stops recording drift, calibration snapshots, and related telemetry when `false`.
+
 You can override these in your environment or compose files as needed.
 
   </Tab>

@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import { COORDINATE_SYSTEM_CONFIG } from '../config/coordinate-system.config';
 import { OverlayDescriptor, ScreenshotAnnotator } from './screenshot-annotator';
 
 export interface GridOverlayOptions {
@@ -17,6 +18,8 @@ export interface GridOverlayOptions {
 @Injectable()
 export class GridOverlayService {
   private readonly logger = new Logger(GridOverlayService.name);
+  private readonly universalTeachingEnabled =
+    COORDINATE_SYSTEM_CONFIG.universalTeaching;
 
   private readonly defaultOptions: GridOverlayOptions = {
     gridSize: 100, // Grid lines every 100 pixels
@@ -39,6 +42,10 @@ export class GridOverlayService {
     options: Partial<GridOverlayOptions> = {},
   ): OverlayDescriptor | undefined {
     if (!width || !height) {
+      return undefined;
+    }
+
+    if (!this.universalTeachingEnabled) {
       return undefined;
     }
 
@@ -134,6 +141,9 @@ export class GridOverlayService {
     width: number,
     height: number,
   ): OverlayDescriptor | undefined {
+    if (!this.universalTeachingEnabled) {
+      return undefined;
+    }
     return this.createGridOverlay(width, height, {
       gridSize: 50,
       lineColor: '#FFFFFF',
@@ -152,6 +162,9 @@ export class GridOverlayService {
     width: number,
     height: number,
   ): OverlayDescriptor | undefined {
+    if (!this.universalTeachingEnabled) {
+      return undefined;
+    }
     return this.createGridOverlay(width, height, {
       gridSize: 100,
       lineColor: '#FF0000',
@@ -172,6 +185,9 @@ export class GridOverlayService {
       globalOffset?: { x: number; y: number };
     } = {},
   ): OverlayDescriptor | undefined {
+    if (!this.universalTeachingEnabled) {
+      return undefined;
+    }
     return this.createGridOverlay(width, height, {
       gridSize: options.gridSize ?? this.defaultOptions.gridSize,
       showGlobalCoords: options.showGlobalCoords ?? true,
@@ -191,6 +207,10 @@ export class GridOverlayService {
     } = {},
   ): OverlayDescriptor | undefined {
     if (!width || !height) {
+      return undefined;
+    }
+
+    if (!this.universalTeachingEnabled) {
       return undefined;
     }
 
@@ -254,6 +274,10 @@ export class GridOverlayService {
       return undefined;
     }
 
+    if (!this.universalTeachingEnabled) {
+      return undefined;
+    }
+
     const x = Math.round(coordinates.x);
     const y = Math.round(coordinates.y);
 
@@ -299,6 +323,9 @@ export class GridOverlayService {
     imageBuffer: Buffer,
     options: Partial<GridOverlayOptions> = {},
   ): Promise<Buffer> {
+    if (!this.universalTeachingEnabled) {
+      return imageBuffer;
+    }
     const annotator = await ScreenshotAnnotator.from(imageBuffer);
     annotator.addOverlay(
       this.createGridOverlay(
@@ -315,6 +342,9 @@ export class GridOverlayService {
   }
 
   async addSubtleGridOverlay(imageBuffer: Buffer): Promise<Buffer> {
+    if (!this.universalTeachingEnabled) {
+      return imageBuffer;
+    }
     const annotator = await ScreenshotAnnotator.from(imageBuffer);
     annotator.addOverlay(
       this.createSubtleGridOverlay(
@@ -330,6 +360,9 @@ export class GridOverlayService {
   }
 
   async addDebugGridOverlay(imageBuffer: Buffer): Promise<Buffer> {
+    if (!this.universalTeachingEnabled) {
+      return imageBuffer;
+    }
     const annotator = await ScreenshotAnnotator.from(imageBuffer);
     annotator.addOverlay(
       this.createDebugGridOverlay(
@@ -352,6 +385,9 @@ export class GridOverlayService {
       globalOffset?: { x: number; y: number };
     } = {},
   ): Promise<Buffer> {
+    if (!this.universalTeachingEnabled) {
+      return imageBuffer;
+    }
     const annotator = await ScreenshotAnnotator.from(imageBuffer);
     annotator.addOverlay(
       this.createGridForImage(
@@ -378,6 +414,9 @@ export class GridOverlayService {
       frameImage?: boolean;
     } = {},
   ): Promise<Buffer> {
+    if (!this.universalTeachingEnabled) {
+      return imageBuffer;
+    }
     const annotator = await ScreenshotAnnotator.from(imageBuffer);
     const { width, height } = annotator.dimensions;
     annotator.addOverlay(
@@ -410,6 +449,9 @@ export class GridOverlayService {
       radius?: number;
     } = {},
   ): Promise<Buffer> {
+    if (!this.universalTeachingEnabled) {
+      return imageBuffer;
+    }
     const annotator = await ScreenshotAnnotator.from(imageBuffer);
     annotator.addOverlay(
       this.createCursorOverlay(
