@@ -13,6 +13,7 @@ describe('UniversalCoordinateRefiner heuristics', () => {
   const createRefiner = (
     fullAnswer: string,
     dimensions: { width: number; height: number },
+    calibrator: Calibrator = new Calibrator(),
   ) => {
     const ai = {
       askAboutScreenshot: jest
@@ -38,13 +39,13 @@ describe('UniversalCoordinateRefiner heuristics', () => {
       ai,
       new CoordinateTeacher(),
       new CoordinateParser(),
-      new Calibrator(),
+      calibrator,
       capture,
     );
 
     (refiner as any).getDimensions = jest.fn().mockReturnValue(dimensions);
 
-    return { refiner, ai, capture };
+    return { refiner, ai, capture, calibrator };
   };
 
   it.each([
@@ -205,5 +206,40 @@ describe('UniversalCoordinateRefiner heuristics', () => {
         height: 180,
       }),
     );
+  });
+
+  it('clamps calibrated coordinates to the screenshot bounds', async () => {
+    const baseGlobal = { x: 1503, y: 917 };
+    const fullAnswer = JSON.stringify({
+      global: baseGlobal,
+      confidence: 0.95,
+      needsZoom: false,
+    });
+
+    const calibrator = {
+      recordTelemetry: jest.fn(),
+      captureOffset: jest.fn(),
+      getCurrentOffset: jest.fn().mockReturnValue({ x: 500, y: 300 }),
+      apply: jest
+        .fn()
+        .mockImplementation((coords) => ({
+          x: coords.x + 500,
+          y: coords.y + 300,
+        })),
+      getHistory: jest.fn().mockReturnValue([]),
+    } as unknown as Calibrator;
+
+    const { refiner, capture } = createRefiner(
+      fullAnswer,
+      { width: 1920, height: 1080 },
+      calibrator,
+    );
+
+    const result = await refiner.locate('Clamped target');
+
+    expect(capture.zoom).not.toHaveBeenCalled();
+    expect(result.baseCoordinates).toEqual(baseGlobal);
+    expect(result.coordinates).toEqual({ x: 1920, y: 1080 });
+    expect(result.appliedOffset).toEqual({ x: 417, y: 163 });
   });
 });

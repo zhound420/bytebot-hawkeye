@@ -48,6 +48,8 @@ interface Dimension {
   height: number;
 }
 
+const DEFAULT_CANVAS_DIMENSIONS: Dimension = { width: 1920, height: 1080 };
+
 export class UniversalCoordinateRefiner {
   constructor(
     private readonly ai: SmartClickAI,
@@ -179,8 +181,25 @@ export class UniversalCoordinateRefiner {
       );
     }
 
-    const appliedOffset = this.calibrator.getCurrentOffset();
+    const currentOffset = this.calibrator.getCurrentOffset();
     const adjusted = this.calibrator.apply(bestGlobal);
+
+    const bounds = dimensions ?? DEFAULT_CANVAS_DIMENSIONS;
+    const clamped = {
+      x: Math.min(bounds.width, Math.max(0, adjusted.x)),
+      y: Math.min(bounds.height, Math.max(0, adjusted.y)),
+    };
+
+    let appliedOffset = currentOffset;
+    if (
+      appliedOffset &&
+      (clamped.x !== adjusted.x || clamped.y !== adjusted.y)
+    ) {
+      appliedOffset = {
+        x: clamped.x - bestGlobal.x,
+        y: clamped.y - bestGlobal.y,
+      };
+    }
 
     const context: UniversalCoordinateResult['context'] = {
       region: zoomStep?.screenshot.region ?? undefined,
@@ -188,7 +207,7 @@ export class UniversalCoordinateRefiner {
     };
 
     return {
-      coordinates: adjusted,
+      coordinates: clamped,
       baseCoordinates: bestGlobal,
       context,
       steps,
