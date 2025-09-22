@@ -61,7 +61,10 @@ export class AgentScheduler implements OnModuleInit {
           }
 
           try {
-            const destination = await this.fileStorageService.copyToDesktop(file);
+            const destination = await this.fileStorageService.copyToDesktop({
+              name: file.name,
+              storagePath: file.storagePath!,
+            });
             this.logger.debug(
               `Copied file ${file.name} for task ${task.id} to ${destination}`,
             );
