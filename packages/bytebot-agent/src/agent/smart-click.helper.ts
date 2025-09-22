@@ -1,86 +1,31 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { ClickContext } from '@bytebot/shared';
-
-export interface SmartClickAI {
-  askAboutScreenshot(image: string, prompt: string): Promise<string>;
-  getCoordinates(
-    image: string,
-    prompt: string,
-  ): Promise<{ x: number; y: number }>;
-}
-
-interface ScreenshotResponse {
-  image: string;
-  offset?: { x: number; y: number };
-  region?: { x: number; y: number; width: number; height: number };
-  zoomLevel?: number;
-}
-
-interface ScreenshotFnOptions {
-  gridOverlay?: boolean;
-  gridSize?: number;
-  highlightRegions?: boolean;
-  showCursor?: boolean;
-  progressStep?: number;
-  progressMessage?: string;
-  progressTaskId?: string;
-  markTarget?: {
-    coordinates: { x: number; y: number };
-    label?: string;
-  };
-}
-
-interface ScreenshotRegionOptions {
-  region: string;
-  gridSize?: number;
-  enhance?: boolean;
-  includeOffset?: boolean;
-  addHighlight?: boolean;
-  showCursor?: boolean;
-  progressStep?: number;
-  progressMessage?: string;
-  progressTaskId?: string;
-  zoomLevel?: number;
-}
-
-interface ScreenshotCustomRegionOptions {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  gridSize?: number;
-  zoomLevel?: number;
-  showCursor?: boolean;
-}
-
-interface ScreenshotTargetOptions {
-  coordinates: { x: number; y: number };
-  label?: string;
-  progressStep?: number;
-  progressMessage?: string;
-  progressTaskId?: string;
-  showCursor?: boolean;
-}
-
-export interface SmartClickResult {
-  coordinates: { x: number; y: number };
-  context: ClickContext;
-}
+import {
+  SmartClickAI,
+  SmartClickResult,
+  ScreenshotResponse,
+  ScreenshotFnOptions,
+  ScreenshotCustomRegionOptions,
+  ScreenshotTargetOptions,
+} from './smart-click.types';
+import {
+  UniversalCoordinateResult,
+  UniversalCoordinateStep,
+  UniversalCoordinateSystem,
+} from '../coordinate-system';
 
 export class SmartClickHelper {
   private readonly proxyUrl?: string;
   private readonly model: string;
   private readonly progressDir: string;
   private currentTaskId = '';
+  private readonly coordinateSystem: UniversalCoordinateSystem | null;
 
   constructor(
     private readonly ai: SmartClickAI | null,
     private readonly screenshotFn: (
       options?: ScreenshotFnOptions,
-    ) => Promise<ScreenshotResponse>,
-    private readonly screenshotRegionFn: (
-      options: ScreenshotRegionOptions,
     ) => Promise<ScreenshotResponse>,
     private readonly screenshotCustomRegionFn: (
       options: ScreenshotCustomRegionOptions,
@@ -108,6 +53,20 @@ export class SmartClickHelper {
     }
 
     this.ensureDirectory(this.progressDir);
+
+    this.coordinateSystem = this.ai
+      ? new UniversalCoordinateSystem({
+          ai: this.ai,
+          capture: {
+            full: (options) => this.screenshot(options),
+            zoom: (options) =>
+              this.screenshotCustomRegionFn({
+                ...options,
+                showCursor: options.showCursor ?? true,
+              }),
+          },
+        })
+      : null;
   }
 
   private async emitTelemetryEvent(
@@ -143,6 +102,11 @@ export class SmartClickHelper {
       return null;
     }
 
+    if (!this.coordinateSystem) {
+      console.warn('Smart Focus coordinate system unavailable.');
+      return null;
+    }
+
     try {
       this.currentTaskId = `click-${Date.now()}`;
       const taskDir = path.join(this.progressDir, this.currentTaskId);
@@ -154,148 +118,52 @@ export class SmartClickHelper {
       console.log(`   Target: "${targetDescription}"`);
       console.log(`🎯 Smart Focus: Looking for "${targetDescription}"`);
 
-      const fullScreen = await this.screenshot({
-        gridOverlay: true,
-        gridSize: 200,
-        highlightRegions: true,
-        progressStep: 1,
-        progressMessage: `Full screen analysis for "${targetDescription}"`,
-        progressTaskId: this.currentTaskId,
-        showCursor: true,
+      const result = await this.coordinateSystem.locate(targetDescription, {
+        gridSizeHint: this.inferGridSize(targetDescription),
+        progress: {
+          taskId: this.currentTaskId,
+          fullStep: {
+            step: 1,
+            message: `Teaching overlay for "${targetDescription}"`,
+          },
+          zoomStep: {
+            step: 2,
+            message: `Zoom refinement for "${targetDescription}"`,
+          },
+        },
       });
 
-      await Promise.all([
-        this.saveImage(taskDir, '01-full-screen.png', fullScreen.image),
-        this.saveImage(currentDir, '01-full-screen.png', fullScreen.image),
-      ]);
-
-      const regionPrompt = `
-        Looking at this screenshot with a 3x3 region grid:
-        - top-left, top-center, top-right
-        - middle-left, middle-center, middle-right  
-        - bottom-left, bottom-center, bottom-right
-
-        Which region contains: "${targetDescription}"?
-        Respond with just the region name.
-      `;
-
-      const targetRegion = await this.ai.askAboutScreenshot(
-        fullScreen.image,
-        regionPrompt,
-      );
-      const regionName = targetRegion.trim();
-      console.log(`📍 Smart Focus region identified: ${regionName}`);
-
-      console.log('   Step 2: Focusing on region...');
-      const gridSize = this.inferGridSize(targetDescription);
-      const focusedShot = await this.screenshotRegion({
-        region: regionName,
-        gridSize,
-        enhance: true,
-        includeOffset: true,
-        addHighlight: true,
-        progressStep: 2,
-        progressMessage: `Focused on region ${regionName}`,
-        progressTaskId: this.currentTaskId,
-        zoomLevel: 2.0,
-        showCursor: true,
-      });
-
-      const regionFile = `02-region-${regionName
-        .replace(/\s+/g, '-')
-        .toLowerCase()}.png`;
-      await Promise.all([
-        this.saveImage(taskDir, regionFile, focusedShot.image),
-        this.saveImage(currentDir, '02-region.png', focusedShot.image),
-      ]);
-      await this.emitTelemetryEvent('progressive_zoom', {
-        region: regionName,
-        zoom: 2.0,
-      });
-
-      const precisePrompt = `
-        This is a zoomed view of the ${regionName} region.
-        The grid shows coordinates relative to the full screen.
-
-        Find "${targetDescription}" and provide exact coordinates using the grid.
-        The grid labels show the actual screen coordinates.
-      `;
-
-      console.log('   Step 3: Calculating precise coordinates...');
-      let coordinates = await this.ai.getCoordinates(
-        focusedShot.image,
-        precisePrompt,
+      const persistedSteps = await this.persistSteps(
+        result.steps,
+        taskDir,
+        currentDir,
       );
 
-      console.log(
-        `✅ Smart Focus located coordinates (${coordinates.x}, ${coordinates.y})`,
-      );
-
-      // Heuristic confidence: if near region edge, refine with higher zoom
-      try {
-        const region = focusedShot.region;
-        if (region) {
-          const margin = 15; // px
-          const nearLeft = coordinates.x - region.x < margin;
-          const nearRight = region.x + region.width - coordinates.x < margin;
-          const nearTop = coordinates.y - region.y < margin;
-          const nearBottom = region.y + region.height - coordinates.y < margin;
-          const nearEdge = nearLeft || nearRight || nearTop || nearBottom;
-          if (nearEdge) {
-            console.log(
-              '   Refining coordinates with precision zoom (near edge) ...',
-            );
-            const w = 240;
-            const h = 180;
-            const rx = Math.max(0, coordinates.x - Math.floor(w / 2));
-            const ry = Math.max(0, coordinates.y - Math.floor(h / 2));
-            const refineShot = await this.screenshotCustomRegion(
-              rx,
-              ry,
-              w,
-              h,
-              25,
-              3.0,
-            );
-            await Promise.all([
-              this.saveImage(taskDir, '03a-refine.png', refineShot),
-              this.saveImage(currentDir, '03a-refine.png', refineShot),
-            ]);
-            await this.emitTelemetryEvent('progressive_zoom', {
-              region: 'custom',
-              zoom: 3.0,
-            });
-
-            const refinePrompt = `Refine the exact screen coordinates for "${targetDescription}" with this higher-zoom image.`;
-            const refined = await this.ai.getCoordinates(
-              refineShot,
-              refinePrompt,
-            );
-            if (
-              Number.isFinite(refined.x) &&
-              Number.isFinite(refined.y) &&
-              (Math.abs(refined.x - coordinates.x) > 1 ||
-                Math.abs(refined.y - coordinates.y) > 1)
-            ) {
-              console.log(
-                `   Precision refine: (${coordinates.x}, ${coordinates.y}) → (${refined.x}, ${refined.y})`,
-              );
-              coordinates = refined;
-            }
-          }
-        }
-      } catch (refineError) {
-        console.warn('Precision refine failed:', refineError);
+      const zoomStep = result.steps.find((step) => step.id === 'zoom-refine');
+      if (zoomStep) {
+        await this.emitTelemetryEvent('progressive_zoom', {
+          region: result.context.region
+            ? JSON.stringify(result.context.region)
+            : 'custom',
+          zoom: result.context.zoomLevel ?? 2,
+          confidence: result.confidence ?? undefined,
+        });
       }
 
       console.log(
-        `   Step 4: Marking target at (${coordinates.x}, ${coordinates.y})`,
+        `✅ Smart Focus located coordinates (${result.coordinates.x}, ${result.coordinates.y})`,
       );
+      if (typeof result.confidence === 'number') {
+        console.log(
+          `   Reported confidence: ${(result.confidence * 100).toFixed(1)}%`,
+        );
+      }
+
       const finalShot = await this.screenshotWithTarget({
-        coordinates,
+        coordinates: result.coordinates,
         label: targetDescription,
         progressStep: 3,
-        progressMessage: `Target locked at (${coordinates.x}, ${coordinates.y})`,
+        progressMessage: `Target locked at (${result.coordinates.x}, ${result.coordinates.y})`,
         progressTaskId: this.currentTaskId,
         showCursor: true,
       });
@@ -305,12 +173,12 @@ export class SmartClickHelper {
         this.saveImage(currentDir, '03-target.png', finalShot.image),
       ]);
 
-      await this.generateProgressSummary(
+      await this.generateProgressSummary({
         taskDir,
-        targetDescription,
-        coordinates,
-        regionFile,
-      );
+        target: targetDescription,
+        result,
+        steps: persistedSteps,
+      });
       try {
         fs.copyFileSync(
           path.join(taskDir, 'progress.html'),
@@ -322,14 +190,20 @@ export class SmartClickHelper {
       console.log(`   ✅ Complete! Progress saved to: ${taskDir}`);
 
       const context: ClickContext = {
-        region: focusedShot.region,
-        zoomLevel: focusedShot.zoomLevel,
+        ...result.context,
         targetDescription,
         source: 'smart_focus',
         clickTaskId: this.currentTaskId,
       };
 
-      return { coordinates, context };
+      await this.emitTelemetryEvent('smart_click_complete', {
+        success: true,
+        clickTaskId: this.currentTaskId,
+        coordinates: result.coordinates,
+        confidence: result.confidence ?? undefined,
+      });
+
+      return { coordinates: result.coordinates, context };
     } catch (error) {
       console.error('Smart Focus failed:', error);
       console.log('Falling back to standard click');
@@ -453,16 +327,6 @@ export class SmartClickHelper {
     return this.screenshotFn(mergedOptions);
   }
 
-  private async screenshotRegion(
-    options: ScreenshotRegionOptions,
-  ): Promise<ScreenshotResponse> {
-    const mergedOptions: ScreenshotRegionOptions = {
-      ...options,
-      showCursor: options.showCursor ?? true,
-    };
-    return this.screenshotRegionFn(mergedOptions);
-  }
-
   private async screenshotCustomRegion(
     x: number,
     y: number,
@@ -547,12 +411,49 @@ export class SmartClickHelper {
     }
   }
 
-  private async generateProgressSummary(
+  private sanitizeStepId(id: string): string {
+    const normalized = id
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .trim();
+    return normalized || 'step';
+  }
+
+  private async persistSteps(
+    steps: UniversalCoordinateStep[],
     taskDir: string,
-    target: string,
-    coords: { x: number; y: number },
-    regionFile: string,
-  ): Promise<void> {
+    currentDir: string,
+  ): Promise<Array<{ step: UniversalCoordinateStep; fileName: string }>> {
+    const persisted: Array<{
+      step: UniversalCoordinateStep;
+      fileName: string;
+    }> = [];
+    for (let index = 0; index < steps.length; index += 1) {
+      const step = steps[index];
+      const sanitizedId = this.sanitizeStepId(step.id);
+      const prefix = String(index + 1).padStart(2, '0');
+      const fileName = `${prefix}-${sanitizedId}.png`;
+      await Promise.all([
+        this.saveImage(taskDir, fileName, step.screenshot.image),
+        this.saveImage(
+          currentDir,
+          `${prefix}-${sanitizedId}.png`,
+          step.screenshot.image,
+        ),
+      ]);
+      persisted.push({ step, fileName });
+    }
+    return persisted;
+  }
+
+  private async generateProgressSummary(options: {
+    taskDir: string;
+    target: string;
+    result: UniversalCoordinateResult;
+    steps: Array<{ step: UniversalCoordinateStep; fileName: string }>;
+  }): Promise<void> {
+    const { taskDir, target, result, steps } = options;
     const template = `<!DOCTYPE html>
 <html>
 <head>
@@ -568,6 +469,7 @@ export class SmartClickHelper {
     .step h3 { margin-top: 0; }
     .step img { width: 100%; max-width: 720px; border-radius: 6px; margin-top: 12px; }
     .success { color: #4CAF50; font-weight: bold; }
+    .meta { font-size: 13px; color: #8b949e; }
   </style>
 </head>
 <body>
@@ -575,26 +477,51 @@ export class SmartClickHelper {
     <h1>🎯 Smart Focus Progress</h1>
     <div class="metrics">
       <h2>Target: "${target}"</h2>
-      <p class="success">Final Coordinates: (${coords.x}, ${coords.y})</p>
+      <p class="success">Final Coordinates: (${result.coordinates.x}, ${result.coordinates.y})</p>
+      <p>Base Estimate: (${result.baseCoordinates.x}, ${result.baseCoordinates.y})</p>
+      <p>Applied Offset: ${
+        result.appliedOffset
+          ? `(${result.appliedOffset.x}, ${result.appliedOffset.y})`
+          : 'None'
+      }</p>
+      <p>Confidence: ${
+        typeof result.confidence === 'number'
+          ? `${(result.confidence * 100).toFixed(1)}%`
+          : 'n/a'
+      }</p>
+      ${
+        result.reasoning
+          ? `<p class="meta">Reasoning: ${result.reasoning}</p>`
+          : ''
+      }
       <p>Task ID: ${this.currentTaskId}</p>
       <p>Timestamp: ${new Date().toISOString()}</p>
     </div>
 
+    ${steps
+      .map(
+        ({ step, fileName }, index) => `
     <div class="step">
-      <h3>Step 1: Full Screen Analysis</h3>
-      <p>Identified candidate region using a 200px grid overlay.</p>
-      <img src="01-full-screen.png" alt="Full screen progress" />
+      <h3>Step ${index + 1}: ${step.label}</h3>
+      ${
+        step.response.reasoning
+          ? `<p class="meta">${step.response.reasoning}</p>`
+          : ''
+      }
+      ${
+        typeof step.response.confidence === 'number'
+          ? `<p class="meta">Confidence: ${(step.response.confidence * 100).toFixed(1)}%</p>`
+          : ''
+      }
+      <img src="${fileName}" alt="${step.label}" />
     </div>
+    `,
+      )
+      .join('')}
 
     <div class="step">
-      <h3>Step 2: Focused Region</h3>
-      <p>Zoomed into the predicted region for detailed inspection.</p>
-      <img src="${regionFile}" alt="Focused region" />
-    </div>
-
-    <div class="step">
-      <h3>Step 3: Target Locked</h3>
-      <p class="success">Target confirmed at (${coords.x}, ${coords.y}).</p>
+      <h3>Step ${steps.length + 1}: Target Locked</h3>
+      <p class="success">Target confirmed at (${result.coordinates.x}, ${result.coordinates.y}).</p>
       <img src="03-target-marked.png" alt="Target marked" />
     </div>
   </div>

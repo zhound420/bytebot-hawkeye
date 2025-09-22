@@ -1,12 +1,15 @@
 import { Logger } from '@nestjs/common';
-import { handleComputerToolUse, createSmartClickAI } from './agent.computer-use';
+import {
+  handleComputerToolUse,
+  createSmartClickAI,
+} from './agent.computer-use';
 import {
   MessageContentType,
   ComputerToolUseContentBlock,
   ToolResultContentBlock,
   ClickContext,
 } from '@bytebot/shared';
-import { SmartClickAI } from './smart-click.helper';
+import { SmartClickAI } from './smart-click.types';
 
 export interface ProgressiveZoomConfig {
   maxZoomSteps: number;
@@ -70,7 +73,9 @@ export class ProgressiveZoomHelper {
    * Extract PNG dimensions from a base64-encoded PNG.
    * Uses IHDR chunk (big-endian width/height) to avoid extra deps.
    */
-  private getPngDimensions(base64Png: string): { width: number; height: number } | null {
+  private getPngDimensions(
+    base64Png: string,
+  ): { width: number; height: number } | null {
     try {
       const buf = Buffer.from(base64Png, 'base64');
       // PNG signature (8 bytes) + IHDR length/type (8 bytes) + width/height (8 bytes)
@@ -78,7 +83,12 @@ export class ProgressiveZoomHelper {
       // Width at byte offset 16-19, Height at 20-23 (big-endian)
       const width = buf.readUInt32BE(16);
       const height = buf.readUInt32BE(20);
-      if (!Number.isFinite(width) || !Number.isFinite(height) || width === 0 || height === 0) {
+      if (
+        !Number.isFinite(width) ||
+        !Number.isFinite(height) ||
+        width === 0 ||
+        height === 0
+      ) {
         return null;
       }
       return { width, height };
@@ -104,13 +114,18 @@ export class ProgressiveZoomHelper {
     const cfg = { ...this.defaultConfig, ...config };
     const steps: ZoomStep[] = [];
 
-    this.logger.log(`Starting progressive zoom for target: "${targetDescription}"`);
+    this.logger.log(
+      `Starting progressive zoom for target: "${targetDescription}"`,
+    );
 
     try {
       // Step 1: Take full screenshot with grid
       this.logger.debug('Step 1: Taking full screenshot');
       const fullScreenshot = await this.takeScreenshot();
-      const dims = this.getPngDimensions(fullScreenshot) ?? { width: 1920, height: 1080 };
+      const dims = this.getPngDimensions(fullScreenshot) ?? {
+        width: 1920,
+        height: 1080,
+      };
 
       steps.push({
         step: 1,
@@ -139,14 +154,17 @@ export class ProgressiveZoomHelper {
       }
 
       // Step 3: Take zoomed screenshot of identified quadrant
-      this.logger.debug(`Step 3: Taking zoomed screenshot of region ${JSON.stringify(quadrantResult.region)}`);
-      const { screenshot: zoomedScreenshot, mapping } = await this.takeRegionScreenshot(
-        quadrantResult.region.x,
-        quadrantResult.region.y,
-        quadrantResult.region.width,
-        quadrantResult.region.height,
-        cfg.zoomFactor,
+      this.logger.debug(
+        `Step 3: Taking zoomed screenshot of region ${JSON.stringify(quadrantResult.region)}`,
       );
+      const { screenshot: zoomedScreenshot, mapping } =
+        await this.takeRegionScreenshot(
+          quadrantResult.region.x,
+          quadrantResult.region.y,
+          quadrantResult.region.width,
+          quadrantResult.region.height,
+          cfg.zoomFactor,
+        );
 
       steps.push({
         step: 2,
@@ -157,7 +175,9 @@ export class ProgressiveZoomHelper {
       });
 
       // Step 4: Ask AI for precise coordinates in zoomed view
-      this.logger.debug('Step 4: AI determining precise coordinates in zoomed view');
+      this.logger.debug(
+        'Step 4: AI determining precise coordinates in zoomed view',
+      );
       const preciseResult = await this.getPreciseCoordinates(
         zoomedScreenshot,
         targetDescription,
@@ -193,18 +213,25 @@ export class ProgressiveZoomHelper {
         clickContext,
       );
 
-      this.logger.log(`Progressive zoom completed: ${clickResult ? 'SUCCESS' : 'FAILED'}`);
+      this.logger.log(
+        `Progressive zoom completed: ${clickResult ? 'SUCCESS' : 'FAILED'}`,
+      );
 
       return {
         success: clickResult && preciseResult.success,
         finalCoordinates: globalCoordinates,
         steps,
         totalSteps: steps.length,
-        confidence: Math.min(quadrantResult.confidence, preciseResult.confidence),
+        confidence: Math.min(
+          quadrantResult.confidence,
+          preciseResult.confidence,
+        ),
       };
-
     } catch (error) {
-      this.logger.error(`Progressive zoom failed: ${error.message}`, error.stack);
+      this.logger.error(
+        `Progressive zoom failed: ${error.message}`,
+        error.stack,
+      );
       return {
         success: false,
         steps,
@@ -228,7 +255,9 @@ export class ProgressiveZoomHelper {
     const result = await handleComputerToolUse(screenshotBlock, this.logger);
 
     if (result.type === MessageContentType.ToolResult && result.content) {
-      const imageContent = result.content.find(c => c.type === MessageContentType.Image);
+      const imageContent = result.content.find(
+        (c) => c.type === MessageContentType.Image,
+      );
       if (imageContent && 'source' in imageContent) {
         return imageContent.source.data;
       }
@@ -265,7 +294,7 @@ export class ProgressiveZoomHelper {
 
     if (result.type === MessageContentType.ToolResult && result.content) {
       const imageContent = result.content.find(
-        c => c.type === MessageContentType.Image,
+        (c) => c.type === MessageContentType.Image,
       );
       if (imageContent && 'source' in imageContent) {
         return {
@@ -314,7 +343,11 @@ Respond ONLY with JSON: {"region":"<region>","confidence":0.0-1.0,"reason":"<sho
         );
         const parsed = this.parseQuadrantResponse(raw);
         if (parsed) {
-          const region = this.resolveRegionBounds(parsed.region, screenWidth, screenHeight);
+          const region = this.resolveRegionBounds(
+            parsed.region,
+            screenWidth,
+            screenHeight,
+          );
           if (region) {
             return {
               success: true,
@@ -335,19 +368,23 @@ Respond ONLY with JSON: {"region":"<region>","confidence":0.0-1.0,"reason":"<sho
       }
     }
 
-    const fallbackRegion =
-      this.resolveRegionBounds('middle-center', screenWidth, screenHeight) ?? {
-        x: Math.floor((screenWidth ?? 1920) * 0.25),
-        y: Math.floor((screenHeight ?? 1080) * 0.25),
-        width: Math.floor((screenWidth ?? 1920) * 0.5),
-        height: Math.floor((screenHeight ?? 1080) * 0.5),
-      };
+    const fallbackRegion = this.resolveRegionBounds(
+      'middle-center',
+      screenWidth,
+      screenHeight,
+    ) ?? {
+      x: Math.floor((screenWidth ?? 1920) * 0.25),
+      y: Math.floor((screenHeight ?? 1080) * 0.25),
+      width: Math.floor((screenWidth ?? 1920) * 0.5),
+      height: Math.floor((screenHeight ?? 1080) * 0.5),
+    };
 
     return {
       success: true,
       region: fallbackRegion,
       confidence: 0.5,
-      reasoning: 'Defaulted to middle-center region due to unavailable AI signal',
+      reasoning:
+        'Defaulted to middle-center region due to unavailable AI signal',
     };
   }
 
@@ -364,7 +401,9 @@ Respond ONLY with JSON: {"region":"<region>","confidence":0.0-1.0,"reason":"<sho
     confidence: number;
     reasoning: string;
   }> {
-    this.logger.debug(`AI determining precise coordinates for target: "${targetDescription}"`);
+    this.logger.debug(
+      `AI determining precise coordinates for target: "${targetDescription}"`,
+    );
     if (
       this.aiEnabled &&
       this.smartClickAI &&
@@ -392,9 +431,8 @@ Respond ONLY with JSON: {"x":<number>,"y":<number>}.
           throw new Error('Smart focus returned invalid coordinate values');
         }
 
-        const zoom = mapping.zoomLevel && mapping.zoomLevel > 0
-          ? mapping.zoomLevel
-          : 1;
+        const zoom =
+          mapping.zoomLevel && mapping.zoomLevel > 0 ? mapping.zoomLevel : 1;
 
         const localX = (globalCoords.x - mapping.region.x) * zoom;
         const localY = (globalCoords.y - mapping.region.y) * zoom;
@@ -423,19 +461,22 @@ Respond ONLY with JSON: {"x":<number>,"y":<number>}.
     }
 
     const fallbackLocal = {
-      x: mapping?.region?.width && mapping?.zoomLevel
-        ? (mapping.region.width * mapping.zoomLevel) / 2
-        : 300,
-      y: mapping?.region?.height && mapping?.zoomLevel
-        ? (mapping.region.height * mapping.zoomLevel) / 2
-        : 200,
+      x:
+        mapping?.region?.width && mapping?.zoomLevel
+          ? (mapping.region.width * mapping.zoomLevel) / 2
+          : 300,
+      y:
+        mapping?.region?.height && mapping?.zoomLevel
+          ? (mapping.region.height * mapping.zoomLevel) / 2
+          : 200,
     };
 
     return {
       success: true,
       localCoordinates: fallbackLocal,
       confidence: 0.4,
-      reasoning: 'Fallback to region midpoint due to unavailable AI coordinates',
+      reasoning:
+        'Fallback to region midpoint due to unavailable AI coordinates',
     };
   }
 
@@ -452,10 +493,12 @@ Respond ONLY with JSON: {"x":<number>,"y":<number>}.
     }
 
     // Transform based on region and zoom level
-    const globalX = mapping.region.x + (localCoords.x / mapping.zoomLevel);
-    const globalY = mapping.region.y + (localCoords.y / mapping.zoomLevel);
+    const globalX = mapping.region.x + localCoords.x / mapping.zoomLevel;
+    const globalY = mapping.region.y + localCoords.y / mapping.zoomLevel;
 
-    this.logger.debug(`Transformed coordinates: (${localCoords.x}, ${localCoords.y}) → (${globalX}, ${globalY})`);
+    this.logger.debug(
+      `Transformed coordinates: (${localCoords.x}, ${localCoords.y}) → (${globalX}, ${globalY})`,
+    );
 
     return { x: Math.round(globalX), y: Math.round(globalY) };
   }
@@ -513,8 +556,7 @@ Respond ONLY with JSON: {"x":<number>,"y":<number>}.
             typeof parsed.confidence === 'number'
               ? Math.min(Math.max(parsed.confidence, 0), 1)
               : undefined,
-          reason:
-            typeof parsed.reason === 'string' ? parsed.reason : undefined,
+          reason: typeof parsed.reason === 'string' ? parsed.reason : undefined,
         };
       }
     } catch (error) {
@@ -527,9 +569,9 @@ Respond ONLY with JSON: {"x":<number>,"y":<number>}.
 
     const lower = trimmed.toLowerCase();
     const regionNames = this.createSmartRegions()
-      .map(region => region.name)
+      .map((region) => region.name)
       .sort((a, b) => b.length - a.length);
-    const regionName = regionNames.find(name => lower.includes(name));
+    const regionName = regionNames.find((name) => lower.includes(name));
 
     if (regionName) {
       return { region: regionName };
@@ -549,7 +591,7 @@ Respond ONLY with JSON: {"x":<number>,"y":<number>}.
     }
 
     const match = this.createSmartRegions(screenWidth, screenHeight).find(
-      region => region.name === normalized,
+      (region) => region.name === normalized,
     );
     return match?.region ?? null;
   }
@@ -567,35 +609,53 @@ Respond ONLY with JSON: {"x":<number>,"y":<number>}.
   }> {
     const descriptions: Record<string, string> = {
       'top-left': 'Top-left quadrant - typically menus, toolbars, navigation',
-      'top-center': 'Top-center region - typically tabs, search bars, or key navigation',
+      'top-center':
+        'Top-center region - typically tabs, search bars, or key navigation',
       'top-right': 'Top-right quadrant - typically controls, buttons, settings',
-      'middle-left': 'Middle-left region - typically navigation, sidebars, or secondary menus',
-      'middle-center': 'Middle-center region - typically main content, dialogs, forms',
-      'middle-right': 'Middle-right region - typically inspector panes, actions, or chat widgets',
-      'bottom-left': 'Bottom-left quadrant - typically status, navigation, sidebar',
-      'bottom-center': 'Bottom-center region - typically footers, console output, or progress',
-      'bottom-right': 'Bottom-right quadrant - typically content, scrollbars, actions',
+      'middle-left':
+        'Middle-left region - typically navigation, sidebars, or secondary menus',
+      'middle-center':
+        'Middle-center region - typically main content, dialogs, forms',
+      'middle-right':
+        'Middle-right region - typically inspector panes, actions, or chat widgets',
+      'bottom-left':
+        'Bottom-left quadrant - typically status, navigation, sidebar',
+      'bottom-center':
+        'Bottom-center region - typically footers, console output, or progress',
+      'bottom-right':
+        'Bottom-right quadrant - typically content, scrollbars, actions',
       center: 'Center region - alias for middle-center region',
       'top-strip': 'Top strip - typically title bars, tabs, main navigation',
-      'bottom-strip': 'Bottom strip - typically status bars, taskbars, notifications',
+      'bottom-strip':
+        'Bottom strip - typically status bars, taskbars, notifications',
     };
 
     const xSegments = this.calculateSegments(screenWidth);
     const ySegments = this.calculateSegments(screenHeight);
 
-    const verticalPositions: Array<{ key: 'top' | 'middle' | 'bottom'; rowIndex: 0 | 1 | 2 }> = [
+    const verticalPositions: Array<{
+      key: 'top' | 'middle' | 'bottom';
+      rowIndex: 0 | 1 | 2;
+    }> = [
       { key: 'top', rowIndex: 0 },
       { key: 'middle', rowIndex: 1 },
       { key: 'bottom', rowIndex: 2 },
     ];
 
-    const horizontalPositions: Array<{ key: 'left' | 'center' | 'right'; colIndex: 0 | 1 | 2 }> = [
+    const horizontalPositions: Array<{
+      key: 'left' | 'center' | 'right';
+      colIndex: 0 | 1 | 2;
+    }> = [
       { key: 'left', colIndex: 0 },
       { key: 'center', colIndex: 1 },
       { key: 'right', colIndex: 2 },
     ];
 
-    const regions: Array<{ name: string; region: RegionBounds; description: string }> = [];
+    const regions: Array<{
+      name: string;
+      region: RegionBounds;
+      description: string;
+    }> = [];
 
     for (const vertical of verticalPositions) {
       for (const horizontal of horizontalPositions) {
@@ -615,7 +675,9 @@ Respond ONLY with JSON: {"x":<number>,"y":<number>}.
       }
     }
 
-    const middleCenter = regions.find(region => region.name === 'middle-center');
+    const middleCenter = regions.find(
+      (region) => region.name === 'middle-center',
+    );
     if (middleCenter) {
       regions.push({
         name: 'center',
@@ -685,7 +747,10 @@ export async function progressiveClickWithZoom(
   return helper.progressiveClickWithZoom(targetDescription, config);
 }
 
-export function createSmartRegions(screenWidth: number = 1920, screenHeight: number = 1080) {
+export function createSmartRegions(
+  screenWidth: number = 1920,
+  screenHeight: number = 1080,
+) {
   const helper = new ProgressiveZoomHelper();
   return helper.createSmartRegions(screenWidth, screenHeight);
 }

@@ -1,7 +1,8 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { SmartClickAI, SmartClickHelper } from './smart-click.helper';
+import { SmartClickHelper } from './smart-click.helper';
+import { SmartClickAI } from './smart-click.types';
 
 describe('SmartClickHelper', () => {
   const baseImage = Buffer.from('test-image').toString('base64');
@@ -22,28 +23,41 @@ describe('SmartClickHelper', () => {
     const deferred = createDeferred<void>();
     const writeFileMock = jest
       .spyOn(fs.promises, 'writeFile')
-      .mockResolvedValueOnce(undefined)
-      .mockResolvedValueOnce(undefined)
-      .mockImplementationOnce(() => deferred.promise)
-      .mockResolvedValue(undefined);
+      .mockImplementation(() => Promise.resolve(undefined));
+    writeFileMock
+      .mockImplementationOnce(() => Promise.resolve(undefined))
+      .mockImplementationOnce(() => Promise.resolve(undefined))
+      .mockImplementationOnce(() => deferred.promise);
     const fetchMock = jest
       .spyOn(globalThis, 'fetch')
       .mockImplementation(() => Promise.resolve({ ok: true } as any));
 
     const progressDir = fs.mkdtempSync(path.join(os.tmpdir(), 'smart-click-'));
     const ai: SmartClickAI = {
-      askAboutScreenshot: jest.fn().mockResolvedValue('middle-center'),
-      getCoordinates: jest.fn().mockResolvedValue({ x: 50, y: 50 }),
+      askAboutScreenshot: jest
+        .fn()
+        .mockResolvedValueOnce(
+          JSON.stringify({
+            global: { x: 40, y: 60 },
+            needsZoom: true,
+            zoom: { center: { x: 40, y: 60 }, radius: 150 },
+            confidence: 0.6,
+          }),
+        )
+        .mockResolvedValueOnce(
+          JSON.stringify({
+            global: { x: 50, y: 80 },
+            local: { x: 10, y: 20 },
+            confidence: 0.92,
+            reasoning: 'Target located near overlay crosshair.',
+          }),
+        ),
+      getCoordinates: jest.fn(),
     };
 
     const helper = new SmartClickHelper(
       ai,
       jest.fn().mockResolvedValue({ image: baseImage }),
-      jest.fn().mockResolvedValue({
-        image: baseImage,
-        region: { x: 0, y: 0, width: 200, height: 200 },
-        zoomLevel: 2,
-      }),
       jest.fn().mockResolvedValue({ image: baseImage }),
       { proxyUrl: 'http://proxy', progressDir },
     );
