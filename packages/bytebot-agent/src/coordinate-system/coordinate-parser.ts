@@ -258,8 +258,20 @@ export class CoordinateParser {
       }
     }
 
-    const needsZoom = sanitized.match(/zoom|refine|closer/i);
-    if (needsZoom) {
+    const normalized = sanitized.toLowerCase();
+    const negativeZoomPatterns = [
+      /\bno\s+zoom\b/,
+      /\bzoom\s*(?:=|:)\s*(?:false|0|no)\b/,
+      /\bzoom\s+(?:not\s+needed|not\s+necessary|not\s+required)\b/,
+      /\bwithout\s+zoom\b/,
+    ];
+    const hasNegativeZoomCue = negativeZoomPatterns.some((pattern) =>
+      pattern.test(normalized),
+    );
+
+    if (hasNegativeZoomCue) {
+      result.needsZoom = false;
+    } else if (/(zoom|refine|closer)/i.test(sanitized)) {
       result.needsZoom = true;
     }
 
