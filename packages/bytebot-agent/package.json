@@ -13,7 +13,7 @@
     "start": "npm run build --prefix ../shared && nest start",
     "start:dev": "npm run build --prefix ../shared && nest start --watch",
     "start:debug": "npm run build --prefix ../shared && nest start --debug --watch",
-    "start:prod": "npm run build --prefix ../shared && npx prisma migrate deploy && npx prisma generate && node dist/main",
+    "start:prod": "npm run build --prefix ../shared && npx prisma migrate deploy && npx prisma generate && nest build && node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
