@@ -208,6 +208,29 @@ describe('UniversalCoordinateRefiner heuristics', () => {
     );
   });
 
+  it('trims oversized zoom requests to the screenshot dimensions', async () => {
+    const { refiner, capture } = createRefiner(
+      JSON.stringify({
+        global: null,
+        needsZoom: true,
+        zoom: {
+          center: { x: 320, y: 240 },
+          region: { x: 0, y: 0, width: 1024, height: 768 },
+        },
+      }),
+      { width: 640, height: 480 },
+    );
+
+    await refiner.locate('Oversized region request');
+
+    expect(capture.zoom).toHaveBeenCalledWith(
+      expect.objectContaining({
+        width: 640,
+        height: 480,
+      }),
+    );
+  });
+
   it('derives zoom region size from radius when only center is provided', async () => {
     const radius = 320;
     const { refiner, capture } = createRefiner(
