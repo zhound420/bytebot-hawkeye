@@ -58,6 +58,7 @@ export class TasksController {
         name: 'claude-code',
         title: 'Claude Code',
         contextWindow: 200000,
+        supportsVision: true,
       },
     ];
   }
