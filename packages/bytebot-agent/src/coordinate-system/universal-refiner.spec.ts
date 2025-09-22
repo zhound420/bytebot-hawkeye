@@ -145,4 +145,57 @@ describe('UniversalCoordinateRefiner heuristics', () => {
     expect(calibrator.getCurrentOffset()).toEqual({ x: 0, y: 0 });
     expect(result.calibrationHistory).toHaveLength(0);
   });
+
+  it('uses the zoom region when center is not provided', async () => {
+    const ai = {
+      askAboutScreenshot: jest
+        .fn()
+        .mockResolvedValueOnce(
+          JSON.stringify({
+            global: null,
+            needsZoom: true,
+            zoom: {
+              region: { x: 120, y: 240, width: 320, height: 180 },
+            },
+          }),
+        )
+        .mockResolvedValueOnce(zoomAnswer),
+    } as any;
+
+    const capture = {
+      full: jest.fn().mockResolvedValue({
+        image: 'placeholder',
+        offset: null,
+      }),
+      zoom: jest.fn().mockResolvedValue({
+        image: 'placeholder',
+        offset: null,
+        region: { x: 120, y: 240, width: 320, height: 180 },
+        zoomLevel: 2,
+      }),
+    };
+
+    const refiner = new UniversalCoordinateRefiner(
+      ai,
+      new CoordinateTeacher(),
+      new CoordinateParser(),
+      new Calibrator(),
+      capture,
+    );
+
+    (refiner as any).getDimensions = jest
+      .fn()
+      .mockReturnValue({ width: 1920, height: 1080 });
+
+    await refiner.locate('Target with region only');
+
+    expect(capture.zoom).toHaveBeenCalledWith(
+      expect.objectContaining({
+        x: 120,
+        y: 240,
+        width: 320,
+        height: 180,
+      }),
+    );
+  });
 });

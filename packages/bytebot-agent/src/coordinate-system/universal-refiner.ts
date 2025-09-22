@@ -214,13 +214,23 @@ export class UniversalCoordinateRefiner {
       : 300;
 
     const zoom = parsed.zoom;
+    const region = zoom?.region;
+
+    const regionDerivedCenter = region
+      ? {
+          x: region.x + region.width / 2,
+          y: region.y + region.height / 2,
+        }
+      : null;
+
     const center =
       zoom?.center ??
+      regionDerivedCenter ??
       parsed.global ??
       (dims ? { x: dims.width / 2, y: dims.height / 2 } : { x: 960, y: 540 });
 
-    const width = zoom?.region?.width ?? fallbackWidth;
-    const height = zoom?.region?.height ?? fallbackHeight;
+    const width = region?.width ?? fallbackWidth;
+    const height = region?.height ?? fallbackHeight;
 
     const rect = {
       x: Math.max(0, Math.round(center.x - width / 2)),
