@@ -1,0 +1,18 @@
+# Bytebot universal coordinate mapping
+version: 1
+viewport:
+  width: 1920
+  height: 1080
+referencePoints:
+  topLeft:
+    x: 0
+    y: 0
+  topRight:
+    x: 1919
+    y: 0
+  bottomLeft:
+    x: 0
+    y: 1079
+  bottomRight:
+    x: 1919
+    y: 1079
