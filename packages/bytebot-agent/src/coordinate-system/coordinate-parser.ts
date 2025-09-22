@@ -25,6 +25,13 @@ export interface CoordinateSuspicionResult {
   reasons: string[];
 }
 
+interface CoordinateCandidate {
+  x: number;
+  y: number;
+  score: number;
+  index: number;
+}
+
 function parseBoolean(value: unknown): boolean | undefined {
   if (typeof value === 'boolean') {
     return value;
@@ -175,6 +182,153 @@ function extractConfidence(json: any): number | null {
   return null;
 }
 
+function extractCoordinatesFromText(input: string): Coordinates | null {
+  const candidates: CoordinateCandidate[] = [];
+  const lowered = input.toLowerCase();
+  const positiveContextPattern =
+    /\b(click|tap|double[-\s]?click|coordinate|coordinates|coord|coords|point|points|position|pos|location|target|center|centre|pixel|spot|area|cursor|pointer|press|focus|aim)\b/i;
+  const bannedContextPattern =
+    /\b(confidence|score|probability|accuracy|precision|recall|likelihood|certainty|metric|rate)\b/i;
+
+  const addCandidate = (
+    rawX: number,
+    rawY: number,
+    index: number,
+    matchLength: number,
+    baseScore: number,
+  ) => {
+    if (!Number.isFinite(rawX) || !Number.isFinite(rawY)) {
+      return;
+    }
+
+    const preceding = lowered.slice(Math.max(0, index - 30), index);
+    const following = lowered.slice(index, Math.min(input.length, index + matchLength + 30));
+
+    const hasPositiveBefore = positiveContextPattern.test(preceding);
+    const hasPositiveAfter = positiveContextPattern.test(following);
+    const hasPositiveCue = hasPositiveBefore || hasPositiveAfter;
+    const hasBannedBefore = bannedContextPattern.test(preceding);
+
+    const smallFractionX = Math.abs(rawX) <= 5 && !Number.isInteger(rawX);
+    const bothTinyDecimals =
+      Math.abs(rawX) <= 1 &&
+      Math.abs(rawY) <= 1 &&
+      (!Number.isInteger(rawX) || !Number.isInteger(rawY));
+
+    if (bothTinyDecimals) {
+      return;
+    }
+
+    if (hasBannedBefore && !hasPositiveBefore && smallFractionX) {
+      return;
+    }
+
+    let score = baseScore;
+    if (hasPositiveCue) {
+      score += 3;
+    }
+    if (hasBannedBefore) {
+      score -= 2;
+    }
+    if (Number.isInteger(rawX) && Number.isInteger(rawY)) {
+      score += 1;
+    }
+    if (!Number.isInteger(rawX) && Math.abs(rawX) < 5) {
+      score -= 1;
+    }
+    if (!Number.isInteger(rawY) && Math.abs(rawY) < 5) {
+      score -= 1;
+    }
+
+    const magnitudeScore = Math.min(Math.abs(rawX) + Math.abs(rawY), 2000) / 500;
+    score += magnitudeScore;
+
+    candidates.push({
+      x: Math.round(rawX),
+      y: Math.round(rawY),
+      index,
+      score,
+    });
+  };
+
+  for (const match of input.matchAll(/\(\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\)/g)) {
+    const index = match.index ?? input.indexOf(match[0]);
+    addCandidate(
+      Number.parseFloat(match[1]),
+      Number.parseFloat(match[2]),
+      index,
+      match[0].length,
+      6,
+    );
+  }
+
+  const xyPattern =
+    /\bx\s*[:=]\s*(-?\d+(?:\.\d+)?)\b[^0-9-]{0,20}\by\s*[:=]\s*(-?\d+(?:\.\d+)?)\b/gi;
+  for (const match of input.matchAll(xyPattern)) {
+    const index = match.index ?? input.indexOf(match[0]);
+    addCandidate(
+      Number.parseFloat(match[1]),
+      Number.parseFloat(match[2]),
+      index,
+      match[0].length,
+      7,
+    );
+  }
+
+  const yxPattern =
+    /\by\s*[:=]\s*(-?\d+(?:\.\d+)?)\b[^0-9-]{0,20}\bx\s*[:=]\s*(-?\d+(?:\.\d+)?)\b/gi;
+  for (const match of input.matchAll(yxPattern)) {
+    const index = match.index ?? input.indexOf(match[0]);
+    addCandidate(
+      Number.parseFloat(match[2]),
+      Number.parseFloat(match[1]),
+      index,
+      match[0].length,
+      7,
+    );
+  }
+
+  const labeledPattern =
+    /\b(?:coordinate|coordinates|coords?|point|points|position|pos|location|target|click|tap|press|center|centre|pixel|spot)\b[^0-9-]*(-?\d+(?:\.\d+)?)[^0-9-]+(-?\d+(?:\.\d+)?)/gi;
+  for (const match of input.matchAll(labeledPattern)) {
+    const index = match.index ?? input.indexOf(match[0]);
+    addCandidate(
+      Number.parseFloat(match[1]),
+      Number.parseFloat(match[2]),
+      index,
+      match[0].length,
+      5,
+    );
+  }
+
+  if (!candidates.length) {
+    for (const match of input.matchAll(/(-?\d+(?:\.\d+)?)[^0-9-]+(-?\d+(?:\.\d+)?)/g)) {
+      const index = match.index ?? input.indexOf(match[0]);
+      addCandidate(
+        Number.parseFloat(match[1]),
+        Number.parseFloat(match[2]),
+        index,
+        match[0].length,
+        1,
+      );
+    }
+  }
+
+  if (!candidates.length) {
+    return null;
+  }
+
+  candidates.sort((a, b) => {
+    if (b.score !== a.score) {
+      return b.score - a.score;
+    }
+    return a.index - b.index;
+  });
+
+  const best = candidates[0];
+  return { x: best.x, y: best.y };
+}
+
 export class CoordinateParser {
   parse(raw: string): ParsedCoordinateResponse {
     const sanitized = sanitizeJson(raw);
@@ -249,13 +403,7 @@ export class CoordinateParser {
     }
 
     if (!result.global) {
-      const pair = sanitized.match(/(-?\d+(?:\.\d+)?)[^\d-]+(-?\d+(?:\.\d+)?)/);
-      if (pair) {
-        result.global = {
-          x: Math.round(Number.parseFloat(pair[1])),
-          y: Math.round(Number.parseFloat(pair[2])),
-        };
-      }
+      result.global = extractCoordinatesFromText(sanitized);
     }
 
     const normalized = sanitized.toLowerCase();

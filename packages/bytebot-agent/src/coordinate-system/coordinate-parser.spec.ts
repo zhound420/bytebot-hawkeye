@@ -67,4 +67,16 @@ describe('CoordinateParser', () => {
     expect(parser.parse('please zoom in on the target').needsZoom).toBe(true);
     expect(parser.parse('get closer to the subject').needsZoom).toBe(true);
   });
+
+  it('prefers parenthetical coordinates over confidence metrics', () => {
+    const { global } = parser.parse('Confidence: 0.92. Click at (500, 200).');
+
+    expect(global).toEqual({ x: 500, y: 200 });
+  });
+
+  it('extracts labeled coordinate pairs over score values', () => {
+    const { global } = parser.parse('Score 0.8 ⇒ coordinate 120, 64');
+
+    expect(global).toEqual({ x: 120, y: 64 });
+  });
 });
