@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { ClickContext } from '@bytebot/shared';
 import {
+  Coordinates,
   SmartClickAI,
   SmartClickResult,
   ScreenshotResponse,
@@ -67,6 +68,21 @@ export class SmartClickHelper {
           },
         })
       : null;
+  }
+
+  recordDesktopClickCorrection(
+    actual: Coordinates | null | undefined,
+    predicted: Coordinates | null | undefined,
+    success: boolean | undefined,
+  ): void {
+    if (!this.coordinateSystem || !actual || !predicted) {
+      return;
+    }
+
+    this.coordinateSystem.recordCorrection(actual, predicted, {
+      source: 'desktop-click',
+      success: success ?? true,
+    });
   }
 
   private async emitTelemetryEvent(

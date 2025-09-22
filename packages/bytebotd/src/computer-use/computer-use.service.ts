@@ -119,8 +119,7 @@ export class ComputerUseService {
         break;
       }
       case 'click_mouse': {
-        await this.clickMouse(params);
-        break;
+        return this.clickMouse(params);
       }
       case 'press_mouse': {
         await this.pressMouse(params);
@@ -340,7 +339,9 @@ export class ComputerUseService {
     }
   }
 
-  private async clickMouse(action: ClickMouseAction): Promise<void> {
+  private async clickMouse(
+    action: ClickMouseAction,
+  ): Promise<{ actual: { x: number; y: number }; success: boolean }> {
     const { coordinates, button, holdKeys, clickCount, context, description } =
       action;
 
@@ -488,13 +489,14 @@ export class ComputerUseService {
     };
 
     const finalTarget = destination ?? targetCoordinates;
+    let success = true;
     if (finalTarget) {
       const deltaToTarget = {
         x: actualPointer.x - finalTarget.x,
         y: actualPointer.y - finalTarget.y,
       };
       const distance = Math.hypot(deltaToTarget.x, deltaToTarget.y);
-      const success = distance <= this.smartClickSuccessRadius;
+      success = distance <= this.smartClickSuccessRadius;
       await this.telemetryService.recordEvent('smart_click_complete', {
         success,
         distance,
@@ -598,6 +600,8 @@ export class ComputerUseService {
         );
       }
     }
+
+    return { actual: actualPointer, success };
   }
 
   // Record non-click actions for panel visibility
