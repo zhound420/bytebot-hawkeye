@@ -127,6 +127,9 @@ export interface TelemetrySessionInfo {
   endedAt?: string | null;
   lastEventAt?: string | null;
   eventCount?: number;
+  sessionStart?: string | null;
+  sessionEnd?: string | null;
+  sessionDurationMs?: number | null;
 }
 
 export interface TelemetrySessions {

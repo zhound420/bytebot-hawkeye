@@ -9,6 +9,9 @@ export type NormalizedTelemetrySession = {
   endedAt: string | null;
   lastEventAt: string | null;
   eventCount?: number;
+  sessionStart: string | null;
+  sessionEnd: string | null;
+  sessionDurationMs: number | null;
 };
 
 export type NormalizedTelemetryEvent = {
@@ -35,6 +38,9 @@ export function normalizeTelemetrySession(
       startedAt: null,
       endedAt: null,
       lastEventAt: null,
+      sessionStart: null,
+      sessionEnd: null,
+      sessionDurationMs: null,
     };
   }
 
@@ -56,32 +62,50 @@ export function normalizeTelemetrySession(
     typeof candidate.label === "string" && candidate.label.trim().length > 0
       ? candidate.label
       : id;
-  const startedAt =
+  const startedAtCandidate =
     typeof candidate.startedAt === "string" && candidate.startedAt.length > 0
       ? candidate.startedAt
       : null;
-  const endedAt =
+  const endedAtCandidate =
     typeof candidate.endedAt === "string" && candidate.endedAt.length > 0
       ? candidate.endedAt
       : null;
+  const sessionStartCandidate =
+    typeof candidate.sessionStart === "string" &&
+    candidate.sessionStart.length > 0
+      ? candidate.sessionStart
+      : startedAtCandidate;
+  const sessionEndCandidate =
+    typeof candidate.sessionEnd === "string" &&
+    candidate.sessionEnd.length > 0
+      ? candidate.sessionEnd
+      : endedAtCandidate;
   const lastEventAt =
     typeof candidate.lastEventAt === "string" &&
     candidate.lastEventAt.length > 0
       ? candidate.lastEventAt
-      : null;
+      : sessionEndCandidate ?? endedAtCandidate ?? null;
   const eventCount =
     typeof candidate.eventCount === "number" &&
     Number.isFinite(candidate.eventCount)
       ? candidate.eventCount
       : undefined;
+  const sessionDurationMs =
+    typeof candidate.sessionDurationMs === "number" &&
+    Number.isFinite(candidate.sessionDurationMs)
+      ? candidate.sessionDurationMs
+      : null;
 
   return {
     id,
     label,
-    startedAt,
-    endedAt,
+    startedAt: sessionStartCandidate ?? startedAtCandidate,
+    endedAt: sessionEndCandidate ?? endedAtCandidate,
     lastEventAt,
     eventCount,
+    sessionStart: sessionStartCandidate ?? null,
+    sessionEnd: sessionEndCandidate ?? null,
+    sessionDurationMs,
   };
 }
 
@@ -125,11 +149,15 @@ export function coalesceSessionTimestamps(
   const startCandidate =
     typeof summaryStart === "string" && summaryStart.length > 0
       ? summaryStart
-      : session?.startedAt ?? null;
+      : session?.sessionStart ?? session?.startedAt ?? null;
   const endCandidate =
     typeof summaryEnd === "string" && summaryEnd.length > 0
       ? summaryEnd
-      : session?.endedAt ?? session?.lastEventAt ?? null;
+      :
+          session?.sessionEnd ??
+          session?.endedAt ??
+          session?.lastEventAt ??
+          null;
 
   return { start: startCandidate, end: endCandidate };
 }
@@ -151,6 +179,17 @@ export function formatSessionDurationFromTiming(
       : null;
   if (explicitDuration) {
     return formatDistanceStrict(0, explicitDuration, { unit: "second" });
+  }
+
+  const sessionDuration =
+    session &&
+    typeof session.sessionDurationMs === "number" &&
+    Number.isFinite(session.sessionDurationMs) &&
+    session.sessionDurationMs > 0
+      ? session.sessionDurationMs
+      : null;
+  if (sessionDuration) {
+    return formatDistanceStrict(0, sessionDuration, { unit: "second" });
   }
 
   const { start, end } = coalesceSessionTimestamps(
