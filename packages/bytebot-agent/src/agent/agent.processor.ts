@@ -14,6 +14,9 @@ import {
   isComputerToolUseContentBlock,
   isSetTaskStatusToolUseBlock,
   isCreateTaskToolUseBlock,
+  isScreenshotToolUseBlock,
+  isScreenshotRegionToolUseBlock,
+  isScreenshotCustomRegionToolUseBlock,
   SetTaskStatusToolUseBlock,
 } from '@bytebot/shared';
 
@@ -34,6 +37,7 @@ import {
 } from './agent.types';
 import {
   buildAgentSystemPrompt,
+  SCREENSHOT_OBSERVATION_GUARD_MESSAGE,
   SUMMARIZATION_SYSTEM_PROMPT,
 } from './agent.constants';
 import { SummariesService } from '../summaries/summaries.service';
@@ -47,6 +51,7 @@ export class AgentProcessor {
   private isProcessing = false;
   private abortController: AbortController | null = null;
   private services: Record<string, BytebotAgentService> = {};
+  private pendingScreenshotObservation = false;
 
   constructor(
     private readonly tasksService: TasksService,
@@ -122,6 +127,7 @@ export class AgentProcessor {
     this.isProcessing = true;
     this.currentTaskId = taskId;
     this.abortController = new AbortController();
+    this.pendingScreenshotObservation = false;
 
     // Kick off the first iteration without blocking the caller
     void this.runIteration(taskId);
@@ -304,12 +310,53 @@ export class AgentProcessor {
 
       const generatedToolResults: ToolResultContentBlock[] = [];
 
+      let mustClearObservationThisReply = this.pendingScreenshotObservation;
+      let observationBlockedInReply = false;
+
       let setTaskStatusToolUseBlock: SetTaskStatusToolUseBlock | null = null;
 
       for (const block of messageContentBlocks) {
+        if (
+          this.pendingScreenshotObservation &&
+          mustClearObservationThisReply
+        ) {
+          if (block.type === MessageContentType.Text) {
+            const textBlock = block as TextContentBlock;
+            const text = (textBlock.text || '').trim();
+            if (text.length > 0 && !observationBlockedInReply) {
+              this.pendingScreenshotObservation = false;
+              mustClearObservationThisReply = false;
+            }
+          } else if (isComputerToolUseContentBlock(block)) {
+            observationBlockedInReply = true;
+            generatedToolResults.push({
+              type: MessageContentType.ToolResult,
+              tool_use_id: block.id,
+              is_error: true,
+              content: [
+                {
+                  type: MessageContentType.Text,
+                  text: SCREENSHOT_OBSERVATION_GUARD_MESSAGE,
+                },
+              ],
+            });
+            continue;
+          }
+        }
+
         if (isComputerToolUseContentBlock(block)) {
           const result = await handleComputerToolUse(block, this.logger);
           generatedToolResults.push(result);
+
+          if (
+            isScreenshotToolUseBlock(block) ||
+            isScreenshotRegionToolUseBlock(block) ||
+            isScreenshotCustomRegionToolUseBlock(block)
+          ) {
+            this.pendingScreenshotObservation = true;
+            mustClearObservationThisReply = true;
+            observationBlockedInReply = false;
+          }
         }
 
         if (isCreateTaskToolUseBlock(block)) {
@@ -502,5 +549,6 @@ export class AgentProcessor {
 
     this.isProcessing = false;
     this.currentTaskId = null;
+    this.pendingScreenshotObservation = false;
   }
 }
