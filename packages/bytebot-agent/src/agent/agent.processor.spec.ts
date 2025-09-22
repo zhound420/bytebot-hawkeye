@@ -1,5 +1,13 @@
 import { AgentProcessor } from './agent.processor';
 import { TaskStatus } from '@prisma/client';
+import { SCREENSHOT_OBSERVATION_GUARD_MESSAGE } from './agent.constants';
+import { MessageContentType } from '@bytebot/shared';
+
+jest.mock('./agent.computer-use', () => ({
+  handleComputerToolUse: jest.fn(),
+}));
+
+import { handleComputerToolUse } from './agent.computer-use';
 
 describe('AgentProcessor', () => {
   const createProcessor = (overrides: Partial<Record<string, any>> = {}) => {
@@ -58,8 +66,18 @@ describe('AgentProcessor', () => {
       inputCaptureService as any,
     );
 
-    return { processor, tasksService, messagesService, summariesService, anthropicService };
+    return {
+      processor,
+      tasksService,
+      messagesService,
+      summariesService,
+      anthropicService,
+    };
   };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
 
   describe('canMarkCompleted', () => {
     it('returns true when message lookup fails', async () => {
@@ -77,6 +95,174 @@ describe('AgentProcessor', () => {
   });
 
   describe('runIteration', () => {
+    it('allows desktop actions after a text observation clears the screenshot gate', async () => {
+      const screenshotResponse = {
+        contentBlocks: [
+          {
+            id: 'tool-1',
+            type: MessageContentType.ToolUse,
+            name: 'computer_screenshot',
+            input: {},
+          },
+        ],
+        tokenUsage: { totalTokens: 0 },
+      };
+
+      const followUpResponse = {
+        contentBlocks: [
+          {
+            id: 'text-1',
+            type: MessageContentType.Text,
+            text: 'Observation of the desktop',
+          },
+          {
+            id: 'tool-2',
+            type: MessageContentType.ToolUse,
+            name: 'computer_click_mouse',
+            input: { x: 100, y: 200, button: 'left' },
+          },
+        ],
+        tokenUsage: { totalTokens: 0 },
+      };
+
+      const anthropicService = {
+        generateMessage: jest
+          .fn()
+          .mockResolvedValueOnce(screenshotResponse)
+          .mockResolvedValueOnce(followUpResponse),
+      };
+
+      const messagesService = {
+        findUnsummarized: jest.fn().mockResolvedValue([]),
+        findEvery: jest.fn().mockResolvedValue([]),
+        create: jest.fn(),
+        attachSummary: jest.fn(),
+      };
+
+      const handleComputerToolUseMock =
+        handleComputerToolUse as unknown as jest.MockedFunction<
+          typeof handleComputerToolUse
+        >;
+      handleComputerToolUseMock
+        .mockResolvedValueOnce({
+          type: MessageContentType.ToolResult,
+          tool_use_id: 'tool-1',
+          content: [],
+        })
+        .mockResolvedValueOnce({
+          type: MessageContentType.ToolResult,
+          tool_use_id: 'tool-2',
+          content: [],
+        });
+
+      const { processor } = createProcessor({
+        messagesService,
+        anthropicService,
+      });
+
+      (processor as any).isProcessing = true;
+      (processor as any).abortController = new AbortController();
+
+      const setImmediateSpy = jest
+        .spyOn(global, 'setImmediate')
+        .mockImplementation(((cb: (...args: any[]) => void) => {
+          return null as any;
+        }) as any);
+
+      try {
+        await (processor as any).runIteration('task-1');
+        await (processor as any).runIteration('task-1');
+
+        expect(handleComputerToolUseMock).toHaveBeenCalledTimes(2);
+        expect(handleComputerToolUseMock.mock.calls[1][0].name).toBe(
+          'computer_click_mouse',
+        );
+        expect((processor as any).pendingScreenshotObservation).toBe(false);
+      } finally {
+        setImmediateSpy.mockRestore();
+      }
+    });
+
+    it('rejects computer tool calls that follow a screenshot without an observation', async () => {
+      const screenshotResponse = {
+        contentBlocks: [
+          {
+            id: 'tool-1',
+            type: MessageContentType.ToolUse,
+            name: 'computer_screenshot',
+            input: {},
+          },
+        ],
+        tokenUsage: { totalTokens: 0 },
+      };
+
+      const nonCompliantResponse = {
+        contentBlocks: [
+          {
+            id: 'tool-2',
+            type: MessageContentType.ToolUse,
+            name: 'computer_click_mouse',
+            input: { x: 100, y: 200, button: 'left' },
+          },
+        ],
+        tokenUsage: { totalTokens: 0 },
+      };
+
+      const anthropicService = {
+        generateMessage: jest
+          .fn()
+          .mockResolvedValueOnce(screenshotResponse)
+          .mockResolvedValueOnce(nonCompliantResponse),
+      };
+
+      const messagesService = {
+        findUnsummarized: jest.fn().mockResolvedValue([]),
+        findEvery: jest.fn().mockResolvedValue([]),
+        create: jest.fn(),
+        attachSummary: jest.fn(),
+      };
+
+      const handleComputerToolUseMock =
+        handleComputerToolUse as unknown as jest.MockedFunction<
+          typeof handleComputerToolUse
+        >;
+      handleComputerToolUseMock.mockResolvedValue({
+        type: MessageContentType.ToolResult,
+        tool_use_id: 'tool-1',
+        content: [],
+      });
+
+      const { processor } = createProcessor({
+        messagesService,
+        anthropicService,
+      });
+
+      (processor as any).isProcessing = true;
+      (processor as any).abortController = new AbortController();
+
+      const setImmediateSpy = jest
+        .spyOn(global, 'setImmediate')
+        .mockImplementation(((cb: (...args: any[]) => void) => {
+          return null as any;
+        }) as any);
+
+      try {
+        await (processor as any).runIteration('task-1');
+        await (processor as any).runIteration('task-1');
+
+        expect(handleComputerToolUseMock).toHaveBeenCalledTimes(1);
+        const toolResultCall =
+          messagesService.create.mock.calls[messagesService.create.mock.calls.length - 1][0];
+        expect(toolResultCall.content[0].is_error).toBe(true);
+        expect(toolResultCall.content[0].content[0].text).toBe(
+          SCREENSHOT_OBSERVATION_GUARD_MESSAGE,
+        );
+        expect((processor as any).pendingScreenshotObservation).toBe(true);
+      } finally {
+        setImmediateSpy.mockRestore();
+      }
+    });
+
     it('marks the task completed when canMarkCompleted falls back to true', async () => {
       const anthropicResponse = {
         contentBlocks: [

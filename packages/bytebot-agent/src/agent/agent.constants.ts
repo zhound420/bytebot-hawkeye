@@ -5,6 +5,9 @@ export const DEFAULT_DISPLAY_SIZE = {
   height: 0,
 };
 
+export const SCREENSHOT_OBSERVATION_GUARD_MESSAGE =
+  'Observation required: review the latest screenshot and provide an exhaustive observation before issuing additional computer_* tools.';
+
 export const SUMMARIZATION_SYSTEM_PROMPT = `You are a helpful assistant that summarizes conversations for long-running tasks.
 Your job is to create concise summaries that preserve all important information, tool usage, and key decisions.
 Focus on:
