@@ -10,7 +10,10 @@ describe('UniversalCoordinateRefiner heuristics', () => {
     needsZoom: false,
   });
 
-  const createRefiner = (fullAnswer: string, dimensions: { width: number; height: number }) => {
+  const createRefiner = (
+    fullAnswer: string,
+    dimensions: { width: number; height: number },
+  ) => {
     const ai = {
       askAboutScreenshot: jest
         .fn()
@@ -81,5 +84,65 @@ describe('UniversalCoordinateRefiner heuristics', () => {
     expect(capture.zoom).toHaveBeenCalledTimes(1);
     expect(result.steps.some((step) => step.id === 'zoom-refine')).toBe(true);
     expect(result.steps[0].response.needsZoom).toBe(true);
+  });
+
+  it('does not treat screenshot offsets as drift without corrections', async () => {
+    const calibrator = new Calibrator();
+    const cycles = 12;
+    const baseGlobal = { x: 420, y: 360 };
+
+    const ai = { askAboutScreenshot: jest.fn() };
+    const capture = {
+      full: jest.fn(),
+      zoom: jest.fn(),
+    };
+
+    for (let i = 0; i < cycles; i += 1) {
+      ai.askAboutScreenshot.mockResolvedValueOnce(
+        JSON.stringify({
+          global: null,
+          needsZoom: true,
+        }),
+      );
+      ai.askAboutScreenshot.mockResolvedValueOnce(
+        JSON.stringify({
+          global: baseGlobal,
+          confidence: 0.9,
+        }),
+      );
+
+      capture.full.mockResolvedValueOnce({
+        image: 'placeholder',
+        offset: { x: 15 + i, y: -12 - i },
+      });
+      capture.zoom.mockResolvedValueOnce({
+        image: 'placeholder',
+        offset: { x: -7 - i, y: 9 + i },
+        region: { x: 0, y: 0, width: 200, height: 200 },
+        zoomLevel: 2,
+      });
+    }
+
+    const refiner = new UniversalCoordinateRefiner(
+      ai as any,
+      new CoordinateTeacher(),
+      new CoordinateParser(),
+      calibrator,
+      capture as any,
+    );
+
+    (refiner as any).getDimensions = jest
+      .fn()
+      .mockReturnValue({ width: 1920, height: 1080 });
+
+    let result: any;
+    for (let i = 0; i < cycles; i += 1) {
+      result = await refiner.locate('Target button');
+      expect(result.appliedOffset).toEqual({ x: 0, y: 0 });
+      expect(result.coordinates).toEqual(baseGlobal);
+    }
+
+    expect(calibrator.getCurrentOffset()).toEqual({ x: 0, y: 0 });
+    expect(result.calibrationHistory).toHaveLength(0);
   });
 });

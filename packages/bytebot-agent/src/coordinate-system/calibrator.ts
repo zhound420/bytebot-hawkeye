@@ -23,6 +23,13 @@ export type RecordCorrectionOptions =
   | string
   | (CalibrationSampleMetadata & { source?: string });
 
+export interface CalibrationTelemetrySample {
+  offset: Coordinates;
+  source: string;
+  timestamp: number;
+  metadata: CalibrationSampleMetadata;
+}
+
 type CanvasContextLike = {
   canvas?: { width: number; height: number } | null;
   save?: () => void;
@@ -38,6 +45,7 @@ type CanvasContextLike = {
 
 export class Calibrator {
   private readonly samples: CalibrationSample[] = [];
+  private readonly telemetry: CalibrationTelemetrySample[] = [];
   private readonly maxHistory: number;
 
   constructor(maxHistory = 50) {
@@ -54,8 +62,7 @@ export class Calibrator {
     }
 
     const normalized = this.normalize(offset);
-    const success =
-      metadata.success === undefined ? null : metadata.success;
+    const success = metadata.success === undefined ? null : metadata.success;
     const error =
       metadata.error === undefined
         ? this.calculateError(normalized)
@@ -76,6 +83,28 @@ export class Calibrator {
     }
   }
 
+  recordTelemetry(
+    offset?: Coordinates | null,
+    source = 'telemetry',
+    metadata: CalibrationSampleMetadata = {},
+  ): void {
+    if (!offset) {
+      return;
+    }
+
+    const normalized = this.normalize(offset);
+    this.telemetry.push({
+      offset: normalized,
+      source,
+      timestamp: Date.now(),
+      metadata: { ...metadata },
+    });
+
+    if (this.telemetry.length > this.maxHistory) {
+      this.telemetry.splice(0, this.telemetry.length - this.maxHistory);
+    }
+  }
+
   recordCorrection(
     actual: Coordinates,
     predicted: Coordinates,
@@ -84,7 +113,7 @@ export class Calibrator {
     const metadata =
       typeof options === 'string'
         ? { source: options }
-        : options ?? { source: 'correction' };
+        : (options ?? { source: 'correction' });
     const source = metadata.source ?? 'correction';
     const { source: _ignoredSource, ...sampleMetadata } = metadata;
     const delta = {
@@ -170,8 +199,7 @@ export class Calibrator {
     const padding = Math.round(bannerHeight * 0.25);
     const primaryFontSize = Math.max(18, Math.round(bannerHeight * 0.4));
     const secondaryFontSize = Math.max(14, Math.round(bannerHeight * 0.3));
-    const primaryText =
-      `Calibration drift detected (Δx=${driftX}px, Δy=${driftY}px)`;
+    const primaryText = `Calibration drift detected (Δx=${driftX}px, Δy=${driftY}px)`;
     const secondaryText = 'Re-run calibration to realign actions.';
 
     context.save?.();
@@ -188,7 +216,8 @@ export class Calibrator {
 
     context.font = `normal ${secondaryFontSize}px Arial`;
     context.fillStyle = '#ffecec';
-    const secondaryY = padding / 2 + primaryFontSize + Math.round(padding * 0.2);
+    const secondaryY =
+      padding / 2 + primaryFontSize + Math.round(padding * 0.2);
     context.fillText(secondaryText, padding, secondaryY);
 
     context.restore?.();
@@ -202,6 +231,7 @@ export class Calibrator {
 
   reset(): void {
     this.samples.splice(0, this.samples.length);
+    this.telemetry.splice(0, this.telemetry.length);
   }
 
   private normalize(coords: Coordinates): Coordinates {
