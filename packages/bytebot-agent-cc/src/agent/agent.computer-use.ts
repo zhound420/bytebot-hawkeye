@@ -29,6 +29,9 @@ import { Logger } from '@nestjs/common';
 
 const BYTEBOT_DESKTOP_BASE_URL = process.env.BYTEBOT_DESKTOP_BASE_URL as string;
 
+export const SCREENSHOT_REMINDER_TEXT =
+  'Screenshot captured—produce an exhaustive observation before planning or acting.';
+
 export async function handleComputerToolUse(
   block: ComputerToolUseContentBlock,
   logger: Logger,
@@ -55,6 +58,10 @@ export async function handleComputerToolUse(
               media_type: 'image/png',
               type: 'base64',
             },
+          },
+          {
+            type: MessageContentType.Text,
+            text: SCREENSHOT_REMINDER_TEXT,
           },
         ],
       };
@@ -96,6 +103,11 @@ export async function handleComputerToolUse(
         });
       }
 
+      content.push({
+        type: MessageContentType.Text,
+        text: SCREENSHOT_REMINDER_TEXT,
+      });
+
       return {
         type: MessageContentType.ToolResult,
         tool_use_id: block.id,
@@ -135,6 +147,10 @@ export async function handleComputerToolUse(
               media_type: 'image/png',
               type: 'base64',
             },
+          },
+          {
+            type: MessageContentType.Text,
+            text: SCREENSHOT_REMINDER_TEXT,
           },
         ],
       };
