@@ -56,4 +56,15 @@ describe('CoordinateParser', () => {
     expect(suspicion.suspicious).toBe(true);
     expect(suspicion.reasons.join(' ')).toContain('25 px');
   });
+
+  it('keeps needsZoom false for explicit negative zoom phrases', () => {
+    expect(parser.parse('No zoom needed near 100, 200').needsZoom).toBe(false);
+    expect(parser.parse('zoom: false at (10, 20)').needsZoom).toBe(false);
+    expect(parser.parse('zoom = 0 around 50x75').needsZoom).toBe(false);
+  });
+
+  it('sets needsZoom true when a positive cue remains', () => {
+    expect(parser.parse('please zoom in on the target').needsZoom).toBe(true);
+    expect(parser.parse('get closer to the subject').needsZoom).toBe(true);
+  });
 });
