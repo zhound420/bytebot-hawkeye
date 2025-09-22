@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import * as sharp from 'sharp';
+
+import { OverlayDescriptor, ScreenshotAnnotator } from './screenshot-annotator';
 
 export interface GridOverlayOptions {
   gridSize: number;
@@ -32,48 +33,24 @@ export class GridOverlayService {
   /**
    * Adds a coordinate grid overlay to a screenshot buffer
    */
-  async addGridOverlay(
-    imageBuffer: Buffer,
+  createGridOverlay(
+    width: number,
+    height: number,
     options: Partial<GridOverlayOptions> = {},
-  ): Promise<Buffer> {
-    try {
-      const opts = { ...this.defaultOptions, ...options };
-
-      // Get image metadata
-      const image = sharp(imageBuffer);
-      const { width, height } = await image.metadata();
-
-      if (!width || !height) {
-        throw new Error('Unable to determine image dimensions');
-      }
-
-      this.logger.debug(`Adding grid overlay to ${width}x${height} image`);
-
-      // Create SVG overlay with grid lines and labels
-      const svg = this.createGridSVG(width, height, opts);
-
-      // Composite the grid overlay onto the original image
-      const result = await image
-        .composite([
-          {
-            input: Buffer.from(svg),
-            top: 0,
-            left: 0,
-          },
-        ])
-        .png()
-        .toBuffer();
-
-      this.logger.debug('Grid overlay added successfully');
-      return result;
-    } catch (error) {
-      this.logger.error(
-        `Error adding grid overlay: ${error.message}`,
-        error.stack,
-      );
-      // Return original image on error
-      return imageBuffer;
+  ): OverlayDescriptor | undefined {
+    if (!width || !height) {
+      return undefined;
     }
+
+    const opts = { ...this.defaultOptions, ...options };
+    this.logger.debug(`Preparing grid overlay for ${width}x${height} image`);
+
+    const svg = this.createGridSVG(width, height, opts);
+    return {
+      input: Buffer.from(svg),
+      top: 0,
+      left: 0,
+    };
   }
 
   /**
@@ -153,8 +130,11 @@ export class GridOverlayService {
   /**
    * Creates a more subtle grid overlay for production use
    */
-  async addSubtleGridOverlay(imageBuffer: Buffer): Promise<Buffer> {
-    return this.addGridOverlay(imageBuffer, {
+  createSubtleGridOverlay(
+    width: number,
+    height: number,
+  ): OverlayDescriptor | undefined {
+    return this.createGridOverlay(width, height, {
       gridSize: 50,
       lineColor: '#FFFFFF',
       lineOpacity: 0.15,
@@ -168,8 +148,11 @@ export class GridOverlayService {
   /**
    * Creates a high-contrast grid overlay for debugging
    */
-  async addDebugGridOverlay(imageBuffer: Buffer): Promise<Buffer> {
-    return this.addGridOverlay(imageBuffer, {
+  createDebugGridOverlay(
+    width: number,
+    height: number,
+  ): OverlayDescriptor | undefined {
+    return this.createGridOverlay(width, height, {
       gridSize: 100,
       lineColor: '#FF0000',
       lineOpacity: 0.8,
@@ -180,39 +163,35 @@ export class GridOverlayService {
     });
   }
 
-  async addGridToImage(
-    imageBuffer: Buffer,
+  createGridForImage(
+    width: number,
+    height: number,
     options: {
       gridSize?: number;
       showGlobalCoords?: boolean;
       globalOffset?: { x: number; y: number };
     } = {},
-  ): Promise<Buffer> {
-    return this.addGridOverlay(imageBuffer, {
+  ): OverlayDescriptor | undefined {
+    return this.createGridOverlay(width, height, {
       gridSize: options.gridSize ?? this.defaultOptions.gridSize,
       showGlobalCoords: options.showGlobalCoords ?? true,
       globalOffset: options.globalOffset ?? { x: 0, y: 0 },
     });
   }
 
-  async addProgressIndicators(
-    imageBuffer: Buffer,
+  createProgressOverlay(
+    width: number,
+    height: number,
     step: number,
     options: {
       message?: string;
       targetRegion?: string;
-      coordinates?: { x: number; y: number };
       highlightAllRegions?: boolean;
       frameImage?: boolean;
     } = {},
-  ): Promise<Buffer> {
-    const image = sharp(imageBuffer);
-    const metadata = await image.metadata();
-    const width = metadata.width ?? 0;
-    const height = metadata.height ?? 0;
-
-    if (width === 0 || height === 0) {
-      return imageBuffer;
+  ): OverlayDescriptor | undefined {
+    if (!width || !height) {
+      return undefined;
     }
 
     const overlays: string[] = [];
@@ -253,26 +232,16 @@ export class GridOverlayService {
       </svg>
     `;
 
-    const annotated = await image
-      .composite([
-        {
-          input: Buffer.from(progressOverlay),
-          top: 0,
-          left: 0,
-        },
-      ])
-      .png()
-      .toBuffer();
-
-    if (!options.coordinates) {
-      return annotated;
-    }
-
-    return this.addCursorIndicator(annotated, options.coordinates);
+    return {
+      input: Buffer.from(progressOverlay),
+      top: 0,
+      left: 0,
+    };
   }
 
-  async addCursorIndicator(
-    imageBuffer: Buffer,
+  createCursorOverlay(
+    width: number,
+    height: number,
     coordinates: { x: number; y: number },
     options: {
       color?: string;
@@ -280,25 +249,20 @@ export class GridOverlayService {
       lineWidth?: number;
       radius?: number;
     } = {},
-  ): Promise<Buffer> {
-    const image = sharp(imageBuffer);
-    const metadata = await image.metadata();
-    const width = metadata.width ?? 0;
-    const height = metadata.height ?? 0;
-
-    if (width === 0 || height === 0) {
-      return imageBuffer;
+  ): OverlayDescriptor | undefined {
+    if (!width || !height) {
+      return undefined;
     }
 
     const x = Math.round(coordinates.x);
     const y = Math.round(coordinates.y);
 
     if (!Number.isFinite(x) || !Number.isFinite(y)) {
-      return imageBuffer;
+      return undefined;
     }
 
     if (x < 0 || x > width || y < 0 || y > height) {
-      return imageBuffer;
+      return undefined;
     }
 
     const {
@@ -324,16 +288,142 @@ export class GridOverlayService {
       </svg>
     `;
 
-    return image
-      .composite([
-        {
-          input: Buffer.from(cursorOverlay),
-          top: 0,
-          left: 0,
-        },
-      ])
-      .png()
-      .toBuffer();
+    return {
+      input: Buffer.from(cursorOverlay),
+      top: 0,
+      left: 0,
+    };
+  }
+
+  async addGridOverlay(
+    imageBuffer: Buffer,
+    options: Partial<GridOverlayOptions> = {},
+  ): Promise<Buffer> {
+    const annotator = await ScreenshotAnnotator.from(imageBuffer);
+    annotator.addOverlay(
+      this.createGridOverlay(
+        annotator.dimensions.width,
+        annotator.dimensions.height,
+        options,
+      ),
+    );
+    const result = await annotator.render();
+    if (!annotator.hasOverlays) {
+      return imageBuffer;
+    }
+    return result.buffer;
+  }
+
+  async addSubtleGridOverlay(imageBuffer: Buffer): Promise<Buffer> {
+    const annotator = await ScreenshotAnnotator.from(imageBuffer);
+    annotator.addOverlay(
+      this.createSubtleGridOverlay(
+        annotator.dimensions.width,
+        annotator.dimensions.height,
+      ),
+    );
+    const result = await annotator.render();
+    if (!annotator.hasOverlays) {
+      return imageBuffer;
+    }
+    return result.buffer;
+  }
+
+  async addDebugGridOverlay(imageBuffer: Buffer): Promise<Buffer> {
+    const annotator = await ScreenshotAnnotator.from(imageBuffer);
+    annotator.addOverlay(
+      this.createDebugGridOverlay(
+        annotator.dimensions.width,
+        annotator.dimensions.height,
+      ),
+    );
+    const result = await annotator.render();
+    if (!annotator.hasOverlays) {
+      return imageBuffer;
+    }
+    return result.buffer;
+  }
+
+  async addGridToImage(
+    imageBuffer: Buffer,
+    options: {
+      gridSize?: number;
+      showGlobalCoords?: boolean;
+      globalOffset?: { x: number; y: number };
+    } = {},
+  ): Promise<Buffer> {
+    const annotator = await ScreenshotAnnotator.from(imageBuffer);
+    annotator.addOverlay(
+      this.createGridForImage(
+        annotator.dimensions.width,
+        annotator.dimensions.height,
+        options,
+      ),
+    );
+    const result = await annotator.render();
+    if (!annotator.hasOverlays) {
+      return imageBuffer;
+    }
+    return result.buffer;
+  }
+
+  async addProgressIndicators(
+    imageBuffer: Buffer,
+    step: number,
+    options: {
+      message?: string;
+      targetRegion?: string;
+      coordinates?: { x: number; y: number };
+      highlightAllRegions?: boolean;
+      frameImage?: boolean;
+    } = {},
+  ): Promise<Buffer> {
+    const annotator = await ScreenshotAnnotator.from(imageBuffer);
+    const { width, height } = annotator.dimensions;
+    annotator.addOverlay(
+      this.createProgressOverlay(width, height, step, {
+        message: options.message,
+        targetRegion: options.targetRegion,
+        highlightAllRegions: options.highlightAllRegions,
+        frameImage: options.frameImage,
+      }),
+    );
+    if (options.coordinates) {
+      annotator.addOverlay(
+        this.createCursorOverlay(width, height, options.coordinates),
+      );
+    }
+    const result = await annotator.render();
+    if (!annotator.hasOverlays) {
+      return imageBuffer;
+    }
+    return result.buffer;
+  }
+
+  async addCursorIndicator(
+    imageBuffer: Buffer,
+    coordinates: { x: number; y: number },
+    options: {
+      color?: string;
+      lineLength?: number;
+      lineWidth?: number;
+      radius?: number;
+    } = {},
+  ): Promise<Buffer> {
+    const annotator = await ScreenshotAnnotator.from(imageBuffer);
+    annotator.addOverlay(
+      this.createCursorOverlay(
+        annotator.dimensions.width,
+        annotator.dimensions.height,
+        coordinates,
+        options,
+      ),
+    );
+    const result = await annotator.render();
+    if (!annotator.hasOverlays) {
+      return imageBuffer;
+    }
+    return result.buffer;
   }
 
   private getRegionBounds(

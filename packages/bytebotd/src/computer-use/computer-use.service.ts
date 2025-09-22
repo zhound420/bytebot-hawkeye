@@ -6,6 +6,7 @@ import * as path from 'path';
 import * as sharp from 'sharp';
 import { NutService } from '../nut/nut.service';
 import { GridOverlayService } from '../nut/grid-overlay.service';
+import { ScreenshotAnnotator } from '../nut/screenshot-annotator';
 import { FocusRegionService } from '../nut/focus-region.service';
 import { ProgressBroadcaster } from '../progress/progress-broadcaster';
 import { FOCUS_CONFIG } from '../config/focus-config';
@@ -175,6 +176,8 @@ export class ComputerUseService {
         );
 
         let buffer = customRegion.image;
+        const annotator = await ScreenshotAnnotator.from(buffer);
+        const dimensions = annotator.dimensions;
 
         const shouldShowCursor = action.showCursor ?? true;
         let cursorLocal: { x: number; y: number } | undefined;
@@ -210,16 +213,31 @@ export class ComputerUseService {
                 (customRegion.zoomLevel || 1),
             );
 
-            buffer = await this.gridOverlayService.addProgressIndicators(
-              buffer,
-              action.progressStep ?? 0,
-              {
-                message:
-                  action.progressMessage ??
-                  `Target @ (${action.markTarget.coordinates.x}, ${action.markTarget.coordinates.y})`,
-                coordinates: { x: localX, y: localY },
-              },
+            const progressOverlay =
+              this.gridOverlayService.createProgressOverlay(
+                dimensions.width,
+                dimensions.height,
+                action.progressStep ?? 0,
+                {
+                  message:
+                    action.progressMessage ??
+                    `Target @ (${action.markTarget.coordinates.x}, ${action.markTarget.coordinates.y})`,
+                },
+              );
+
+            if (progressOverlay) {
+              annotator.addOverlay(progressOverlay);
+            }
+
+            const targetOverlay = this.gridOverlayService.createCursorOverlay(
+              dimensions.width,
+              dimensions.height,
+              { x: localX, y: localY },
             );
+
+            if (targetOverlay) {
+              annotator.addOverlay(targetOverlay);
+            }
           } catch (err) {
             this.logger.warn(
               `Failed to annotate custom region with target: ${
@@ -231,10 +249,15 @@ export class ComputerUseService {
 
         if (cursorLocal) {
           try {
-            buffer = await this.gridOverlayService.addCursorIndicator(
-              buffer,
+            const cursorOverlay = this.gridOverlayService.createCursorOverlay(
+              dimensions.width,
+              dimensions.height,
               cursorLocal,
             );
+
+            if (cursorOverlay) {
+              annotator.addOverlay(cursorOverlay);
+            }
           } catch (error) {
             this.logger.warn(
               `Failed to annotate cursor on custom region screenshot: ${(error as Error).message}`,
@@ -242,6 +265,8 @@ export class ComputerUseService {
           }
         }
 
+        const rendered = await annotator.render();
+        buffer = rendered.buffer;
         const base64 = buffer.toString('base64');
 
         if (action.progressTaskId) {
@@ -739,6 +764,8 @@ export class ComputerUseService {
   }> {
     this.logger.log(`Taking screenshot`);
     let buffer = await this.nutService.screendump();
+    const annotator = await ScreenshotAnnotator.from(buffer);
+    const dimensions = annotator.dimensions;
 
     const shouldShowCursor = action?.showCursor ?? true;
     let cursorPosition: { x: number; y: number } | undefined;
@@ -763,15 +790,23 @@ export class ComputerUseService {
       try {
         const debugMode = process.env.BYTEBOT_GRID_DEBUG === 'true';
 
-        if (debugMode) {
-          buffer = await this.gridOverlayService.addDebugGridOverlay(buffer);
-        } else {
-          buffer = await this.gridOverlayService.addGridOverlay(buffer, {
-            gridSize: action?.gridSize ?? undefined,
-          });
-        }
+        const overlay = debugMode
+          ? this.gridOverlayService.createDebugGridOverlay(
+              dimensions.width,
+              dimensions.height,
+            )
+          : this.gridOverlayService.createGridOverlay(
+              dimensions.width,
+              dimensions.height,
+              {
+                gridSize: action?.gridSize ?? undefined,
+              },
+            );
 
-        this.logger.debug('Grid overlay added successfully');
+        if (overlay) {
+          annotator.addOverlay(overlay);
+          this.logger.debug('Grid overlay added successfully');
+        }
       } catch (error) {
         this.logger.warn(`Failed to add grid overlay: ${error.message}`);
       }
@@ -783,26 +818,53 @@ export class ComputerUseService {
       action?.markTarget
     ) {
       try {
-        buffer = await this.gridOverlayService.addProgressIndicators(
-          buffer,
+        const overlay = this.gridOverlayService.createProgressOverlay(
+          dimensions.width,
+          dimensions.height,
           action?.progressStep ?? 0,
           {
             message: action?.progressMessage,
-            coordinates: action?.markTarget?.coordinates,
             highlightAllRegions: action?.highlightRegions,
           },
         );
+
+        if (overlay) {
+          annotator.addOverlay(overlay);
+        }
       } catch (error) {
         this.logger.warn(`Failed to add progress indicators: ${error.message}`);
       }
     }
 
+    if (action?.markTarget?.coordinates) {
+      try {
+        const targetOverlay = this.gridOverlayService.createCursorOverlay(
+          dimensions.width,
+          dimensions.height,
+          action.markTarget.coordinates,
+        );
+
+        if (targetOverlay) {
+          annotator.addOverlay(targetOverlay);
+        }
+      } catch (error) {
+        this.logger.warn(
+          `Failed to annotate target on screenshot: ${(error as Error).message}`,
+        );
+      }
+    }
+
     if (cursorPosition) {
       try {
-        buffer = await this.gridOverlayService.addCursorIndicator(
-          buffer,
+        const overlay = this.gridOverlayService.createCursorOverlay(
+          dimensions.width,
+          dimensions.height,
           cursorPosition,
         );
+
+        if (overlay) {
+          annotator.addOverlay(overlay);
+        }
       } catch (error) {
         this.logger.warn(
           `Failed to annotate cursor on screenshot: ${(error as Error).message}`,
@@ -810,11 +872,12 @@ export class ComputerUseService {
       }
     }
 
-    const meta = await sharp(buffer)
-      .metadata()
-      .catch(() => ({}) as any);
-    const width = typeof meta.width === 'number' ? meta.width : undefined;
-    const height = typeof meta.height === 'number' ? meta.height : undefined;
+    const rendered = await annotator.render();
+    buffer = rendered.buffer;
+    const width = Number.isFinite(rendered.width) ? rendered.width : undefined;
+    const height = Number.isFinite(rendered.height)
+      ? rendered.height
+      : undefined;
     const base64 = buffer.toString('base64');
 
     if (action?.progressTaskId) {
@@ -853,6 +916,8 @@ export class ComputerUseService {
     );
 
     let buffer = regionResult.image;
+    const annotator = await ScreenshotAnnotator.from(buffer);
+    const dimensions = annotator.dimensions;
 
     const shouldShowCursor = action.showCursor ?? true;
     let cursorLocal: { x: number; y: number } | undefined;
@@ -882,8 +947,9 @@ export class ComputerUseService {
       action.progressMessage
     ) {
       try {
-        buffer = await this.gridOverlayService.addProgressIndicators(
-          buffer,
+        const overlay = this.gridOverlayService.createProgressOverlay(
+          dimensions.width,
+          dimensions.height,
           action.progressStep ?? 0,
           {
             message:
@@ -891,6 +957,10 @@ export class ComputerUseService {
             frameImage: action.addHighlight ?? false,
           },
         );
+
+        if (overlay) {
+          annotator.addOverlay(overlay);
+        }
       } catch (error) {
         this.logger.warn(
           `Failed to add progress indicators to region screenshot: ${error.message}`,
@@ -900,10 +970,15 @@ export class ComputerUseService {
 
     if (cursorLocal) {
       try {
-        buffer = await this.gridOverlayService.addCursorIndicator(
-          buffer,
+        const cursorOverlay = this.gridOverlayService.createCursorOverlay(
+          dimensions.width,
+          dimensions.height,
           cursorLocal,
         );
+
+        if (cursorOverlay) {
+          annotator.addOverlay(cursorOverlay);
+        }
       } catch (error) {
         this.logger.warn(
           `Failed to annotate cursor on region screenshot: ${(error as Error).message}`,
@@ -911,6 +986,8 @@ export class ComputerUseService {
       }
     }
 
+    const rendered = await annotator.render();
+    buffer = rendered.buffer;
     const base64 = buffer.toString('base64');
 
     if (action.progressTaskId) {
