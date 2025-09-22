@@ -79,7 +79,7 @@ export class UniversalCoordinateRefiner {
       progressTaskId: options.progress?.taskId,
     });
 
-    this.calibrator.captureOffset(fullScreenshot.offset);
+    this.calibrator.recordTelemetry(fullScreenshot.offset, 'full-screenshot');
     const dimensions = this.getDimensions(fullScreenshot.image);
 
     const fullPrompt = this.teacher.buildFullFramePrompt({
@@ -135,7 +135,7 @@ export class UniversalCoordinateRefiner {
         progressTaskId: options.progress?.taskId,
       });
 
-      this.calibrator.captureOffset(zoomScreenshot.offset);
+      this.calibrator.recordTelemetry(zoomScreenshot.offset, 'zoom-screenshot');
 
       const zoomPrompt = this.teacher.buildZoomPrompt({
         targetDescription,
