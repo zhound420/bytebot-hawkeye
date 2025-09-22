@@ -59,6 +59,9 @@ const SMART_FOCUS_MODEL =
   process.env.BYTEBOT_SMART_FOCUS_MODEL || 'gpt-4o-mini';
 const SMART_FOCUS_ENABLED = process.env.BYTEBOT_SMART_FOCUS !== 'false';
 
+export const SCREENSHOT_REMINDER_TEXT =
+  'Screenshot captured—produce an exhaustive observation before planning or acting.';
+
 export async function handleComputerToolUse(
   block: ComputerToolUseContentBlock,
   logger: Logger,
@@ -84,6 +87,10 @@ export async function handleComputerToolUse(
               media_type: 'image/png',
               type: 'base64',
             },
+          },
+          {
+            type: MessageContentType.Text,
+            text: SCREENSHOT_REMINDER_TEXT,
           },
         ],
       };
@@ -128,6 +135,10 @@ export async function handleComputerToolUse(
       content.push({
         type: MessageContentType.Text,
         text: `Focused region metadata: ${JSON.stringify(meta)}. Note: grid labels in the image are global screen coordinates. Use them (not local pixels) when computing click positions.`,
+      });
+      content.push({
+        type: MessageContentType.Text,
+        text: SCREENSHOT_REMINDER_TEXT,
       });
 
       return {
@@ -182,6 +193,10 @@ export async function handleComputerToolUse(
           {
             type: MessageContentType.Text,
             text: `Custom region metadata: ${JSON.stringify(meta)}. Grid labels are global; compute clicks in global coordinates.`,
+          },
+          {
+            type: MessageContentType.Text,
+            text: SCREENSHOT_REMINDER_TEXT,
           },
         ],
       };
