@@ -22,6 +22,50 @@ import {
   parseIsoDate,
 } from "./TelemetryStatus.helpers";
 
+const defaultNumberFormat: Intl.NumberFormatOptions = {
+  maximumFractionDigits: 1,
+  minimumFractionDigits: 0,
+};
+
+function formatNumber(
+  value: number | null | undefined,
+  options: Intl.NumberFormatOptions = defaultNumberFormat,
+) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return "—";
+  }
+  return new Intl.NumberFormat("en-US", options).format(value);
+}
+
+function formatMetadataValue(value: unknown): string {
+  if (value === null || value === undefined) {
+    return "—";
+  }
+
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? String(value) : "—";
+  }
+
+  if (typeof value === "boolean") {
+    return value ? "true" : "false";
+  }
+
+  if (Array.isArray(value) || typeof value === "object") {
+    try {
+      return JSON.stringify(value);
+    } catch (error) {
+      void error;
+      return "—";
+    }
+  }
+
+  return String(value);
+}
+
 type Props = {
   className?: string;
 };
@@ -53,6 +97,31 @@ export function TelemetryStatus({ className = "" }: Props) {
       sessions.find((session) => session.id === activeSessionId) ?? null,
     [sessions, activeSessionId],
   );
+
+  const selectedSessionValue = useMemo(() => {
+    if (!sessions.length) {
+      return "";
+    }
+    if (
+      activeSessionId &&
+      sessions.some((session) => session.id === activeSessionId)
+    ) {
+      return activeSessionId;
+    }
+    return sessions[0]?.id ?? "";
+  }, [activeSessionId, sessions]);
+
+  const singleSessionLabel = useMemo(() => {
+    if (!sessions.length) {
+      return "Awaiting data";
+    }
+    return (
+      activeSession?.label ??
+      sessions.find((session) => session.id === selectedSessionValue)?.label ??
+      sessions[0]?.label ??
+      "Current session"
+    );
+  }, [activeSession, selectedSessionValue, sessions]);
 
   const refresh = useCallback(async () => {
     setBusy(true);
@@ -208,7 +277,7 @@ export function TelemetryStatus({ className = "" }: Props) {
           key={i}
           className="w-[3px] rounded bg-bytebot-bronze-light-9 opacity-50 dark:bg-bytebot-bronze-dark-9"
           style={{ height: `${h}px` }}
-          title={`${v.toFixed(1)} px`}
+          title={`${formatNumber(v, { maximumFractionDigits: 1 })} px`}
         />
       );
     });
@@ -226,7 +295,7 @@ export function TelemetryStatus({ className = "" }: Props) {
             Targeted: <span className="font-semibold">{data?.targetedClicks ?? 0}</span>
           </span>
           <span>
-            Avg Δ: <span className="font-semibold">{data?.avgAbsDelta ?? "-"}</span>
+            Avg Δ: <span className="font-semibold">{formatNumber(data?.avgAbsDelta)}</span>
           </span>
           <span>
             Smart (completed): <span className="font-semibold">{data?.smartClicks ?? 0}</span>
@@ -292,30 +361,32 @@ export function TelemetryStatus({ className = "" }: Props) {
                 <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                   Session overview
                 </div>
-                <div className="min-w-[160px]">
-                  <Select
-                    value={
-                      sessions.length
-                        ? activeSessionId &&
-                          sessions.some((session) => session.id === activeSessionId)
-                          ? activeSessionId
-                          : sessions[0].id
-                        : ""
-                    }
-                    onValueChange={(value) => setSelectedSessionId(value)}
-                    disabled={!sessions.length}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select session" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {sessions.map((session) => (
-                        <SelectItem key={session.id} value={session.id}>
-                          {session.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="flex min-w-[180px] justify-end">
+                  {sessions.length > 1 ? (
+                    <Select
+                      value={selectedSessionValue}
+                      onValueChange={(value) => setSelectedSessionId(value)}
+                      disabled={!sessions.length}
+                    >
+                      <SelectTrigger className="h-8 w-full justify-between rounded-md border border-border/60 bg-card/60 px-2 text-[11px] font-medium text-card-foreground shadow-sm transition-colors hover:bg-card/80 focus:ring-2 focus:ring-bytebot-bronze-light-a3 focus:ring-offset-0 dark:bg-muted/60 dark:hover:bg-muted/70">
+                        <SelectValue placeholder="Select session" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {sessions.map((session) => (
+                          <SelectItem key={session.id} value={session.id}>
+                            {session.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div className="inline-flex items-center gap-2 rounded-md border border-border/60 bg-card/60 px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground shadow-sm dark:bg-muted/60">
+                      <span>{sessions.length ? "Active session" : "Sessions"}</span>
+                      <span className="rounded bg-bytebot-bronze-light-a3 px-2 py-0.5 text-[11px] font-semibold text-bytebot-bronze-light-12 dark:bg-bytebot-bronze-dark-a3 dark:text-bytebot-bronze-dark-12">
+                        {singleSessionLabel}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -346,7 +417,7 @@ export function TelemetryStatus({ className = "" }: Props) {
                   Events: <span className="font-semibold">{activeSession?.eventCount ?? normalizedEvents.length}</span>
                 </div>
                 <div className="rounded border border-border/70 bg-card/40 px-2 py-1 text-[11px] text-card-foreground dark:bg-muted/40">
-                  Session ID: <span className="font-mono text-[10px]">{activeSession?.id ?? "(current)"}</span>
+                  Session ID: <span className="break-all font-mono text-[10px] text-muted-foreground">{activeSession?.id ?? "(current)"}</span>
                 </div>
               </div>
             </div>
@@ -363,7 +434,7 @@ export function TelemetryStatus({ className = "" }: Props) {
               </div>
               <div className="rounded-md border border-bytebot-bronze-light-6 bg-bytebot-bronze-light-1 p-2 dark:border-bytebot-bronze-dark-6 dark:bg-bytebot-bronze-dark-2">
                 <div className="text-[10px] text-bytebot-bronze-light-10 dark:text-bytebot-bronze-dark-10">Avg Δ (px)</div>
-                <div className="text-[14px] font-semibold text-bytebot-bronze-light-12 dark:text-bytebot-bronze-dark-12">{data?.avgAbsDelta ?? '-'}</div>
+                <div className="text-[14px] font-semibold text-bytebot-bronze-light-12 dark:text-bytebot-bronze-dark-12">{formatNumber(data?.avgAbsDelta)}</div>
               </div>
             </div>
 
@@ -399,10 +470,10 @@ export function TelemetryStatus({ className = "" }: Props) {
             {/* Deltas */}
             <div className="mt-1 grid grid-cols-2 gap-2 text-[11px] text-card-foreground">
               <div className="rounded border border-bytebot-bronze-light-6 bg-bytebot-bronze-light-2 px-2 py-1 dark:border-bytebot-bronze-dark-6 dark:bg-bytebot-bronze-dark-2 dark:text-bytebot-bronze-dark-12">
-                Hover Δ avg: <span className="font-medium text-bytebot-bronze-light-12 dark:text-bytebot-bronze-dark-12">{data?.hoverProbes?.avgDiff?.toFixed(2) ?? '-'}</span> ({data?.hoverProbes?.count ?? 0})
+                Hover Δ avg: <span className="font-medium text-bytebot-bronze-light-12 dark:text-bytebot-bronze-dark-12">{formatNumber(data?.hoverProbes?.avgDiff, { maximumFractionDigits: 2 })}</span> ({data?.hoverProbes?.count ?? 0})
               </div>
               <div className="rounded border border-bytebot-bronze-light-6 bg-bytebot-bronze-light-2 px-2 py-1 dark:border-bytebot-bronze-dark-6 dark:bg-bytebot-bronze-dark-2 dark:text-bytebot-bronze-dark-12">
-                Post Δ avg: <span className="font-medium text-bytebot-bronze-light-12 dark:text-bytebot-bronze-dark-12">{data?.postClickDiff?.avgDiff?.toFixed(2) ?? '-'}</span> ({data?.postClickDiff?.count ?? 0})
+                Post Δ avg: <span className="font-medium text-bytebot-bronze-light-12 dark:text-bytebot-bronze-dark-12">{formatNumber(data?.postClickDiff?.avgDiff, { maximumFractionDigits: 2 })}</span> ({data?.postClickDiff?.count ?? 0})
               </div>
             </div>
 
@@ -417,7 +488,7 @@ export function TelemetryStatus({ className = "" }: Props) {
                       key={i}
                       style={{ height: `${h}px` }}
                       className="w-[5px] rounded bg-bytebot-bronze-light-9 opacity-60 dark:bg-bytebot-bronze-dark-9"
-                      title={`${v.toFixed(1)} px`}
+                      title={`${formatNumber(v, { maximumFractionDigits: 1 })} px`}
                     />
                   );
                 })}
@@ -427,10 +498,10 @@ export function TelemetryStatus({ className = "" }: Props) {
             {/* Footer cards */}
             <div className="mt-2 grid grid-cols-3 gap-2 text-[11px] text-card-foreground">
               <div className="rounded border border-bytebot-bronze-light-6 bg-bytebot-bronze-light-2 px-2 py-1 dark:border-bytebot-bronze-dark-6 dark:bg-bytebot-bronze-dark-2 dark:text-bytebot-bronze-dark-12">
-                Δx: <span className="font-medium text-bytebot-bronze-light-12 dark:text-bytebot-bronze-dark-12">{data?.avgDeltaX ?? '-'}</span>
+                Δx: <span className="font-medium text-bytebot-bronze-light-12 dark:text-bytebot-bronze-dark-12">{formatNumber(data?.avgDeltaX, { maximumFractionDigits: 2 })}</span>
               </div>
               <div className="rounded border border-bytebot-bronze-light-6 bg-bytebot-bronze-light-2 px-2 py-1 dark:border-bytebot-bronze-dark-6 dark:bg-bytebot-bronze-dark-2 dark:text-bytebot-bronze-dark-12">
-                Δy: <span className="font-medium text-bytebot-bronze-light-12 dark:text-bytebot-bronze-dark-12">{data?.avgDeltaY ?? '-'}</span>
+                Δy: <span className="font-medium text-bytebot-bronze-light-12 dark:text-bytebot-bronze-dark-12">{formatNumber(data?.avgDeltaY, { maximumFractionDigits: 2 })}</span>
               </div>
               <div className="rounded border border-bytebot-bronze-light-6 bg-bytebot-bronze-light-2 px-2 py-1 dark:border-bytebot-bronze-dark-6 dark:bg-bytebot-bronze-dark-2 dark:text-bytebot-bronze-dark-12">
                 Calib: <span className="font-medium text-bytebot-bronze-light-12 dark:text-bytebot-bronze-dark-12">{data?.calibrationSnapshots ?? 0}</span>
@@ -438,14 +509,26 @@ export function TelemetryStatus({ className = "" }: Props) {
             </div>
 
             <div className="mt-3">
-              <div className="text-[11px] font-semibold text-card-foreground">Recent events</div>
-              <div className="mt-1 rounded-md border border-border bg-card/80 dark:bg-muted/40">
-                <ScrollArea className="h-48">
-                  <div className="divide-y divide-border/70">
+              <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                <span className="font-semibold text-card-foreground">Recent events</span>
+                <span>
+                  {normalizedEvents.length}
+                  {" "}
+                  {normalizedEvents.length === 1 ? "entry" : "entries"}
+                </span>
+              </div>
+              <div className="mt-1 overflow-hidden rounded-lg border border-border/70 bg-card/80 shadow-inner backdrop-blur-sm dark:bg-muted/40">
+                <div className="grid grid-cols-[148px_108px_1fr] items-center gap-2 border-b border-border/70 bg-gradient-to-r from-card/90 via-card/70 to-card/90 px-3 py-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground dark:from-muted/70 dark:via-muted/50 dark:to-muted/70">
+                  <span>Timestamp</span>
+                  <span>Type</span>
+                  <span>Metadata</span>
+                </div>
+                <ScrollArea className="max-h-60">
+                  <ul className="divide-y divide-border/60">
                     {normalizedEvents.length === 0 ? (
-                      <div className="px-3 py-4 text-[11px] text-muted-foreground">
+                      <li className="px-3 py-6 text-center text-[11px] text-muted-foreground">
                         No events recorded yet for this session.
-                      </div>
+                      </li>
                     ) : (
                       normalizedEvents.map((event, idx) => {
                         const timestamp = event.timestamp
@@ -457,35 +540,46 @@ export function TelemetryStatus({ className = "" }: Props) {
                         const metadataEntries = Object.entries(event.metadata).filter(
                           ([, value]) => value !== undefined && value !== null,
                         );
-                        const metadataDisplay = metadataEntries.length
-                          ? JSON.stringify(Object.fromEntries(metadataEntries), null, 2)
-                          : "—";
 
                         return (
-                          <div
+                          <li
                             key={`${event.type}-${event.timestamp ?? idx}`}
-                            className="grid grid-cols-[150px_120px_1fr] items-start gap-2 px-3 py-2 text-[11px] text-card-foreground"
+                            className="grid grid-cols-[148px_108px_1fr] items-start gap-2 px-3 py-3 text-[11px] text-card-foreground transition-colors hover:bg-card/70 dark:hover:bg-muted/60"
                           >
                             <div className="font-mono text-[10px] text-muted-foreground">
                               {formattedTimestamp}
                             </div>
-                            <div className="font-medium text-card-foreground">
-                              {event.type}
+                            <div>
+                              <span className="inline-flex items-center rounded-full bg-bytebot-bronze-light-a3 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-bytebot-bronze-light-12 dark:bg-bytebot-bronze-dark-a3 dark:text-bytebot-bronze-dark-12">
+                                {event.type}
+                              </span>
                             </div>
                             <div className="min-w-0">
-                              {metadataDisplay === "—" ? (
+                              {metadataEntries.length === 0 ? (
                                 <span className="text-muted-foreground">—</span>
                               ) : (
-                                <pre className="whitespace-pre-wrap break-words font-mono text-[10px] leading-snug text-muted-foreground">
-                                  {metadataDisplay}
-                                </pre>
+                                <div className="grid gap-1">
+                                  {metadataEntries.map(([key, value]) => (
+                                    <div
+                                      key={`${key}-${idx}`}
+                                      className="flex min-w-0 items-start gap-2 rounded-md border border-border/50 bg-card/70 px-2 py-1 text-[10px] leading-tight text-muted-foreground dark:bg-muted/60"
+                                    >
+                                      <span className="shrink-0 uppercase tracking-wide text-[9px] text-muted-foreground">
+                                        {key}
+                                      </span>
+                                      <span className="min-w-0 break-words text-[11px] text-card-foreground">
+                                        {formatMetadataValue(value)}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
                               )}
                             </div>
-                          </div>
+                          </li>
                         );
                       })
                     )}
-                  </div>
+                  </ul>
                 </ScrollArea>
               </div>
             </div>
