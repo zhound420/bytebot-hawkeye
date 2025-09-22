@@ -158,6 +158,9 @@ lerna-debug.log*
 
 # Tests
 agent/coverage
+
+# Generated overlay samples
+packages/bytebotd/test-*-grid-service-output.png
 agent/.nyc_output
 
 # IDEs and editors
