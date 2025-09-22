@@ -22,6 +22,7 @@ import { AddTaskMessageDto } from './dto/add-task-message.dto';
 import { TasksGateway } from './tasks.gateway';
 import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { FileStorageService } from './file-storage.service';
 
 const buildRunnableTaskFilter = (
   now: Date = new Date(),
@@ -53,6 +54,7 @@ export class TasksService {
     private readonly tasksGateway: TasksGateway,
     private readonly configService: ConfigService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly fileStorageService: FileStorageService,
   ) {
     this.logger.log('TasksService initialized');
   }
@@ -89,26 +91,28 @@ export class TasksService {
         );
         filesDescription += `\n`;
 
-        const filePromises = createTaskDto.files.map((file) => {
-          // Extract base64 data without the data URL prefix
-          const base64Data = file.base64.includes('base64,')
-            ? file.base64.split('base64,')[1]
-            : file.base64;
+        for (const file of createTaskDto.files) {
+          const persisted = await this.fileStorageService.persistBase64File(
+            task.id,
+            file,
+          );
+          filesDescription += `\nFile ${file.name} uploaded to shared storage.`;
 
-          filesDescription += `\nFile ${file.name} written to desktop.`;
-
-          return prisma.file.create({
+          await prisma.file.create({
             data: {
               name: file.name,
               type: file.type || 'application/octet-stream',
               size: file.size,
-              data: base64Data,
+              storagePath: persisted.relativePath,
+              storageProvider: this.fileStorageService.provider,
               taskId: task.id,
             },
           });
-        });
 
-        await Promise.all(filePromises);
+          this.logger.debug(
+            `Stored file ${file.name} for task ${task.id} at ${persisted.relativePath}`,
+          );
+        }
         this.logger.debug(`Files saved successfully for task ID: ${task.id}`);
       }
 
