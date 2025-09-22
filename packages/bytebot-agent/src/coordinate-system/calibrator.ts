@@ -2,9 +2,26 @@ import { Coordinates } from '../agent/smart-click.types';
 
 export interface CalibrationSample {
   offset: Coordinates;
+  predicted: Coordinates | null;
+  actual: Coordinates | null;
+  success: boolean | null;
+  targetDescription: string | null;
+  error: number | null;
   timestamp: number;
   source: string;
 }
+
+export interface CalibrationSampleMetadata {
+  predicted?: Coordinates | null;
+  actual?: Coordinates | null;
+  success?: boolean | null;
+  targetDescription?: string | null;
+  error?: number | null;
+}
+
+export type RecordCorrectionOptions =
+  | string
+  | (CalibrationSampleMetadata & { source?: string });
 
 export class Calibrator {
   private readonly samples: CalibrationSample[] = [];
@@ -14,14 +31,29 @@ export class Calibrator {
     this.maxHistory = Math.max(maxHistory, 50);
   }
 
-  captureOffset(offset?: Coordinates | null, source = 'screenshot'): void {
+  captureOffset(
+    offset?: Coordinates | null,
+    source = 'screenshot',
+    metadata: CalibrationSampleMetadata = {},
+  ): void {
     if (!offset) {
       return;
     }
 
     const normalized = this.normalize(offset);
+    const success =
+      metadata.success === undefined ? null : metadata.success;
+    const error =
+      metadata.error === undefined
+        ? this.calculateError(normalized)
+        : metadata.error;
     this.samples.push({
       offset: normalized,
+      predicted: metadata.predicted ?? null,
+      actual: metadata.actual ?? null,
+      success,
+      targetDescription: metadata.targetDescription ?? null,
+      error,
       timestamp: Date.now(),
       source,
     });
@@ -34,13 +66,31 @@ export class Calibrator {
   recordCorrection(
     actual: Coordinates,
     predicted: Coordinates,
-    source = 'correction',
+    options: RecordCorrectionOptions = 'correction',
   ): Coordinates {
+    const metadata =
+      typeof options === 'string'
+        ? { source: options }
+        : options ?? { source: 'correction' };
+    const source = metadata.source ?? 'correction';
+    const { source: _ignoredSource, ...sampleMetadata } = metadata;
     const delta = {
       x: actual.x - predicted.x,
       y: actual.y - predicted.y,
     };
-    this.captureOffset(delta, source);
+    const success =
+      sampleMetadata.success === undefined ? true : sampleMetadata.success;
+    const error =
+      sampleMetadata.error === undefined
+        ? this.calculateError(delta)
+        : sampleMetadata.error;
+    this.captureOffset(delta, source, {
+      ...sampleMetadata,
+      predicted,
+      actual,
+      success,
+      error,
+    });
     return delta;
   }
 
@@ -90,5 +140,9 @@ export class Calibrator {
       x: Math.round(coords.x),
       y: Math.round(coords.y),
     };
+  }
+
+  private calculateError(offset: Coordinates): number {
+    return Math.hypot(offset.x, offset.y);
   }
 }
