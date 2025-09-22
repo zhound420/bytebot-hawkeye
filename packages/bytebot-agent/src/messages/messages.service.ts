@@ -13,6 +13,11 @@ import {
   isUserActionContentBlock,
 } from '@bytebot/shared';
 import { TasksGateway } from '../tasks/tasks.gateway';
+import {
+  estimateMessageTokenCount,
+  normalizeMessageTokens,
+  TokenizedMessage,
+} from './messages.tokens';
 
 // Extended message type for processing
 export interface ProcessedMessage extends Message {
@@ -43,7 +48,8 @@ export class MessagesService {
         content: data.content as Prisma.InputJsonValue,
         role: data.role,
         taskId: data.taskId,
-      },
+        estimatedTokens: estimateMessageTokenCount(data.content),
+      } as any,
     });
 
     this.tasksGateway.emitNewMessage(data.taskId, message);
@@ -51,8 +57,8 @@ export class MessagesService {
     return message;
   }
 
-  async findEvery(taskId: string): Promise<Message[]> {
-    return this.prisma.message.findMany({
+  async findEvery(taskId: string): Promise<TokenizedMessage[]> {
+    const messages = await this.prisma.message.findMany({
       where: {
         taskId,
       },
@@ -60,6 +66,8 @@ export class MessagesService {
         createdAt: 'asc',
       },
     });
+
+    return messages.map((message) => normalizeMessageTokens(message));
   }
 
   async findAll(
@@ -68,13 +76,13 @@ export class MessagesService {
       limit?: number;
       page?: number;
     },
-  ): Promise<Message[]> {
+  ): Promise<TokenizedMessage[]> {
     const { limit = 10, page = 1 } = options || {};
 
     // Calculate offset based on page and limit
     const offset = (page - 1) * limit;
 
-    return this.prisma.message.findMany({
+    const messages = await this.prisma.message.findMany({
       where: {
         taskId,
       },
@@ -84,10 +92,12 @@ export class MessagesService {
       take: limit,
       skip: offset,
     });
+
+    return messages.map((message) => normalizeMessageTokens(message));
   }
 
-  async findUnsummarized(taskId: string): Promise<Message[]> {
-    return this.prisma.message.findMany({
+  async findUnsummarized(taskId: string): Promise<TokenizedMessage[]> {
+    const messages = await this.prisma.message.findMany({
       where: {
         taskId,
         // find messages that don't have a summaryId
@@ -95,6 +105,75 @@ export class MessagesService {
       },
       orderBy: { createdAt: 'asc' },
     });
+
+    return messages.map((message) => normalizeMessageTokens(message));
+  }
+
+  async findRecentMessages(
+    taskId: string,
+    limitTokens: number,
+  ): Promise<{
+    messages: TokenizedMessage[];
+    totalTokens: number;
+    totalCount: number;
+    windowTokens: number;
+    oldestMessageId: string | null;
+    newestMessageId: string | null;
+  }> {
+    const unsummarized = await this.findUnsummarized(taskId);
+
+    if (unsummarized.length === 0) {
+      return {
+        messages: [],
+        totalTokens: 0,
+        windowTokens: 0,
+        totalCount: 0,
+        oldestMessageId: null,
+        newestMessageId: null,
+      };
+    }
+
+    const normalized = unsummarized.map((message) =>
+      normalizeMessageTokens(message),
+    );
+
+    const totalTokens = normalized.reduce(
+      (sum, message) => sum + (message.estimatedTokens || 0),
+      0,
+    );
+
+    const effectiveLimit = Math.max(limitTokens, 0);
+
+    let accumulated = 0;
+    const window: TokenizedMessage[] = [];
+
+    for (let index = normalized.length - 1; index >= 0; index -= 1) {
+      const current = normalized[index];
+      const tokens = current.estimatedTokens || 0;
+
+      if (accumulated + tokens > effectiveLimit && window.length > 0) {
+        break;
+      }
+
+      accumulated += tokens;
+      window.unshift(current);
+
+      if (accumulated >= effectiveLimit) {
+        break;
+      }
+    }
+
+    const oldest = window[0]?.id ?? null;
+    const newest = window[window.length - 1]?.id ?? null;
+
+    return {
+      messages: window,
+      totalTokens,
+      totalCount: normalized.length,
+      windowTokens: accumulated,
+      oldestMessageId: oldest,
+      newestMessageId: newest,
+    };
   }
 
   async attachSummary(

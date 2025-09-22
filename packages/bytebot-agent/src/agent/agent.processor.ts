@@ -1,5 +1,9 @@
 import { TasksService } from '../tasks/tasks.service';
 import { MessagesService } from '../messages/messages.service';
+import {
+  TokenizedMessage,
+  estimateMessageTokenCount,
+} from '../messages/messages.tokens';
 import { Injectable, Logger } from '@nestjs/common';
 import {
   Message,
@@ -44,6 +48,11 @@ import { SummariesService } from '../summaries/summaries.service';
 import { handleComputerToolUse } from './agent.computer-use';
 import { ProxyService } from '../proxy/proxy.service';
 
+type TaskWithSummaryState = Task & {
+  iterationsSinceSummary?: number;
+  lastSummarizedMessageId?: string | null;
+};
+
 @Injectable()
 export class AgentProcessor {
   private readonly logger = new Logger(AgentProcessor.name);
@@ -52,6 +61,9 @@ export class AgentProcessor {
   private abortController: AbortController | null = null;
   private services: Record<string, BytebotAgentService> = {};
   private pendingScreenshotObservation = false;
+  private static readonly MESSAGE_WINDOW_RATIO = 0.6;
+  private static readonly SUMMARY_TOKEN_RATIO = 0.75;
+  private static readonly MAX_ITERATIONS_WITHOUT_SUMMARY = 6;
 
   constructor(
     private readonly tasksService: TasksService,
@@ -143,7 +155,9 @@ export class AgentProcessor {
     }
 
     try {
-      const task: Task = await this.tasksService.findById(taskId);
+      const task = (await this.tasksService.findById(
+        taskId,
+      )) as TaskWithSummaryState;
 
       if (task.status !== TaskStatus.RUNNING) {
         this.logger.log(
@@ -160,35 +174,63 @@ export class AgentProcessor {
       // "abort" listeners on a single AbortSignal across iterations.
       this.abortController = new AbortController();
 
+      const model = task.model as unknown as BytebotAgentModel;
       const latestSummary = await this.summariesService.findLatest(taskId);
-      const unsummarizedMessages =
-        await this.messagesService.findUnsummarized(taskId);
-      const messages = [
-        ...(latestSummary
-          ? [
+
+      const contextWindow = model.contextWindow || 200000;
+      const windowTokenLimit = Math.floor(
+        contextWindow * AgentProcessor.MESSAGE_WINDOW_RATIO,
+      );
+
+      const {
+        messages: unsummarizedMessages,
+        totalTokens: totalUnsummarizedTokens,
+      } = await this.messagesService.findRecentMessages(
+        taskId,
+        windowTokenLimit,
+      );
+
+      if (unsummarizedMessages.length === 0 && !latestSummary) {
+        this.logger.warn(
+          `No messages available for task ID: ${taskId}, skipping iteration`,
+        );
+        await this.tasksService.update(taskId, {
+          iterationsSinceSummary: task.iterationsSinceSummary ?? 0,
+        });
+        return;
+      }
+
+      const summaryContextMessage: TokenizedMessage | null = latestSummary
+        ? {
+            id: 'summary-context',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            taskId,
+            summaryId: null,
+            role: Role.USER,
+            content: [
               {
-                id: '',
-                createdAt: new Date(),
-                updatedAt: new Date(),
-                taskId,
-                summaryId: null,
-                role: Role.USER,
-                content: [
-                  {
-                    type: MessageContentType.Text,
-                    text: latestSummary.content,
-                  },
-                ],
+                type: MessageContentType.Text,
+                text: latestSummary.content,
               },
-            ]
-          : []),
+            ],
+            estimatedTokens: estimateMessageTokenCount([
+              {
+                type: MessageContentType.Text,
+                text: latestSummary.content,
+              },
+            ]),
+          }
+        : null;
+
+      const messages: TokenizedMessage[] = [
+        ...(summaryContextMessage ? [summaryContextMessage] : []),
         ...unsummarizedMessages,
       ];
       this.logger.debug(
         `Sending ${messages.length} messages to LLM for processing`,
       );
 
-      const model = task.model as unknown as BytebotAgentModel;
       let agentResponse: BytebotAgentResponse;
 
       const service = this.services[model.provider];
@@ -206,7 +248,7 @@ export class AgentProcessor {
 
       agentResponse = await service.generateMessage(
         buildAgentSystemPrompt(),
-        messages,
+        messages as Message[],
         model.name,
         true,
         this.abortController.signal,
@@ -236,34 +278,48 @@ export class AgentProcessor {
         taskId,
       });
 
-      // Calculate if we need to summarize based on token usage
-      const contextWindow = model.contextWindow || 200000; // Default to 200k if not specified
-      const contextThreshold = contextWindow * 0.75;
+      const contextThreshold = Math.floor(
+        contextWindow * AgentProcessor.SUMMARY_TOKEN_RATIO,
+      );
+      const iterationBaseline = task.iterationsSinceSummary ?? 0;
+      const nextIterationCount = iterationBaseline + 1;
       const shouldSummarize =
-        agentResponse.tokenUsage.totalTokens >= contextThreshold;
+        totalUnsummarizedTokens >= contextThreshold ||
+        nextIterationCount >= AgentProcessor.MAX_ITERATIONS_WITHOUT_SUMMARY;
 
       if (shouldSummarize) {
         try {
+          const unsummarizedForSummary =
+            await this.messagesService.findUnsummarized(taskId);
           // After we've successfully generated a response, we can summarize the unsummarized messages
+          const summaryInstruction: TokenizedMessage = {
+            id: 'summary-instruction',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            taskId,
+            summaryId: null,
+            role: Role.USER,
+            content: [
+              {
+                type: MessageContentType.Text,
+                text: 'Respond with a summary of the messages above. Do not include any additional information.',
+              },
+            ],
+            estimatedTokens: estimateMessageTokenCount([
+              {
+                type: MessageContentType.Text,
+                text: 'Respond with a summary of the messages above. Do not include any additional information.',
+              },
+            ]),
+          };
+
           const summaryResponse = await service.generateMessage(
             SUMMARIZATION_SYSTEM_PROMPT,
             [
-              ...messages,
-              {
-                id: '',
-                createdAt: new Date(),
-                updatedAt: new Date(),
-                taskId,
-                summaryId: null,
-                role: Role.USER,
-                content: [
-                  {
-                    type: MessageContentType.Text,
-                    text: 'Respond with a summary of the messages above. Do not include any additional information.',
-                  },
-                ],
-              },
-            ],
+              ...(summaryContextMessage ? [summaryContextMessage] : []),
+              ...unsummarizedForSummary,
+              summaryInstruction,
+            ] as Message[],
             model.name,
             false,
             this.abortController.signal,
@@ -288,20 +344,38 @@ export class AgentProcessor {
           });
 
           await this.messagesService.attachSummary(taskId, summary.id, [
-            ...messages.map((message) => {
+            ...unsummarizedForSummary.map((message) => {
               return message.id;
             }),
           ]);
 
+          const lastSummarizedId =
+            unsummarizedForSummary[unsummarizedForSummary.length - 1]?.id ||
+            null;
+
+          await this.tasksService.update(taskId, {
+            iterationsSinceSummary: 0,
+            ...(lastSummarizedId
+              ? { lastSummarizedMessageId: lastSummarizedId }
+              : {}),
+          });
+
           this.logger.log(
-            `Generated summary for task ${taskId} due to token usage (${agentResponse.tokenUsage.totalTokens}/${contextWindow})`,
+            `Generated summary for task ${taskId} due to context pressure (${totalUnsummarizedTokens}/${contextWindow} tokens, ${nextIterationCount} iterations)`,
           );
         } catch (error: any) {
           this.logger.error(
             `Error summarizing messages for task ID: ${taskId}`,
             error.stack,
           );
+          await this.tasksService.update(taskId, {
+            iterationsSinceSummary: nextIterationCount,
+          });
         }
+      } else {
+        await this.tasksService.update(taskId, {
+          iterationsSinceSummary: nextIterationCount,
+        });
       }
 
       this.logger.debug(
@@ -432,8 +506,7 @@ export class AgentProcessor {
                   content: [
                     {
                       type: MessageContentType.Text,
-                      text:
-                        'Cannot mark as completed yet. Please perform concrete actions (e.g., open the app, click/type/paste, write_file) and provide verification (screenshot of the result or computer_read_file content). Then try completion again.',
+                      text: 'Cannot mark as completed yet. Please perform concrete actions (e.g., open the app, click/type/paste, write_file) and provide verification (screenshot of the result or computer_read_file content). Then try completion again.',
                     },
                   ],
                 } as any,
@@ -449,7 +522,8 @@ export class AgentProcessor {
         } else if (desired === 'failed') {
           const failureTimestamp = new Date();
           const failureReason =
-            setTaskStatusToolUseBlock.input.description ?? 'no description provided';
+            setTaskStatusToolUseBlock.input.description ??
+            'no description provided';
           this.logger.warn(
             `Task ${taskId} marked as failed via set_task_status tool: ${failureReason}`,
           );
@@ -492,7 +566,10 @@ export class AgentProcessor {
       const history = await this.messagesService.findEvery(taskId);
       let hasAction = false;
       let hasFreshVerification = false;
-      let latestActionPosition: { messageIndex: number; blockIndex: number } | null = null;
+      let latestActionPosition: {
+        messageIndex: number;
+        blockIndex: number;
+      } | null = null;
 
       const ACTION_NAMES = new Set<string>([
         'computer_click_mouse',
@@ -521,10 +598,9 @@ export class AgentProcessor {
             // Evidence: any document result or any image result
             const content = (tr.content || []) as any[];
             const hasVerificationContent = content.some((c) =>
-              [
-                MessageContentType.Document,
-                MessageContentType.Image,
-              ].includes(c.type as MessageContentType),
+              [MessageContentType.Document, MessageContentType.Image].includes(
+                c.type as MessageContentType,
+              ),
             );
             if (
               hasVerificationContent &&
@@ -542,7 +618,9 @@ export class AgentProcessor {
       // Minimal requirement: at least one action and some verification artifact
       return hasAction && hasFreshVerification;
     } catch (e) {
-      this.logger.warn(`canMarkCompleted: fallback to allow completion due to error: ${(e as Error).message}`);
+      this.logger.warn(
+        `canMarkCompleted: fallback to allow completion due to error: ${(e as Error).message}`,
+      );
       return true;
     }
   }

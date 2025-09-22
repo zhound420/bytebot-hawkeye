@@ -22,6 +22,8 @@ import { AddTaskMessageDto } from './dto/add-task-message.dto';
 import { TasksGateway } from './tasks.gateway';
 import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { MessageContentBlock, MessageContentType } from '@bytebot/shared';
+import { estimateMessageTokenCount } from '../messages/messages.tokens';
 
 const buildRunnableTaskFilter = (
   now: Date = new Date(),
@@ -114,17 +116,20 @@ export class TasksService {
 
       // Create the initial system message
       this.logger.debug(`Creating initial message for task ID: ${task.id}`);
+      const initialContent: MessageContentBlock[] = [
+        {
+          type: MessageContentType.Text,
+          text: `${createTaskDto.description} ${filesDescription}`.trim(),
+        },
+      ];
+
       await prisma.message.create({
         data: {
-          content: [
-            {
-              type: 'text',
-              text: `${createTaskDto.description} ${filesDescription}`,
-            },
-          ] as Prisma.InputJsonValue,
+          content: initialContent as Prisma.InputJsonValue,
           role: Role.USER,
           taskId: task.id,
-        },
+          estimatedTokens: estimateMessageTokenCount(initialContent),
+        } as any,
       });
       this.logger.debug(`Initial message created for task ID: ${task.id}`);
 
@@ -288,12 +293,17 @@ export class TasksService {
       throw new NotFoundException(`Task with ID ${taskId} not found`);
     }
 
+    const contentBlocks: MessageContentBlock[] = [
+      { type: MessageContentType.Text, text: addTaskMessageDto.message },
+    ];
+
     const message = await this.prisma.message.create({
       data: {
-        content: [{ type: 'text', text: addTaskMessageDto.message }],
+        content: contentBlocks as Prisma.InputJsonValue,
         role: Role.USER,
         taskId,
-      },
+        estimatedTokens: estimateMessageTokenCount(contentBlocks),
+      } as any,
     });
 
     this.tasksGateway.emitNewMessage(taskId, message);

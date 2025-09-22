@@ -56,7 +56,9 @@ model Task {
   queuedAt     DateTime?
   error        String?
   result       Json?
-  // Example: 
+  iterationsSinceSummary Int        @default(0)
+  lastSummarizedMessageId String?
+  // Example:
   // { "provider": "anthropic", "name": "claude-opus-4-20250514", "title": "Claude Opus 4" }
   model        Json
   messages     Message[]
@@ -83,7 +85,7 @@ model Summary {
 model Message {
   id        String   @id @default(uuid())
   // Content field follows Anthropic's content blocks structure
-  // Example: 
+  // Example:
   // [
   //   {"type": "text", "text": "Hello world"},
   //   {"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": "..."}}
@@ -92,6 +94,7 @@ model Message {
   role      Role     @default(ASSISTANT)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  estimatedTokens Int      @default(0)
   task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
   taskId    String
   summary   Summary? @relation(fields: [summaryId], references: [id])

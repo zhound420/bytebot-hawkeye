@@ -1,5 +1,5 @@
 import { AgentProcessor } from './agent.processor';
-import { TaskStatus } from '@prisma/client';
+import { Role, TaskStatus } from '@prisma/client';
 import { SCREENSHOT_OBSERVATION_GUARD_MESSAGE } from './agent.constants';
 import { MessageContentType } from '@bytebot/shared';
 
@@ -11,11 +11,27 @@ import { handleComputerToolUse } from './agent.computer-use';
 
 describe('AgentProcessor', () => {
   const createProcessor = (overrides: Partial<Record<string, any>> = {}) => {
+    const baseMessage = {
+      id: 'msg-0',
+      createdAt: new Date('2024-01-01T00:00:00Z'),
+      updatedAt: new Date('2024-01-01T00:00:00Z'),
+      taskId: 'task-1',
+      summaryId: null,
+      role: Role.USER,
+      content: [
+        {
+          type: MessageContentType.Text,
+          text: 'Initial context',
+        },
+      ],
+      estimatedTokens: 4,
+    };
     const tasksService = {
       findById: jest.fn().mockResolvedValue({
         id: 'task-1',
         status: TaskStatus.RUNNING,
         model: { provider: 'anthropic', name: 'claude-3', contextWindow: 100 },
+        iterationsSinceSummary: 0,
       }),
       update: jest.fn(),
       create: jest.fn(),
@@ -23,6 +39,9 @@ describe('AgentProcessor', () => {
     };
     const messagesService = {
       findUnsummarized: jest.fn().mockResolvedValue([]),
+      findRecentMessages: jest
+        .fn()
+        .mockResolvedValue(buildRecentMessages([baseMessage])),
       findEvery: jest.fn().mockResolvedValue([]),
       create: jest.fn(),
       attachSummary: jest.fn(),
@@ -72,6 +91,22 @@ describe('AgentProcessor', () => {
       messagesService,
       summariesService,
       anthropicService,
+    };
+  };
+
+  const buildRecentMessages = (messages: any[]) => {
+    const totalTokens = messages.reduce(
+      (sum, message) => sum + (message.estimatedTokens || 0),
+      0,
+    );
+
+    return {
+      messages,
+      totalTokens,
+      totalCount: messages.length,
+      windowTokens: totalTokens,
+      oldestMessageId: messages[0]?.id ?? null,
+      newestMessageId: messages[messages.length - 1]?.id ?? null,
     };
   };
 
@@ -228,8 +263,27 @@ describe('AgentProcessor', () => {
           .mockResolvedValueOnce(followUpResponse),
       };
 
+      const baseWindowMessage = {
+        id: 'msg-init',
+        createdAt: new Date('2024-01-01T00:00:00Z'),
+        updatedAt: new Date('2024-01-01T00:00:00Z'),
+        taskId: 'task-1',
+        summaryId: null,
+        role: Role.USER,
+        content: [
+          {
+            type: MessageContentType.Text,
+            text: 'Observation one',
+          },
+        ],
+        estimatedTokens: 4,
+      };
+
       const messagesService = {
         findUnsummarized: jest.fn().mockResolvedValue([]),
+        findRecentMessages: jest
+          .fn()
+          .mockResolvedValue(buildRecentMessages([baseWindowMessage])),
         findEvery: jest.fn().mockResolvedValue([]),
         create: jest.fn(),
         attachSummary: jest.fn(),
@@ -311,8 +365,27 @@ describe('AgentProcessor', () => {
           .mockResolvedValueOnce(nonCompliantResponse),
       };
 
+      const baseWindowMessage = {
+        id: 'msg-init',
+        createdAt: new Date('2024-01-01T00:00:00Z'),
+        updatedAt: new Date('2024-01-01T00:00:00Z'),
+        taskId: 'task-1',
+        summaryId: null,
+        role: Role.USER,
+        content: [
+          {
+            type: MessageContentType.Text,
+            text: 'Observation one',
+          },
+        ],
+        estimatedTokens: 4,
+      };
+
       const messagesService = {
         findUnsummarized: jest.fn().mockResolvedValue([]),
+        findRecentMessages: jest
+          .fn()
+          .mockResolvedValue(buildRecentMessages([baseWindowMessage])),
         findEvery: jest.fn().mockResolvedValue([]),
         create: jest.fn(),
         attachSummary: jest.fn(),
@@ -348,7 +421,9 @@ describe('AgentProcessor', () => {
 
         expect(handleComputerToolUseMock).toHaveBeenCalledTimes(1);
         const toolResultCall =
-          messagesService.create.mock.calls[messagesService.create.mock.calls.length - 1][0];
+          messagesService.create.mock.calls[
+            messagesService.create.mock.calls.length - 1
+          ][0];
         expect(toolResultCall.content[0].is_error).toBe(true);
         expect(toolResultCall.content[0].content[0].text).toBe(
           SCREENSHOT_OBSERVATION_GUARD_MESSAGE,
@@ -377,16 +452,19 @@ describe('AgentProcessor', () => {
         },
       };
 
-      const { processor, tasksService, messagesService, anthropicService } = createProcessor({
-        messagesService: {
-          findUnsummarized: jest.fn().mockResolvedValue([]),
-          findEvery: jest.fn().mockRejectedValue(new Error('transient failure')),
-          create: jest.fn(),
-        },
-        anthropicService: {
-          generateMessage: jest.fn().mockResolvedValue(anthropicResponse),
-        },
-      });
+      const { processor, tasksService, messagesService, anthropicService } =
+        createProcessor({
+          messagesService: {
+            findUnsummarized: jest.fn().mockResolvedValue([]),
+            findEvery: jest
+              .fn()
+              .mockRejectedValue(new Error('transient failure')),
+            create: jest.fn(),
+          },
+          anthropicService: {
+            generateMessage: jest.fn().mockResolvedValue(anthropicResponse),
+          },
+        });
 
       (processor as any).isProcessing = true;
       (processor as any).abortController = new AbortController();
@@ -403,10 +481,149 @@ describe('AgentProcessor', () => {
 
         expect(anthropicService.generateMessage).toHaveBeenCalled();
         expect(messagesService.findEvery).toHaveBeenCalledWith('task-1');
-        expect(tasksService.update).toHaveBeenCalledWith('task-1', {
-          status: TaskStatus.COMPLETED,
-          completedAt: expect.any(Date),
-        });
+        expect(tasksService.update).toHaveBeenCalledWith(
+          'task-1',
+          expect.objectContaining({
+            status: TaskStatus.COMPLETED,
+            completedAt: expect.any(Date),
+          }),
+        );
+      } finally {
+        setImmediateSpy.mockRestore();
+      }
+    });
+
+    it('limits the live window but summarizes the entire unsummarized history', async () => {
+      const baseTime = new Date('2024-01-01T00:00:00Z');
+      const history = Array.from({ length: 4 }).map((_, index) => ({
+        id: `msg-${index + 1}`,
+        createdAt: new Date(baseTime.getTime() + index * 1000),
+        updatedAt: new Date(baseTime.getTime() + index * 1000),
+        taskId: 'task-1',
+        summaryId: null,
+        role: index % 2 === 0 ? Role.USER : Role.ASSISTANT,
+        content: [
+          {
+            type: MessageContentType.Text,
+            text: `content-${index + 1}`,
+          },
+        ],
+        estimatedTokens: 40,
+      }));
+
+      const windowMessages = history.slice(-2);
+      const windowPayload = buildRecentMessages(windowMessages);
+      const recentMessagesPayload = {
+        ...windowPayload,
+        totalTokens: history.reduce(
+          (sum, message) => sum + (message.estimatedTokens || 0),
+          0,
+        ),
+        totalCount: history.length,
+      };
+
+      const anthropicService = {
+        generateMessage: jest
+          .fn()
+          .mockResolvedValueOnce({
+            contentBlocks: [
+              {
+                id: 'assistant-text',
+                type: MessageContentType.Text,
+                text: 'assistant response',
+              },
+            ],
+            tokenUsage: { totalTokens: 12 },
+          })
+          .mockResolvedValueOnce({
+            contentBlocks: [
+              {
+                id: 'summary',
+                type: MessageContentType.Text,
+                text: 'summary content',
+              },
+            ],
+            tokenUsage: { totalTokens: 8 },
+          }),
+      };
+
+      const summariesService = {
+        findLatest: jest.fn().mockResolvedValue(null),
+        create: jest.fn().mockResolvedValue({ id: 'summary-1' }),
+      };
+
+      const messagesService = {
+        findUnsummarized: jest.fn().mockResolvedValue(history),
+        findRecentMessages: jest.fn().mockResolvedValue(recentMessagesPayload),
+        findEvery: jest.fn().mockResolvedValue([]),
+        create: jest.fn(),
+        attachSummary: jest.fn(),
+      };
+
+      const { processor, tasksService } = createProcessor({
+        messagesService,
+        anthropicService,
+        summariesService,
+        tasksService: {
+          findById: jest.fn().mockResolvedValue({
+            id: 'task-1',
+            status: TaskStatus.RUNNING,
+            model: {
+              provider: 'anthropic',
+              name: 'claude-3',
+              contextWindow: 100,
+            },
+            iterationsSinceSummary: 3,
+          }),
+          update: jest.fn(),
+        },
+      });
+
+      (processor as any).isProcessing = true;
+      (processor as any).abortController = new AbortController();
+
+      const setImmediateSpy = jest
+        .spyOn(global, 'setImmediate')
+        .mockImplementation(((cb: (...args: any[]) => void) => {
+          return null as any;
+        }) as any);
+
+      try {
+        await (processor as any).runIteration('task-1');
+
+        expect(messagesService.findRecentMessages).toHaveBeenCalledWith(
+          'task-1',
+          expect.any(Number),
+        );
+
+        const primaryCallMessages =
+          anthropicService.generateMessage.mock.calls[0][1];
+        expect(primaryCallMessages.map((message: any) => message.id)).toEqual(
+          windowMessages.map((message) => message.id),
+        );
+
+        expect(anthropicService.generateMessage).toHaveBeenCalledTimes(2);
+
+        const summaryCallMessages =
+          anthropicService.generateMessage.mock.calls[1][1];
+        const summaryIds = summaryCallMessages
+          .slice(0, history.length)
+          .map((message: any) => message.id);
+        expect(summaryIds).toEqual(history.map((message) => message.id));
+
+        expect(messagesService.attachSummary).toHaveBeenCalledWith(
+          'task-1',
+          'summary-1',
+          history.map((message) => message.id),
+        );
+
+        expect(tasksService.update).toHaveBeenCalledWith(
+          'task-1',
+          expect.objectContaining({
+            iterationsSinceSummary: 0,
+            lastSummarizedMessageId: history[history.length - 1].id,
+          }),
+        );
       } finally {
         setImmediateSpy.mockRestore();
       }
@@ -438,7 +655,11 @@ describe('AgentProcessor', () => {
             id: 'task-1',
             status: TaskStatus.RUNNING,
             executedAt: undefined,
-            model: { provider: 'anthropic', name: 'claude-3', contextWindow: 100 },
+            model: {
+              provider: 'anthropic',
+              name: 'claude-3',
+              contextWindow: 100,
+            },
           }),
         },
         anthropicService: {
@@ -459,11 +680,14 @@ describe('AgentProcessor', () => {
         await (processor as any).runIteration('task-1');
 
         expect(anthropicService.generateMessage).toHaveBeenCalled();
-        expect(tasksService.update).toHaveBeenCalledWith('task-1', {
-          status: TaskStatus.FAILED,
-          completedAt: expect.any(Date),
-          executedAt: expect.any(Date),
-        });
+        expect(tasksService.update).toHaveBeenCalledWith(
+          'task-1',
+          expect.objectContaining({
+            status: TaskStatus.FAILED,
+            completedAt: expect.any(Date),
+            executedAt: expect.any(Date),
+          }),
+        );
       } finally {
         setImmediateSpy.mockRestore();
       }
