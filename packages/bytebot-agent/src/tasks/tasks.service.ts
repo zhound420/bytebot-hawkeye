@@ -24,6 +24,7 @@ import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { MessageContentBlock, MessageContentType } from '@bytebot/shared';
 import { estimateMessageTokenCount } from '../messages/messages.tokens';
+import { FileStorageService } from './file-storage.service';
 
 const buildRunnableTaskFilter = (
   now: Date = new Date(),
@@ -55,6 +56,7 @@ export class TasksService {
     private readonly tasksGateway: TasksGateway,
     private readonly configService: ConfigService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly fileStorageService: FileStorageService,
   ) {
     this.logger.log('TasksService initialized');
   }
@@ -82,37 +84,11 @@ export class TasksService {
       });
       this.logger.log(`Task created successfully with ID: ${task.id}`);
 
-      let filesDescription = '';
-
-      // Save files if provided
-      if (createTaskDto.files && createTaskDto.files.length > 0) {
-        this.logger.debug(
-          `Saving ${createTaskDto.files.length} file(s) for task ID: ${task.id}`,
-        );
-        filesDescription += `\n`;
-
-        const filePromises = createTaskDto.files.map((file) => {
-          // Extract base64 data without the data URL prefix
-          const base64Data = file.base64.includes('base64,')
-            ? file.base64.split('base64,')[1]
-            : file.base64;
-
-          filesDescription += `\nFile ${file.name} written to desktop.`;
-
-          return prisma.file.create({
-            data: {
-              name: file.name,
-              type: file.type || 'application/octet-stream',
-              size: file.size,
-              data: base64Data,
-              taskId: task.id,
-            },
-          });
-        });
-
-        await Promise.all(filePromises);
-        this.logger.debug(`Files saved successfully for task ID: ${task.id}`);
-      }
+      const filesDescription = await this.fileStorageService.persistTaskFiles(
+        prisma,
+        task.id,
+        createTaskDto.files,
+      );
 
       // Create the initial system message
       this.logger.debug(`Creating initial message for task ID: ${task.id}`);

@@ -66,11 +66,16 @@ describe('TasksService', () => {
     const configService = {};
     const eventEmitter = { emit: jest.fn() };
 
+    const fileStorageService = {
+      persistTaskFiles: jest.fn(),
+    };
+
     const service = new TasksService(
       prisma as any,
       tasksGateway as any,
       configService as any,
       eventEmitter as any,
+      fileStorageService as any,
     );
 
     return { service, prisma };
