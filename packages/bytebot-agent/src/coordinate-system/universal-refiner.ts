@@ -268,6 +268,11 @@ export class UniversalCoordinateRefiner {
     width = Math.max(1, width);
     height = Math.max(1, height);
 
+    if (dims) {
+      width = Math.min(width, dims.width);
+      height = Math.min(height, dims.height);
+    }
+
     const rect = {
       x: Math.max(0, Math.round(center.x - width / 2)),
       y: Math.max(0, Math.round(center.y - height / 2)),
