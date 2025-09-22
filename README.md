@@ -43,7 +43,7 @@ The forkâ€™s Smart Focus workflow narrows attention in three deliberate passesâ€
 
 https://github.com/user-attachments/assets/f271282a-27a3-43f3-9b99-b34007fdd169
 
-![Desktop accuracy overlay](docs/images/hawkeye-desktop.svg)
+![Desktop accuracy overlay](docs/images/hawkeye-desktop.png)
 
 ## What is a Desktop Agent?
 
