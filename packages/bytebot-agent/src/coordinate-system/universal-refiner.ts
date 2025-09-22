@@ -247,8 +247,26 @@ export class UniversalCoordinateRefiner {
       parsed.global ??
       (dims ? { x: dims.width / 2, y: dims.height / 2 } : { x: 960, y: 540 });
 
-    const width = region?.width ?? fallbackWidth;
-    const height = region?.height ?? fallbackHeight;
+    const diameter =
+      typeof zoom?.radius === 'number' ? Math.max(0, zoom.radius * 2) : null;
+
+    let width = region?.width ?? null;
+    let height = region?.height ?? null;
+
+    if (diameter !== null) {
+      if (width === null) {
+        width = dims ? Math.min(diameter, dims.width) : diameter;
+      }
+      if (height === null) {
+        height = dims ? Math.min(diameter, dims.height) : diameter;
+      }
+    }
+
+    width = width ?? fallbackWidth;
+    height = height ?? fallbackHeight;
+
+    width = Math.max(1, width);
+    height = Math.max(1, height);
 
     const rect = {
       x: Math.max(0, Math.round(center.x - width / 2)),

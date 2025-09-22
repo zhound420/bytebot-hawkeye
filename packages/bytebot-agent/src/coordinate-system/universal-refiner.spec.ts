@@ -208,6 +208,30 @@ describe('UniversalCoordinateRefiner heuristics', () => {
     );
   });
 
+  it('derives zoom region size from radius when only center is provided', async () => {
+    const radius = 320;
+    const { refiner, capture } = createRefiner(
+      JSON.stringify({
+        global: null,
+        needsZoom: true,
+        zoom: {
+          center: { x: 360, y: 260 },
+          radius,
+        },
+      }),
+      { width: 700, height: 500 },
+    );
+
+    await refiner.locate('Target with radius only');
+
+    expect(capture.zoom).toHaveBeenCalledWith(
+      expect.objectContaining({
+        width: radius * 2,
+        height: 500,
+      }),
+    );
+  });
+
   it('clamps calibrated coordinates to the screenshot bounds', async () => {
     const baseGlobal = { x: 1503, y: 917 };
     const fullAnswer = JSON.stringify({
