@@ -84,6 +84,7 @@ describe('UniversalCoordinateRefiner heuristics', () => {
     expect(prompt).toContain('Corner callouts display');
     expect(prompt).toContain('Lime rulers along the top and left edges');
     expect(prompt).toContain('Grid lines span the frame every interval');
+    expect(prompt).toContain('System will compensate');
     expect(prompt).not.toContain('example');
     expect(prompt).not.toContain('Reminder banner');
 
