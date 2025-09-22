@@ -103,9 +103,9 @@ model File {
   name             String
   type             String // MIME type
   size             Int // Size in bytes
-  storagePath      String  @map("storage_path")
-  storageProvider  String  @default("filesystem") @map("storage_provider")
-  legacyData       String? @map("legacy_data") @db.Text @ignore
+  storagePath      String? @map("storage_path")
+  storageProvider  String? @map("storage_provider")
+  data             String? @map("legacy_data") @db.Text
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
