@@ -185,9 +185,11 @@ export class UniversalCoordinateRefiner {
     const adjusted = this.calibrator.apply(bestGlobal);
 
     const bounds = dimensions ?? DEFAULT_CANVAS_DIMENSIONS;
+    const maxX = Math.max(0, bounds.width - 1);
+    const maxY = Math.max(0, bounds.height - 1);
     const clamped = {
-      x: Math.min(bounds.width, Math.max(0, adjusted.x)),
-      y: Math.min(bounds.height, Math.max(0, adjusted.y)),
+      x: Math.min(maxX, Math.max(0, adjusted.x)),
+      y: Math.min(maxY, Math.max(0, adjusted.y)),
     };
 
     let appliedOffset = currentOffset;

@@ -286,7 +286,7 @@ describe('UniversalCoordinateRefiner heuristics', () => {
 
     expect(capture.zoom).not.toHaveBeenCalled();
     expect(result.baseCoordinates).toEqual(baseGlobal);
-    expect(result.coordinates).toEqual({ x: 1920, y: 1080 });
-    expect(result.appliedOffset).toEqual({ x: 417, y: 163 });
+    expect(result.coordinates).toEqual({ x: 1919, y: 1079 });
+    expect(result.appliedOffset).toEqual({ x: 416, y: 162 });
   });
 });
