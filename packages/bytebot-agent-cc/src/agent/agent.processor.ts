@@ -13,10 +13,14 @@ import {
   isComputerToolUseContentBlock,
   isSetTaskStatusToolUseBlock,
   isCreateTaskToolUseBlock,
+  isScreenshotToolUseBlock,
+  isScreenshotRegionToolUseBlock,
+  isScreenshotCustomRegionToolUseBlock,
   SetTaskStatusToolUseBlock,
   RedactedThinkingContentBlock,
   ThinkingContentBlock,
   ToolUseContentBlock,
+  SCREENSHOT_OBSERVATION_GUARD_MESSAGE,
 } from '@bytebot/shared';
 
 import {
@@ -45,6 +49,7 @@ export class AgentProcessor {
   private currentTaskId: string | null = null;
   private isProcessing = false;
   private abortController: AbortController | null = null;
+  private pendingScreenshotObservation = false;
 
   private readonly BYTEBOT_DESKTOP_BASE_URL = process.env
     .BYTEBOT_DESKTOP_BASE_URL as string;
@@ -112,6 +117,7 @@ export class AgentProcessor {
     this.isProcessing = true;
     this.currentTaskId = taskId;
     this.abortController = new AbortController();
+    this.pendingScreenshotObservation = false;
 
     // Kick off the first iteration without blocking the caller
     void this.runIteration(taskId);
@@ -198,6 +204,7 @@ export class AgentProcessor {
         },
       })) {
         let messageContentBlocks: MessageContentBlock[] = [];
+        let generatedToolResults: ToolResultContentBlock[] = [];
         let role: Role = Role.ASSISTANT;
         switch (message.type) {
           case 'user': {
@@ -220,6 +227,52 @@ export class AgentProcessor {
             messageContentBlocks = this.formatAnthropicResponse(
               message.message.content,
             );
+
+            let mustClearObservationThisReply =
+              this.pendingScreenshotObservation;
+            let observationBlockedInReply = false;
+
+            for (const block of messageContentBlocks) {
+              if (
+                this.pendingScreenshotObservation &&
+                mustClearObservationThisReply
+              ) {
+                if (block.type === MessageContentType.Text) {
+                  const textBlock = block as TextContentBlock;
+                  const text = (textBlock.text || '').trim();
+                  if (text.length > 0 && !observationBlockedInReply) {
+                    this.pendingScreenshotObservation = false;
+                    mustClearObservationThisReply = false;
+                  }
+                } else if (isComputerToolUseContentBlock(block)) {
+                  observationBlockedInReply = true;
+                  generatedToolResults.push({
+                    type: MessageContentType.ToolResult,
+                    tool_use_id: block.id,
+                    is_error: true,
+                    content: [
+                      {
+                        type: MessageContentType.Text,
+                        text: SCREENSHOT_OBSERVATION_GUARD_MESSAGE,
+                      },
+                    ],
+                  });
+                  continue;
+                }
+              }
+
+              if (isComputerToolUseContentBlock(block)) {
+                if (
+                  isScreenshotToolUseBlock(block) ||
+                  isScreenshotRegionToolUseBlock(block) ||
+                  isScreenshotCustomRegionToolUseBlock(block)
+                ) {
+                  this.pendingScreenshotObservation = true;
+                  mustClearObservationThisReply = true;
+                  observationBlockedInReply = false;
+                }
+              }
+            }
             break;
           }
           case 'system':
@@ -251,6 +304,14 @@ export class AgentProcessor {
           await this.messagesService.create({
             content: messageContentBlocks,
             role,
+            taskId,
+          });
+        }
+
+        if (generatedToolResults.length > 0) {
+          await this.messagesService.create({
+            content: generatedToolResults,
+            role: Role.USER,
             taskId,
           });
         }
@@ -286,5 +347,6 @@ export class AgentProcessor {
 
     this.isProcessing = false;
     this.currentTaskId = null;
+    this.pendingScreenshotObservation = false;
   }
 }
