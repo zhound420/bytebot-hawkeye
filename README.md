@@ -111,16 +111,17 @@ echo "ANTHROPIC_API_KEY=sk-ant-..." > docker/.env
 # Or: echo "GEMINI_API_KEY=..." >> docker/.env
 # Or: echo "OPENROUTER_API_KEY=..." >> docker/.env
 
-docker compose -f docker/docker-compose.yml up -d
+# Launch the full Hawkeye stack (proxy adds LiteLLM + routing required for all features)
+docker compose -f docker/docker-compose.proxy.yml up -d --build
 
 # Open http://localhost:9992
 ```
 
-Need Hawkeye’s full service layout? Use the proxy stack to launch the bundled LiteLLM relay and feed the agent from `packages/bytebot-llm-proxy/litellm-config.yaml`, or swap in the Claude-Code tuned API service when you only want code models:
+Prefer a slimmer or custom layout? The non-proxy Compose files are advanced alternatives—use them only if you plan to wire up your own LLM gateway or service mix. Otherwise stick with the proxy stack so Hawkeye boots with LiteLLM, routing, and all desktop features ready to go. For specialized cases you can swap in the Claude-Code tuned API service when you only want code models:
 
 ```bash
-# Run with the LiteLLM proxy (adds the bytebot-llm-proxy container on :4000)
-docker compose -f docker/docker-compose.proxy.yml up -d
+# Run the lean stack without the proxy (bring your own LLM endpoint)
+docker compose -f docker/docker-compose.yml up -d
 
 # Run with the Claude Code agent (replaces bytebot-agent with bytebot-agent-cc)
 docker compose -f docker/docker-compose-claude-code.yml up -d
