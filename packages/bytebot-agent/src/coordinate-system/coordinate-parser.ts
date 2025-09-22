@@ -46,6 +46,25 @@ function sanitizeJson(raw: string): string {
     .trim();
 }
 
+function coerceNumber(input: unknown): number | null {
+  if (typeof input === 'number' && Number.isFinite(input)) {
+    return input;
+  }
+  if (typeof input === 'string') {
+    const trimmed = input.trim();
+    if (!trimmed) {
+      return null;
+    }
+    const match = trimmed.match(/-?\d+(?:\.\d+)?/);
+    if (!match) {
+      return null;
+    }
+    const parsed = Number.parseFloat(match[0]);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
 function normalizeCoords(value: any): Coordinates | null {
   if (!value || typeof value !== 'object') {
     if (typeof value === 'string') {
@@ -60,30 +79,18 @@ function normalizeCoords(value: any): Coordinates | null {
     return null;
   }
 
-  const x =
-    typeof value.x === 'number'
-      ? value.x
-      : typeof value.X === 'number'
-        ? value.X
-        : typeof value.globalX === 'number'
-          ? value.globalX
-          : typeof value.global_x === 'number'
-            ? value.global_x
-            : typeof value[0] === 'number'
-              ? value[0]
-              : null;
-  const y =
-    typeof value.y === 'number'
-      ? value.y
-      : typeof value.Y === 'number'
-        ? value.Y
-        : typeof value.globalY === 'number'
-          ? value.globalY
-          : typeof value.global_y === 'number'
-            ? value.global_y
-            : typeof value[1] === 'number'
-              ? value[1]
-              : null;
+  const coerceFromKeys = (keys: Array<string | number>): number | null => {
+    for (const key of keys) {
+      const candidate = coerceNumber(value[key as keyof typeof value]);
+      if (candidate != null) {
+        return candidate;
+      }
+    }
+    return null;
+  };
+
+  const x = coerceFromKeys(['x', 'X', 'globalX', 'global_x', 0, '0']);
+  const y = coerceFromKeys(['y', 'Y', 'globalY', 'global_y', 1, '1']);
 
   if (x == null || y == null) {
     return null;
