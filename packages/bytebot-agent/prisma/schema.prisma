@@ -99,13 +99,15 @@ model Message {
 }
 
 model File {
-  id        String   @id @default(uuid())
-  name      String
-  type      String // MIME type
-  size      Int // Size in bytes
-  data      String // Base64 encoded file data
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               String   @id @default(uuid())
+  name             String
+  type             String // MIME type
+  size             Int // Size in bytes
+  storagePath      String  @map("storage_path")
+  storageProvider  String  @default("filesystem") @map("storage_provider")
+  legacyData       String? @map("legacy_data") @db.Text @ignore
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   // Relations
   task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)

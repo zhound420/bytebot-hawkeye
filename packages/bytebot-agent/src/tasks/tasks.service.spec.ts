@@ -65,12 +65,17 @@ describe('TasksService', () => {
     const tasksGateway = {};
     const configService = {};
     const eventEmitter = { emit: jest.fn() };
+    const fileStorageService = {
+      persistBase64File: jest.fn(),
+      provider: 'filesystem',
+    };
 
     const service = new TasksService(
       prisma as any,
       tasksGateway as any,
       configService as any,
       eventEmitter as any,
+      fileStorageService as any,
     );
 
     return { service, prisma };

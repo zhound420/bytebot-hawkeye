@@ -3,7 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { TasksService } from '../tasks/tasks.service';
 import { AgentProcessor } from './agent.processor';
 import { TaskStatus } from '@prisma/client';
-import { writeFile } from './agent.computer-use';
+import { FileStorageService } from '../tasks/file-storage.service';
 
 @Injectable()
 export class AgentScheduler implements OnModuleInit {
@@ -12,6 +12,7 @@ export class AgentScheduler implements OnModuleInit {
   constructor(
     private readonly tasksService: TasksService,
     private readonly agentProcessor: AgentProcessor,
+    private readonly fileStorageService: FileStorageService,
   ) {}
 
   async onModuleInit() {
@@ -42,13 +43,34 @@ export class AgentScheduler implements OnModuleInit {
     if (task) {
       if (task.files.length > 0) {
         this.logger.debug(
-          `Task ID: ${task.id} has files, writing them to the desktop`,
+          `Task ID: ${task.id} has files, staging them from shared storage`,
         );
         for (const file of task.files) {
-          await writeFile({
-            path: `/home/user/Desktop/${file.name}`,
-            content: file.data, // file.data is already base64 encoded in the database
-          });
+          if (!file.storagePath) {
+            this.logger.warn(
+              `Skipping file ${file.name} for task ${task.id} because storagePath is missing`,
+            );
+            continue;
+          }
+
+          if (file.storageProvider !== this.fileStorageService.provider) {
+            this.logger.warn(
+              `Skipping file ${file.name} for task ${task.id} due to unsupported provider ${file.storageProvider}`,
+            );
+            continue;
+          }
+
+          try {
+            const destination = await this.fileStorageService.copyToDesktop(file);
+            this.logger.debug(
+              `Copied file ${file.name} for task ${task.id} to ${destination}`,
+            );
+          } catch (error) {
+            this.logger.error(
+              `Failed to prepare file ${file.name} for task ${task.id}: ${error.message}`,
+              error.stack,
+            );
+          }
         }
       }
 
