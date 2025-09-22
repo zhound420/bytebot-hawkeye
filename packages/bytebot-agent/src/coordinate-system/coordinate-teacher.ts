@@ -38,7 +38,7 @@ export class CoordinateTeacher {
 
     if (options.offsetHint) {
       parts.push(
-        `Calibration: recent offset applied (${options.offsetHint.x}, ${options.offsetHint.y}). Add this drift correction to your calculation if the overlay looks shifted.`,
+        `Calibration: recent offset observed (${options.offsetHint.x}, ${options.offsetHint.y}). System will compensate by this amount if the overlay looks shifted; report coordinates directly from the grid annotations.`,
       );
     }
 
@@ -68,7 +68,7 @@ export class CoordinateTeacher {
     }
     if (options.offsetHint) {
       parts.push(
-        `Calibration: apply offset (${options.offsetHint.x}, ${options.offsetHint.y}) if the zoom looks shifted relative to the grid origin.`,
+        `Calibration: recent offset observed (${options.offsetHint.x}, ${options.offsetHint.y}). System will compensate by this amount; rely on the overlay labels when reporting coordinates.`,
       );
     }
     parts.push(`Target: "${targetDescription}".`);
