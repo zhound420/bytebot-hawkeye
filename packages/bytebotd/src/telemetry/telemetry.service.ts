@@ -5,6 +5,12 @@ import { promisify } from 'util';
 const exec = promisify(execCb);
 import * as path from 'path';
 
+export class InvalidSessionIdError extends Error {
+  constructor(public readonly sessionId: string | undefined) {
+    super('Invalid session identifier');
+  }
+}
+
 interface DriftOffset {
   x: number;
   y: number;
@@ -52,6 +58,8 @@ interface ClickTelemetryPayload {
 
 @Injectable()
 export class TelemetryService {
+  private static readonly SESSION_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
+
   private readonly logger = new Logger(TelemetryService.name);
   private readonly telemetryEnabled = process.env.BYTEBOT_TELEMETRY !== 'false';
   private readonly driftCompensationEnabled =
@@ -72,12 +80,32 @@ export class TelemetryService {
     this.ready = this.initialise();
   }
 
+  static isValidSessionId(sessionId: string): boolean {
+    return TelemetryService.SESSION_ID_PATTERN.test(sessionId);
+  }
+
+  private normalizeSessionId(sessionId?: string): string | undefined {
+    if (sessionId === undefined || sessionId === null) {
+      return undefined;
+    }
+    const trimmed = sessionId.trim();
+    if (!trimmed) {
+      return undefined;
+    }
+    if (!TelemetryService.isValidSessionId(trimmed)) {
+      throw new InvalidSessionIdError(sessionId);
+    }
+    return trimmed;
+  }
+
   getLogFilePath(sessionId?: string): string {
-    return this.resolveLogFilePath(sessionId);
+    const normalized = this.normalizeSessionId(sessionId);
+    return this.resolveLogFilePath(normalized);
   }
 
   getCalibrationDir(sessionId?: string): string {
-    return this.resolveCalibrationDir(sessionId);
+    const normalized = this.normalizeSessionId(sessionId);
+    return this.resolveCalibrationDir(normalized);
   }
 
   private async initialise(): Promise<void> {
@@ -114,13 +142,14 @@ export class TelemetryService {
   }
 
   async startSession(sessionId: string): Promise<void> {
-    if (!sessionId) {
-      return;
+    const normalized = this.normalizeSessionId(sessionId);
+    if (!normalized) {
+      throw new InvalidSessionIdError(sessionId);
     }
     await this.ready;
-    await this.ensureSessionDirectories(sessionId);
-    this.currentSessionId = sessionId;
-    await this.loadDriftForSession(sessionId);
+    await this.ensureSessionDirectories(normalized);
+    this.currentSessionId = normalized;
+    await this.loadDriftForSession(normalized);
   }
 
   async listSessions(): Promise<{
@@ -133,7 +162,10 @@ export class TelemetryService {
         withFileTypes: true,
       });
       const sessions = entries
-        .filter((entry) => entry.isDirectory())
+        .filter(
+          (entry) =>
+            entry.isDirectory() && TelemetryService.isValidSessionId(entry.name),
+        )
         .map((entry) => entry.name)
         .sort();
       if (!sessions.includes(this.currentSessionId)) {
@@ -374,23 +406,26 @@ export class TelemetryService {
 
   async resetAll(sessionId?: string): Promise<void> {
     await this.ready;
-    const targetSession = sessionId || this.currentSessionId;
+    const normalized = this.normalizeSessionId(sessionId);
+    const targetSession = normalized ?? this.currentSessionId;
     try {
-      if (sessionId) {
-        await this.startSession(targetSession);
+      if (normalized) {
+        await this.startSession(normalized);
       } else {
         await this.ensureSessionDirectories(targetSession);
       }
-      const driftFile = this.getDriftFilePath(targetSession);
+      const sessionDir = this.resolveSessionDir(targetSession);
+      const driftFile = path.join(sessionDir, 'drift.json');
       const zeroDrift = { x: 0, y: 0 };
       await fs.writeFile(driftFile, JSON.stringify(zeroDrift), 'utf8');
 
       // Truncate click telemetry log
-      await fs.writeFile(this.getLogFilePath(targetSession), '', 'utf8');
+      const logFile = path.join(sessionDir, 'click-telemetry.log');
+      await fs.writeFile(logFile, '', 'utf8');
 
       // Clear calibration snapshots
       try {
-        const calibrationDir = this.getCalibrationDir(targetSession);
+        const calibrationDir = path.join(sessionDir, 'calibration');
         const files = await fs.readdir(calibrationDir);
         await Promise.all(
           files.map((f) =>
@@ -430,9 +465,13 @@ export class TelemetryService {
   }
 
   private async ensureSessionDirectories(sessionId: string): Promise<void> {
-    const sessionDir = this.resolveSessionDir(sessionId);
-    const calibrationDir = this.resolveCalibrationDir(sessionId);
-    const logFile = this.resolveLogFilePath(sessionId);
+    const normalized = this.normalizeSessionId(sessionId);
+    if (!normalized) {
+      throw new InvalidSessionIdError(sessionId);
+    }
+    const sessionDir = this.resolveSessionDir(normalized);
+    const calibrationDir = this.resolveCalibrationDir(normalized);
+    const logFile = this.resolveLogFilePath(normalized);
     await fs.mkdir(sessionDir, { recursive: true });
     await fs.mkdir(calibrationDir, { recursive: true });
     try {
@@ -443,9 +482,13 @@ export class TelemetryService {
   }
 
   private async loadDriftForSession(sessionId: string): Promise<void> {
+    const normalized = this.normalizeSessionId(sessionId);
+    if (!normalized) {
+      throw new InvalidSessionIdError(sessionId);
+    }
     try {
       const driftRaw = await fs
-        .readFile(this.getDriftFilePath(sessionId), 'utf8')
+        .readFile(this.getDriftFilePath(normalized), 'utf8')
         .catch(() => null);
       if (driftRaw) {
         const parsed = JSON.parse(driftRaw) as DriftOffset;
@@ -462,7 +505,7 @@ export class TelemetryService {
       this.drift = { x: 0, y: 0 };
     } catch (error) {
       this.logger.warn(
-        `Failed to load drift for session ${sessionId}: ${(error as Error).message}`,
+        `Failed to load drift for session ${normalized}: ${(error as Error).message}`,
       );
       this.drift = { x: 0, y: 0 };
     }
@@ -477,7 +520,8 @@ export class TelemetryService {
     const eventLimit = Number.isFinite(limitRaw)
       ? Math.max(0, Math.min(Math.trunc(limitRaw), 100))
       : 20;
-    const logPath = this.getLogFilePath(sessionId);
+    const normalized = this.normalizeSessionId(sessionId);
+    const logPath = this.resolveLogFilePath(normalized);
     const defaultSummary: SessionTimelineSummary = {
       sessionStart: null,
       sessionEnd: null,

@@ -1,7 +1,7 @@
 import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
-import { TelemetryService } from './telemetry.service';
+import { InvalidSessionIdError, TelemetryService } from './telemetry.service';
 
 describe('TelemetryService', () => {
   let telemetryDir: string;
@@ -118,5 +118,37 @@ describe('TelemetryService', () => {
       sessionEnd: '2024-01-01T01:00:00.000Z',
       sessionDurationMs: 0,
     });
+  });
+
+  it('allows valid session identifiers and normalises input', async () => {
+    const service = new TelemetryService();
+    await service.waitUntilReady();
+
+    await service.startSession(' valid-ID_123 ');
+    expect(service.getLogFilePath('valid-ID_123')).toBe(
+      path.join(telemetryDir, 'valid-ID_123', 'click-telemetry.log'),
+    );
+  });
+
+  it('rejects directory traversal attempts', async () => {
+    const service = new TelemetryService();
+    await service.waitUntilReady();
+
+    expect(() => service.getLogFilePath('../etc/passwd')).toThrow(
+      InvalidSessionIdError,
+    );
+    await expect(service.resetAll('../etc/passwd')).rejects.toBeInstanceOf(
+      InvalidSessionIdError,
+    );
+  });
+
+  it('defaults to the current session when none is provided', async () => {
+    const service = new TelemetryService();
+    await service.waitUntilReady();
+
+    const logPath = service.getLogFilePath();
+    expect(logPath).toBe(
+      path.join(telemetryDir, 'default', 'click-telemetry.log'),
+    );
   });
 });
