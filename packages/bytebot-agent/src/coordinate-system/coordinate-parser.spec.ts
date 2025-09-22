@@ -26,6 +26,23 @@ describe('CoordinateParser', () => {
     expect(global).toEqual({ x: 860, y: 660 });
   });
 
+  it('normalizes string valued zoom regions', () => {
+    const payload = JSON.stringify({
+      zoom: {
+        region: {
+          x: '10.4',
+          y: '20.6',
+          width: '30.2',
+          height: '40.8',
+        },
+      },
+    });
+
+    const { zoom } = parser.parse(payload);
+
+    expect(zoom?.region).toEqual({ x: 10, y: 21, width: 30, height: 41 });
+  });
+
   it('identifies coordinates aligned to 100 px intersections as suspicious', () => {
     const parsed = parser.parse('{"global":{"x":200,"y":300}}');
 
