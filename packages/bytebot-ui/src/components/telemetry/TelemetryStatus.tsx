@@ -121,28 +121,6 @@ export function TelemetryStatus({ className = "" }: Props) {
     }
   }, [activeSessionId]);
 
-  const reset = useCallback(async () => {
-    setBusy(true);
-    const params = new URLSearchParams();
-    const session = activeSessionId;
-    if (session) {
-      params.set("session", session);
-    }
-    const query = params.toString();
-    try {
-      const res = await fetch(`/api/tasks/telemetry/reset${query ? `?${query}` : ""}`, {
-        method: "POST",
-      });
-      if (!res.ok) {
-        throw new Error("Failed to reset telemetry");
-      }
-      await refreshSessions();
-      await refresh();
-    } catch {
-      setBusy(false);
-    }
-  }, [activeSessionId, refresh, refreshSessions]);
-
   const refreshSessions = useCallback(async () => {
     try {
       const res = await fetch("/api/tasks/telemetry/sessions", {
@@ -185,6 +163,28 @@ export function TelemetryStatus({ className = "" }: Props) {
       // Ignore session discovery failures and keep the existing list
     }
   }, []);
+
+  const reset = useCallback(async () => {
+    setBusy(true);
+    const params = new URLSearchParams();
+    const session = activeSessionId;
+    if (session) {
+      params.set("session", session);
+    }
+    const query = params.toString();
+    try {
+      const res = await fetch(`/api/tasks/telemetry/reset${query ? `?${query}` : ""}`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        throw new Error("Failed to reset telemetry");
+      }
+      await refreshSessions();
+      await refresh();
+    } catch {
+      setBusy(false);
+    }
+  }, [activeSessionId, refresh, refreshSessions]);
 
   useEffect(() => {
     refreshSessions();
