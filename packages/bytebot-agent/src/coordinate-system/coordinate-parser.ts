@@ -122,30 +122,20 @@ function normalizeRegion(
     return null;
   }
 
-  const x =
-    typeof value.x === 'number'
-      ? value.x
-      : typeof value.left === 'number'
-        ? value.left
-        : null;
-  const y =
-    typeof value.y === 'number'
-      ? value.y
-      : typeof value.top === 'number'
-        ? value.top
-        : null;
-  const width =
-    typeof value.width === 'number'
-      ? value.width
-      : typeof value.w === 'number'
-        ? value.w
-        : null;
-  const height =
-    typeof value.height === 'number'
-      ? value.height
-      : typeof value.h === 'number'
-        ? value.h
-        : null;
+  const coerceFromKeys = (keys: Array<string | number>): number | null => {
+    for (const key of keys) {
+      const candidate = coerceNumber(value[key as keyof typeof value]);
+      if (candidate != null) {
+        return candidate;
+      }
+    }
+    return null;
+  };
+
+  const x = coerceFromKeys(['x', 'X', 'left', 'Left']);
+  const y = coerceFromKeys(['y', 'Y', 'top', 'Top']);
+  const width = coerceFromKeys(['width', 'Width', 'w', 'W']);
+  const height = coerceFromKeys(['height', 'Height', 'h', 'H']);
 
   if (x == null || y == null || width == null || height == null) {
     return null;
