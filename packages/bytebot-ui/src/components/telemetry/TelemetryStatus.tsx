@@ -136,11 +136,12 @@ export function TelemetryStatus({ className = "" }: Props) {
       if (!res.ok) {
         throw new Error("Failed to reset telemetry");
       }
+      await refreshSessions();
       await refresh();
     } catch {
       setBusy(false);
     }
-  }, [activeSessionId, refresh]);
+  }, [activeSessionId, refresh, refreshSessions]);
 
   const refreshSessions = useCallback(async () => {
     try {
