@@ -121,6 +121,8 @@ docker compose -f docker/docker-compose.proxy.yml up -d
 
 Need to adjust the model roster? Edit `packages/bytebot-llm-proxy/litellm-config.yaml` and then restart the LiteLLM proxy so it reloads the bind-mounted config—no rebuild required:
 
+OpenRouter routes are included by default, so dropping an `OPENROUTER_API_KEY` into `docker/.env` works out of the box. If you prefer to run LM Studio locally, update the LiteLLM proxy config to point a route at your LM Studio endpoint and choose the model you have hosted. In either case, adjust `packages/bytebot-llm-proxy/litellm-config.yaml` to reference your preferred OpenRouter or LM Studio models, then restart the proxy to pick up the change.
+
 ```bash
 docker compose -f docker/docker-compose.proxy.yml restart bytebot-llm-proxy
 # or simply rerun
