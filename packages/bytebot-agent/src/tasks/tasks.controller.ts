@@ -20,6 +20,18 @@ import { OPENAI_MODELS } from '../openai/openai.constants';
 import { GOOGLE_MODELS } from '../google/google.constants';
 import { BytebotAgentModel } from 'src/agent/agent.types';
 
+type AgentTelemetrySessionInfo = {
+  id: string;
+  label: string;
+  startedAt: string | null;
+  endedAt: string | null;
+  lastEventAt: string | null;
+  eventCount?: number;
+  sessionStart: string | null;
+  sessionEnd: string | null;
+  sessionDurationMs: number | null;
+};
+
 const geminiApiKey = process.env.GEMINI_API_KEY;
 const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
 const openaiApiKey = process.env.OPENAI_API_KEY;
@@ -209,10 +221,89 @@ export class TasksController {
     }
   }
 
+  private normalizeTelemetrySession(input: unknown): AgentTelemetrySessionInfo | null {
+    if (!input || typeof input !== 'object') {
+      if (typeof input === 'string' && input.trim().length > 0) {
+        const id = input.trim();
+        return {
+          id,
+          label: id,
+          startedAt: null,
+          endedAt: null,
+          lastEventAt: null,
+          sessionStart: null,
+          sessionEnd: null,
+          sessionDurationMs: null,
+        };
+      }
+      return null;
+    }
+
+    const candidate = input as Record<string, unknown>;
+    const idSource = candidate.id ?? candidate.sessionId ?? candidate.identifier;
+    const id =
+      typeof idSource === 'string' && idSource.trim().length > 0
+        ? idSource.trim()
+        : null;
+    if (!id) {
+      return null;
+    }
+
+    const label =
+      typeof candidate.label === 'string' && candidate.label.trim().length > 0
+        ? candidate.label
+        : id;
+    const startedAtCandidate =
+      typeof candidate.startedAt === 'string' && candidate.startedAt.length > 0
+        ? candidate.startedAt
+        : null;
+    const endedAtCandidate =
+      typeof candidate.endedAt === 'string' && candidate.endedAt.length > 0
+        ? candidate.endedAt
+        : null;
+    const sessionStart =
+      typeof candidate.sessionStart === 'string' &&
+      candidate.sessionStart.length > 0
+        ? candidate.sessionStart
+        : startedAtCandidate;
+    const sessionEnd =
+      typeof candidate.sessionEnd === 'string' &&
+      candidate.sessionEnd.length > 0
+        ? candidate.sessionEnd
+        : endedAtCandidate;
+    const lastEventAt =
+      typeof candidate.lastEventAt === 'string' &&
+      candidate.lastEventAt.length > 0
+        ? candidate.lastEventAt
+        : sessionEnd ?? endedAtCandidate ?? null;
+    const eventCount =
+      typeof candidate.eventCount === 'number' &&
+      Number.isFinite(candidate.eventCount)
+        ? candidate.eventCount
+        : undefined;
+    const sessionDurationMs =
+      typeof candidate.sessionDurationMs === 'number' &&
+      Number.isFinite(candidate.sessionDurationMs)
+        ? candidate.sessionDurationMs
+        : null;
+
+    return {
+      id,
+      label,
+      startedAt: sessionStart ?? startedAtCandidate,
+      endedAt: sessionEnd ?? endedAtCandidate,
+      lastEventAt,
+      eventCount,
+      sessionStart: sessionStart ?? null,
+      sessionEnd: sessionEnd ?? null,
+      sessionDurationMs,
+    };
+  }
+
   @Get('telemetry/sessions')
   async telemetrySessions(): Promise<{
-    current: string | null;
-    sessions: string[];
+    current: AgentTelemetrySessionInfo | null;
+    sessions: AgentTelemetrySessionInfo[];
   }> {
     const base = process.env.BYTEBOT_DESKTOP_BASE_URL;
     if (!base) {
@@ -234,24 +325,47 @@ export class TasksController {
         current?: unknown;
         sessions?: unknown;
       };
-      const sessions = Array.isArray(payload.sessions)
-        ? Array.from(
-            new Set(
-              payload.sessions.filter(
-                (session): session is string =>
-                  typeof session === 'string' && session.length > 0,
-              ),
-            ),
-          )
+      const normalizedSessions = Array.isArray(payload.sessions)
+        ? payload.sessions
+            .map((session) => this.normalizeTelemetrySession(session))
+            .filter(
+              (session): session is AgentTelemetrySessionInfo => session !== null,
+            )
         : [];
-      const current =
-        typeof payload.current === 'string' && payload.current.length > 0
-          ? payload.current
-          : null;
-      if (current && !sessions.includes(current)) {
-        sessions.unshift(current);
+
+      const sessionMap = new Map<string, AgentTelemetrySessionInfo>();
+      for (const session of normalizedSessions) {
+        sessionMap.set(session.id, session);
       }
-      return { current, sessions };
+
+      const currentCandidate = this.normalizeTelemetrySession(payload.current);
+      let current: AgentTelemetrySessionInfo | null = null;
+      if (currentCandidate) {
+        const existing = sessionMap.get(currentCandidate.id);
+        current = existing ?? currentCandidate;
+        if (!existing) {
+          sessionMap.set(currentCandidate.id, currentCandidate);
+        }
+      }
+
+      const sessions: AgentTelemetrySessionInfo[] = [];
+      const seen = new Set<string>();
+      if (current) {
+        sessions.push(current);
+        seen.add(current.id);
+      }
+      for (const session of sessionMap.values()) {
+        if (seen.has(session.id)) {
+          continue;
+        }
+        sessions.push(session);
+        seen.add(session.id);
+      }
+
+      return {
+        current,
+        sessions,
+      };
     } catch (e: any) {
       throw new HttpException(
         `Error fetching sessions: ${e.message}`,
