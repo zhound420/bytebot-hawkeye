@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { UNIVERSAL_COORDINATES_CONFIG } from '@bytebot/shared';
 import * as sharp from 'sharp';
 import { GridOverlayService } from './grid-overlay.service';
 
@@ -14,6 +15,12 @@ export interface ZoomOptions {
   gridSize: number;
   showGlobalCoordinates: boolean;
   zoomLevel: number; // 1.0 = no zoom, 2.0 = 2x zoom, etc.
+  lineColor: string;
+  lineOpacity: number;
+  textColor: string;
+  textOpacity: number;
+  fontSize: number;
+  lineWidth: number;
 }
 
 export interface CoordinateMapping {
@@ -27,13 +34,22 @@ export interface CoordinateMapping {
 export class ZoomScreenshotService {
   private readonly logger = new Logger(ZoomScreenshotService.name);
 
+  private readonly zoomGridConfig =
+    UNIVERSAL_COORDINATES_CONFIG.visualTeaching.zoomGrid;
+
   constructor(private readonly gridOverlayService: GridOverlayService) {}
 
   private readonly defaultZoomOptions: ZoomOptions = {
     enableGrid: true,
-    gridSize: 50, // Smaller grid for zoomed regions
-    showGlobalCoordinates: true,
-    zoomLevel: 1.0,
+    gridSize: this.zoomGridConfig.gridSize,
+    showGlobalCoordinates: this.zoomGridConfig.showGlobalCoordinates,
+    zoomLevel: UNIVERSAL_COORDINATES_CONFIG.zoom.defaultFactor,
+    lineColor: this.zoomGridConfig.lineColor,
+    lineOpacity: this.zoomGridConfig.lineOpacity,
+    textColor: this.zoomGridConfig.textColor,
+    textOpacity: this.zoomGridConfig.textOpacity,
+    fontSize: this.zoomGridConfig.fontSize,
+    lineWidth: this.zoomGridConfig.lineWidth,
   };
 
   /**
@@ -186,13 +202,16 @@ export class ZoomScreenshotService {
     fullWidth: number,
     fullHeight: number,
   ): string {
-    const { gridSize, showGlobalCoordinates } = options;
-    const lineColor = '#00FFFF'; // Cyan for zoomed regions
-    const lineOpacity = 0.4;
-    const textColor = '#00FFFF';
-    const textOpacity = 0.9;
-    const fontSize = 10;
-    const lineWidth = 1;
+    const {
+      gridSize,
+      showGlobalCoordinates,
+      lineColor,
+      lineOpacity,
+      textColor,
+      textOpacity,
+      fontSize,
+      lineWidth,
+    } = options;
 
     let svgContent = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">`;
 

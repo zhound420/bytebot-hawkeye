@@ -37,6 +37,10 @@ The Hawkeye edition layers precision-oriented upgrades on top of upstream Bytebo
 - **Progressive zoom capture** lets the agent request focused screenshots with cyan micro-grids so it can translate local coordinates back into global positions with 100% verified accuracy.
 - **Measured accuracy gains** combine the overlay, zoom pipeline, and calibration passes to reach ~70% coordinate precision in testing—check out the full breakdown in [Coordinate Accuracy Improvements](COORDINATE_ACCURACY_IMPROVEMENTS.md).
 
+### Coordinate System Configuration
+
+Operators can now tune the overlay palette, zoom cadence, click retry thresholds, and calibration timing from a single YAML source at `config/universal-coordinates.yaml`. The defaults mirror Hawkeye’s prior hard-coded values—100 px green overview grids, 50 px cyan zoom grids, a 2× zoom pass, 0.8 AI confidence threshold, one click retry at a 4.0 delta trigger, and 200 px/75 ms calibration captures—but every setting can be adjusted without code changes. Set `BYTEBOT_COORDINATE_CONFIG` to point to another YAML file if you keep per-environment overrides.
+
 ### Smart Focus Targeting (Hawkeye Exclusive)
 
 The fork’s Smart Focus workflow narrows attention in three deliberate passes—coarse region selection, focused capture, and final click—so the agent can reason about targets instead of guessing. Enable or tune it with `BYTEBOT_SMART_FOCUS`, `BYTEBOT_OVERVIEW_GRID`, `BYTEBOT_REGION_GRID`, `BYTEBOT_FOCUSED_GRID`, and related knobs documented in [docs/SMART_FOCUS_SYSTEM.md](docs/SMART_FOCUS_SYSTEM.md).

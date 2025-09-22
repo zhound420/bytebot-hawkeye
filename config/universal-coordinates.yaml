@@ -1,0 +1,34 @@
+visual_teaching:
+  overview_grid:
+    grid_size: 100
+    line_color: '#00FF00'
+    line_opacity: 0.4
+    text_color: '#00FF00'
+    text_opacity: 0.8
+    font_size: 12
+    line_width: 1
+    show_global_coordinates: true
+  zoom_grid:
+    grid_size: 50
+    line_color: '#00FFFF'
+    line_opacity: 0.4
+    text_color: '#00FFFF'
+    text_opacity: 0.9
+    font_size: 10
+    line_width: 1
+    show_global_coordinates: true
+
+zoom:
+  max_steps: 3
+  initial_region_size: 600
+  default_factor: 2.0
+
+confidence:
+  ai_threshold: 0.8
+  click_retry_threshold: 4.0
+  click_retry_max: 1
+
+calibration:
+  window: 200
+  delay_ms: 75
+  enable_post_click: true

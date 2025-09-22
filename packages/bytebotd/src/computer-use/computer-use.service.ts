@@ -4,6 +4,7 @@ import { promisify } from 'util';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as sharp from 'sharp';
+import { UNIVERSAL_COORDINATES_CONFIG } from '@bytebot/shared';
 import { NutService } from '../nut/nut.service';
 import { GridOverlayService } from '../nut/grid-overlay.service';
 import { ScreenshotAnnotator } from '../nut/screenshot-annotator';
@@ -37,11 +38,13 @@ import {
 export class ComputerUseService {
   private readonly logger = new Logger(ComputerUseService.name);
   private readonly calibrationWindow = Number.parseInt(
-    process.env.BYTEBOT_CALIBRATION_WINDOW ?? '200',
+    process.env.BYTEBOT_CALIBRATION_WINDOW ??
+      UNIVERSAL_COORDINATES_CONFIG.calibration.window.toString(),
     10,
   );
   private readonly calibrationDelayMs = Number.parseInt(
-    process.env.BYTEBOT_CALIBRATION_DELAY ?? '75',
+    process.env.BYTEBOT_CALIBRATION_DELAY ??
+      UNIVERSAL_COORDINATES_CONFIG.calibration.delayMs.toString(),
     10,
   );
 
@@ -81,10 +84,12 @@ export class ComputerUseService {
     10,
   );
   private readonly clickVerifyThreshold = Number.parseFloat(
-    process.env.BYTEBOT_CLICK_VERIFY_THRESHOLD ?? '4.0',
+    process.env.BYTEBOT_CLICK_VERIFY_THRESHOLD ??
+      UNIVERSAL_COORDINATES_CONFIG.confidence.clickRetryThreshold.toString(),
   );
   private readonly clickRetryMax = Number.parseInt(
-    process.env.BYTEBOT_CLICK_RETRY_MAX ?? '1',
+    process.env.BYTEBOT_CLICK_RETRY_MAX ??
+      UNIVERSAL_COORDINATES_CONFIG.confidence.clickRetryMax.toString(),
     10,
   );
   private readonly hoverProbeEnabled =

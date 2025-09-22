@@ -1,4 +1,5 @@
 import { Logger } from '@nestjs/common';
+import { UNIVERSAL_COORDINATES_CONFIG } from '@bytebot/shared';
 import { handleComputerToolUse, createSmartClickAI } from './agent.computer-use';
 import {
   MessageContentType,
@@ -44,10 +45,10 @@ export class ProgressiveZoomHelper {
   private readonly aiEnabled: boolean;
 
   private readonly defaultConfig: ProgressiveZoomConfig = {
-    maxZoomSteps: 3,
-    initialRegionSize: 600,
-    zoomFactor: 2.0,
-    confidenceThreshold: 0.8,
+    maxZoomSteps: UNIVERSAL_COORDINATES_CONFIG.zoom.maxSteps,
+    initialRegionSize: UNIVERSAL_COORDINATES_CONFIG.zoom.initialRegionSize,
+    zoomFactor: UNIVERSAL_COORDINATES_CONFIG.zoom.defaultFactor,
+    confidenceThreshold: UNIVERSAL_COORDINATES_CONFIG.confidence.aiThreshold,
   };
 
   constructor() {

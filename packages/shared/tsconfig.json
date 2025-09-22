@@ -16,7 +16,12 @@
     "forceConsistentCasingInFileNames": true,
     "noImplicitAny": false,
     "strictBindCallApply": false,
-    "noFallthroughCasesInSwitch": false
+    "noFallthroughCasesInSwitch": false,
+    "typeRoots": [
+      "./node_modules/@types",
+      "../bytebotd/node_modules/@types",
+      "../bytebot-agent/node_modules/@types"
+    ]
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

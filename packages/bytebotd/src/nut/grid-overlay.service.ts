@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { UNIVERSAL_COORDINATES_CONFIG } from '@bytebot/shared';
 
 import { OverlayDescriptor, ScreenshotAnnotator } from './screenshot-annotator';
 
@@ -18,15 +19,18 @@ export interface GridOverlayOptions {
 export class GridOverlayService {
   private readonly logger = new Logger(GridOverlayService.name);
 
+  private readonly gridConfig =
+    UNIVERSAL_COORDINATES_CONFIG.visualTeaching.overviewGrid;
+
   private readonly defaultOptions: GridOverlayOptions = {
-    gridSize: 100, // Grid lines every 100 pixels
-    lineColor: '#00FF00', // Bright green for visibility
-    lineOpacity: 0.4, // Semi-transparent lines
-    textColor: '#00FF00', // Bright green text
-    textOpacity: 0.8, // More opaque text for readability
-    fontSize: 12, // Font size for coordinate labels
-    lineWidth: 1, // Line thickness
-    showGlobalCoords: true,
+    gridSize: this.gridConfig.gridSize,
+    lineColor: this.gridConfig.lineColor,
+    lineOpacity: this.gridConfig.lineOpacity,
+    textColor: this.gridConfig.textColor,
+    textOpacity: this.gridConfig.textOpacity,
+    fontSize: this.gridConfig.fontSize,
+    lineWidth: this.gridConfig.lineWidth,
+    showGlobalCoords: this.gridConfig.showGlobalCoordinates,
     globalOffset: { x: 0, y: 0 },
   };
 

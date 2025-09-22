@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { UNIVERSAL_COORDINATES_CONFIG } from '@bytebot/shared';
 import * as fs from 'fs/promises';
 import { exec as execCb } from 'child_process';
 import { promisify } from 'util';
@@ -65,7 +66,9 @@ export class TelemetryService {
   private readonly driftCompensationEnabled =
     process.env.BYTEBOT_DRIFT_COMPENSATION !== 'false';
   private readonly calibrationEnabled =
-    process.env.BYTEBOT_POST_CLICK_CALIBRATION === 'true';
+    process.env.BYTEBOT_POST_CLICK_CALIBRATION !== undefined
+      ? process.env.BYTEBOT_POST_CLICK_CALIBRATION === 'true'
+      : UNIVERSAL_COORDINATES_CONFIG.calibration.enablePostClick;
   private readonly smoothingFactor = Number.parseFloat(
     process.env.BYTEBOT_DRIFT_SMOOTHING ?? '0.2',
   );
