@@ -1,8 +1,10 @@
+import { BadRequestException } from '@nestjs/common';
 import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
 import { TelemetryController } from './telemetry.controller';
 import {
+  InvalidSessionIdError,
   SessionSummaryInfo,
   TelemetryActionEventSummary,
   TelemetryService,
@@ -94,5 +96,35 @@ describe('TelemetryController', () => {
       current: 'default',
       sessions,
     });
+  });
+
+  it('returns a 400 response when summary receives an invalid session id', async () => {
+    const telemetry = {
+      getLogFilePath: jest.fn(() => {
+        throw new InvalidSessionIdError('../evil');
+      }),
+      getSessionTimeline: jest.fn(),
+      getCalibrationDir: jest.fn(),
+    } as unknown as TelemetryService;
+
+    const controller = new TelemetryController(telemetry);
+
+    await expect(controller.summary(undefined, undefined, '../evil')).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+  });
+
+  it('returns a 400 response when reset receives an invalid session id', async () => {
+    const telemetry = {
+      resetAll: jest
+        .fn()
+        .mockRejectedValue(new InvalidSessionIdError('../evil')),
+    } as unknown as TelemetryService;
+
+    const controller = new TelemetryController(telemetry);
+
+    await expect(controller.reset('../evil')).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
   });
 });
