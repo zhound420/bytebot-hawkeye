@@ -3,7 +3,8 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { TasksService } from '../tasks/tasks.service';
 import { AgentProcessor } from './agent.processor';
 import { TaskStatus } from '@prisma/client';
-import { getComputerUseClient, writeFile } from './agent.computer-use';
+import { FileStorageService } from '../tasks/file-storage.service';
+import { getComputerUseClient } from './agent.computer-use';
 
 @Injectable()
 export class AgentScheduler implements OnModuleInit {
@@ -12,6 +13,7 @@ export class AgentScheduler implements OnModuleInit {
   constructor(
     private readonly tasksService: TasksService,
     private readonly agentProcessor: AgentProcessor,
+    private readonly fileStorageService: FileStorageService,
   ) {}
 
   async onModuleInit() {
@@ -51,12 +53,7 @@ export class AgentScheduler implements OnModuleInit {
         this.logger.debug(
           `Task ID: ${task.id} has files, writing them to the desktop`,
         );
-        for (const file of task.files) {
-          await writeFile({
-            path: `/home/user/Desktop/${file.name}`,
-            content: file.data, // file.data is already base64 encoded in the database
-          });
-        }
+        await this.fileStorageService.writeTaskFilesToDesktop(task.files);
       }
 
       await this.tasksService.update(task.id, {
