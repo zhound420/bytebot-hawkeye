@@ -8,8 +8,11 @@ export interface CalibrationSample {
 
 export class Calibrator {
   private readonly samples: CalibrationSample[] = [];
+  private readonly maxHistory: number;
 
-  constructor(private readonly maxHistory: number = 6) {}
+  constructor(maxHistory = 50) {
+    this.maxHistory = Math.max(maxHistory, 50);
+  }
 
   captureOffset(offset?: Coordinates | null, source = 'screenshot'): void {
     if (!offset) {
@@ -42,11 +45,12 @@ export class Calibrator {
   }
 
   getCurrentOffset(): Coordinates | null {
-    if (this.samples.length === 0) {
-      return null;
+    if (this.samples.length < 10) {
+      return { x: 0, y: 0 };
     }
 
-    const sum = this.samples.reduce(
+    const recentSamples = this.samples.slice(-50);
+    const sum = recentSamples.reduce(
       (acc, sample) => ({
         x: acc.x + sample.offset.x,
         y: acc.y + sample.offset.y,
@@ -54,7 +58,7 @@ export class Calibrator {
       { x: 0, y: 0 },
     );
 
-    const count = this.samples.length;
+    const count = recentSamples.length;
     return {
       x: Math.round(sum.x / count),
       y: Math.round(sum.y / count),
