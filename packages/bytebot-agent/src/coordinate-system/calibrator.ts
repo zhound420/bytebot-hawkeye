@@ -23,6 +23,19 @@ export type RecordCorrectionOptions =
   | string
   | (CalibrationSampleMetadata & { source?: string });
 
+type CanvasContextLike = {
+  canvas?: { width: number; height: number } | null;
+  save?: () => void;
+  restore?: () => void;
+  fillRect: (x: number, y: number, width: number, height: number) => void;
+  fillText: (text: string, x: number, y: number) => void;
+  measureText?: (text: string) => { width: number };
+  font?: string;
+  textBaseline?: string;
+  fillStyle?: string;
+  globalAlpha?: number;
+};
+
 export class Calibrator {
   private readonly samples: CalibrationSample[] = [];
   private readonly maxHistory: number;
@@ -125,6 +138,62 @@ export class Calibrator {
       x: Math.round(coordinates.x + offset.x),
       y: Math.round(coordinates.y + offset.y),
     };
+  }
+
+  addAdaptiveGuidance<T extends CanvasContextLike>(context: T): T {
+    if (!context) {
+      return context;
+    }
+
+    const offset = this.getCurrentOffset();
+    if (!offset) {
+      return context;
+    }
+
+    const driftThreshold = 5;
+    const driftX = Math.round(offset.x);
+    const driftY = Math.round(offset.y);
+    const driftDetected =
+      Math.abs(driftX) > driftThreshold || Math.abs(driftY) > driftThreshold;
+
+    if (!driftDetected) {
+      return context;
+    }
+
+    const width = context.canvas?.width ?? 0;
+    const height = context.canvas?.height ?? 0;
+    if (width <= 0 || height <= 0) {
+      return context;
+    }
+
+    const bannerHeight = Math.max(48, Math.round(height * 0.08));
+    const padding = Math.round(bannerHeight * 0.25);
+    const primaryFontSize = Math.max(18, Math.round(bannerHeight * 0.4));
+    const secondaryFontSize = Math.max(14, Math.round(bannerHeight * 0.3));
+    const primaryText =
+      `Calibration drift detected (Δx=${driftX}px, Δy=${driftY}px)`;
+    const secondaryText = 'Re-run calibration to realign actions.';
+
+    context.save?.();
+
+    context.globalAlpha = 0.92;
+    context.fillStyle = '#2b1b1b';
+    context.fillRect(0, 0, width, bannerHeight);
+
+    context.globalAlpha = 1;
+    context.fillStyle = '#ffb4b4';
+    context.font = `bold ${primaryFontSize}px Arial`;
+    context.textBaseline = 'top';
+    context.fillText(primaryText, padding, padding / 2);
+
+    context.font = `normal ${secondaryFontSize}px Arial`;
+    context.fillStyle = '#ffecec';
+    const secondaryY = padding / 2 + primaryFontSize + Math.round(padding * 0.2);
+    context.fillText(secondaryText, padding, secondaryY);
+
+    context.restore?.();
+
+    return context;
   }
 
   getHistory(): CalibrationSample[] {
