@@ -1,3 +1,5 @@
+import { COORDINATE_SYSTEM_CONFIG } from './coordinate-system.config';
+
 export const FOCUS_CONFIG = {
   // Enable/disable focus system
   ENABLE_SMART_FOCUS: process.env.BYTEBOT_SMART_FOCUS !== 'false',
@@ -10,7 +12,9 @@ export const FOCUS_CONFIG = {
   CUSTOM_REGION_ZOOM_LEVEL: parseFloat(
     process.env.BYTEBOT_CUSTOM_REGION_ZOOM || '2.0',
   ),
-  GRID_ENABLED: process.env.BYTEBOT_GRID_OVERLAY !== 'false',
+  GRID_ENABLED:
+    COORDINATE_SYSTEM_CONFIG.universalTeaching &&
+    process.env.BYTEBOT_GRID_OVERLAY !== 'false',
   GRID_DEBUG: process.env.BYTEBOT_GRID_DEBUG === 'true',
 
   // Binary search iterations

@@ -17,6 +17,10 @@ services:
       - "9990:9990" # bytebotd service & noVNC
     environment:
       - DISPLAY=:0
+      - BYTEBOT_UNIVERSAL_TEACHING=${BYTEBOT_UNIVERSAL_TEACHING:-true}
+      - BYTEBOT_ADAPTIVE_CALIBRATION=${BYTEBOT_ADAPTIVE_CALIBRATION:-true}
+      - BYTEBOT_ZOOM_REFINEMENT=${BYTEBOT_ZOOM_REFINEMENT:-true}
+      - BYTEBOT_COORDINATE_METRICS=${BYTEBOT_COORDINATE_METRICS:-true}
     networks:
       - bytebot-network
 
@@ -47,6 +51,7 @@ services:
       - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/bytebotdb}
       - BYTEBOT_DESKTOP_BASE_URL=${BYTEBOT_DESKTOP_BASE_URL:-http://bytebot-desktop:9990}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - BYTEBOT_ZOOM_REFINEMENT=${BYTEBOT_ZOOM_REFINEMENT:-true}
     depends_on:
       - postgres
     networks:

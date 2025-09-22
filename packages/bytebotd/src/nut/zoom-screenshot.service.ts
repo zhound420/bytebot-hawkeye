@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as sharp from 'sharp';
 import { GridOverlayService } from './grid-overlay.service';
+import { COORDINATE_SYSTEM_CONFIG } from '../config/coordinate-system.config';
 
 export interface RegionCoordinates {
   x: number;
@@ -26,11 +27,13 @@ export interface CoordinateMapping {
 @Injectable()
 export class ZoomScreenshotService {
   private readonly logger = new Logger(ZoomScreenshotService.name);
+  private readonly zoomRefinementEnabled =
+    COORDINATE_SYSTEM_CONFIG.zoomRefinement;
 
   constructor(private readonly gridOverlayService: GridOverlayService) {}
 
   private readonly defaultZoomOptions: ZoomOptions = {
-    enableGrid: true,
+    enableGrid: this.zoomRefinementEnabled,
     gridSize: 50, // Smaller grid for zoomed regions
     showGlobalCoordinates: true,
     zoomLevel: 1.0,
@@ -46,6 +49,10 @@ export class ZoomScreenshotService {
   ): Promise<{ buffer: Buffer; mapping: CoordinateMapping }> {
     try {
       const opts = { ...this.defaultZoomOptions, ...options };
+      opts.enableGrid = opts.enableGrid && this.zoomRefinementEnabled;
+      if (!this.zoomRefinementEnabled) {
+        opts.zoomLevel = 1.0;
+      }
 
       this.logger.debug(`Capturing region: ${region.x},${region.y} ${region.width}x${region.height}`);
 

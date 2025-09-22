@@ -222,6 +222,7 @@ The desktop includes built‑in accuracy aids to improve pointing reliability an
 - Pre‑click Snap: `BYTEBOT_PRECLICK_SNAP=true` slightly adjusts click targets toward nearby high‑contrast features (default ±6px).
 - Post‑click Verification: `BYTEBOT_CLICK_RETRY_ON_NOCHANGE=true` compares a small region before/after click and retries once if unchanged.
 - Smart Click Success Radius: `BYTEBOT_SMART_CLICK_SUCCESS_RADIUS=12` defines the acceptable pointer drift (in pixels) when validating Smart Focus clicks.
+- Master Toggles: Set `BYTEBOT_UNIVERSAL_TEACHING`, `BYTEBOT_ADAPTIVE_CALIBRATION`, `BYTEBOT_ZOOM_REFINEMENT`, or `BYTEBOT_COORDINATE_METRICS` to `false` (all default `true`) to disable overlays, calibration snapshots, zoom refinement, or telemetry respectively.
 
 Recommended defaults are enabled in Docker/Helm; tune via envs:
 ```
@@ -230,6 +231,10 @@ BYTEBOT_SNAP_RADIUS=6
 BYTEBOT_CLICK_RETRY_ON_NOCHANGE=true
 BYTEBOT_CLICK_VERIFY_DELAY=250
 BYTEBOT_GRID_OVERLAY=true
+BYTEBOT_UNIVERSAL_TEACHING=true
+BYTEBOT_ADAPTIVE_CALIBRATION=true
+BYTEBOT_ZOOM_REFINEMENT=true
+BYTEBOT_COORDINATE_METRICS=true
 BYTEBOT_SMART_CLICK_SUCCESS_RADIUS=12
 ```
 
