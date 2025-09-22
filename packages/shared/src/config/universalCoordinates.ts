@@ -1,24 +1,24 @@
 import * as fs from 'node:fs';
-import * as path from 'node:path';
+import { dirname, isAbsolute, join, resolve } from 'node:path';
 
 const CONFIG_FILE_NAME = 'universal-coordinates.yaml';
-const CONFIG_RELATIVE_PATH = path.join('config', CONFIG_FILE_NAME);
+const CONFIG_RELATIVE_PATH = join('config', CONFIG_FILE_NAME);
 
 type SearchResult = string | null;
 
 const searchUpwards = (start: string): SearchResult => {
-  let current = path.resolve(start);
+  let current = resolve(start);
   const visited = new Set<string>();
 
   while (!visited.has(current)) {
     visited.add(current);
 
-    const candidate = path.join(current, CONFIG_RELATIVE_PATH);
+    const candidate = join(current, CONFIG_RELATIVE_PATH);
     if (fs.existsSync(candidate)) {
       return candidate;
     }
 
-    const parent = path.dirname(current);
+    const parent = dirname(current);
     if (parent === current) {
       break;
     }
@@ -30,9 +30,9 @@ const searchUpwards = (start: string): SearchResult => {
 };
 
 const resolveOverridePath = (candidate: string): string => {
-  const resolvedPath = path.isAbsolute(candidate)
+  const resolvedPath = isAbsolute(candidate)
     ? candidate
-    : path.resolve(process.cwd(), candidate);
+    : resolve(process.cwd(), candidate);
 
   if (!fs.existsSync(resolvedPath)) {
     throw new Error(
@@ -53,7 +53,7 @@ export const resolveConfigPath = (): string => {
   const checked = new Set<string>();
 
   for (const origin of searchOrigins) {
-    const resolvedOrigin = path.resolve(origin);
+    const resolvedOrigin = resolve(origin);
     if (checked.has(resolvedOrigin)) {
       continue;
     }
