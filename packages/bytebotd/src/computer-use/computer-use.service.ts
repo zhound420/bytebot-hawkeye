@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { exec, spawn } from 'child_process';
 import { promisify } from 'util';
 import * as fs from 'fs/promises';
@@ -10,6 +10,10 @@ import { FocusRegionService } from '../nut/focus-region.service';
 import { ProgressBroadcaster } from '../progress/progress-broadcaster';
 import { FOCUS_CONFIG } from '../config/focus-config';
 import { TelemetryService } from '../telemetry/telemetry.service';
+import {
+  ComputerActionJob,
+  ComputerUseCommandQueue,
+} from './computer-use.queue';
 import {
   ComputerAction,
   MoveMouseAction,
@@ -33,7 +37,7 @@ import {
 } from '@bytebot/shared';
 
 @Injectable()
-export class ComputerUseService {
+export class ComputerUseService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(ComputerUseService.name);
   private readonly calibrationWindow = Number.parseInt(
     process.env.BYTEBOT_CALIBRATION_WINDOW ?? '200',
@@ -50,7 +54,11 @@ export class ComputerUseService {
     private readonly focusRegion: FocusRegionService,
     private readonly progressBroadcaster: ProgressBroadcaster,
     private readonly telemetryService: TelemetryService,
+    private readonly commandQueue: ComputerUseCommandQueue,
   ) {}
+
+  private queueRunning = false;
+  private queueProcessingPromise: Promise<void> | null = null;
 
   // Heuristics and verification toggles
   private readonly preClickSnapEnabled =
@@ -101,6 +109,46 @@ export class ComputerUseService {
     );
     return Number.isFinite(raw) ? raw : 12;
   })();
+
+  onModuleInit(): void {
+    this.queueRunning = true;
+    this.queueProcessingPromise = this.processQueuedActions();
+  }
+
+  async onModuleDestroy(): Promise<void> {
+    this.queueRunning = false;
+    this.commandQueue.shutdown();
+    if (this.queueProcessingPromise) {
+      await this.queueProcessingPromise;
+    }
+  }
+
+  private async processQueuedActions(): Promise<void> {
+    while (this.queueRunning) {
+      const job = await this.commandQueue.next();
+      if (!job) {
+        break;
+      }
+
+      await this.executeQueuedJob(job);
+    }
+  }
+
+  private async executeQueuedJob(job: ComputerActionJob): Promise<void> {
+    try {
+      const result = await this.action(job.action);
+      this.commandQueue.completeSuccess(job.id, result);
+    } catch (error) {
+      const normalized =
+        error instanceof Error ? error : new Error(String(error));
+
+      this.logger.error(
+        `Error executing queued computer action ${job.action.action}: ${normalized.message}`,
+        normalized.stack,
+      );
+      this.commandQueue.completeError(job.id, normalized);
+    }
+  }
 
   async action(params: ComputerAction): Promise<any> {
     this.logger.log(`Executing computer action: ${params.action}`);

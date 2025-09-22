@@ -43,11 +43,14 @@ describe('handleComputerToolUse screenshot reminders', () => {
     error: jest.fn(),
   } as unknown as Logger;
   let originalFetch: any;
+  let originalFallback: string | undefined;
 
   beforeAll(() => {
     originalFetch = (globalThis as any).fetch;
     process.env.BYTEBOT_DESKTOP_BASE_URL =
       process.env.BYTEBOT_DESKTOP_BASE_URL || 'http://localhost:1234';
+    originalFallback = process.env.BYTEBOT_COMPUTER_USE_HTTP_FALLBACK;
+    process.env.BYTEBOT_COMPUTER_USE_HTTP_FALLBACK = 'true';
   });
 
   afterEach(() => {
@@ -57,6 +60,14 @@ describe('handleComputerToolUse screenshot reminders', () => {
       delete (globalThis as any).fetch;
     }
     jest.restoreAllMocks();
+  });
+
+  afterAll(() => {
+    if (originalFallback === undefined) {
+      delete process.env.BYTEBOT_COMPUTER_USE_HTTP_FALLBACK;
+    } else {
+      process.env.BYTEBOT_COMPUTER_USE_HTTP_FALLBACK = originalFallback;
+    }
   });
 
   it('appends reminder text for full screenshots', async () => {

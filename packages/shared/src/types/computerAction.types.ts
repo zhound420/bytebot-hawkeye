@@ -203,3 +203,27 @@ export type ComputerAction =
   | ApplicationAction
   | WriteFileAction
   | ReadFileAction;
+
+export interface ComputerActionResultBase {
+  id: string;
+  action: ComputerAction['action'];
+}
+
+export interface ComputerActionResultSuccess<T = unknown>
+  extends ComputerActionResultBase {
+  status: 'ok';
+  data?: T;
+}
+
+export interface ComputerActionResultError
+  extends ComputerActionResultBase {
+  status: 'error';
+  error: {
+    message: string;
+    stack?: string;
+  };
+}
+
+export type ComputerActionResult<T = unknown> =
+  | ComputerActionResultSuccess<T>
+  | ComputerActionResultError;

@@ -25,10 +25,16 @@ import {
   isReadFileToolUseBlock,
   isScreenInfoToolUseBlock,
   ClickContext,
+  ComputerAction,
+  ComputerActionResult,
+  Application,
+  ScreenshotRegionAction,
 } from '@bytebot/shared';
 import { Logger } from '@nestjs/common';
 import OpenAI from 'openai';
 import { SmartClickAI, SmartClickHelper } from './smart-click.helper';
+import { io, Socket } from 'socket.io-client';
+import { randomUUID } from 'crypto';
 
 interface ScreenshotOptions {
   gridOverlay?: boolean;
@@ -58,6 +64,260 @@ const BYTEBOT_LLM_PROXY_URL = process.env.BYTEBOT_LLM_PROXY_URL as
 const SMART_FOCUS_MODEL =
   process.env.BYTEBOT_SMART_FOCUS_MODEL || 'gpt-4o-mini';
 const SMART_FOCUS_ENABLED = process.env.BYTEBOT_SMART_FOCUS !== 'false';
+const COMPUTER_USE_TIMEOUT_MS = Number.parseInt(
+  process.env.BYTEBOT_COMPUTER_USE_TIMEOUT_MS ?? '15000',
+  10,
+);
+const COMPUTER_USE_CONNECT_TIMEOUT_MS = Number.parseInt(
+  process.env.BYTEBOT_COMPUTER_USE_CONNECT_TIMEOUT_MS ?? '5000',
+  10,
+);
+
+interface PendingAction {
+  action: ComputerAction['action'];
+  resolve: (value: unknown) => void;
+  reject: (error: Error) => void;
+  timeout: NodeJS.Timeout;
+}
+
+class DesktopComputerUseClient {
+  private socket: Socket | null = null;
+  private readonly pending = new Map<string, PendingAction>();
+  private connectPromise: Promise<void> | null = null;
+
+  constructor(
+    private readonly baseUrl: string | undefined,
+    private readonly connectTimeoutMs: number,
+    private readonly requestTimeoutMs: number,
+  ) {}
+
+  async send<T = unknown>(action: ComputerAction): Promise<T> {
+    if (this.isHttpFallbackEnabled()) {
+      return (await this.sendViaHttp(action)) as T;
+    }
+
+    try {
+      const socket = await this.ensureSocket();
+      return (await this.sendViaSocket<T>(action, socket)) as T;
+    } catch (error) {
+      if (this.isHttpFallbackEnabled()) {
+        console.warn(
+          `[ComputerUse] WebSocket failed for ${action.action}, falling back to HTTP: ${(
+            error as Error
+          ).message}`,
+        );
+        return (await this.sendViaHttp(action)) as T;
+      }
+
+      throw error;
+    }
+  }
+
+  private isHttpFallbackEnabled(): boolean {
+    return process.env.BYTEBOT_COMPUTER_USE_HTTP_FALLBACK === 'true';
+  }
+
+  private resolveBaseUrl(): string {
+    const envBase = process.env.BYTEBOT_DESKTOP_BASE_URL ?? this.baseUrl;
+    if (!envBase) {
+      throw new Error('BYTEBOT_DESKTOP_BASE_URL is not configured');
+    }
+
+    return envBase.replace(/\/$/, '');
+  }
+
+  private async ensureSocket(): Promise<Socket> {
+    if (!this.socket) {
+      const socket = io(`${this.resolveBaseUrl()}/computer-use`, {
+        transports: ['websocket'],
+        autoConnect: false,
+        reconnection: true,
+      });
+      this.attachSocketHandlers(socket);
+      this.socket = socket;
+    }
+
+    if (this.socket.connected) {
+      return this.socket;
+    }
+
+    if (!this.connectPromise) {
+      this.connectPromise = new Promise<void>((resolve, reject) => {
+        const socket = this.socket!;
+
+        const handleConnect = () => {
+          cleanup();
+          resolve();
+        };
+
+        const handleError = (err: Error) => {
+          cleanup();
+          reject(err);
+        };
+
+        const cleanup = () => {
+          socket.off('connect', handleConnect);
+          socket.off('connect_error', handleError);
+          clearTimeout(timer);
+          this.connectPromise = null;
+        };
+
+        const timer = setTimeout(() => {
+          cleanup();
+          reject(new Error('Timed out connecting to computer use gateway'));
+        }, this.connectTimeoutMs);
+
+        socket.once('connect', handleConnect);
+        socket.once('connect_error', handleError);
+        socket.connect();
+      });
+    }
+
+    await this.connectPromise;
+    return this.socket!;
+  }
+
+  private attachSocketHandlers(socket: Socket): void {
+    socket.on('computerActionResult', this.handleActionResult);
+    socket.on('disconnect', this.handleDisconnect);
+  }
+
+  private handleActionResult = (result: ComputerActionResult): void => {
+    const pending = this.pending.get(result.id);
+    if (!pending) {
+      return;
+    }
+
+    this.pending.delete(result.id);
+
+    if (result.status === 'ok') {
+      pending.resolve(result.data);
+    } else {
+      const error = new Error(
+        result.error?.message ?? `Computer action ${result.action} failed`,
+      );
+      if (result.error?.stack) {
+        error.stack = result.error.stack;
+      }
+      pending.reject(error);
+    }
+  };
+
+  private handleDisconnect = (reason: string): void => {
+    for (const [id, pending] of Array.from(this.pending.entries())) {
+      this.pending.delete(id);
+      pending.reject(
+        new Error(
+          `Disconnected from computer use gateway while awaiting ${pending.action}: ${reason}`,
+        ),
+      );
+    }
+  };
+
+  private async sendViaSocket<T>(
+    action: ComputerAction,
+    socket: Socket,
+  ): Promise<T> {
+    const id = randomUUID();
+
+    return new Promise<T>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        this.pending.delete(id);
+        reject(
+          new Error(
+            `Timed out waiting for computer action ${action.action} result`,
+          ),
+        );
+      }, this.requestTimeoutMs);
+
+      const pending: PendingAction = {
+        action: action.action,
+        resolve: (value: unknown) => {
+          clearTimeout(timeout);
+          resolve(value as T);
+        },
+        reject: (error: Error) => {
+          clearTimeout(timeout);
+          reject(error);
+        },
+        timeout,
+      };
+
+      this.pending.set(id, pending);
+      socket.emit('computerAction', { id, action });
+    });
+  }
+
+  private async sendViaHttp(action: ComputerAction): Promise<unknown> {
+    const response = await fetch(`${this.resolveBaseUrl()}/computer-use`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(action),
+    });
+
+    if ('ok' in response && !response.ok) {
+      throw new Error(
+        `HTTP ${response.status} when executing ${action.action}: ${response.statusText}`,
+      );
+    }
+
+    if ('status' in response && response.status === 204) {
+      return undefined;
+    }
+
+    const contentType =
+      typeof response.headers?.get === 'function'
+        ? response.headers.get('content-type') ?? ''
+        : '';
+
+    if (contentType.includes('application/json') && typeof response.json === 'function') {
+      return response.json();
+    }
+
+    if (typeof response.json === 'function') {
+      try {
+        return await response.json();
+      } catch {
+        // ignore and fall back to text
+      }
+    }
+
+    if (typeof response.text === 'function') {
+      const text = await response.text();
+      if (!text) {
+        return undefined;
+      }
+
+      try {
+        return JSON.parse(text);
+      } catch {
+        return text;
+      }
+    }
+
+    return undefined;
+  }
+}
+
+let sharedComputerUseClient: DesktopComputerUseClient | null = null;
+
+export function getComputerUseClient(): DesktopComputerUseClient {
+  if (!sharedComputerUseClient) {
+    sharedComputerUseClient = new DesktopComputerUseClient(
+      BYTEBOT_DESKTOP_BASE_URL,
+      COMPUTER_USE_CONNECT_TIMEOUT_MS,
+      COMPUTER_USE_TIMEOUT_MS,
+    );
+  }
+
+  return sharedComputerUseClient;
+}
+
+async function sendComputerAction<T = unknown>(
+  action: ComputerAction,
+): Promise<T> {
+  return getComputerUseClient().send<T>(action);
+}
 
 export const SCREENSHOT_REMINDER_TEXT =
   'Screenshot captured—produce an exhaustive observation before planning or acting.';
@@ -500,13 +760,9 @@ async function moveMouse(input: { coordinates: Coordinates }): Promise<void> {
   );
 
   try {
-    await fetch(`${BYTEBOT_DESKTOP_BASE_URL}/computer-use`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'move_mouse',
-        coordinates,
-      }),
+    await sendComputerAction<void>({
+      action: 'move_mouse',
+      coordinates,
     });
   } catch (error) {
     console.error('Error in move_mouse action:', error);
@@ -524,14 +780,10 @@ async function traceMouse(input: {
   );
 
   try {
-    await fetch(`${BYTEBOT_DESKTOP_BASE_URL}/computer-use`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'trace_mouse',
-        path,
-        holdKeys,
-      }),
+    await sendComputerAction<void>({
+      action: 'trace_mouse',
+      path,
+      holdKeys,
     });
   } catch (error) {
     console.error('Error in trace_mouse action:', error);
@@ -629,18 +881,14 @@ async function clickMouse(input: {
   );
 
   try {
-    await fetch(`${BYTEBOT_DESKTOP_BASE_URL}/computer-use`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'click_mouse',
-        coordinates,
-        button,
-        holdKeys: holdKeys && holdKeys.length > 0 ? holdKeys : undefined,
-        clickCount,
-        description: input.description ?? undefined,
-        context: input.context ?? undefined,
-      }),
+    await sendComputerAction<void>({
+      action: 'click_mouse',
+      coordinates,
+      button,
+      holdKeys: holdKeys && holdKeys.length > 0 ? holdKeys : undefined,
+      clickCount,
+      description: input.description ?? undefined,
+      context: input.context ?? undefined,
     });
   } catch (error) {
     console.error('Error in click_mouse action:', error);
@@ -942,15 +1190,11 @@ async function pressMouse(input: {
   );
 
   try {
-    await fetch(`${BYTEBOT_DESKTOP_BASE_URL}/computer-use`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'press_mouse',
-        coordinates,
-        button,
-        press,
-      }),
+    await sendComputerAction<void>({
+      action: 'press_mouse',
+      coordinates,
+      button,
+      press,
     });
   } catch (error) {
     console.error('Error in press_mouse action:', error);
@@ -969,15 +1213,11 @@ async function dragMouse(input: {
   );
 
   try {
-    await fetch(`${BYTEBOT_DESKTOP_BASE_URL}/computer-use`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'drag_mouse',
-        path,
-        button,
-        holdKeys: holdKeys && holdKeys.length > 0 ? holdKeys : undefined,
-      }),
+    await sendComputerAction<void>({
+      action: 'drag_mouse',
+      path,
+      button,
+      holdKeys: holdKeys && holdKeys.length > 0 ? holdKeys : undefined,
     });
   } catch (error) {
     console.error('Error in drag_mouse action:', error);
@@ -997,16 +1237,12 @@ async function scroll(input: {
   );
 
   try {
-    await fetch(`${BYTEBOT_DESKTOP_BASE_URL}/computer-use`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'scroll',
-        coordinates,
-        direction,
-        scrollCount,
-        holdKeys: holdKeys && holdKeys.length > 0 ? holdKeys : undefined,
-      }),
+    await sendComputerAction<void>({
+      action: 'scroll',
+      coordinates,
+      direction,
+      scrollCount,
+      holdKeys: holdKeys && holdKeys.length > 0 ? holdKeys : undefined,
     });
   } catch (error) {
     console.error('Error in scroll action:', error);
@@ -1022,14 +1258,10 @@ async function typeKeys(input: {
   console.log(`Typing keys: ${keys}`);
 
   try {
-    await fetch(`${BYTEBOT_DESKTOP_BASE_URL}/computer-use`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'type_keys',
-        keys,
-        delay,
-      }),
+    await sendComputerAction<void>({
+      action: 'type_keys',
+      keys,
+      delay,
     });
   } catch (error) {
     console.error('Error in type_keys action:', error);
@@ -1045,14 +1277,10 @@ async function pressKeys(input: {
   console.log(`Pressing keys: ${keys}`);
 
   try {
-    await fetch(`${BYTEBOT_DESKTOP_BASE_URL}/computer-use`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'press_keys',
-        keys,
-        press,
-      }),
+    await sendComputerAction<void>({
+      action: 'press_keys',
+      keys,
+      press,
     });
   } catch (error) {
     console.error('Error in press_keys action:', error);
@@ -1068,14 +1296,10 @@ async function typeText(input: {
   console.log(`Typing text: ${text}`);
 
   try {
-    await fetch(`${BYTEBOT_DESKTOP_BASE_URL}/computer-use`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'type_text',
-        text,
-        delay,
-      }),
+    await sendComputerAction<void>({
+      action: 'type_text',
+      text,
+      delay,
     });
   } catch (error) {
     console.error('Error in type_text action:', error);
@@ -1088,13 +1312,9 @@ async function pasteText(input: { text: string }): Promise<void> {
   console.log(`Pasting text: ${text}`);
 
   try {
-    await fetch(`${BYTEBOT_DESKTOP_BASE_URL}/computer-use`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'paste_text',
-        text,
-      }),
+    await sendComputerAction<void>({
+      action: 'paste_text',
+      text,
     });
   } catch (error) {
     console.error('Error in paste_text action:', error);
@@ -1107,13 +1327,9 @@ async function wait(input: { duration: number }): Promise<void> {
   console.log(`Waiting for ${duration}ms`);
 
   try {
-    await fetch(`${BYTEBOT_DESKTOP_BASE_URL}/computer-use`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'wait',
-        duration,
-      }),
+    await sendComputerAction<void>({
+      action: 'wait',
+      duration,
     });
   } catch (error) {
     console.error('Error in wait action:', error);
@@ -1125,15 +1341,9 @@ async function cursorPosition(): Promise<Coordinates> {
   console.log('Getting cursor position');
 
   try {
-    const response = await fetch(`${BYTEBOT_DESKTOP_BASE_URL}/computer-use`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'cursor_position',
-      }),
+    const data = await sendComputerAction<{ x: number; y: number }>({
+      action: 'cursor_position',
     });
-
-    const data = await response.json();
     return { x: data.x, y: data.y };
   } catch (error) {
     console.error('Error in cursor_position action:', error);
@@ -1147,27 +1357,17 @@ async function screenshot(
   console.log('Taking screenshot');
 
   try {
-    const response = await fetch(`${BYTEBOT_DESKTOP_BASE_URL}/computer-use`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'screenshot',
-        gridOverlay: options?.gridOverlay ?? undefined,
-        gridSize: options?.gridSize ?? undefined,
-        highlightRegions: options?.highlightRegions ?? undefined,
-        showCursor: options?.showCursor ?? true,
-        progressStep: options?.progressStep ?? undefined,
-        progressMessage: options?.progressMessage ?? undefined,
-        progressTaskId: options?.progressTaskId ?? undefined,
-        markTarget: options?.markTarget ?? undefined,
-      }),
+    const data = await sendComputerAction<ScreenshotResponse>({
+      action: 'screenshot',
+      gridOverlay: options?.gridOverlay ?? undefined,
+      gridSize: options?.gridSize ?? undefined,
+      highlightRegions: options?.highlightRegions ?? undefined,
+      showCursor: options?.showCursor ?? true,
+      progressStep: options?.progressStep ?? undefined,
+      progressMessage: options?.progressMessage ?? undefined,
+      progressTaskId: options?.progressTaskId ?? undefined,
+      markTarget: options?.markTarget ?? undefined,
     });
-
-    if (!response.ok) {
-      throw new Error(`Failed to take screenshot: ${response.statusText}`);
-    }
-
-    const data = await response.json();
 
     if (!data.image) {
       throw new Error('Failed to take screenshot: No image data received');
@@ -1183,17 +1383,9 @@ async function screenshot(
 async function screenInfo(): Promise<{ width: number; height: number }> {
   console.log('Getting screen info');
   try {
-    const response = await fetch(`${BYTEBOT_DESKTOP_BASE_URL}/computer-use`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'screen_info' }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to get screen info: ${response.statusText}`);
-    }
-
-    const data = await response.json();
+    const data = await sendComputerAction<{ width: number; height: number }>(
+      { action: 'screen_info' },
+    );
     return { width: data.width, height: data.height };
   } catch (error) {
     console.error('Error in screen_info action:', error);
@@ -1221,31 +1413,24 @@ async function screenshotRegion(input: {
   console.log(`Taking focused screenshot for region: ${input.region}`);
 
   try {
-    const response = await fetch(`${BYTEBOT_DESKTOP_BASE_URL}/computer-use`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'screenshot_region',
-        region: input.region,
-        gridSize: input.gridSize ?? undefined,
-        enhance: input.enhance ?? undefined,
-        includeOffset: input.includeOffset ?? undefined,
-        addHighlight: input.addHighlight ?? undefined,
-        showCursor: input.showCursor ?? true,
-        progressStep: input.progressStep ?? undefined,
-        progressMessage: input.progressMessage ?? undefined,
-        progressTaskId: input.progressTaskId ?? undefined,
-        zoomLevel: input.zoomLevel ?? undefined,
-      }),
+    const data = await sendComputerAction<{
+      image: string;
+      offset?: { x: number; y: number };
+      region?: { x: number; y: number; width: number; height: number };
+      zoomLevel?: number;
+    }>({
+      action: 'screenshot_region',
+      region: input.region as ScreenshotRegionAction['region'],
+      gridSize: input.gridSize ?? undefined,
+      enhance: input.enhance ?? undefined,
+      includeOffset: input.includeOffset ?? undefined,
+      addHighlight: input.addHighlight ?? undefined,
+      showCursor: input.showCursor ?? true,
+      progressStep: input.progressStep ?? undefined,
+      progressMessage: input.progressMessage ?? undefined,
+      progressTaskId: input.progressTaskId ?? undefined,
+      zoomLevel: input.zoomLevel ?? undefined,
     });
-
-    if (!response.ok) {
-      throw new Error(
-        `Failed to take focused screenshot: ${response.statusText}`,
-      );
-    }
-
-    const data = await response.json();
     if (!data.image) {
       throw new Error('No image returned for focused screenshot');
     }
@@ -1285,32 +1470,25 @@ async function screenshotCustomRegion(input: {
   );
 
   try {
-    const response = await fetch(`${BYTEBOT_DESKTOP_BASE_URL}/computer-use`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'screenshot_custom_region',
-        x: input.x,
-        y: input.y,
-        width: input.width,
-        height: input.height,
-        gridSize: input.gridSize ?? undefined,
-        zoomLevel: input.zoomLevel ?? undefined,
-        markTarget: input.markTarget ?? undefined,
-        showCursor: input.showCursor ?? true,
-        progressStep: input.progressStep ?? undefined,
-        progressMessage: input.progressMessage ?? undefined,
-        progressTaskId: input.progressTaskId ?? undefined,
-      }),
+    const data = await sendComputerAction<{
+      image: string;
+      offset?: { x: number; y: number };
+      region?: { x: number; y: number; width: number; height: number };
+      zoomLevel?: number;
+    }>({
+      action: 'screenshot_custom_region',
+      x: input.x,
+      y: input.y,
+      width: input.width,
+      height: input.height,
+      gridSize: input.gridSize ?? undefined,
+      zoomLevel: input.zoomLevel ?? undefined,
+      markTarget: input.markTarget ?? undefined,
+      showCursor: input.showCursor ?? true,
+      progressStep: input.progressStep ?? undefined,
+      progressMessage: input.progressMessage ?? undefined,
+      progressTaskId: input.progressTaskId ?? undefined,
     });
-
-    if (!response.ok) {
-      throw new Error(
-        `Failed to take custom region screenshot: ${response.statusText}`,
-      );
-    }
-
-    const data = await response.json();
     if (!data.image) {
       throw new Error('No image returned for custom region screenshot');
     }
@@ -1332,13 +1510,9 @@ async function application(input: { application: string }): Promise<void> {
   console.log(`Opening application: ${application}`);
 
   try {
-    await fetch(`${BYTEBOT_DESKTOP_BASE_URL}/computer-use`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'application',
-        application,
-      }),
+    await sendComputerAction<void>({
+      action: 'application',
+      application: application as Application,
     });
   } catch (error) {
     console.error('Error in application action:', error);
@@ -1358,26 +1532,22 @@ async function readFile(input: { path: string }): Promise<{
   console.log(`Reading file: ${path}`);
 
   try {
-    const response = await fetch(`${BYTEBOT_DESKTOP_BASE_URL}/computer-use`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'read_file',
-        path,
-      }),
+    return await sendComputerAction<{
+      success: boolean;
+      data?: string;
+      name?: string;
+      size?: number;
+      mediaType?: string;
+      message?: string;
+    }>({
+      action: 'read_file',
+      path,
     });
-
-    if (!response.ok) {
-      throw new Error(`Failed to read file: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data;
   } catch (error) {
     console.error('Error in read_file action:', error);
     return {
       success: false,
-      message: `Error reading file: ${error.message}`,
+      message: `Error reading file: ${(error as Error).message}`,
     };
   }
 }
@@ -1393,27 +1563,16 @@ export async function writeFile(input: {
     // Content is always base64 encoded
     const base64Data = content;
 
-    const response = await fetch(`${BYTEBOT_DESKTOP_BASE_URL}/computer-use`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'write_file',
-        path,
-        data: base64Data,
-      }),
+    return await sendComputerAction<{ success: boolean; message?: string }>({
+      action: 'write_file',
+      path,
+      data: base64Data,
     });
-
-    if (!response.ok) {
-      throw new Error(`Failed to write file: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data;
   } catch (error) {
     console.error('Error in write_file action:', error);
     return {
       success: false,
-      message: `Error writing file: ${error.message}`,
+      message: `Error writing file: ${(error as Error).message}`,
     };
   }
 }

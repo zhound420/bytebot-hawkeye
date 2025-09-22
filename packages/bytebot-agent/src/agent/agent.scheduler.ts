@@ -3,7 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { TasksService } from '../tasks/tasks.service';
 import { AgentProcessor } from './agent.processor';
 import { TaskStatus } from '@prisma/client';
-import { writeFile } from './agent.computer-use';
+import { getComputerUseClient, writeFile } from './agent.computer-use';
 
 @Injectable()
 export class AgentScheduler implements OnModuleInit {
@@ -16,6 +16,13 @@ export class AgentScheduler implements OnModuleInit {
 
   async onModuleInit() {
     this.logger.log('AgentScheduler initialized');
+    try {
+      getComputerUseClient();
+    } catch (error) {
+      this.logger.warn(
+        `Failed to initialize computer use client: ${(error as Error).message}`,
+      );
+    }
     await this.handleCron();
   }
 
