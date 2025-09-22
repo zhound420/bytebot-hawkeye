@@ -45,6 +45,10 @@ https://github.com/user-attachments/assets/f271282a-27a3-43f3-9b99-b34007fdd169
 
 ![Desktop accuracy overlay](docs/images/hawkeye-desktop.png)
 
+### Bundled LiteLLM Proxy & OpenRouter Aliases
+
+Hawkeye ships with an embedded [`bytebot-llm-proxy`](packages/bytebot-llm-proxy) service that wraps [LiteLLM](https://github.com/BerriAI/litellm). The relay exposes pre-configured OpenRouter-ready aliases for the multimodal and high-context models Hawkeye relies on, so you can use familiar model names (for example `openrouter/anthropic/claude-3.5-sonnet`) without rewriting prompts. Upstream Bytebot does not include this proxy or the curated alias set—you only get direct vendor API calls there—making Hawkeye’s stack turnkey for teams that want to swap between OpenRouter, LM Studio, or first-party keys.
+
 ## What is a Desktop Agent?
 
 A desktop agent is an AI that has its own computer. Unlike browser-only agents or traditional RPA tools, Bytebot comes with a full virtual desktop where it can:
@@ -111,6 +115,8 @@ echo "ANTHROPIC_API_KEY=sk-ant-..." > docker/.env
 # Or: echo "GEMINI_API_KEY=..." >> docker/.env
 # Or: echo "OPENROUTER_API_KEY=..." >> docker/.env
 
+# Update proxy routing (edit packages/bytebot-llm-proxy/litellm-config.yaml)
+
 docker compose -f docker/docker-compose.yml up -d
 
 # Open http://localhost:9992
@@ -125,6 +131,8 @@ docker compose -f docker/docker-compose.proxy.yml up -d
 # Run with the Claude Code agent (replaces bytebot-agent with bytebot-agent-cc)
 docker compose -f docker/docker-compose-claude-code.yml up -d
 ```
+
+Before launching the proxy stack for the first time, open `packages/bytebot-llm-proxy/litellm-config.yaml` and swap in your preferred OpenRouter alias names as needed. Replace the sample LM Studio host/IP entries with the endpoints running on your machine so the relay can reach your local models. After every edit to this config, re-run `docker compose -f docker/docker-compose.proxy.yml up -d --build` to rebuild the container and load the changes.
 
 The extra services read the same API keys from `docker/.env`, so no additional secrets are required—just make sure the keys you provide match the models listed in the LiteLLM config.
 
