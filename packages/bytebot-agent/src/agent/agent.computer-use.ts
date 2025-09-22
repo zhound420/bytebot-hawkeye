@@ -28,7 +28,8 @@ import {
 } from '@bytebot/shared';
 import { Logger } from '@nestjs/common';
 import OpenAI from 'openai';
-import { SmartClickAI, SmartClickHelper } from './smart-click.helper';
+import { SmartClickHelper } from './smart-click.helper';
+import { SmartClickAI } from './smart-click.types';
 
 interface ScreenshotOptions {
   gridOverlay?: boolean;
@@ -673,39 +674,25 @@ function createSmartClickHelper(): SmartClickHelper | null {
     return screenshot(options);
   };
 
-  const screenshotRegionFn = async (options: {
-    region: string;
-    gridSize?: number;
-    enhance?: boolean;
-    includeOffset?: boolean;
-    addHighlight?: boolean;
-    progressStep?: number;
-    progressMessage?: string;
-    progressTaskId?: string;
-  }) => {
-    return screenshotRegion(options);
-  };
-
   const screenshotCustomRegionFn = async (options: {
     x: number;
     y: number;
     width: number;
     height: number;
     gridSize?: number;
+    zoomLevel?: number;
+    showCursor?: boolean;
+    progressStep?: number;
+    progressMessage?: string;
+    progressTaskId?: string;
   }) => {
     return screenshotCustomRegion(options);
   };
 
-  return new SmartClickHelper(
-    ai,
-    screenshotFn,
-    screenshotRegionFn,
-    screenshotCustomRegionFn,
-    {
-      proxyUrl: BYTEBOT_LLM_PROXY_URL,
-      model: SMART_FOCUS_MODEL,
-    },
-  );
+  return new SmartClickHelper(ai, screenshotFn, screenshotCustomRegionFn, {
+    proxyUrl: BYTEBOT_LLM_PROXY_URL,
+    model: SMART_FOCUS_MODEL,
+  });
 }
 
 export function createSmartClickAI(): SmartClickAI | null {
