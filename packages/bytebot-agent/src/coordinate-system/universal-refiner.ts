@@ -11,6 +11,7 @@ import { CoordinateTeacher } from './coordinate-teacher';
 import {
   CoordinateParser,
   ParsedCoordinateResponse,
+  evaluateCoordinateSuspicion,
 } from './coordinate-parser';
 
 export interface UniversalCoordinateStep {
@@ -92,6 +93,17 @@ export class UniversalCoordinateRefiner {
       fullPrompt,
     );
     const fullParsed = this.parser.parse(fullRaw);
+    const suspicion = evaluateCoordinateSuspicion(fullParsed, {
+      dimensions: dimensions ?? undefined,
+    });
+
+    if (suspicion.suspicious) {
+      fullParsed.needsZoom = true;
+      const suspicionNote = `Zoom recommended: ${suspicion.reasons.join(' ')}`;
+      fullParsed.reasoning = fullParsed.reasoning
+        ? `${fullParsed.reasoning} ${suspicionNote}`
+        : suspicionNote;
+    }
 
     steps.push({
       id: 'full-frame',
@@ -104,6 +116,9 @@ export class UniversalCoordinateRefiner {
 
     let bestGlobal = fullParsed.global ?? null;
     let needsZoom = fullParsed.needsZoom ?? !bestGlobal;
+    if (suspicion.suspicious) {
+      needsZoom = true;
+    }
 
     let zoomStep: UniversalCoordinateStep | null = null;
 

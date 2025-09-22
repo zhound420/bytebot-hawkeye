@@ -16,6 +16,15 @@ export interface ParsedCoordinateResponse {
   reasoning?: string | null;
 }
 
+export interface CoordinateSuspicionOptions {
+  dimensions?: { width: number; height: number } | null;
+}
+
+export interface CoordinateSuspicionResult {
+  suspicious: boolean;
+  reasons: string[];
+}
+
 function parseBoolean(value: unknown): boolean | undefined {
   if (typeof value === 'boolean') {
     return value;
@@ -256,4 +265,50 @@ export class CoordinateParser {
 
     return result;
   }
+}
+
+const isMultipleOf = (value: number, divisor: number): boolean => {
+  if (!divisor) {
+    return false;
+  }
+  return value % divisor === 0;
+};
+
+export function evaluateCoordinateSuspicion(
+  parsed: ParsedCoordinateResponse,
+  options: CoordinateSuspicionOptions = {},
+): CoordinateSuspicionResult {
+  const reasons: string[] = [];
+  const global = parsed.global;
+
+  if (!global) {
+    return { suspicious: false, reasons };
+  }
+
+  const dimensions = options.dimensions ?? null;
+  if (dimensions) {
+    const outOfBounds =
+      global.x < 0 ||
+      global.y < 0 ||
+      global.x >= dimensions.width ||
+      global.y >= dimensions.height;
+    if (outOfBounds) {
+      reasons.push(
+        `Coordinates (${global.x}, ${global.y}) fall outside the known bounds (${dimensions.width}×${dimensions.height}).`,
+      );
+    }
+  }
+
+  if (isMultipleOf(global.x, 100) && isMultipleOf(global.y, 100)) {
+    reasons.push('Coordinates align exactly with the 100 px grid intersections.');
+  } else if (isMultipleOf(global.x, 50) && isMultipleOf(global.y, 50)) {
+    reasons.push('Coordinates are rounded to 50 px increments.');
+  } else if (isMultipleOf(global.x, 25) && isMultipleOf(global.y, 25)) {
+    reasons.push('Coordinates are rounded to 25 px increments.');
+  }
+
+  return {
+    suspicious: reasons.length > 0,
+    reasons,
+  };
 }
