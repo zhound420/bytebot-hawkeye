@@ -549,6 +549,11 @@ type ClickInput = {
   context?: ClickContext;
 };
 
+type ClickMouseResponse = {
+  actual?: Coordinates | null;
+  success?: boolean;
+};
+
 async function performClick(
   input: ClickInput,
 ): Promise<{ coordinates?: Coordinates; context?: ClickContext } | null> {
@@ -623,14 +628,14 @@ async function clickMouse(input: {
   clickCount: number;
   description?: string;
   context?: ClickContext;
-}): Promise<void> {
+}): Promise<ClickMouseResponse | null> {
   const { coordinates, button, holdKeys, clickCount } = input;
   console.log(
     `Clicking mouse ${button} ${clickCount} times ${coordinates ? `at coordinates: [${coordinates.x}, ${coordinates.y}] ` : ''} ${holdKeys ? `with holdKeys: ${holdKeys}` : ''}`,
   );
 
   try {
-    await fetch(`${BYTEBOT_DESKTOP_BASE_URL}/computer-use`, {
+    const response = await fetch(`${BYTEBOT_DESKTOP_BASE_URL}/computer-use`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -643,6 +648,32 @@ async function clickMouse(input: {
         context: input.context ?? undefined,
       }),
     });
+
+    if (!response.ok) {
+      throw new Error(`Desktop responded with status ${response.status}`);
+    }
+
+    let payload: ClickMouseResponse | null = null;
+    try {
+      payload = (await response.json()) as ClickMouseResponse;
+    } catch {
+      payload = null;
+    }
+
+    if (
+      input.context?.source === 'smart_focus' &&
+      payload?.actual &&
+      input.coordinates
+    ) {
+      const helper = getSmartClickHelper();
+      helper?.recordDesktopClickCorrection(
+        payload.actual,
+        input.coordinates,
+        payload.success ?? true,
+      );
+    }
+
+    return payload;
   } catch (error) {
     console.error('Error in click_mouse action:', error);
     throw error;

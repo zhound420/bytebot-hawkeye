@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { SmartClickHelper } from './smart-click.helper';
-import { SmartClickAI } from './smart-click.types';
+import { Coordinates, SmartClickAI } from './smart-click.types';
 
 describe('SmartClickHelper', () => {
   const baseImage = Buffer.from('test-image').toString('base64');
@@ -77,6 +77,54 @@ describe('SmartClickHelper', () => {
 
     writeFileMock.mockRestore();
     fetchMock.mockRestore();
+  });
+});
+
+describe('SmartClickHelper calibration hook', () => {
+  const stubScreenshot = jest.fn().mockResolvedValue({ image: 'stub' });
+  const stubCustomScreenshot = jest
+    .fn()
+    .mockResolvedValue({ image: 'stub' });
+
+  const createHelper = () => {
+    const ai: SmartClickAI = {
+      askAboutScreenshot: jest.fn().mockResolvedValue('{}'),
+      getCoordinates: jest.fn().mockResolvedValue({ x: 0, y: 0 }),
+    };
+
+    return new SmartClickHelper(ai, stubScreenshot, stubCustomScreenshot, {
+      proxyUrl: 'http://proxy',
+      model: 'fake-model',
+    });
+  };
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('records desktop click corrections and updates calibrator drift', () => {
+    const helper = createHelper();
+    const coordinateSystem = (helper as any).coordinateSystem;
+    expect(coordinateSystem).toBeTruthy();
+
+    const predicted: Coordinates = { x: 120, y: 320 };
+    const actual: Coordinates = { x: 127, y: 311 };
+
+    for (let i = 0; i < 12; i += 1) {
+      helper.recordDesktopClickCorrection(actual, predicted, true);
+    }
+
+    const history = coordinateSystem.getCalibrationHistory();
+    expect(history).toHaveLength(12);
+    history.forEach((sample: any) => {
+      expect(sample.source).toBe('desktop-click');
+      expect(sample.success).toBe(true);
+      expect(sample.predicted).toEqual(predicted);
+      expect(sample.actual).toEqual(actual);
+    });
+
+    const calibrator = (coordinateSystem as any).calibrator;
+    expect(calibrator.getCurrentOffset()).toEqual({ x: 7, y: -9 });
   });
 });
 
