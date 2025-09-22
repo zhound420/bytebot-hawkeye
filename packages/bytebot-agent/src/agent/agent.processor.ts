@@ -491,7 +491,8 @@ export class AgentProcessor {
     try {
       const history = await this.messagesService.findEvery(taskId);
       let hasAction = false;
-      let hasVerification = false;
+      let hasFreshVerification = false;
+      let latestActionPosition: { messageIndex: number; blockIndex: number } | null = null;
 
       const ACTION_NAMES = new Set<string>([
         'computer_click_mouse',
@@ -504,31 +505,42 @@ export class AgentProcessor {
         'computer_read_file',
       ]);
 
-      for (const msg of history) {
+      history.forEach((msg, messageIndex) => {
         const blocks = (msg.content as MessageContentBlock[]) || [];
-        for (const block of blocks) {
+        blocks.forEach((block, blockIndex) => {
           if (block.type === MessageContentType.ToolUse) {
             const name = (block as any).name as string;
             if (ACTION_NAMES.has(name)) {
               hasAction = true;
+              hasFreshVerification = false;
+              latestActionPosition = { messageIndex, blockIndex };
             }
           }
           if (block.type === MessageContentType.ToolResult) {
             const tr = block as any;
             // Evidence: any document result or any image result
             const content = (tr.content || []) as any[];
-            if (content.some((c) => c.type === MessageContentType.Document)) {
-              hasVerification = true;
-            }
-            if (content.some((c) => c.type === MessageContentType.Image)) {
-              hasVerification = true;
+            const hasVerificationContent = content.some((c) =>
+              [
+                MessageContentType.Document,
+                MessageContentType.Image,
+              ].includes(c.type as MessageContentType),
+            );
+            if (
+              hasVerificationContent &&
+              latestActionPosition &&
+              (messageIndex > latestActionPosition.messageIndex ||
+                (messageIndex === latestActionPosition.messageIndex &&
+                  blockIndex > latestActionPosition.blockIndex))
+            ) {
+              hasFreshVerification = true;
             }
           }
-        }
-      }
+        });
+      });
 
       // Minimal requirement: at least one action and some verification artifact
-      return hasAction && hasVerification;
+      return hasAction && hasFreshVerification;
     } catch (e) {
       this.logger.warn(`canMarkCompleted: fallback to allow completion due to error: ${(e as Error).message}`);
       return true;

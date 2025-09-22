@@ -92,6 +92,102 @@ describe('AgentProcessor', () => {
       expect(messagesService.findEvery).toHaveBeenCalledWith('task-1');
       expect(result).toBe(true);
     });
+
+    it('rejects completion when verification happens before the latest action', async () => {
+      const base = new Date('2024-01-01T00:00:00Z');
+      const history = [
+        {
+          id: 'msg-1',
+          createdAt: base,
+          updatedAt: base,
+          content: [
+            {
+              type: MessageContentType.ToolResult,
+              tool_use_id: 'tool-1',
+              content: [
+                {
+                  type: MessageContentType.Image,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          id: 'msg-2',
+          createdAt: new Date(base.getTime() + 1000),
+          updatedAt: new Date(base.getTime() + 1000),
+          content: [
+            {
+              type: MessageContentType.ToolUse,
+              id: 'tool-2',
+              name: 'computer_click_mouse',
+              input: {},
+            },
+          ],
+        },
+      ];
+
+      const { processor } = createProcessor({
+        messagesService: {
+          findUnsummarized: jest.fn().mockResolvedValue([]),
+          findEvery: jest.fn().mockResolvedValue(history as any),
+          create: jest.fn(),
+          attachSummary: jest.fn(),
+        },
+      });
+
+      const result = await (processor as any).canMarkCompleted('task-1');
+
+      expect(result).toBe(false);
+    });
+
+    it('allows completion when verification follows the final action', async () => {
+      const base = new Date('2024-01-01T00:05:00Z');
+      const history = [
+        {
+          id: 'msg-1',
+          createdAt: base,
+          updatedAt: base,
+          content: [
+            {
+              type: MessageContentType.ToolUse,
+              id: 'tool-1',
+              name: 'computer_click_mouse',
+              input: {},
+            },
+          ],
+        },
+        {
+          id: 'msg-2',
+          createdAt: new Date(base.getTime() + 1000),
+          updatedAt: new Date(base.getTime() + 1000),
+          content: [
+            {
+              type: MessageContentType.ToolResult,
+              tool_use_id: 'tool-1',
+              content: [
+                {
+                  type: MessageContentType.Image,
+                },
+              ],
+            },
+          ],
+        },
+      ];
+
+      const { processor } = createProcessor({
+        messagesService: {
+          findUnsummarized: jest.fn().mockResolvedValue([]),
+          findEvery: jest.fn().mockResolvedValue(history as any),
+          create: jest.fn(),
+          attachSummary: jest.fn(),
+        },
+      });
+
+      const result = await (processor as any).canMarkCompleted('task-1');
+
+      expect(result).toBe(true);
+    });
   });
 
   describe('runIteration', () => {
