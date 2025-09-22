@@ -58,7 +58,7 @@ services:
   bytebot-agent:
     build:
       context: ..
-      dockerfile: bytebot-agent/Dockerfile
+      dockerfile: packages/bytebot-agent/Dockerfile
     # Use pre-built image
     image: ghcr.io/bytebot-ai/bytebot-agent:edge
     container_name: bytebot-agent
