@@ -164,23 +164,36 @@ export class Calibrator {
   }
 
   getCurrentOffset(): Coordinates | null {
-    if (this.samples.length < 10) {
+    const recentSamples = this.samples.slice(-50);
+
+    if (recentSamples.length < 5) {
       return { x: 0, y: 0 };
     }
 
-    const recentSamples = this.samples.slice(-50);
-    const sum = recentSamples.reduce(
-      (acc, sample) => ({
-        x: acc.x + sample.offset.x,
-        y: acc.y + sample.offset.y,
-      }),
-      { x: 0, y: 0 },
+    const { weighted, totalWeight } = recentSamples.reduce(
+      (acc, sample, index) => {
+        const age = recentSamples.length - index;
+        const baseWeight = 1 / Math.sqrt(age);
+        const weight = sample.success ? baseWeight * 1.5 : baseWeight;
+
+        return {
+          weighted: {
+            x: acc.weighted.x + sample.offset.x * weight,
+            y: acc.weighted.y + sample.offset.y * weight,
+          },
+          totalWeight: acc.totalWeight + weight,
+        };
+      },
+      { weighted: { x: 0, y: 0 }, totalWeight: 0 },
     );
 
-    const count = recentSamples.length;
+    if (totalWeight === 0) {
+      return { x: 0, y: 0 };
+    }
+
     return {
-      x: Math.round(sum.x / count),
-      y: Math.round(sum.y / count),
+      x: Math.round(weighted.x / totalWeight),
+      y: Math.round(weighted.y / totalWeight),
     };
   }
 
