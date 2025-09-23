@@ -61,11 +61,13 @@ https://github.com/user-attachments/assets/f271282a-27a3-43f3-9b99-b34007fdd169
 
 ## Quick Start: Proxy Compose Stack
 
-The fastest way to try Hawkeye is the proxy-enabled Docker Compose stack—it starts the desktop, agent, UI, Postgres, and LiteLLM proxy with every precision upgrade flipped on. Populate `docker/.env` with your model keys **and** the Hawkeye-specific toggles before you launch:
+ The fastest way to try Hawkeye is the proxy-enabled Docker Compose stack—it starts the desktop, agent, UI, Postgres, and LiteLLM proxy with every precision upgrade flipped on. Populate `docker/.env` with your model keys **and** the Hawkeye-specific toggles before you launch. OpenRouter and LMStudio are first-class in the default LiteLLM config, so set the matching environment variables and make sure the aliases in [`packages/bytebot-llm-proxy/litellm-config.yaml`](packages/bytebot-llm-proxy/litellm-config.yaml) point to models you can reach:
 
+- `OPENROUTER_API_KEY` powers the `openrouter-*` aliases like `openrouter-claude-3.7-sonnet`.
+- LMStudio examples such as `local-lmstudio-gemma-3-27b` expect your local server’s `api_base` to match the running LMStudio instance.
 - `BYTEBOT_GRID_OVERLAY=true` keeps the labeled coordinate grid on every capture.
 - `BYTEBOT_PROGRESSIVE_ZOOM_USE_AI=true` enables the multi-zoom screenshot refinement.
-- `BYTEBOT_SMART_FOCUS=true` and `BYTEBOT_SMART_FOCUS_MODEL=<litellm-alias>` route Smart Focus through the proxy model you configure in `packages/bytebot-llm-proxy/litellm-config.yaml`.
+- `BYTEBOT_SMART_FOCUS=true` and `BYTEBOT_SMART_FOCUS_MODEL=<litellm-alias>` route Smart Focus through the proxy model you configure in the LiteLLM config.
 - `BYTEBOT_COORDINATE_METRICS=true` (plus optional `BYTEBOT_COORDINATE_DEBUG=true`) records the click accuracy telemetry that distinguishes the fork.
 
 ```bash
@@ -73,6 +75,7 @@ cat <<'EOF' > docker/.env
 # Provider keys for LiteLLM
 OPENAI_API_KEY=sk-your-key
 ANTHROPIC_API_KEY=...
+OPENROUTER_API_KEY=...
 
 # Hawkeye precision defaults
 BYTEBOT_GRID_OVERLAY=true
@@ -85,7 +88,7 @@ EOF
 docker compose -f docker/docker-compose.proxy.yml up -d
 ```
 
-After editing `packages/bytebot-llm-proxy/litellm-config.yaml` to point at your preferred models, restart `bytebot-llm-proxy` so the new aliases are picked up.
+Before you start the stack, edit [`packages/bytebot-llm-proxy/litellm-config.yaml`](packages/bytebot-llm-proxy/litellm-config.yaml) so each alias maps to the OpenRouter endpoints or LMStudio bases you control. After saving changes, restart the `bytebot-llm-proxy` container (`docker compose restart bytebot-llm-proxy`) to reload the updated routing.
 
 ## Alternative Deployments
 
