@@ -90,6 +90,31 @@ export interface Task {
   files?: File[];
 }
 
+export interface TelemetryLearningMetricsTrend {
+  direction: 'improving' | 'steady' | 'regressing';
+  delta: number | null;
+  recentAverage: number | null;
+  previousAverage: number | null;
+}
+
+export interface TelemetryRegionalHotspot {
+  key: string;
+  center: { x: number; y: number } | null;
+  attempts: number;
+  successRate: number | null;
+  averageError: number | null;
+  weightedOffset: { x: number; y: number } | null;
+}
+
+export interface TelemetryLearningMetrics {
+  totalAttempts: number;
+  successRate: number | null;
+  averageError: number | null;
+  currentWeightedOffset: { x: number; y: number } | null;
+  convergenceTrend: TelemetryLearningMetricsTrend;
+  regionalHotspots: TelemetryRegionalHotspot[];
+}
+
 export interface TelemetrySummary {
   targetedClicks: number;
   untargetedClicks: number;
@@ -104,6 +129,7 @@ export interface TelemetrySummary {
   postClickDiff?: { count: number; avgDiff: number | null };
   smartClicks?: number; // Successful smart click completions
   progressiveZooms?: number;
+  learningMetrics: TelemetryLearningMetrics;
   sessionStart?: string | null;
   sessionEnd?: string | null;
   sessionDurationMs?: number | null;

@@ -3,7 +3,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { format } from "date-fns";
 
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -35,6 +34,20 @@ function formatNumber(
     return "—";
   }
   return new Intl.NumberFormat("en-US", options).format(value);
+}
+
+function formatPercent(
+  value: number | null | undefined,
+  options: Intl.NumberFormatOptions = { maximumFractionDigits: 1 },
+) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return "—";
+  }
+  return new Intl.NumberFormat("en-US", {
+    style: "percent",
+    maximumFractionDigits: options.maximumFractionDigits ?? 1,
+    minimumFractionDigits: options.minimumFractionDigits ?? 0,
+  }).format(value);
 }
 
 type Props = {
@@ -210,6 +223,52 @@ export function TelemetryStatus({ className = "" }: Props) {
   const normalizedEvents = useMemo<NormalizedTelemetryEvent[]>(
     () => normalizeTelemetryEvents(data?.events),
     [data],
+  );
+
+  const learningMetrics = data?.learningMetrics ?? null;
+  const totalAttempts = learningMetrics?.totalAttempts ?? 0;
+  const successRateLabel = useMemo(
+    () => formatPercent(learningMetrics?.successRate),
+    [learningMetrics?.successRate],
+  );
+  const averageErrorLabel = useMemo(
+    () => formatNumber(learningMetrics?.averageError),
+    [learningMetrics?.averageError],
+  );
+  const weightedOffsetLabel = useMemo(() => {
+    const offset = learningMetrics?.currentWeightedOffset;
+    if (!offset) {
+      return "—";
+    }
+    return `${Math.round(offset.x)}, ${Math.round(offset.y)}`;
+  }, [learningMetrics?.currentWeightedOffset]);
+  const convergenceTrendLabel = useMemo(() => {
+    const trend = learningMetrics?.convergenceTrend;
+    if (!trend) {
+      return "—";
+    }
+    const trendLabel =
+      trend.direction === "improving"
+        ? "Improving"
+        : trend.direction === "regressing"
+          ? "Regressing"
+          : "Steady";
+    const deltaLabel = formatNumber(trend.delta, { maximumFractionDigits: 2 });
+    if (deltaLabel === "—") {
+      return trendLabel;
+    }
+    return `${trendLabel} (Δ ${deltaLabel} px)`;
+  }, [learningMetrics?.convergenceTrend]);
+  const convergenceAverageLabel = useMemo(() => {
+    const trend = learningMetrics?.convergenceTrend;
+    if (!trend || trend.recentAverage === null) {
+      return "—";
+    }
+    return `${formatNumber(trend.recentAverage, { maximumFractionDigits: 2 })} px`;
+  }, [learningMetrics?.convergenceTrend]);
+  const regionalHotspots = useMemo(
+    () => learningMetrics?.regionalHotspots ?? [],
+    [learningMetrics?.regionalHotspots],
   );
 
   const { start: sessionStartIso, end: sessionEndIso } = useMemo(
@@ -490,63 +549,80 @@ export function TelemetryStatus({ className = "" }: Props) {
             </div>
 
             <div className="mt-3">
-              <div className="text-[11px] font-semibold text-card-foreground">Recent events</div>
-              <div className="mt-1 overflow-hidden rounded-md border border-border bg-card/80 shadow-inner dark:bg-muted/40">
-                <div className="flex items-center justify-between gap-2 border-b border-border/70 bg-card/70 px-3 py-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground dark:bg-muted/50">
-                  <span>Recent actions</span>
-                  <span className="font-mono text-[10px] font-normal text-muted-foreground">
-                    {normalizedEvents.length}
-                  </span>
+              <div className="text-[11px] font-semibold text-card-foreground">Learning metrics</div>
+              <div className="mt-2 grid grid-cols-3 gap-2 text-[11px] text-card-foreground">
+                <div className="rounded border border-bytebot-bronze-light-6 bg-card/70 px-2 py-1 dark:border-bytebot-bronze-dark-6 dark:bg-muted/50">
+                  Attempts: <span className="font-semibold">{totalAttempts}</span>
                 </div>
-                <ScrollArea className="max-h-56 pr-1">
-                  <div className="space-y-2 px-3 py-2">
-                    {normalizedEvents.length === 0 ? (
-                      <div className="rounded-md border border-dashed border-border/70 bg-card/60 px-3 py-3 text-center text-[11px] text-muted-foreground">
-                        No events recorded yet for this session.
-                      </div>
-                    ) : (
-                      normalizedEvents.map((event, idx) => {
-                        const timestamp = event.timestamp
-                          ? parseIsoDate(event.timestamp)
-                          : null;
-                        const formattedTimestamp = timestamp
-                          ? format(timestamp, "MMM d, yyyy HH:mm:ss")
-                          : "—";
-                        const metadataEntries = Object.entries(event.metadata).filter(
-                          ([, value]) => value !== undefined && value !== null,
-                        );
-                        const metadataDisplay = metadataEntries.length
-                          ? JSON.stringify(Object.fromEntries(metadataEntries), null, 2)
-                          : "—";
+                <div className="rounded border border-bytebot-bronze-light-6 bg-card/70 px-2 py-1 dark:border-bytebot-bronze-dark-6 dark:bg-muted/50">
+                  Success: <span className="font-semibold">{successRateLabel}</span>
+                </div>
+                <div className="rounded border border-bytebot-bronze-light-6 bg-card/70 px-2 py-1 dark:border-bytebot-bronze-dark-6 dark:bg-muted/50">
+                  Avg error: <span className="font-semibold">{averageErrorLabel}</span>
+                </div>
+              </div>
 
-                        return (
-                          <div
-                            key={`${event.type}-${event.timestamp ?? idx}`}
-                            className="rounded-lg border border-border/60 bg-card/70 px-3 py-2 text-[11px] text-card-foreground shadow-sm transition-colors hover:border-border hover:bg-card dark:bg-muted/40 dark:hover:bg-muted/60"
-                          >
-                            <div className="flex flex-wrap items-center justify-between gap-2">
-                              <span className="rounded-md bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground dark:bg-black/30">
-                                {event.type}
-                              </span>
-                              <span className="font-mono text-[10px] text-muted-foreground">
-                                {formattedTimestamp}
-                              </span>
-                            </div>
-                            <div className="mt-2 min-w-0">
-                              {metadataDisplay === "—" ? (
-                                <span className="text-[10px] italic text-muted-foreground/80">No metadata</span>
-                              ) : (
-                                <pre className="whitespace-pre-wrap break-words rounded bg-muted/40 px-2 py-1 font-mono text-[10px] leading-snug text-muted-foreground dark:bg-black/30">
-                                  {metadataDisplay}
-                                </pre>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
+              <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] text-card-foreground">
+                <div className="rounded border border-bytebot-bronze-light-6 bg-card/70 px-2 py-1 dark:border-bytebot-bronze-dark-6 dark:bg-muted/50">
+                  Weighted offset:
+                  <span className="ml-1 font-semibold">{weightedOffsetLabel}</span>
+                </div>
+                <div className="rounded border border-bytebot-bronze-light-6 bg-card/70 px-2 py-1 dark:border-bytebot-bronze-dark-6 dark:bg-muted/50">
+                  Convergence:
+                  <span className="ml-1 font-semibold">{convergenceTrendLabel}</span>
+                  <span className="ml-1 text-[10px] text-muted-foreground">{convergenceAverageLabel}</span>
+                </div>
+              </div>
+
+              <div className="mt-2 space-y-2">
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Regional hotspots</div>
+                {regionalHotspots.length === 0 ? (
+                  <div className="rounded-md border border-dashed border-border/60 bg-card/60 px-3 py-3 text-center text-[11px] text-muted-foreground dark:bg-muted/40">
+                    No regional hotspots detected.
                   </div>
-                </ScrollArea>
+                ) : (
+                  regionalHotspots.map((hotspot, index) => {
+                    const centerLabel = hotspot.center
+                      ? `${Math.round(hotspot.center.x)}, ${Math.round(hotspot.center.y)}`
+                      : hotspot.key;
+                    const offsetLabel = hotspot.weightedOffset
+                      ? `${Math.round(hotspot.weightedOffset.x)}, ${Math.round(hotspot.weightedOffset.y)}`
+                      : "—";
+                    return (
+                      <div
+                        key={`${hotspot.key}-${index}`}
+                        className="rounded-lg border border-bytebot-bronze-light-6 bg-card/70 px-3 py-2 text-[11px] text-card-foreground shadow-sm dark:border-bytebot-bronze-dark-6 dark:bg-muted/50"
+                      >
+                        <div className="flex items-center justify-between text-[10px] uppercase tracking-wide text-muted-foreground">
+                          <span>Hotspot #{index + 1}</span>
+                          <span className="font-mono text-[10px] text-muted-foreground">{hotspot.key}</span>
+                        </div>
+                        <div className="mt-1 text-[11px] text-card-foreground">
+                          <div className="text-[10px] text-muted-foreground">Center</div>
+                          <div className="font-mono text-[11px]">{centerLabel}</div>
+                        </div>
+                        <div className="mt-1 grid grid-cols-3 gap-2 text-[10px] text-muted-foreground">
+                          <div>
+                            Attempts
+                            <div className="font-semibold text-card-foreground">{hotspot.attempts}</div>
+                          </div>
+                          <div>
+                            Success
+                            <div className="font-semibold text-card-foreground">{formatPercent(hotspot.successRate)}</div>
+                          </div>
+                          <div>
+                            Error
+                            <div className="font-semibold text-card-foreground">{formatNumber(hotspot.averageError)}</div>
+                          </div>
+                        </div>
+                        <div className="mt-1 text-[10px] text-muted-foreground">
+                          Weighted offset
+                          <span className="ml-1 font-mono text-[11px] text-card-foreground">{offsetLabel}</span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </div>
           </div>

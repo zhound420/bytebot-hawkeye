@@ -72,6 +72,12 @@ describe('TelemetryController', () => {
       expect(summary.sessionEnd).toBe(timeline.sessionEnd);
       expect(summary.sessionDurationMs).toBe(timeline.sessionDurationMs);
       expect(summary.events).toEqual(timeline.events);
+      expect(summary.learningMetrics).toEqual(
+        expect.objectContaining({
+          totalAttempts: expect.any(Number),
+          regionalHotspots: expect.any(Array),
+        }),
+      );
     } finally {
       await fs.rm(tempDir, { recursive: true, force: true });
     }
@@ -124,6 +130,8 @@ describe('TelemetryController', () => {
       expect(summary.smartClicks).toBe(1);
       expect(summary.recentAbsDeltas).toEqual([4]);
       expect(summary.avgAbsDelta).toBe(4);
+      expect(summary.learningMetrics.totalAttempts).toBe(1);
+      expect(summary.learningMetrics.successRate).toBe(1);
     } finally {
       await fs.rm(tempDir, { recursive: true, force: true });
     }
