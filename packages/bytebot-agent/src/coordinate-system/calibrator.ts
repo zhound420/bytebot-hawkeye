@@ -48,7 +48,11 @@ type CanvasContextLike = {
 export class Calibrator {
   private readonly samples: CalibrationSample[] = [];
   private readonly telemetry: CalibrationTelemetrySample[] = [];
+  private readonly regionalSamples = new Map<string, CalibrationSample[]>();
   private readonly maxHistory: number;
+
+  private static readonly REGION_BUCKET_SIZE = 200;
+  private static readonly MIN_REGIONAL_SAMPLES = 3;
 
   constructor(maxHistory = 50) {
     this.maxHistory = Math.max(maxHistory, 50);
@@ -58,9 +62,9 @@ export class Calibrator {
     offset?: Coordinates | null,
     source = 'screenshot',
     metadata: CalibrationSampleMetadata = {},
-  ): void {
+  ): CalibrationSample | null {
     if (!offset) {
-      return;
+      return null;
     }
 
     const normalized = this.normalize(offset);
@@ -69,7 +73,7 @@ export class Calibrator {
       metadata.error === undefined
         ? this.calculateError(normalized)
         : metadata.error;
-    this.samples.push({
+    const sample: CalibrationSample = {
       offset: normalized,
       predicted: metadata.predicted ?? null,
       actual: metadata.actual ?? null,
@@ -78,11 +82,15 @@ export class Calibrator {
       error,
       timestamp: Date.now(),
       source,
-    });
+    };
+
+    this.samples.push(sample);
 
     if (this.samples.length > this.maxHistory) {
       this.samples.splice(0, this.samples.length - this.maxHistory);
     }
+
+    return sample;
   }
 
   recordTelemetry(
@@ -128,13 +136,14 @@ export class Calibrator {
       sampleMetadata.error === undefined
         ? this.calculateError(delta)
         : sampleMetadata.error;
-    this.captureOffset(delta, source, {
+    const sample = this.captureOffset(delta, source, {
       ...sampleMetadata,
       predicted,
       actual,
       success,
       error,
     });
+    this.addRegionalSample(predicted, sample);
     return delta;
   }
 
@@ -154,51 +163,39 @@ export class Calibrator {
     const predicted = sampleMetadata.predicted ?? normalized;
     const actual = sampleMetadata.actual ?? normalized;
     const error = sampleMetadata.error === undefined ? 0 : sampleMetadata.error;
-    this.captureOffset({ x: 0, y: 0 }, source, {
+    const sample = this.captureOffset({ x: 0, y: 0 }, source, {
       ...sampleMetadata,
       predicted,
       actual,
       success,
       error,
     });
+    this.addRegionalSample(predicted, sample);
   }
 
   getCurrentOffset(): Coordinates | null {
-    const recentSamples = this.samples.slice(-50);
+    return this.computeWeightedOffset(this.samples) ?? { x: 0, y: 0 };
+  }
 
-    if (recentSamples.length < 5) {
-      return { x: 0, y: 0 };
+  getRegionalOffset(predicted: Coordinates | null): Coordinates | null {
+    const key = this.getRegionKey(predicted);
+    if (!key) {
+      return this.getCurrentOffset();
     }
 
-    const { weighted, totalWeight } = recentSamples.reduce(
-      (acc, sample, index) => {
-        const age = recentSamples.length - index;
-        const baseWeight = 1 / Math.sqrt(age);
-        const weight = sample.success ? baseWeight * 1.5 : baseWeight;
+    const samples = this.regionalSamples.get(key);
+    if (!samples || samples.length < Calibrator.MIN_REGIONAL_SAMPLES) {
+      return this.getCurrentOffset();
+    }
 
-        return {
-          weighted: {
-            x: acc.weighted.x + sample.offset.x * weight,
-            y: acc.weighted.y + sample.offset.y * weight,
-          },
-          totalWeight: acc.totalWeight + weight,
-        };
-      },
-      { weighted: { x: 0, y: 0 }, totalWeight: 0 },
+    return (
+      this.computeWeightedOffset(samples, Calibrator.MIN_REGIONAL_SAMPLES) ??
+      this.getCurrentOffset()
     );
-
-    if (totalWeight === 0) {
-      return { x: 0, y: 0 };
-    }
-
-    return {
-      x: Math.round(weighted.x / totalWeight),
-      y: Math.round(weighted.y / totalWeight),
-    };
   }
 
   apply(coordinates: Coordinates): Coordinates {
-    const offset = this.getCurrentOffset();
+    const offset = this.getRegionalOffset(coordinates);
     if (!offset) {
       return coordinates;
     }
@@ -272,6 +269,7 @@ export class Calibrator {
   reset(): void {
     this.samples.splice(0, this.samples.length);
     this.telemetry.splice(0, this.telemetry.length);
+    this.regionalSamples.clear();
   }
 
   private normalize(coords: Coordinates): Coordinates {
@@ -283,5 +281,76 @@ export class Calibrator {
 
   private calculateError(offset: Coordinates): number {
     return Math.hypot(offset.x, offset.y);
+  }
+
+  private getRegionKey(coords?: Coordinates | null): string | null {
+    if (!coords) {
+      return null;
+    }
+
+    const normalized = this.normalize(coords);
+    const bucketX = Math.floor(normalized.x / Calibrator.REGION_BUCKET_SIZE);
+    const bucketY = Math.floor(normalized.y / Calibrator.REGION_BUCKET_SIZE);
+    return `${bucketX},${bucketY}`;
+  }
+
+  private addRegionalSample(
+    predicted: Coordinates | null,
+    sample: CalibrationSample | null,
+  ): void {
+    if (!sample) {
+      return;
+    }
+
+    const key = this.getRegionKey(predicted ?? sample.predicted);
+    if (!key) {
+      return;
+    }
+
+    const samples = this.regionalSamples.get(key) ?? [];
+    samples.push(sample);
+
+    if (samples.length > this.maxHistory) {
+      samples.splice(0, samples.length - this.maxHistory);
+    }
+
+    this.regionalSamples.set(key, samples);
+  }
+
+  private computeWeightedOffset(
+    samples: CalibrationSample[],
+    minSamples = 5,
+  ): Coordinates | null {
+    const recentSamples = samples.slice(-50);
+
+    if (recentSamples.length < minSamples) {
+      return null;
+    }
+
+    const { weighted, totalWeight } = recentSamples.reduce(
+      (acc, sample, index) => {
+        const age = recentSamples.length - index;
+        const baseWeight = 1 / Math.sqrt(age);
+        const weight = sample.success ? baseWeight * 1.5 : baseWeight;
+
+        return {
+          weighted: {
+            x: acc.weighted.x + sample.offset.x * weight,
+            y: acc.weighted.y + sample.offset.y * weight,
+          },
+          totalWeight: acc.totalWeight + weight,
+        };
+      },
+      { weighted: { x: 0, y: 0 }, totalWeight: 0 },
+    );
+
+    if (totalWeight === 0) {
+      return { x: 0, y: 0 };
+    }
+
+    return {
+      x: Math.round(weighted.x / totalWeight),
+      y: Math.round(weighted.y / totalWeight),
+    };
   }
 }
