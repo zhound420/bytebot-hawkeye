@@ -16,6 +16,11 @@
     ".": {
       "import": "./dist/index.esm.js",
       "require": "./dist/index.js"
+    },
+    "./config/universalCoordinates": {
+      "import": "./dist/config/universalCoordinates.js",
+      "require": "./dist/config/universalCoordinates.js",
+      "types": "./dist/config/universalCoordinates.d.ts"
     }
   },
   "devDependencies": {
