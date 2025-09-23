@@ -57,13 +57,13 @@ Flip individual systems off by setting the corresponding environment variables�
 
 The fork’s Smart Focus workflow narrows attention in three deliberate passes—coarse region selection, focused capture, and final click—so the agent can reason about targets instead of guessing. Enable or tune it with `BYTEBOT_SMART_FOCUS`, `BYTEBOT_OVERVIEW_GRID`, `BYTEBOT_REGION_GRID`, `BYTEBOT_FOCUSED_GRID`, and related knobs documented in [docs/SMART_FOCUS_SYSTEM.md](docs/SMART_FOCUS_SYSTEM.md).
 
-https://github.com/user-attachments/assets/f271282a-27a3-43f3-9b99-b34007fdd169
+![Desktop accuracy overlay](docs/images/hawkeye2.png)
 
 ### Desktop Accuracy Drawer
 
 The `/desktop` dashboard now ships with a Desktop Accuracy drawer that exposes the fork’s adaptive telemetry at a glance. The panel streams live stats for the currently selected session, lets operators jump between historical sessions with the session selector, and provides reset controls so you can zero out a learning run before capturing a new benchmark. Use the reset button to clear the in-memory metrics without restarting the daemon when you want a clean baseline for regression tests or demonstrations.
 
-![Desktop accuracy overlay](docs/images/hawkeye-desktop.png)
+![Desktop accuracy overlay](docs/images/hawkeye3.png)
 
 #### Learning Metrics Explained
 
@@ -78,6 +78,8 @@ To help you interpret the drawer’s live readouts, Hawkeye surfaces several lea
 Together, these metrics give you continuous feedback on how Hawkeye’s coordinate calibration improves over time and whether additional guardrails are necessary for stubborn workflows.
 
 ## Quick Start: Proxy Compose Stack
+
+![Desktop accuracy overlay](docs/images/hawkeye1.png)
 
  The fastest way to try Hawkeye is the proxy-enabled Docker Compose stack—it starts the desktop, agent, UI, Postgres, and LiteLLM proxy with every precision upgrade flipped on. Populate `docker/.env` with your model keys **and** the Hawkeye-specific toggles before you launch. OpenRouter and LMStudio are first-class in the default LiteLLM config, so set the matching environment variables and make sure the aliases in [`packages/bytebot-llm-proxy/litellm-config.yaml`](packages/bytebot-llm-proxy/litellm-config.yaml) point to models you can reach:
 
