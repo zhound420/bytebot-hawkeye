@@ -163,9 +163,32 @@ describe('handleComputerToolUse screenshot reminders', () => {
 
 describe('handleComputerToolUse clicks', () => {
   it('defaults clickCount to 1 when omitted', async () => {
-    const fetchMock = jest.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ success: true }),
+    const fetchMock = jest.fn().mockImplementation((_, options) => {
+      const payload = (() => {
+        try {
+          return options?.body
+            ? JSON.parse((options as { body: string }).body)
+            : {};
+        } catch {
+          return {};
+        }
+      })();
+      if (payload.action === 'screenshot') {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ image: 'stub-image' }),
+        });
+      }
+      if (payload.action === 'click_mouse') {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ success: true }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({}),
+      });
     });
     (globalThis as any).fetch = fetchMock;
 
@@ -188,8 +211,17 @@ describe('handleComputerToolUse clicks', () => {
         body: expect.any(String),
       }),
     );
-    const [, options] = fetchMock.mock.calls[0];
-    const body = JSON.parse(options.body as string);
+    const clickCall = fetchMock.mock.calls.find(([, options]) => {
+      try {
+        const payload = JSON.parse((options as { body: string }).body);
+        return payload.action === 'click_mouse';
+      } catch {
+        return false;
+      }
+    });
+    expect(clickCall).toBeDefined();
+    const [, options] = clickCall!;
+    const body = JSON.parse((options as { body: string }).body);
     expect(body.clickCount).toBe(1);
   });
 });

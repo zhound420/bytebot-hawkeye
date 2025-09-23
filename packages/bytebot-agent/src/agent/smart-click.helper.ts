@@ -11,6 +11,7 @@ import {
   ScreenshotTargetOptions,
 } from './smart-click.types';
 import {
+  RecordSuccessOptions,
   UniversalCoordinateResult,
   UniversalCoordinateStep,
   UniversalCoordinateSystem,
@@ -82,6 +83,32 @@ export class SmartClickHelper {
     this.coordinateSystem.recordCorrection(actual, predicted, {
       source: 'desktop-click',
       success: success ?? true,
+    });
+  }
+
+  recordDesktopClickSuccess(
+    coordinates: Coordinates | null | undefined,
+    options?: RecordSuccessOptions,
+  ): void {
+    if (!this.coordinateSystem || !coordinates) {
+      return;
+    }
+
+    if (options === undefined) {
+      this.coordinateSystem.recordSuccess(coordinates, {
+        source: 'desktop-click-success',
+      });
+      return;
+    }
+
+    if (typeof options === 'string') {
+      this.coordinateSystem.recordSuccess(coordinates, options);
+      return;
+    }
+
+    this.coordinateSystem.recordSuccess(coordinates, {
+      ...options,
+      source: options.source ?? 'desktop-click-success',
     });
   }
 

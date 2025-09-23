@@ -82,9 +82,7 @@ describe('SmartClickHelper', () => {
 
 describe('SmartClickHelper calibration hook', () => {
   const stubScreenshot = jest.fn().mockResolvedValue({ image: 'stub' });
-  const stubCustomScreenshot = jest
-    .fn()
-    .mockResolvedValue({ image: 'stub' });
+  const stubCustomScreenshot = jest.fn().mockResolvedValue({ image: 'stub' });
 
   const createHelper = () => {
     const ai: SmartClickAI = {
@@ -100,6 +98,20 @@ describe('SmartClickHelper calibration hook', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+  });
+
+  it('records desktop click successes for calibration', () => {
+    const helper = createHelper();
+    const coordinateSystem = (helper as any).coordinateSystem;
+    helper.recordDesktopClickSuccess({ x: 200, y: 100 });
+
+    const history = coordinateSystem.getCalibrationHistory();
+    expect(history).toHaveLength(1);
+    expect(history[0].source).toBe('desktop-click-success');
+    expect(history[0].success).toBe(true);
+    expect(history[0].actual).toEqual({ x: 200, y: 100 });
+    expect(history[0].predicted).toEqual({ x: 200, y: 100 });
+    expect(history[0].error).toBe(0);
   });
 
   it('records desktop click corrections and updates calibrator drift', () => {
