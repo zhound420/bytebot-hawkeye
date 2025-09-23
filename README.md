@@ -4,11 +4,17 @@
 
 # Bytebot: Open-Source AI Desktop Agent
 
-<a href="https://trendshift.io/repositories/14624" target="_blank"><img src="https://trendshift.io/api/badge/repositories/14624" alt="bytebot-ai%2Fbytebot | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
-
 **An AI that has its own computer to complete tasks for you**
 
 [![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/bytebot?referralCode=L9lKXQ)
+</div>
+
+<details>
+<summary><strong>Resources &amp; Translations</strong></summary>
+
+<div align="center">
+
+<a href="https://trendshift.io/repositories/14624" target="_blank"><img src="https://trendshift.io/api/badge/repositories/14624" alt="bytebot-ai%2Fbytebot | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
 
 [![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](https://github.com/bytebot-ai/bytebot/tree/main/docker)
 [![License](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
@@ -17,15 +23,17 @@
 [🌐 Website](https://bytebot.ai) • [📚 Documentation](https://docs.bytebot.ai) • [💬 Discord](https://discord.com/invite/d9ewZkWPTP) • [𝕏 Twitter](https://x.com/bytebot_ai)
 
 <!-- Keep these links. Translations will automatically update with the README. -->
-[Deutsch](https://zdoc.app/de/bytebot-ai/bytebot) | 
-[Español](https://zdoc.app/es/bytebot-ai/bytebot) | 
-[français](https://zdoc.app/fr/bytebot-ai/bytebot) | 
-[日本語](https://zdoc.app/ja/bytebot-ai/bytebot) | 
-[한국어](https://zdoc.app/ko/bytebot-ai/bytebot) | 
-[Português](https://zdoc.app/pt/bytebot-ai/bytebot) | 
-[Русский](https://zdoc.app/ru/bytebot-ai/bytebot) | 
+[Deutsch](https://zdoc.app/de/bytebot-ai/bytebot) |
+[Español](https://zdoc.app/es/bytebot-ai/bytebot) |
+[français](https://zdoc.app/fr/bytebot-ai/bytebot) |
+[日本語](https://zdoc.app/ja/bytebot-ai/bytebot) |
+[한국어](https://zdoc.app/ko/bytebot-ai/bytebot) |
+[Português](https://zdoc.app/pt/bytebot-ai/bytebot) |
+[Русский](https://zdoc.app/ru/bytebot-ai/bytebot) |
 [中文](https://zdoc.app/zh/bytebot-ai/bytebot)
+
 </div>
+</details>
 
 ---
 
