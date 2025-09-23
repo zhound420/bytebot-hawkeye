@@ -1,4 +1,5 @@
 import { ClickContext } from '@bytebot/shared';
+import { Logger } from '@nestjs/common';
 import {
   Coordinates,
   ScreenshotCustomRegionOptions,
@@ -51,6 +52,10 @@ interface Dimension {
 const DEFAULT_CANVAS_DIMENSIONS: Dimension = { width: 1920, height: 1080 };
 
 export class UniversalCoordinateRefiner {
+  private readonly logger = new Logger(UniversalCoordinateRefiner.name);
+  private readonly debugEnabled =
+    (process.env.BYTEBOT_COORDINATE_DEBUG ?? 'false').toLowerCase() === 'true';
+
   constructor(
     private readonly ai: SmartClickAI,
     private readonly teacher: CoordinateTeacher,
@@ -93,9 +98,20 @@ export class UniversalCoordinateRefiner {
       fullScreenshot.image,
       fullPrompt,
     );
+    this.debug('Full frame AI response received', {
+      step: 'full-frame',
+      raw: this.sanitizeForLog(fullRaw),
+    });
     const fullParsed = this.parser.parse(fullRaw);
     const suspicion = evaluateCoordinateSuspicion(fullParsed, {
       dimensions: dimensions ?? undefined,
+    });
+    this.debug('Full frame AI response parsed', {
+      step: 'full-frame',
+      global: fullParsed.global,
+      local: fullParsed.local,
+      needsZoom: fullParsed.needsZoom ?? null,
+      suspicion,
     });
 
     if (suspicion.suspicious) {
@@ -150,7 +166,17 @@ export class UniversalCoordinateRefiner {
         zoomScreenshot.image,
         zoomPrompt,
       );
+      this.debug('Zoom AI response received', {
+        step: 'zoom-refine',
+        raw: this.sanitizeForLog(zoomRaw),
+      });
       const zoomParsed = this.parser.parse(zoomRaw);
+      this.debug('Zoom AI response parsed', {
+        step: 'zoom-refine',
+        global: zoomParsed.global,
+        local: zoomParsed.local,
+        needsZoom: zoomParsed.needsZoom ?? null,
+      });
 
       zoomStep = {
         id: 'zoom-refine',
@@ -202,6 +228,13 @@ export class UniversalCoordinateRefiner {
         y: clamped.y - bestGlobal.y,
       };
     }
+
+    this.debug('Coordinate calibration applied', {
+      original: bestGlobal,
+      offset: currentOffset,
+      adjusted,
+      final: clamped,
+    });
 
     const context: UniversalCoordinateResult['context'] = {
       region: zoomStep?.screenshot.region ?? undefined,
@@ -318,5 +351,44 @@ export class UniversalCoordinateRefiner {
     } catch {
       return null;
     }
+  }
+
+  private debug(message: string, payload?: Record<string, unknown>) {
+    if (!this.debugEnabled) {
+      return;
+    }
+
+    if (payload) {
+      this.logger.debug(
+        `${message} ${JSON.stringify(this.sanitizeForLog(payload))}`,
+      );
+      return;
+    }
+
+    this.logger.debug(message);
+  }
+
+  private sanitizeForLog(value: unknown): unknown {
+    if (typeof value === 'string') {
+      if (value.length > 300) {
+        return `${value.slice(0, 300)}… [${value.length - 300} more chars masked]`;
+      }
+      return value;
+    }
+
+    if (Array.isArray(value)) {
+      return value.map((item) => this.sanitizeForLog(item));
+    }
+
+    if (value && typeof value === 'object') {
+      return Object.entries(value as Record<string, unknown>).reduce<
+        Record<string, unknown>
+      >((acc, [key, val]) => {
+        acc[key] = this.sanitizeForLog(val);
+        return acc;
+      }, {});
+    }
+
+    return value;
   }
 }
