@@ -13,10 +13,11 @@ ENV BYTEBOT_DESKTOP_VNC_URL=${BYTEBOT_DESKTOP_VNC_URL}
 WORKDIR /app
 
 # Copy app source
-COPY ./shared ./shared
-COPY ./bytebot-ui/ ./bytebot-ui
+COPY packages/shared ./packages/shared
+COPY packages/bytebot-ui/ ./packages/bytebot-ui
+COPY config/universal-coordinates.yaml ./config/universal-coordinates.yaml
 
-WORKDIR /app/bytebot-ui
+WORKDIR /app/packages/bytebot-ui
 
 # Install dependencies
 RUN npm install
