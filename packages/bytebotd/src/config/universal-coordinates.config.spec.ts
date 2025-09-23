@@ -1,6 +1,6 @@
 import * as path from 'node:path';
 
-import { resolveConfigPath } from '@bytebot/shared';
+import { resolveConfigPath } from '@bytebot/shared/config/universalCoordinates';
 
 describe('Universal coordinate config discovery', () => {
   const originalOverride = process.env.BYTEBOT_COORDINATE_CONFIG;
