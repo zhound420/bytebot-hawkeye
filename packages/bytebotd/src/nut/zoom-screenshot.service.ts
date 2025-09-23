@@ -201,6 +201,11 @@ export class ZoomScreenshotService {
     const fontSize = 10;
     const lineWidth = 1;
 
+    const bannerY = fontSize * 3;
+    const regionInfoY = bannerY + fontSize * 1.5;
+    const transformInfoY = regionInfoY + fontSize * 1.5;
+    const xLabelBaseline = bannerY - fontSize * 0.5;
+
     let svgContent = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">`;
 
     // Add grid lines
@@ -227,7 +232,7 @@ export class ZoomScreenshotService {
       const label = showGlobalCoordinates
         ? `${Math.round(globalCoords.x)} (local ${x})`
         : `${x}`;
-      svgContent += `<text x="${x}" y="${fontSize + 2}" text-anchor="middle">${label}</text>`;
+      svgContent += `<text x="${x}" y="${xLabelBaseline}" text-anchor="middle" dominant-baseline="middle" transform="rotate(-90 ${x} ${xLabelBaseline})">${label}</text>`;
     }
 
     // Y-axis labels (showing both local and global coordinates)
@@ -259,10 +264,6 @@ export class ZoomScreenshotService {
       sampleLocalPoint.y,
     );
     const transformExampleLabel = `Local(${sampleLocalPoint.x},${sampleLocalPoint.y}) + Offset = Global(${Math.round(sampleGlobalPoint.x)},${Math.round(sampleGlobalPoint.y)})`;
-
-    const bannerY = fontSize * 3;
-    const regionInfoY = bannerY + fontSize * 1.5;
-    const transformInfoY = regionInfoY + fontSize * 1.5;
 
     svgContent += `<text x="${width / 2}" y="${bannerY}" text-anchor="middle" fill="${textColor}" fill-opacity="1.0" font-size="${fontSize + 8}px">${zoomBannerLabel}</text>`;
     svgContent += `<text x="${width / 2}" y="${regionInfoY}" text-anchor="middle" fill="${textColor}" fill-opacity="${textOpacity}" font-size="${fontSize + 2}px">${regionStartLabel}</text>`;
