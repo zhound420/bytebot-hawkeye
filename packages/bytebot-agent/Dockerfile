@@ -5,11 +5,10 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Copy app source
-COPY ./packages/shared ./shared
-COPY ./packages/bytebot-agent/ ./bytebot-agent/
+COPY ./packages ./packages
 COPY ./config/universal-coordinates.yaml ./config/universal-coordinates.yaml
 
-WORKDIR /app/bytebot-agent
+WORKDIR /app/packages/bytebot-agent
 
 # Install dependencies
 RUN npm install
