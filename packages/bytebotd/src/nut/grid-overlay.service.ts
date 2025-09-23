@@ -13,6 +13,7 @@ export interface GridOverlayOptions {
   lineWidth: number;
   showGlobalCoords?: boolean;
   globalOffset?: { x: number; y: number };
+  includeUniversalElements?: boolean;
 }
 
 @Injectable()
@@ -31,6 +32,7 @@ export class GridOverlayService {
     lineWidth: 1, // Line thickness
     showGlobalCoords: true,
     globalOffset: { x: 0, y: 0 },
+    includeUniversalElements: true,
   };
 
   /**
@@ -72,12 +74,11 @@ export class GridOverlayService {
       gridSize,
       lineColor,
       lineOpacity,
-      textColor,
       textOpacity,
-      fontSize,
       lineWidth,
       showGlobalCoords = true,
       globalOffset,
+      includeUniversalElements = true,
     } = options;
 
     const offsetX = globalOffset?.x ?? 0;
@@ -101,37 +102,219 @@ export class GridOverlayService {
     svgContent += '</g>';
 
     // Add coordinate labels
-    svgContent += `<g fill="${textColor}" fill-opacity="${textOpacity}" font-family="Arial, sans-serif" font-size="${fontSize}px" font-weight="bold">`;
+    svgContent += `<g font-family="Arial, sans-serif">`;
+
+    const rulerFontSize = 12;
+    const rulerColor = '#00FF00';
 
     // X-axis labels (top of screen)
-    for (let x = gridSize; x <= width; x += gridSize) {
+    for (let x = 0; x <= width; x += gridSize) {
       const label = showGlobalCoords ? x + offsetX : x;
-      svgContent += `<text x="${x}" y="${fontSize + 2}" text-anchor="middle">${label}</text>`;
+      const clampedX = Math.min(width - 2, Math.max(2, x));
+      svgContent += `<text x="${clampedX}" y="${rulerFontSize + 6}" font-size="${rulerFontSize}px" font-weight="normal" fill="${rulerColor}" fill-opacity="${textOpacity}" text-anchor="middle" dominant-baseline="hanging">${label}</text>`;
     }
 
-    // Y-axis labels (left side of screen)
-    for (let y = gridSize; y <= height; y += gridSize) {
+    // Y-axis labels (left side of screen) rotated -90 degrees
+    for (let y = 0; y <= height; y += gridSize) {
       const label = showGlobalCoords ? y + offsetY : y;
-      svgContent += `<text x="2" y="${y + fontSize / 2}" text-anchor="start">${label}</text>`;
-    }
-
-    // Add origin label
-    if (showGlobalCoords) {
-      svgContent += `<text x="2" y="${fontSize}" text-anchor="start" fill="${textColor}" fill-opacity="${Math.min(1, textOpacity + 0.2)}">${offsetX},${offsetY}</text>`;
-      svgContent += `<text x="${width - 2}" y="${fontSize}" text-anchor="end" fill="${textColor}" fill-opacity="${textOpacity}">${offsetX + width},${offsetY}</text>`;
-      svgContent += `<text x="2" y="${height - 2}" text-anchor="start" fill="${textColor}" fill-opacity="${textOpacity}">${offsetX},${offsetY + height}</text>`;
-      svgContent += `<text x="${width - 2}" y="${height - 2}" text-anchor="end" fill="${textColor}" fill-opacity="${textOpacity}">${offsetX + width},${offsetY + height}</text>`;
-    } else {
-      svgContent += `<text x="2" y="${fontSize}" text-anchor="start" fill="${textColor}" fill-opacity="${Math.min(1, textOpacity + 0.2)}">0,0</text>`;
-      svgContent += `<text x="${width - 2}" y="${fontSize}" text-anchor="end" fill="${textColor}" fill-opacity="${textOpacity}">${width},0</text>`;
-      svgContent += `<text x="2" y="${height - 2}" text-anchor="start" fill="${textColor}" fill-opacity="${textOpacity}">0,${height}</text>`;
-      svgContent += `<text x="${width - 2}" y="${height - 2}" text-anchor="end" fill="${textColor}" fill-opacity="${textOpacity}">${width},${height}</text>`;
+      const pivotY = Math.min(height - 24, Math.max(24, y));
+      svgContent += `<text x="20" y="${pivotY}" font-size="${rulerFontSize}px" font-weight="normal" fill="${rulerColor}" fill-opacity="${textOpacity}" text-anchor="middle" dominant-baseline="middle" transform="rotate(-90 20 ${pivotY})">${label}</text>`;
     }
 
     svgContent += '</g>';
+
+    if (includeUniversalElements) {
+      svgContent += this.addUniversalTeachingElements(width, height, options);
+    }
+
     svgContent += '</svg>';
 
     return svgContent;
+  }
+
+  private drawArrow(
+    startX: number,
+    startY: number,
+    endX: number,
+    endY: number,
+    options: { color?: string; strokeWidth?: number; headLength?: number; headAngle?: number } = {},
+  ): string {
+    const color = options.color ?? '#00FF00';
+    const strokeWidth = options.strokeWidth ?? 2;
+    const headLength = options.headLength ?? 20;
+    const headAngle = options.headAngle ?? Math.PI / 7;
+
+    const angle = Math.atan2(endY - startY, endX - startX);
+    const arrowLeftX = endX - headLength * Math.cos(angle - headAngle);
+    const arrowLeftY = endY - headLength * Math.sin(angle - headAngle);
+    const arrowRightX = endX - headLength * Math.cos(angle + headAngle);
+    const arrowRightY = endY - headLength * Math.sin(angle + headAngle);
+
+    return `
+      <g stroke="${color}" stroke-width="${strokeWidth}" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="${startX}" y1="${startY}" x2="${endX}" y2="${endY}" />
+        <line x1="${arrowLeftX}" y1="${arrowLeftY}" x2="${endX}" y2="${endY}" />
+        <line x1="${arrowRightX}" y1="${arrowRightY}" x2="${endX}" y2="${endY}" />
+      </g>
+    `;
+  }
+
+  private addUniversalTeachingElements(
+    width: number,
+    height: number,
+    options: GridOverlayOptions,
+    renderOptions: { wrap?: boolean } = {},
+  ): string {
+    if (!this.universalTeachingEnabled) {
+      return '';
+    }
+
+    const { wrap = false } = renderOptions;
+    const { showGlobalCoords = true, globalOffset } = options;
+
+    const offsetX = globalOffset?.x ?? 0;
+    const offsetY = globalOffset?.y ?? 0;
+
+    const formatCoordinates = (x: number, y: number): string => {
+      if (showGlobalCoords) {
+        return `(${offsetX + x},${offsetY + y})`;
+      }
+      return `(${x},${y})`;
+    };
+
+    const clampedWidth = Math.max(0, Math.round(width));
+    const clampedHeight = Math.max(0, Math.round(height));
+
+    const cornerPadding = 12;
+    const topY = Math.max(cornerPadding + 8, 0 + cornerPadding + 8);
+    const bottomY = Math.max(cornerPadding, clampedHeight - cornerPadding);
+    const leftX = Math.max(cornerPadding, 12);
+    const rightX = Math.max(cornerPadding, clampedWidth - cornerPadding);
+
+    const cornerLabels = [
+      `<text x="${leftX}" y="${topY}" text-anchor="start" dominant-baseline="hanging" font-size="18px" font-weight="bold" fill="#FF0000" stroke="#FFFFFF" stroke-width="2" paint-order="stroke fill">${formatCoordinates(0, 0)}</text>`,
+      `<text x="${rightX}" y="${topY}" text-anchor="end" dominant-baseline="hanging" font-size="18px" font-weight="bold" fill="#FF0000" stroke="#FFFFFF" stroke-width="2" paint-order="stroke fill">${formatCoordinates(clampedWidth, 0)}</text>`,
+      `<text x="${leftX}" y="${bottomY}" text-anchor="start" dominant-baseline="baseline" font-size="18px" font-weight="bold" fill="#FF0000" stroke="#FFFFFF" stroke-width="2" paint-order="stroke fill">${formatCoordinates(0, clampedHeight)}</text>`,
+      `<text x="${rightX}" y="${bottomY}" text-anchor="end" dominant-baseline="baseline" font-size="18px" font-weight="bold" fill="#FF0000" stroke="#FFFFFF" stroke-width="2" paint-order="stroke fill">${formatCoordinates(clampedWidth, clampedHeight)}</text>`,
+    ].join('');
+
+    const centerX = Math.round(clampedWidth / 2);
+    const centerY = Math.round(clampedHeight / 2);
+
+    const shortestSide = Math.max(1, Math.min(clampedWidth, clampedHeight));
+    const outerRadius = Math.min(24, Math.max(10, Math.round(shortestSide * 0.02)));
+    const innerRadius = Math.max(4, Math.round(outerRadius / 3));
+
+    const horizontalMargin = Math.min(120, Math.round(clampedWidth * 0.1));
+    const verticalMargin = Math.min(120, Math.round(clampedHeight * 0.1));
+
+    const rawArrowStartX = Math.min(clampedWidth - horizontalMargin, Math.round(clampedWidth * 0.75));
+    const arrowStartX = Math.min(
+      clampedWidth - Math.max(16, Math.round(horizontalMargin / 3)),
+      Math.max(centerX + Math.min(60, horizontalMargin), rawArrowStartX),
+    );
+
+    const rawArrowStartY = Math.max(verticalMargin, Math.round(clampedHeight * 0.25));
+    const arrowStartY = Math.min(clampedHeight - verticalMargin, rawArrowStartY);
+
+    const arrowHeadLength = Math.min(30, Math.max(14, Math.round(shortestSide * 0.05)));
+    const arrowSvg = this.drawArrow(arrowStartX, arrowStartY, centerX, centerY, {
+      color: '#00FF00',
+      strokeWidth: 2,
+      headLength: arrowHeadLength,
+      headAngle: Math.PI / 7,
+    });
+
+    const bullseye = `
+      <g stroke="#00FF00" stroke-width="2" fill="none">
+        <circle cx="${centerX}" cy="${centerY}" r="${outerRadius}" />
+        <circle cx="${centerX}" cy="${centerY}" r="${innerRadius}" />
+      </g>
+    `;
+
+    const exampleAnchor = arrowStartX > centerX ? 'end' : 'start';
+    const exampleLabelX = exampleAnchor === 'end' ? arrowStartX - 12 : arrowStartX + 12;
+    const exampleLabelY = Math.max(28, arrowStartY - 16);
+    const exampleCoordinates = formatCoordinates(centerX, centerY);
+    const exampleLabel = `
+      <text x="${exampleLabelX}" y="${exampleLabelY}" font-size="14px" font-weight="bold" fill="#00FF00" stroke="#000000" stroke-width="1" paint-order="stroke fill" text-anchor="${exampleAnchor}" dominant-baseline="baseline">
+        Example: ${exampleCoordinates}
+      </text>
+    `;
+
+    const formulaY = Math.max(28, clampedHeight - 16);
+    const formula = `
+      <text x="${centerX}" y="${formulaY}" font-size="14px" font-weight="bold" fill="#FFFFFF" stroke="#000000" stroke-width="1" paint-order="stroke fill" text-anchor="middle" dominant-baseline="baseline">
+        X=horizontal(→), Y=vertical(↓)
+      </text>
+    `;
+
+    const elements = [
+      '<g font-family="Arial, sans-serif">',
+      cornerLabels,
+      exampleLabel,
+      formula,
+      '</g>',
+      arrowSvg,
+      bullseye,
+    ].join('');
+
+    if (wrap) {
+      return `<svg width="${clampedWidth}" height="${clampedHeight}" xmlns="http://www.w3.org/2000/svg">${elements}</svg>`;
+    }
+
+    return elements;
+  }
+
+  private async applyGridOverlay(
+    imageBuffer: Buffer,
+    options: Partial<GridOverlayOptions> = {},
+  ): Promise<Buffer> {
+    const annotator = await ScreenshotAnnotator.from(imageBuffer);
+    const { width, height } = annotator.dimensions;
+
+    if (!width || !height) {
+      return imageBuffer;
+    }
+
+    const includeUniversalElements =
+      options.includeUniversalElements ?? this.defaultOptions.includeUniversalElements ?? true;
+
+    const baseOptions: GridOverlayOptions = {
+      ...this.defaultOptions,
+      ...options,
+      includeUniversalElements,
+    };
+
+    const gridOverlay = this.createGridOverlay(width, height, {
+      ...baseOptions,
+      includeUniversalElements: false,
+    });
+
+    if (gridOverlay) {
+      annotator.addOverlay(gridOverlay);
+
+      if (includeUniversalElements) {
+        const teachingSvg = this.addUniversalTeachingElements(width, height, baseOptions, {
+          wrap: true,
+        });
+
+        if (teachingSvg) {
+          annotator.addOverlay({
+            input: Buffer.from(teachingSvg),
+            top: 0,
+            left: 0,
+          });
+        }
+      }
+    }
+
+    const result = await annotator.render();
+    if (!annotator.hasOverlays) {
+      return imageBuffer;
+    }
+
+    return result.buffer;
   }
 
   /**
@@ -326,55 +509,37 @@ export class GridOverlayService {
     if (!this.universalTeachingEnabled) {
       return imageBuffer;
     }
-    const annotator = await ScreenshotAnnotator.from(imageBuffer);
-    annotator.addOverlay(
-      this.createGridOverlay(
-        annotator.dimensions.width,
-        annotator.dimensions.height,
-        options,
-      ),
-    );
-    const result = await annotator.render();
-    if (!annotator.hasOverlays) {
-      return imageBuffer;
-    }
-    return result.buffer;
+    return this.applyGridOverlay(imageBuffer, options);
   }
 
   async addSubtleGridOverlay(imageBuffer: Buffer): Promise<Buffer> {
     if (!this.universalTeachingEnabled) {
       return imageBuffer;
     }
-    const annotator = await ScreenshotAnnotator.from(imageBuffer);
-    annotator.addOverlay(
-      this.createSubtleGridOverlay(
-        annotator.dimensions.width,
-        annotator.dimensions.height,
-      ),
-    );
-    const result = await annotator.render();
-    if (!annotator.hasOverlays) {
-      return imageBuffer;
-    }
-    return result.buffer;
+    return this.applyGridOverlay(imageBuffer, {
+      gridSize: 50,
+      lineColor: '#FFFFFF',
+      lineOpacity: 0.15,
+      textColor: '#FFFFFF',
+      textOpacity: 0.6,
+      fontSize: 10,
+      lineWidth: 1,
+    });
   }
 
   async addDebugGridOverlay(imageBuffer: Buffer): Promise<Buffer> {
     if (!this.universalTeachingEnabled) {
       return imageBuffer;
     }
-    const annotator = await ScreenshotAnnotator.from(imageBuffer);
-    annotator.addOverlay(
-      this.createDebugGridOverlay(
-        annotator.dimensions.width,
-        annotator.dimensions.height,
-      ),
-    );
-    const result = await annotator.render();
-    if (!annotator.hasOverlays) {
-      return imageBuffer;
-    }
-    return result.buffer;
+    return this.applyGridOverlay(imageBuffer, {
+      gridSize: 100,
+      lineColor: '#FF0000',
+      lineOpacity: 0.8,
+      textColor: '#FF0000',
+      textOpacity: 1.0,
+      fontSize: 14,
+      lineWidth: 2,
+    });
   }
 
   async addGridToImage(
@@ -388,19 +553,11 @@ export class GridOverlayService {
     if (!this.universalTeachingEnabled) {
       return imageBuffer;
     }
-    const annotator = await ScreenshotAnnotator.from(imageBuffer);
-    annotator.addOverlay(
-      this.createGridForImage(
-        annotator.dimensions.width,
-        annotator.dimensions.height,
-        options,
-      ),
-    );
-    const result = await annotator.render();
-    if (!annotator.hasOverlays) {
-      return imageBuffer;
-    }
-    return result.buffer;
+    return this.applyGridOverlay(imageBuffer, {
+      gridSize: options.gridSize ?? this.defaultOptions.gridSize,
+      showGlobalCoords: options.showGlobalCoords ?? true,
+      globalOffset: options.globalOffset ?? { x: 0, y: 0 },
+    });
   }
 
   async addProgressIndicators(

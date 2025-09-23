@@ -14,10 +14,16 @@ export interface ZoomPromptOptions {
 }
 
 export class CoordinateTeacher {
+  /**
+   * The legend must stay in sync with the visuals rendered by
+   * grid-overlay.service.ts so models can rely on what they see, not just text.
+   */
   private readonly overlayLegend = [
     '🟩 Overlay legend:',
-    '  • Corner callouts display (0,0), (width,0), (0,height), (width,height).',
-    '  • Lime rulers along the top and left edges tick every grid interval.',
+    '  • Corner callouts show (0,0), (width,0), (0,height), (width,height) in bold red with a white outline.',
+    '  • Lime rulers mark every 100px along the top (left→right) and left edge (reading downward).',
+    '  • A green bullseye at screen center has an arrow and label “Example: (centerX,centerY)”.',
+    '  • Bottom reminder states “X=horizontal(→), Y=vertical(↓)” to reinforce axis orientation.',
     '  • Grid lines span the frame every interval to form a square lattice.',
   ].join('\n');
 
