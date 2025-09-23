@@ -65,11 +65,27 @@ export class TelemetryController {
       let smartClicks = 0;
       let progressiveZooms = 0;
 
-      const smartClickTaskIds = new Set<string>();
-
       try {
         const content = await fs.readFile(logPath, 'utf8');
         const lines = content.split('\n').filter(Boolean);
+
+        const smartClickCompletionIds = new Set<string>();
+        for (const line of lines) {
+          try {
+            const obj = JSON.parse(line);
+            if (obj.type === 'smart_click_complete') {
+              const taskId =
+                typeof obj.clickTaskId === 'string' ? obj.clickTaskId : undefined;
+              if (taskId) {
+                smartClickCompletionIds.add(taskId);
+              }
+            }
+          } catch (error) {
+            // Ignore malformed telemetry entries in pre-pass
+          }
+        }
+
+        const countedTaskIds = new Set<string>();
         for (let i = lines.length - 1; i >= 0; i--) {
           const line = lines[i];
           try {
@@ -82,8 +98,11 @@ export class TelemetryController {
                 typeof obj.clickTaskId === 'string'
                   ? obj.clickTaskId
                   : undefined;
+              if (taskId && countedTaskIds.has(taskId)) {
+                continue;
+              }
               if (taskId) {
-                smartClickTaskIds.add(taskId);
+                countedTaskIds.add(taskId);
               }
 
               const delta =
@@ -117,8 +136,15 @@ export class TelemetryController {
                 typeof obj.clickTaskId === 'string'
                   ? obj.clickTaskId
                   : undefined;
-              if (clickTaskId && smartClickTaskIds.has(clickTaskId)) {
+              if (clickTaskId && countedTaskIds.has(clickTaskId)) {
                 continue;
+              }
+              if (clickTaskId && smartClickCompletionIds.has(clickTaskId)) {
+                countedTaskIds.add(clickTaskId);
+                continue;
+              }
+              if (clickTaskId) {
+                countedTaskIds.add(clickTaskId);
               }
               targeted++;
               const dx = Number(obj.delta.x) || 0;
