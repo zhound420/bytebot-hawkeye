@@ -98,6 +98,8 @@ describe('TasksController', () => {
               model_name: 'Proxy GPT',
               litellm_params: {
                 model: 'proxy/gpt-4',
+              },
+              model_info: {
                 supports_vision: true,
               },
             },

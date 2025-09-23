@@ -138,7 +138,7 @@ graph LR
 
 ### Vision model support
 
-1. **Mark vision-capable backends.** Set `supports_vision: true` under `litellm_params` for any alias that can interpret screenshots or image uploads. The agent surfaces this flag in `/tasks/models`, allowing the UI (and automations such as Smart Focus) to distinguish which models can receive desktop captures.
+1. **Mark vision-capable backends.** Set `supports_vision: true` inside a `model_info` block for any alias that can interpret screenshots or image uploads. The agent surfaces this flag in `/tasks/models`, allowing the UI (and automations such as Smart Focus) to distinguish which models can receive desktop captures.
 2. **Choose the active Smart Focus model.** Point `BYTEBOT_SMART_FOCUS_MODEL` at the LiteLLM alias you want Smart Focus to call. Combined with `BYTEBOT_LLM_PROXY_URL`, this environment variable lets you flip between OpenAI, Anthropic, Gemini, or local multimodal backends without redeploying the agent.
 
 ### Azure OpenAI
@@ -158,6 +158,7 @@ model_list:
       api_base: https://your-resource.openai.azure.com/
       api_key: your-azure-key
       api_version: "2024-02-15-preview"
+    model_info:
       supports_vision: true
 ```
 
