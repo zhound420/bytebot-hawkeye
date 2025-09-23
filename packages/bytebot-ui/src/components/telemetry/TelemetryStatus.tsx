@@ -113,8 +113,10 @@ export function TelemetryStatus({ className = "" }: Props) {
     );
   }, [activeSession, selectedSessionValue, sessions]);
 
-  const refresh = useCallback(async () => {
-    setBusy(true);
+  const refresh = useCallback(async (manageBusy = true) => {
+    if (manageBusy) {
+      setBusy(true);
+    }
     const params = new URLSearchParams();
     const session = activeSessionId;
     if (session) {
@@ -139,7 +141,9 @@ export function TelemetryStatus({ className = "" }: Props) {
       void error;
       // Preserve the previous snapshot when the summary request fails
     } finally {
-      setBusy(false);
+      if (manageBusy) {
+        setBusy(false);
+      }
     }
   }, [activeSessionId]);
 
@@ -202,11 +206,24 @@ export function TelemetryStatus({ className = "" }: Props) {
         throw new Error("Failed to reset telemetry");
       }
       await refreshSessions();
-      await refresh();
-    } catch {
+      await refresh(false);
+    } catch (error) {
+      void error;
+      // Ignore reset failures to preserve existing telemetry snapshot
+    } finally {
       setBusy(false);
     }
   }, [activeSessionId, refresh, refreshSessions]);
+
+  const handleRefreshClick = useCallback(async () => {
+    setBusy(true);
+    try {
+      await refreshSessions();
+      await refresh(false);
+    } finally {
+      setBusy(false);
+    }
+  }, [refresh, refreshSessions]);
 
   useEffect(() => {
     refreshSessions();
@@ -348,7 +365,7 @@ export function TelemetryStatus({ className = "" }: Props) {
         <div className="flex items-center gap-2">
           <button
             className="rounded border border-border px-2 py-0.5 text-[11px] text-card-foreground transition-colors hover:bg-muted/70 dark:hover:bg-muted/40"
-            onClick={refresh}
+            onClick={handleRefreshClick}
             disabled={busy}
           >
             Refresh
@@ -375,7 +392,7 @@ export function TelemetryStatus({ className = "" }: Props) {
               <div className="flex items-center gap-2">
                 <button
                   className="rounded border border-border px-2 py-0.5 text-[11px] text-card-foreground transition-colors hover:bg-muted/70 dark:hover:bg-muted/40"
-                  onClick={refresh}
+                  onClick={handleRefreshClick}
                   disabled={busy}
                 >
                   Refresh
