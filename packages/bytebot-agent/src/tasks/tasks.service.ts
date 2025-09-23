@@ -409,7 +409,7 @@ export class TasksService {
     // Broadcast cancel event so AgentProcessor can cancel processing
     this.eventEmitter.emit('task.cancel', { taskId });
 
-    this.logger.log(`Task ${taskId} cancelled and marked as failed`);
+    this.logger.log(`Task ${taskId} cancelled`);
     this.tasksGateway.emitTaskUpdate(taskId, updatedTask);
 
     return updatedTask;
