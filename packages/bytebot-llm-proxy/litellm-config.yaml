@@ -3,16 +3,19 @@ model_list:
     litellm_params:
       model: anthropic/claude-opus-4-20250514
       api_key: os.environ/ANTHROPIC_API_KEY
+    model_info:
       supports_vision: true
   - model_name: claude-sonnet-4
     litellm_params:
       model: anthropic/claude-sonnet-4-20250514
       api_key: os.environ/ANTHROPIC_API_KEY
+    model_info:
       supports_vision: true
   - model_name: gpt-4o
     litellm_params:
       model: openai/gpt-4o
       api_key: os.environ/OPENAI_API_KEY
+    model_info:
       supports_vision: true
   - model_name: o3-pro
     litellm_params:
@@ -26,11 +29,13 @@ model_list:
     litellm_params:
       model: openai/gpt-4o-mini
       api_key: os.environ/OPENAI_API_KEY
+    model_info:
       supports_vision: true
   - model_name: gpt-4.1
     litellm_params:
       model: openai/gpt-4.1
       api_key: os.environ/OPENAI_API_KEY
+    model_info:
       supports_vision: true
   - model_name: gpt-5-thinking
     litellm_params:
@@ -53,32 +58,38 @@ model_list:
       model: vertex_ai/gemini-1.5-pro
       vertex_project: gen-lang-client-0096858366
       vertex_location: us-central1
+    model_info:
       supports_vision: true
   - model_name: gemini-vertex-flash
     litellm_params:
       model: vertex_ai/gemini-1.5-flash
       vertex_project: gen-lang-client-0096858366
       vertex_location: us-central1
+    model_info:
       supports_vision: true
   - model_name: gemini-1.5-pro
     litellm_params:
       model: gemini/gemini-1.5-pro-latest
       api_key: os.environ/GEMINI_API_KEY
+    model_info:
       supports_vision: true
   - model_name: gemini-1.5-flash
     litellm_params:
       model: gemini/gemini-1.5-flash-latest
       api_key: os.environ/GEMINI_API_KEY
+    model_info:
       supports_vision: true
   - model_name: openrouter-claude-3.5-sonnet
     litellm_params:
       model: openrouter/anthropic/claude-3.5-sonnet
       api_key: os.environ/OPENROUTER_API_KEY
+    model_info:
       supports_vision: true
   - model_name: openrouter-claude-3.7-sonnet
     litellm_params:
       model: openrouter/anthropic/claude-3.7-sonnet
       api_key: os.environ/OPENROUTER_API_KEY
+    model_info:
       supports_vision: true
   - model_name: openrouter-grok-4-fast-free
     litellm_params:
@@ -88,21 +99,25 @@ model_list:
     litellm_params:
       model: openrouter/google/gemini-2.5-flash
       api_key: os.environ/OPENROUTER_API_KEY
+    model_info:
       supports_vision: true
   - model_name: openrouter-gemini-2.5-pro
     litellm_params:
       model: openrouter/google/gemini-2.5-pro
       api_key: os.environ/OPENROUTER_API_KEY
+    model_info:
       supports_vision: true
   - model_name: openrouter-/internvl3-78b
     litellm_params:
       model: openrouter/opengvlab/internvl3-78b
       api_key: os.environ/OPENROUTER_API_KEY
+    model_info:
       supports_vision: true
   - model_name: openrouter-gemini-1.5-pro
     litellm_params:
       model: openrouter/google/gemini-1.5-pro-latest
       api_key: os.environ/OPENROUTER_API_KEY
+    model_info:
       supports_vision: true
   # Add local models via LMStudio
   - model_name: local-lmstudio-ui-tars-72b-dpo
@@ -123,6 +138,7 @@ model_list:
       api_base: http://192.168.4.250:1234/v1
       api_key: lm-studio
       supports_function_calling: true
+    model_info:
       supports_vision: true
   - model_name: local-lmstudio-ui-tars-7b-dpo
     litellm_params:
