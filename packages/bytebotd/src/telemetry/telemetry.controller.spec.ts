@@ -77,6 +77,58 @@ describe('TelemetryController', () => {
     }
   });
 
+  it('counts smart click completion without double counting raw payload', async () => {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'telemetry-controller-'));
+    try {
+      const logPath = path.join(tempDir, 'click-telemetry.log');
+      const calibrationDir = path.join(tempDir, 'calibration');
+      await fs.mkdir(calibrationDir, { recursive: true });
+      const entries = [
+        {
+          target: { x: 0, y: 0 },
+          actual: { x: 4, y: 0 },
+          delta: { x: 4, y: 0 },
+          clickTaskId: 'task-1',
+          timestamp: '2024-01-01T00:00:00.000Z',
+        },
+        {
+          type: 'smart_click_complete',
+          delta: { x: 4, y: 0 },
+          distance: 4,
+          success: true,
+          clickTaskId: 'task-1',
+          timestamp: '2024-01-01T00:00:01.000Z',
+        },
+      ];
+      await fs.writeFile(
+        logPath,
+        entries.map((entry) => JSON.stringify(entry)).join('\n') + '\n',
+        'utf8',
+      );
+
+      const telemetry = {
+        getLogFilePath: jest.fn().mockReturnValue(logPath),
+        getCalibrationDir: jest.fn().mockReturnValue(calibrationDir),
+        getSessionTimeline: jest.fn().mockResolvedValue({
+          sessionStart: null,
+          sessionEnd: null,
+          sessionDurationMs: null,
+          events: [],
+        }),
+      } as unknown as TelemetryService;
+
+      const controller = new TelemetryController(telemetry);
+
+      const summary = await controller.summary();
+      expect(summary.targetedClicks).toBe(1);
+      expect(summary.smartClicks).toBe(1);
+      expect(summary.recentAbsDeltas).toEqual([4]);
+      expect(summary.avgAbsDelta).toBe(4);
+    } finally {
+      await fs.rm(tempDir, { recursive: true, force: true });
+    }
+  });
+
   it('returns session summaries from telemetry service', async () => {
     const sessions: SessionSummaryInfo[] = [
       {
