@@ -2,8 +2,9 @@ import express from "express";
 import { createProxyMiddleware } from "http-proxy-middleware";
 import { createProxyServer } from "http-proxy";
 import next from "next";
-import { createServer } from "http";
+import { createServer, ServerResponse } from "http";
 import dotenv from "dotenv";
+import { Socket } from "net";
 
 // Load environment variables
 dotenv.config();
@@ -25,6 +26,29 @@ app
     const nextUpgradeHandler = app.getUpgradeHandler();
 
     const vncProxy = createProxyServer({ changeOrigin: true, ws: true });
+
+    vncProxy.on("error", (err, req, res) => {
+      console.error("Failed to proxy VNC request", {
+        url: req.url,
+        message: err.message,
+      });
+
+      if (!res) {
+        return;
+      }
+
+      if (res instanceof ServerResponse) {
+        if (!res.headersSent) {
+          res.statusCode = 502;
+          res.end("Bad Gateway");
+        }
+        return;
+      }
+
+      if (res instanceof Socket) {
+        res.end();
+      }
+    });
 
     const expressApp = express();
     const server = createServer(expressApp);
