@@ -67,7 +67,7 @@ export const _traceMouseTool = {
 export const _clickMouseTool = {
   name: 'computer_click_mouse',
   description:
-    'Performs a mouse click at the specified coordinates or current position',
+    'Performs a mouse click. Prefer keyboard navigation/shortcuts first; use clicking as a fallback. When clicking, either provide precise coordinates or include a short target description (e.g., "Submit button") to enable Smart Focus support.',
   input_schema: {
     type: 'object' as const,
     properties: {
@@ -77,12 +77,53 @@ export const _clickMouseTool = {
           'Optional click coordinates (defaults to current position)',
         nullable: true,
       },
+      description: {
+        type: 'string' as const,
+        description:
+          'Short description of the intended target (e.g., "Submit button"). REQUIRED if coordinates are omitted; used by Smart Focus to compute exact coordinates. Keep it 3–6 words. Include optional coarse grid hint like "~X=600,Y=420".',
+        minLength: 1,
+        nullable: true,
+      },
       button: buttonSchema,
       holdKeys: holdKeysSchema,
       clickCount: {
         type: 'integer' as const,
         description: 'Number of clicks to perform (e.g., 2 for double-click)',
         default: 1,
+      },
+      context: {
+        type: 'object' as const,
+        description:
+          'Optional telemetry context including region bounds, zoom level, target description, and click source.',
+        properties: {
+          region: {
+            type: 'object' as const,
+            properties: {
+              x: { type: 'number' as const },
+              y: { type: 'number' as const },
+              width: { type: 'number' as const },
+              height: { type: 'number' as const },
+            },
+            additionalProperties: false,
+            nullable: true,
+          },
+          zoomLevel: {
+            type: 'number' as const,
+            description: 'Zoom factor used when capturing the region',
+            nullable: true,
+          },
+          targetDescription: {
+            type: 'string' as const,
+            description: 'Human-readable description of the intended target',
+            nullable: true,
+          },
+          source: {
+            type: 'string' as const,
+            enum: ['manual', 'smart_focus', 'progressive_zoom', 'binary_search'],
+            description: 'Origin of the click request for telemetry analysis',
+            nullable: true,
+          },
+        },
       },
     },
     required: ['button', 'clickCount'],

@@ -2,6 +2,7 @@ import {
   Button,
   Coordinates,
   Press,
+  ClickContext,
   ComputerToolUseContentBlock,
   MessageContentBlock,
   ToolResultContentBlock,
@@ -251,7 +252,7 @@ export async function handleComputerToolUse(
       await traceMouse(block.input);
     }
     if (isClickMouseToolUseBlock(block)) {
-      await clickMouse(block.input);
+      await performClick(block.input);
     }
     if (isPressMouseToolUseBlock(block)) {
       await pressMouse(block.input);
@@ -416,16 +417,52 @@ async function traceMouse(input: {
   }
 }
 
-async function clickMouse(input: {
+type ClickInput = {
   coordinates?: Coordinates;
   button: Button;
   holdKeys?: string[];
   clickCount: number;
-}): Promise<void> {
+  description?: string;
+  context?: ClickContext;
+};
+
+async function performClick(input: ClickInput): Promise<void> {
+  const { coordinates } = input;
+  const trimmedDescription = input.description?.trim();
+
+  if (coordinates) {
+    await clickMouse({ ...input, description: trimmedDescription ?? undefined });
+    return;
+  }
+
+  if (!trimmedDescription) {
+    throw new Error(
+      'Click rejected: provide coordinates or a short target description (3–6 words).',
+    );
+  }
+
+  const wordCount = trimmedDescription.split(/\s+/).filter(Boolean).length;
+  if (wordCount < 3 || wordCount > 6) {
+    throw new Error(
+      'Click rejected: target description must be between 3 and 6 words.',
+    );
+  }
+
+  await clickMouse({ ...input, description: trimmedDescription });
+}
+
+async function clickMouse(input: ClickInput): Promise<void> {
   const { coordinates, button, holdKeys, clickCount } = input;
-  console.log(
-    `Clicking mouse ${button} ${clickCount} times ${coordinates ? `at coordinates: [${coordinates.x}, ${coordinates.y}] ` : ''} ${holdKeys ? `with holdKeys: ${holdKeys}` : ''}`,
-  );
+  const details = [
+    coordinates
+      ? `at coordinates: [${coordinates.x}, ${coordinates.y}]`
+      : 'at current position',
+    input.description ? `target: "${input.description}"` : null,
+    holdKeys && holdKeys.length > 0 ? `with holdKeys: ${holdKeys}` : null,
+  ]
+    .filter(Boolean)
+    .join(' ');
+  console.log(`Clicking mouse ${button} ${clickCount} times ${details}`.trim());
 
   try {
     await fetch(`${BYTEBOT_DESKTOP_BASE_URL}/computer-use`, {
@@ -437,6 +474,8 @@ async function clickMouse(input: {
         button,
         holdKeys: holdKeys && holdKeys.length > 0 ? holdKeys : undefined,
         clickCount,
+        description: input.description ?? undefined,
+        context: input.context ?? undefined,
       }),
     });
   } catch (error) {
