@@ -15,6 +15,6 @@ RUN npm run build
 
 RUN npm prune --omit=dev
 
-CMD ["node", "dist/main.js"]
+CMD ["sh", "-c", "npm run prisma:prod && node dist/main.js"]
 
 
