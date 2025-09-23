@@ -39,13 +39,17 @@
 
 ## Hawkeye Fork Enhancements
 
-The Hawkeye edition layers precision-oriented upgrades on top of upstream Bytebot so the agent can land clicks with far greater reliability:
+Hawkeye layers precision tooling on top of upstream Bytebot so the agent can land clicks with far greater reliability:
 
-- **Grid overlay guidance** draws the desktop with 100 px reference lines and labeled axes, giving the model a persistent map before every action, with debug controls exposed through `BYTEBOT_GRID_OVERLAY` and `BYTEBOT_GRID_DEBUG`.
-- **Progressive zoom capture** lets the agent request focused screenshots with cyan micro-grids so it can translate local coordinates back into global positions with 100% verified accuracy.
-- **Measured accuracy gains** combine the overlay, zoom pipeline, and calibration passes to reach ~70% coordinate precision in testing—check out the full breakdown in [Coordinate Accuracy Improvements](COORDINATE_ACCURACY_IMPROVEMENTS.md).
-- **Feature toggles** let you dial these systems back when needed. Set `BYTEBOT_UNIVERSAL_TEACHING`, `BYTEBOT_ADAPTIVE_CALIBRATION`, `BYTEBOT_ZOOM_REFINEMENT`, or `BYTEBOT_COORDINATE_METRICS` to `false` (all default to `true`) to selectively disable overlays, calibration passes, zoom refinement, and telemetry capture. When you need deeper visibility, set `BYTEBOT_COORDINATE_DEBUG=true` to emit sanitized coordinate refinement logs.
-- **Universal coordinate mapping** now ships with the repo and the shared workspace package. Services automatically walk up from their working directory (and the bundled copy in `@bytebot/shared`) to locate `config/universal-coordinates.yaml`, so you only need `BYTEBOT_COORDINATE_CONFIG` when pointing at a custom YAML.
+| Capability | Hawkeye | Upstream Bytebot |
+| --- | --- | --- |
+| **Grid overlay guidance** | Always-on 100 px grid with labeled axes and optional debug overlays toggled via `BYTEBOT_GRID_OVERLAY`/`BYTEBOT_GRID_DEBUG`, plus a live preview in the [overlay capture](docs/images/hawkeye-desktop.png). | No persistent spatial scaffolding; relies on raw screenshots. |
+| **Smart Focus targeting** | Three-stage coarse→focus→click workflow with tunable grids and prompts described in [Smart Focus System](docs/SMART_FOCUS_SYSTEM.md). | Single-shot click reasoning without structured zoom or guardrails. |
+| **Progressive zoom capture** | Deterministic zoom ladder with cyan micro-grids that map local→global coordinates; see [zoom samples](test-zoom-with-grid.png). | Manual zoom commands with no coordinate reconciliation. |
+| **Coordinate telemetry & accuracy** | Telemetry pipeline with `BYTEBOT_COORDINATE_METRICS` and `BYTEBOT_COORDINATE_DEBUG`, achieving ~70% precision per [Coordinate Accuracy Improvements](COORDINATE_ACCURACY_IMPROVEMENTS.md). | No automated accuracy measurement or debug dataset. |
+| **Universal coordinate mapping** | Shared lookup in `config/universal-coordinates.yaml` bundled in repo and `@bytebot/shared`, auto-discovered without extra configuration. | Requires custom configuration for consistent coordinate frames. |
+
+Flip individual systems off by setting the corresponding environment variables—`BYTEBOT_UNIVERSAL_TEACHING`, `BYTEBOT_ADAPTIVE_CALIBRATION`, `BYTEBOT_ZOOM_REFINEMENT`, or `BYTEBOT_COORDINATE_METRICS`—to `false` (default `true`). Enable deep-dive logs with `BYTEBOT_COORDINATE_DEBUG=true` when troubleshooting.
 
 ### Smart Focus Targeting (Hawkeye Exclusive)
 
