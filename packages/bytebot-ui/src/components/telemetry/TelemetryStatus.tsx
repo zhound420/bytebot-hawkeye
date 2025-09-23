@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { format } from "date-fns";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -69,6 +69,12 @@ export function TelemetryStatus({ className = "" }: Props) {
     [sessions, activeSessionId],
   );
 
+  const activeSessionIdRef = useRef(activeSessionId);
+
+  useEffect(() => {
+    activeSessionIdRef.current = activeSessionId;
+  }, [activeSessionId]);
+
   const selectedSessionValue = useMemo(() => {
     if (!sessions.length) {
       return "";
@@ -112,6 +118,9 @@ export function TelemetryStatus({ className = "" }: Props) {
         return;
       }
       const json = (await res.json()) as TelemetrySummary;
+      if (session !== activeSessionIdRef.current) {
+        return;
+      }
       setData(json);
     } catch (error) {
       void error;
