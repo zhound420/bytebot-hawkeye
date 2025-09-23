@@ -1,13 +1,41 @@
 import {
-  handleComputerToolUse,
-  parseCoordinateResponse,
-  SCREENSHOT_REMINDER_TEXT,
-} from './agent.computer-use';
-import {
   ComputerToolUseContentBlock,
   MessageContentType,
 } from '@bytebot/shared';
 import { Logger } from '@nestjs/common';
+
+type AgentModule = typeof import('./agent.computer-use');
+
+let handleComputerToolUse: AgentModule['handleComputerToolUse'];
+let parseCoordinateResponse: AgentModule['parseCoordinateResponse'];
+let screenshotReminderText: AgentModule['SCREENSHOT_REMINDER_TEXT'];
+
+const logger = {
+  debug: jest.fn(),
+  error: jest.fn(),
+} as unknown as Logger;
+
+let originalFetch: any;
+
+beforeAll(async () => {
+  originalFetch = (globalThis as any).fetch;
+  process.env.BYTEBOT_DESKTOP_BASE_URL =
+    process.env.BYTEBOT_DESKTOP_BASE_URL || 'http://localhost:1234';
+  const module = await import('./agent.computer-use');
+  handleComputerToolUse = module.handleComputerToolUse;
+  parseCoordinateResponse = module.parseCoordinateResponse;
+  screenshotReminderText = module.SCREENSHOT_REMINDER_TEXT;
+});
+
+afterEach(() => {
+  if (originalFetch) {
+    (globalThis as any).fetch = originalFetch;
+  } else {
+    delete (globalThis as any).fetch;
+  }
+  jest.clearAllMocks();
+  jest.restoreAllMocks();
+});
 
 describe('parseCoordinateResponse', () => {
   it('parses JSON coordinate responses', () => {
@@ -38,27 +66,6 @@ describe('parseCoordinateResponse', () => {
 });
 
 describe('handleComputerToolUse screenshot reminders', () => {
-  const logger = {
-    debug: jest.fn(),
-    error: jest.fn(),
-  } as unknown as Logger;
-  let originalFetch: any;
-
-  beforeAll(() => {
-    originalFetch = (globalThis as any).fetch;
-    process.env.BYTEBOT_DESKTOP_BASE_URL =
-      process.env.BYTEBOT_DESKTOP_BASE_URL || 'http://localhost:1234';
-  });
-
-  afterEach(() => {
-    if (originalFetch) {
-      (globalThis as any).fetch = originalFetch;
-    } else {
-      delete (globalThis as any).fetch;
-    }
-    jest.restoreAllMocks();
-  });
-
   it('appends reminder text for full screenshots', async () => {
     const fetchMock = jest.fn().mockResolvedValue({
       ok: true,
@@ -80,7 +87,7 @@ describe('handleComputerToolUse screenshot reminders', () => {
       expect.arrayContaining([
         expect.objectContaining({
           type: MessageContentType.Text,
-          text: SCREENSHOT_REMINDER_TEXT,
+          text: screenshotReminderText,
         }),
       ]),
     );
@@ -113,7 +120,7 @@ describe('handleComputerToolUse screenshot reminders', () => {
       expect.arrayContaining([
         expect.objectContaining({
           type: MessageContentType.Text,
-          text: SCREENSHOT_REMINDER_TEXT,
+          text: screenshotReminderText,
         }),
       ]),
     );
@@ -147,9 +154,42 @@ describe('handleComputerToolUse screenshot reminders', () => {
       expect.arrayContaining([
         expect.objectContaining({
           type: MessageContentType.Text,
-          text: SCREENSHOT_REMINDER_TEXT,
+          text: screenshotReminderText,
         }),
       ]),
     );
+  });
+});
+
+describe('handleComputerToolUse clicks', () => {
+  it('defaults clickCount to 1 when omitted', async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true }),
+    });
+    (globalThis as any).fetch = fetchMock;
+
+    const block = {
+      type: 'tool_use',
+      id: 'click-1',
+      name: 'computer_click_mouse',
+      input: {
+        button: 'left',
+        coordinates: { x: 100, y: 200 },
+      },
+    } as unknown as ComputerToolUseContentBlock;
+
+    await handleComputerToolUse(block, logger);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${process.env.BYTEBOT_DESKTOP_BASE_URL}/computer-use`,
+      expect.objectContaining({
+        method: 'POST',
+        body: expect.any(String),
+      }),
+    );
+    const [, options] = fetchMock.mock.calls[0];
+    const body = JSON.parse(options.body as string);
+    expect(body.clickCount).toBe(1);
   });
 });
