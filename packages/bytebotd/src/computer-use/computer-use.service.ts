@@ -266,6 +266,7 @@ export class ComputerUseService {
 
         const rendered = await annotator.render();
         buffer = rendered.buffer;
+        await this.persistScreenshot(buffer, 'screenshot_custom_region');
         const base64 = buffer.toString('base64');
 
         if (action.progressTaskId) {
@@ -878,6 +879,7 @@ export class ComputerUseService {
 
     const rendered = await annotator.render();
     buffer = rendered.buffer;
+    await this.persistScreenshot(buffer, 'screenshot');
     const width = Number.isFinite(rendered.width) ? rendered.width : undefined;
     const height = Number.isFinite(rendered.height)
       ? rendered.height
@@ -992,6 +994,7 @@ export class ComputerUseService {
 
     const rendered = await annotator.render();
     buffer = rendered.buffer;
+    await this.persistScreenshot(buffer, 'screenshot_region');
     const base64 = buffer.toString('base64');
 
     if (action.progressTaskId) {
@@ -1019,6 +1022,31 @@ export class ComputerUseService {
   private async cursor_position(): Promise<{ x: number; y: number }> {
     this.logger.log(`Getting cursor position`);
     return await this.nutService.getCursorPosition();
+  }
+
+  private async persistScreenshot(
+    buffer: Buffer,
+    actionType: string,
+  ): Promise<void> {
+    if (process.env.BYTEBOT_SAVE_SCREENSHOTS !== 'true') {
+      return;
+    }
+
+    const directory =
+      process.env.BYTEBOT_SCREENSHOT_PATH ?? '/tmp/bytebot-screenshots';
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const filename = `${actionType}-${timestamp}.png`;
+    const filePath = path.join(directory, filename);
+
+    try {
+      await fs.mkdir(directory, { recursive: true });
+      await fs.writeFile(filePath, buffer);
+      this.logger.debug(`Saved ${actionType} screenshot to ${filePath}`);
+    } catch (error) {
+      this.logger.debug(
+        `Failed to persist ${actionType} screenshot to ${filePath}: ${(error as Error).message}`,
+      );
+    }
   }
 
   private mapCursorToRegion(
