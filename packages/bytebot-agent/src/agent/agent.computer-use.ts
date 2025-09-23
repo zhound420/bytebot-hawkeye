@@ -30,6 +30,10 @@ import { Logger } from '@nestjs/common';
 import OpenAI from 'openai';
 import { SmartClickHelper } from './smart-click.helper';
 import { SmartClickAI } from './smart-click.types';
+import {
+  detectClickableElement,
+  detectVisualChange,
+} from './visual-feedback.helper';
 
 interface ScreenshotOptions {
   gridOverlay?: boolean;
@@ -292,6 +296,10 @@ export async function handleComputerToolUse(
 
   try {
     let postClickVerifyImage: string | null = null;
+    let visualFeedbackNote: string | null = null;
+    let visualBaseline: string | null = null;
+    let visualPostClick: string | null = null;
+    let attemptedCoordinates: Coordinates | null = null;
     if (isMoveMouseToolUseBlock(block)) {
       await moveMouse(block.input);
     }
@@ -299,7 +307,80 @@ export async function handleComputerToolUse(
       await traceMouse(block.input);
     }
     if (isClickMouseToolUseBlock(block)) {
+      try {
+        const baseline = await screenshot({ gridOverlay: false });
+        visualBaseline = baseline.image;
+      } catch (baselineError) {
+        logger.warn(
+          `Baseline screenshot failed prior to click: ${baselineError instanceof Error ? baselineError.message : baselineError}`,
+        );
+      }
+
       const clickMeta = await performClick(block.input);
+      attemptedCoordinates =
+        clickMeta?.coordinates ?? block.input.coordinates ?? null;
+
+      if (visualBaseline) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        try {
+          const post = await screenshot({ gridOverlay: false });
+          visualPostClick = post.image;
+        } catch (postError) {
+          logger.warn(
+            `Post-click screenshot failed: ${postError instanceof Error ? postError.message : postError}`,
+          );
+        }
+      }
+
+      if (visualBaseline && visualPostClick && attemptedCoordinates) {
+        try {
+          const feedback = await detectVisualChange({
+            beforeImage: visualBaseline,
+            afterImage: visualPostClick,
+            center: attemptedCoordinates,
+          });
+          logger.debug(
+            `Post-click visual diff: ${feedback.diff.toFixed(2)} (threshold ${feedback.threshold}) confidence ${(feedback.confidence * 100).toFixed(1)}%`,
+          );
+
+          if (feedback.changed) {
+            visualFeedbackNote = `Visual change detected near (${attemptedCoordinates.x}, ${attemptedCoordinates.y}) with ${(feedback.confidence * 100).toFixed(1)}% confidence.`;
+            const helper = getSmartClickHelper();
+            helper?.recordDesktopClickSuccess(attemptedCoordinates, {
+              source: 'visual-feedback',
+              predicted: attemptedCoordinates,
+              actual: attemptedCoordinates,
+              success: true,
+              error: 0,
+            });
+          } else {
+            visualFeedbackNote = `No visual change detected near (${attemptedCoordinates.x}, ${attemptedCoordinates.y}); diff=${feedback.diff.toFixed(2)}.`;
+            try {
+              const inferred = await detectClickableElement({
+                image: visualPostClick,
+                coordinates: attemptedCoordinates,
+              });
+              if (inferred) {
+                const helper = getSmartClickHelper();
+                helper?.recordDesktopClickCorrection(
+                  inferred,
+                  attemptedCoordinates,
+                  false,
+                );
+                visualFeedbackNote = `${visualFeedbackNote} Possible target inferred at (${inferred.x}, ${inferred.y}).`;
+              }
+            } catch (inferError) {
+              logger.warn(
+                `detectClickableElement failed: ${inferError instanceof Error ? inferError.message : inferError}`,
+              );
+            }
+          }
+        } catch (visualError) {
+          logger.warn(
+            `detectVisualChange failed: ${visualError instanceof Error ? visualError.message : visualError}`,
+          );
+        }
+      }
 
       // Optional post-click verification: capture a zoomed region around the click with a target marker
       try {
@@ -447,6 +528,13 @@ export async function handleComputerToolUse(
         },
       ],
     };
+
+    if (visualFeedbackNote) {
+      toolResult.content.push({
+        type: MessageContentType.Text,
+        text: visualFeedbackNote,
+      });
+    }
 
     if (postClickVerifyImage) {
       toolResult.content.push({

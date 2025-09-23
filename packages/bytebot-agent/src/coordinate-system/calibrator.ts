@@ -23,6 +23,8 @@ export type RecordCorrectionOptions =
   | string
   | (CalibrationSampleMetadata & { source?: string });
 
+export type RecordSuccessOptions = RecordCorrectionOptions;
+
 export interface CalibrationTelemetrySample {
   offset: Coordinates;
   source: string;
@@ -134,6 +136,31 @@ export class Calibrator {
       error,
     });
     return delta;
+  }
+
+  recordSuccess(
+    coordinates: Coordinates,
+    options: RecordSuccessOptions = 'success',
+  ): void {
+    const metadata =
+      typeof options === 'string'
+        ? { source: options }
+        : (options ?? { source: 'success' });
+    const source = metadata.source ?? 'success';
+    const normalized = this.normalize(coordinates);
+    const { source: _ignoredSource, ...sampleMetadata } = metadata;
+    const success =
+      sampleMetadata.success === undefined ? true : sampleMetadata.success;
+    const predicted = sampleMetadata.predicted ?? normalized;
+    const actual = sampleMetadata.actual ?? normalized;
+    const error = sampleMetadata.error === undefined ? 0 : sampleMetadata.error;
+    this.captureOffset({ x: 0, y: 0 }, source, {
+      ...sampleMetadata,
+      predicted,
+      actual,
+      success,
+      error,
+    });
   }
 
   getCurrentOffset(): Coordinates | null {

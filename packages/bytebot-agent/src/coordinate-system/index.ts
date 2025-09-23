@@ -5,7 +5,11 @@ import {
   ScreenshotResponse,
   SmartClickAI,
 } from '../agent/smart-click.types';
-import { Calibrator, RecordCorrectionOptions } from './calibrator';
+import {
+  Calibrator,
+  RecordCorrectionOptions,
+  RecordSuccessOptions,
+} from './calibrator';
 import { CoordinateParser } from './coordinate-parser';
 import { CoordinateTeacher } from './coordinate-teacher';
 import {
@@ -24,6 +28,8 @@ export type {
   UniversalCoordinateResult,
   UniversalCoordinateStep,
   UniversalRefinerOptions,
+  RecordCorrectionOptions,
+  RecordSuccessOptions,
 };
 
 export {
@@ -82,5 +88,9 @@ export class UniversalCoordinateSystem {
       predicted,
       options ?? 'correction',
     );
+  }
+
+  recordSuccess(coordinates: Coordinates, options?: RecordSuccessOptions) {
+    return this.calibrator.recordSuccess(coordinates, options ?? 'success');
   }
 }

@@ -82,8 +82,8 @@ describe('UniversalCoordinateRefiner heuristics', () => {
     const result = await refiner.locate('Test button');
 
     const prompt = result.steps[0].prompt;
-    expect(prompt).toContain('Corner callouts display');
-    expect(prompt).toContain('Lime rulers along the top and left edges');
+    expect(prompt).toContain('Corner callouts show');
+    expect(prompt).toContain('Lime rulers mark every 100px along the top');
     expect(prompt).toContain('Grid lines span the frame every interval');
     expect(prompt).toContain('System will compensate');
     expect(prompt).not.toContain('example');
@@ -267,12 +267,10 @@ describe('UniversalCoordinateRefiner heuristics', () => {
       recordTelemetry: jest.fn(),
       captureOffset: jest.fn(),
       getCurrentOffset: jest.fn().mockReturnValue({ x: 500, y: 300 }),
-      apply: jest
-        .fn()
-        .mockImplementation((coords) => ({
-          x: coords.x + 500,
-          y: coords.y + 300,
-        })),
+      apply: jest.fn().mockImplementation((coords) => ({
+        x: coords.x + 500,
+        y: coords.y + 300,
+      })),
       getHistory: jest.fn().mockReturnValue([]),
     } as unknown as Calibrator;
 
