@@ -36,8 +36,6 @@ const geminiApiKey = process.env.GEMINI_API_KEY;
 const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
 const openaiApiKey = process.env.OPENAI_API_KEY;
 
-const proxyUrl = process.env.BYTEBOT_LLM_PROXY_URL;
-
 const models = [
   ...(anthropicApiKey ? ANTHROPIC_MODELS : []),
   ...(openaiApiKey ? OPENAI_MODELS : []),
@@ -80,6 +78,7 @@ export class TasksController {
 
   @Get('models')
   async getModels() {
+    const proxyUrl = process.env.BYTEBOT_LLM_PROXY_URL;
     if (proxyUrl) {
       try {
         const response = await fetch(`${proxyUrl}/model/info`, {
@@ -97,24 +96,34 @@ export class TasksController {
         }
 
         const proxyModels = await response.json();
+        const proxyModelList = Array.isArray(proxyModels?.model_list)
+          ? proxyModels.model_list
+          : Array.isArray(proxyModels?.data)
+            ? proxyModels.data
+            : null;
+
+        if (!proxyModelList) {
+          throw new HttpException(
+            'Proxy response did not include a model_list or data array',
+            HttpStatus.BAD_GATEWAY,
+          );
+        }
 
         // Map proxy response to BytebotAgentModel format
-        const models: BytebotAgentModel[] = proxyModels.data.map(
-          (model: any) => {
-            const supportsVision =
-              model.supports_vision === true ||
-              model.litellm_params?.supports_vision === true ||
-              model.litellm_params?.supports_image_input === true;
+        const models: BytebotAgentModel[] = proxyModelList.map((model: any) => {
+          const supportsVision =
+            model.supports_vision === true ||
+            model.litellm_params?.supports_vision === true ||
+            model.litellm_params?.supports_image_input === true;
 
-            return {
-              provider: 'proxy',
-              name: model.litellm_params.model,
-              title: model.model_name,
-              contextWindow: 128000,
-              supportsVision,
-            } satisfies BytebotAgentModel;
-          },
-        );
+          return {
+            provider: 'proxy',
+            name: model.litellm_params.model,
+            title: model.model_name,
+            contextWindow: 128000,
+            supportsVision,
+          } satisfies BytebotAgentModel;
+        });
 
         return models;
       } catch (error) {
