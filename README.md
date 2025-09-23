@@ -55,9 +55,41 @@ https://github.com/user-attachments/assets/f271282a-27a3-43f3-9b99-b34007fdd169
 
 ![Desktop accuracy overlay](docs/images/hawkeye-desktop.png)
 
-## Deploy Hawkeye
+## Quick Start: Proxy Compose Stack
 
-Bytebot Hawkeye ships with the same Docker/Railway workflows as upstream, with a few defaults tuned for the accuracy pipeline. Use the proxy compose file (`docker/docker-compose.proxy.yml`) to boot the grid overlay, zoom refinement, and LiteLLM routing all at once; drop your preferred API key(s) into `docker/.env` and restart the proxy service whenever you update `packages/bytebot-llm-proxy/litellm-config.yaml`. Railway deployments pick up the same environment variables, so enabling Hawkeye-specific flags like `BYTEBOT_COORDINATE_DEBUG` or `BYTEBOT_SMART_FOCUS` works out of the box.
+The fastest way to try Hawkeye is the proxy-enabled Docker Compose stack—it starts the desktop, agent, UI, Postgres, and LiteLLM proxy with every precision upgrade flipped on. Populate `docker/.env` with your model keys **and** the Hawkeye-specific toggles before you launch:
+
+- `BYTEBOT_GRID_OVERLAY=true` keeps the labeled coordinate grid on every capture.
+- `BYTEBOT_PROGRESSIVE_ZOOM_USE_AI=true` enables the multi-zoom screenshot refinement.
+- `BYTEBOT_SMART_FOCUS=true` and `BYTEBOT_SMART_FOCUS_MODEL=<litellm-alias>` route Smart Focus through the proxy model you configure in `packages/bytebot-llm-proxy/litellm-config.yaml`.
+- `BYTEBOT_COORDINATE_METRICS=true` (plus optional `BYTEBOT_COORDINATE_DEBUG=true`) records the click accuracy telemetry that distinguishes the fork.
+
+```bash
+cat <<'EOF' > docker/.env
+# Provider keys for LiteLLM
+OPENAI_API_KEY=sk-your-key
+ANTHROPIC_API_KEY=...
+
+# Hawkeye precision defaults
+BYTEBOT_GRID_OVERLAY=true
+BYTEBOT_PROGRESSIVE_ZOOM_USE_AI=true
+BYTEBOT_SMART_FOCUS=true
+BYTEBOT_SMART_FOCUS_MODEL=gpt-4o-mini
+BYTEBOT_COORDINATE_METRICS=true
+EOF
+
+docker compose -f docker/docker-compose.proxy.yml up -d
+```
+
+After editing `packages/bytebot-llm-proxy/litellm-config.yaml` to point at your preferred models, restart `bytebot-llm-proxy` so the new aliases are picked up.
+
+## Alternative Deployments
+
+Looking for a different hosting environment? Follow the upstream guides for the full walkthroughs:
+
+- [Railway one-click template](https://docs.bytebot.ai/deployment/railway)
+- [Helm charts for Kubernetes](https://docs.bytebot.ai/deployment/helm)
+- [Custom Docker Compose topologies](https://docs.bytebot.ai/deployment/litellm)
 
 ## Stay in Sync with Upstream Bytebot
 
