@@ -469,4 +469,20 @@ describe('AgentProcessor', () => {
       }
     });
   });
+
+  describe('handleTaskCancel', () => {
+    it('ignores cancel events for other tasks', async () => {
+      const { processor } = createProcessor();
+
+      (processor as any).isProcessing = true;
+      (processor as any).currentTaskId = 'task-1';
+
+      const stopProcessingSpy = jest.spyOn(processor as any, 'stopProcessing');
+
+      await (processor as any).handleTaskCancel({ taskId: 'task-2' });
+
+      expect(stopProcessingSpy).not.toHaveBeenCalled();
+      expect((processor as any).isProcessing).toBe(true);
+    });
+  });
 });
