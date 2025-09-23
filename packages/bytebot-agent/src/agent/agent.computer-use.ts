@@ -544,7 +544,7 @@ type ClickInput = {
   coordinates?: Coordinates;
   button: Button;
   holdKeys?: string[];
-  clickCount: number;
+  clickCount?: number;
   description?: string;
   context?: ClickContext;
 };
@@ -558,6 +558,10 @@ async function performClick(
   input: ClickInput,
 ): Promise<{ coordinates?: Coordinates; context?: ClickContext } | null> {
   const { coordinates, description } = input;
+  const normalizedClickCount =
+    typeof input.clickCount === 'number' && input.clickCount > 0
+      ? Math.floor(input.clickCount)
+      : 1;
   const baseContext =
     input.context ??
     (description
@@ -568,7 +572,11 @@ async function performClick(
       : undefined);
 
   if (coordinates) {
-    await clickMouse({ ...input, context: baseContext });
+    await clickMouse({
+      ...input,
+      clickCount: normalizedClickCount,
+      context: baseContext,
+    });
     return { coordinates, context: baseContext };
   }
 
@@ -583,7 +591,11 @@ async function performClick(
     console.warn(
       '[SmartFocus] No coordinates or description provided; proceeding with direct click at current cursor position.',
     );
-    await clickMouse({ ...input, context: baseContext });
+    await clickMouse({
+      ...input,
+      clickCount: normalizedClickCount,
+      context: baseContext,
+    });
     return null;
   }
 
@@ -593,7 +605,11 @@ async function performClick(
     console.warn(
       '[SmartFocus] Helper unavailable (proxy URL or configuration missing); falling back to basic click.',
     );
-    await clickMouse({ ...input, context: baseContext });
+    await clickMouse({
+      ...input,
+      clickCount: normalizedClickCount,
+      context: baseContext,
+    });
     return null;
   }
 
@@ -603,6 +619,7 @@ async function performClick(
       ...input,
       coordinates: smartResult.coordinates,
       context: smartResult.context,
+      clickCount: normalizedClickCount,
     });
     return smartResult;
   }
@@ -613,11 +630,16 @@ async function performClick(
       ...input,
       coordinates: binaryResult.coordinates,
       context: binaryResult.context,
+      clickCount: normalizedClickCount,
     });
     return binaryResult;
   }
 
-  await clickMouse({ ...input, context: baseContext });
+  await clickMouse({
+    ...input,
+    clickCount: normalizedClickCount,
+    context: baseContext,
+  });
   return null;
 }
 
@@ -625,13 +647,17 @@ async function clickMouse(input: {
   coordinates?: Coordinates;
   button: Button;
   holdKeys?: string[];
-  clickCount: number;
+  clickCount?: number;
   description?: string;
   context?: ClickContext;
 }): Promise<ClickMouseResponse | null> {
-  const { coordinates, button, holdKeys, clickCount } = input;
+  const { coordinates, button, holdKeys } = input;
+  const normalizedClickCount =
+    typeof input.clickCount === 'number' && input.clickCount > 0
+      ? Math.floor(input.clickCount)
+      : 1;
   console.log(
-    `Clicking mouse ${button} ${clickCount} times ${coordinates ? `at coordinates: [${coordinates.x}, ${coordinates.y}] ` : ''} ${holdKeys ? `with holdKeys: ${holdKeys}` : ''}`,
+    `Clicking mouse ${button} ${normalizedClickCount} times ${coordinates ? `at coordinates: [${coordinates.x}, ${coordinates.y}] ` : ''} ${holdKeys ? `with holdKeys: ${holdKeys}` : ''}`,
   );
 
   try {
@@ -643,7 +669,7 @@ async function clickMouse(input: {
         coordinates,
         button,
         holdKeys: holdKeys && holdKeys.length > 0 ? holdKeys : undefined,
-        clickCount,
+        clickCount: normalizedClickCount,
         description: input.description ?? undefined,
         context: input.context ?? undefined,
       }),
