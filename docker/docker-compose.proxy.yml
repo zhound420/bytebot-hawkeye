@@ -5,7 +5,7 @@ services:
     # Build from source
     build:
       context: ..
-      dockerfile: bytebotd/Dockerfile
+      dockerfile: packages/bytebotd/Dockerfile
     # Use pre-built image
     image: ghcr.io/bytebot-ai/bytebot-desktop:edge
     shm_size: "2g"
