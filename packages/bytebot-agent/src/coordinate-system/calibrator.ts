@@ -51,8 +51,8 @@ export class Calibrator {
   private readonly regionalSamples = new Map<string, CalibrationSample[]>();
   private readonly maxHistory: number;
 
-  private static readonly REGION_BUCKET_SIZE = 200;
-  private static readonly MIN_REGIONAL_SAMPLES = 3;
+  static readonly REGION_BUCKET_SIZE = 200;
+  static readonly MIN_REGIONAL_SAMPLES = 3;
 
   constructor(maxHistory = 50) {
     this.maxHistory = Math.max(maxHistory, 50);
@@ -192,6 +192,38 @@ export class Calibrator {
       this.computeWeightedOffset(samples, Calibrator.MIN_REGIONAL_SAMPLES) ??
       this.getCurrentOffset()
     );
+  }
+
+  getRegionalBuckets(): Array<{
+    key: string;
+    bucket: { x: number; y: number };
+    center: Coordinates;
+    samples: CalibrationSample[];
+    weightedOffset: Coordinates | null;
+  }> {
+    const bucketSize = Calibrator.REGION_BUCKET_SIZE;
+    return Array.from(this.regionalSamples.entries()).map(([key, samples]) => {
+      const [bucketX, bucketY] = key
+        .split(',')
+        .map((value) => Number.parseInt(value, 10));
+      const normalizedX = Number.isFinite(bucketX) ? bucketX : 0;
+      const normalizedY = Number.isFinite(bucketY) ? bucketY : 0;
+      const center = {
+        x: normalizedX * bucketSize + bucketSize / 2,
+        y: normalizedY * bucketSize + bucketSize / 2,
+      } satisfies Coordinates;
+
+      return {
+        key,
+        bucket: { x: normalizedX, y: normalizedY },
+        center,
+        samples: samples.slice(),
+        weightedOffset: this.computeWeightedOffset(
+          samples,
+          Calibrator.MIN_REGIONAL_SAMPLES,
+        ),
+      };
+    });
   }
 
   apply(coordinates: Coordinates): Coordinates {

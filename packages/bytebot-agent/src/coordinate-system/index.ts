@@ -10,6 +10,7 @@ import {
   RecordCorrectionOptions,
   RecordSuccessOptions,
 } from './calibrator';
+import { CalibrationMetrics } from './calibration-metrics';
 import { CoordinateParser } from './coordinate-parser';
 import { CoordinateTeacher } from './coordinate-teacher';
 import {
@@ -34,6 +35,7 @@ export type {
 
 export {
   Calibrator,
+  CalibrationMetrics,
   CoordinateParser,
   CoordinateTeacher,
   UniversalCoordinateRefiner,
