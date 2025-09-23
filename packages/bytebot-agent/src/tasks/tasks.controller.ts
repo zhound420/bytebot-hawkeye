@@ -113,6 +113,7 @@ export class TasksController {
         const models: BytebotAgentModel[] = proxyModelList.map((model: any) => {
           const supportsVision =
             model.supports_vision === true ||
+            model.model_info?.supports_vision === true ||
             model.litellm_params?.supports_vision === true ||
             model.litellm_params?.supports_image_input === true;
 
