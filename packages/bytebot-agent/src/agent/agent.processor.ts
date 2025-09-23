@@ -113,6 +113,13 @@ export class AgentProcessor {
   async handleTaskCancel({ taskId }: { taskId: string }) {
     this.logger.log(`Task cancel event received for task ID: ${taskId}`);
 
+    if (this.currentTaskId !== taskId) {
+      this.logger.log(
+        `Ignoring cancel event for task ID: ${taskId} because current task is ${this.currentTaskId}`,
+      );
+      return;
+    }
+
     await this.stopProcessing();
   }
 
