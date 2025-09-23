@@ -1,22 +1,20 @@
-# Base image
-FROM node:20-alpine
+# syntax=docker/dockerfile:1
 
-# Create app directory
+FROM node:20-alpine AS base
+
 WORKDIR /app
 
-# Copy app source
 COPY ./packages ./packages
 COPY ./config/universal-coordinates.yaml ./config/universal-coordinates.yaml
 
 WORKDIR /app/packages/bytebot-agent
 
-# Install dependencies
 RUN npm install
-
 
 RUN npm run build
 
-# Run the application
-CMD ["npm", "run", "start:prod"] 
+RUN npm prune --omit=dev
+
+CMD ["node", "dist/main.js"]
 
 
