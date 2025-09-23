@@ -174,10 +174,10 @@ RUN apt-get update && \
         git build-essential && \
     rm -rf /var/lib/apt/lists/*
 
-COPY ./shared/ /bytebot/shared/
-COPY ./bytebotd/ /bytebot/bytebotd/
-COPY ./bytebotd/verify-all-systems.js /bytebot/bytebotd/verify-all-systems.js
-WORKDIR /bytebot/bytebotd
+COPY packages/shared/ /bytebot/packages/shared/
+COPY packages/bytebotd/ /bytebot/packages/bytebotd/
+COPY config/universal-coordinates.yaml /bytebot/config/universal-coordinates.yaml
+WORKDIR /bytebot/packages/bytebotd
 RUN /usr/bin/npm install --build-from-source
 RUN /usr/bin/npm rebuild uiohook-napi --build-from-source
 
@@ -191,12 +191,12 @@ RUN git clone https://github.com/ZachJW34/libnut-core.git && \
     npm run build:release
 
 # replace /bytebotd/node_modules/@nut-tree-fork/libnut-linux/build/Release/libnut.node with /compile/libnut-core/build/Release/libnut.node
-RUN rm -f /bytebot/bytebotd/node_modules/@nut-tree-fork/libnut-linux/build/Release/libnut.node && \
-    cp /compile/libnut-core/build/Release/libnut.node /bytebot/bytebotd/node_modules/@nut-tree-fork/libnut-linux/build/Release/libnut.node
+RUN rm -f /bytebot/packages/bytebotd/node_modules/@nut-tree-fork/libnut-linux/build/Release/libnut.node && \
+    cp /compile/libnut-core/build/Release/libnut.node /bytebot/packages/bytebotd/node_modules/@nut-tree-fork/libnut-linux/build/Release/libnut.node
 
 RUN rm -rf /compile
 
-WORKDIR /bytebot/bytebotd
+WORKDIR /bytebot/packages/bytebotd
 
 # -----------------------------------------------------------------------------
 # 7. User setup and autologin configuration
@@ -218,11 +218,11 @@ RUN mkdir -p /tmp/bytebot-screenshots && \
 # 2. Set *files* to 0644 and *directories* to 0755 so that applications can
 #    traverse directories (execute bit!) while keeping the contents read-only.
 # 3. Copy the tree to /
-RUN chown -R root:root /bytebot/bytebotd/root && \
-    find /bytebot/bytebotd/root -type f -exec chmod 644 {} + && \
-    find /bytebot/bytebotd/root -type d -exec chmod 755 {} + && \
-    find /bytebot/bytebotd/root -type f -executable -exec chmod +x {} + && \
-    cp -a /bytebot/bytebotd/root/. /
+RUN chown -R root:root /bytebot/packages/bytebotd/root && \
+    find /bytebot/packages/bytebotd/root -type f -exec chmod 644 {} + && \
+    find /bytebot/packages/bytebotd/root -type d -exec chmod 755 {} + && \
+    find /bytebot/packages/bytebotd/root -type f -executable -exec chmod +x {} + && \
+    cp -a /bytebot/packages/bytebotd/root/. /
 
 RUN chown -R user:user /home/user
 RUN chmod -R 755 /home/user
