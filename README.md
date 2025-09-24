@@ -105,7 +105,7 @@ BYTEBOT_SMART_FOCUS_MODEL=gpt-4o-mini
 BYTEBOT_COORDINATE_METRICS=true
 EOF
 
-docker compose -f docker/docker-compose.proxy.yml up -d
+docker compose -f docker/docker-compose.proxy.yml up -d --build
 ```
 
 Before you start the stack, edit [`packages/bytebot-llm-proxy/litellm-config.yaml`](packages/bytebot-llm-proxy/litellm-config.yaml) so each alias maps to the OpenRouter endpoints or LMStudio bases you control. After saving changes, restart the `bytebot-llm-proxy` container (`docker compose restart bytebot-llm-proxy`) to reload the updated routing.
