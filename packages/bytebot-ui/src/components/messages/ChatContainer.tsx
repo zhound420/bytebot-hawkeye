@@ -138,6 +138,7 @@ export function ChatContainer({
                     onSend={handleAddMessage}
                     minLines={1}
                     placeholder="Add more details to your task..."
+                    maxViewportRatio={0.25}
                   />
                 </div>
               </div>
