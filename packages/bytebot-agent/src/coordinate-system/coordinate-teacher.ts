@@ -36,7 +36,16 @@ export class CoordinateTeacher {
     parts.push(
       'You are the Universal Coordinate Teacher. Learn from the overlay before answering.',
     );
-    parts.push(this.overlayLegend);
+    parts.push(
+      [
+        'Overlay guidance:',
+        '  • READ the bold red corner coordinate labels for (0,0), (width,0), (0,height), and (width,height).',
+        '  • LOOK at the green ruler numbers every 100px along the top and left edges to anchor your estimate.',
+        '  • Note the green bullseye at screen center labeled “Example: (centerX,centerY)” for orientation.',
+        '  • Walkthrough: find the nearest ruler mark, then count pixels to the target along each axis.',
+        '    Example: Between 500 and 600, 73% across → 500 + 73 = 573. Apply the same logic vertically.',
+      ].join('\n'),
+    );
     parts.push(
       'Task: locate the target element precisely using the global grid annotations.',
     );
