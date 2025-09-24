@@ -4,6 +4,8 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { ArrowRight02Icon, Attachment01Icon, Cancel01Icon } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
 
+export const CHAT_INPUT_MAX_PROMPT_HEIGHT = 320;
+
 interface FileWithBase64 {
   name: string;
   base64: string;
@@ -135,13 +137,15 @@ export function ChatInput({
 
     // Reset height to auto to get the correct scrollHeight
     textarea.style.height = "auto";
+    textarea.style.maxHeight = `${CHAT_INPUT_MAX_PROMPT_HEIGHT}px`;
 
     // Calculate minimum height based on minLines
     const lineHeight = 24; // approximate line height in pixels
     const minHeight = lineHeight * minLines + 12;
 
-    // Set height to scrollHeight or minHeight, whichever is larger
-    const newHeight = Math.max(textarea.scrollHeight, minHeight);
+    // Cap the textarea height while respecting the minimum height
+    const contentHeight = Math.min(textarea.scrollHeight, CHAT_INPUT_MAX_PROMPT_HEIGHT);
+    const newHeight = Math.max(contentHeight, minHeight);
     textarea.style.height = `${newHeight}px`;
   }, [input, minLines]);
 
@@ -205,7 +209,7 @@ export function ChatInput({
             "placeholder:text-bytebot-bronze-light-10 w-full rounded-lg py-2 pr-16 pl-3 placeholder:text-[13px]",
             "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-bytebot-bronze-light-7 flex min-w-0 border bg-transparent text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
             "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
-            "resize-none overflow-hidden",
+            "resize-none overflow-x-hidden overflow-y-auto",
           )}
           disabled={isLoading}
           rows={1}
