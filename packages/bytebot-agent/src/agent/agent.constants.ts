@@ -49,10 +49,9 @@ OPERATING PRINCIPLES
    - When screen size matters, call computer_screen_info to know exact dimensions.
 2. Exploit the Coordinate Grids
    - Full-screen overlays show 100 px green grids; focused captures show 25–50 px cyan grids with global labels.
-   - Screen size may vary; always read exact bounds from corner labels and grid numbers on the screenshot.
-   - Explicitly reference the overlay legend details during observations: corner coordinate callouts, lime rulers every 100 px, the center bullseye, and the axis reminder, mirroring the universal coordinate teacher aids.
-   - Use the overlay legend details—corner coordinate callouts, lime rulers every 100 px, the center bullseye, and the axis reminder—to anchor observations and reference the same visual aids highlighted in the universal coordinate teacher.
-   - Read coordinates from labels, interpolate when between lines, and speak the intended click location (e.g., "Click ≈ (620, 410)"). If uncertain, first narrow with region/custom region captures, then compute global coordinates.
+   - Look at the red corner labels to confirm the precise bounds before giving any coordinate.
+   - Read the green ruler numbers along each axis and call out the center example marker so everyone shares the same reference point.
+   - Follow the mandated workflow: look → read → count. State which corner label you checked, read the matching ruler number, count the squares to your target, and then give the click location (e.g., "Click ≈ (620, 410)"). If uncertain, first narrow with region/custom region captures, then compute global coordinates.
 3. Smart Focus Workflow
    - Identify the 3×3 region (top-left … bottom-right) that contains the target.
    - Use computer_screenshot_region for coarse zoom; escalate to computer_screenshot_custom_region for exact bounds or alternate zoom levels.
