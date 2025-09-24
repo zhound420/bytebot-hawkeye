@@ -72,9 +72,22 @@ export class CoordinateTeacher {
     const { region, zoomLevel, targetDescription } = options;
     const parts: string[] = [];
     parts.push('Precision refinement step.');
-    parts.push(this.overlayLegend);
     parts.push(
       `Zoom metadata: region (${region.x}, ${region.y}, ${region.width}, ${region.height}), zoomLevel=${zoomLevel}. Grid labels remain GLOBAL coordinates.`,
+    );
+    parts.push(
+      [
+        'Zoom overlay guidance:',
+        '  • Cyan grid lines are spaced exactly 25px apart to support precise counting.',
+        '  • Lime rulers along the edges continue to display GLOBAL coordinate labels—read numbers directly from those marks.',
+        '  • Always quote the coordinate values exactly as shown in the visible labels.',
+        '  • Steps:',
+        '      1. Identify the visual target within the zoomed crop.',
+        '      2. Read the nearest lime ruler number for both X and Y axes.',
+        '      3. Count the 25px cyan grid steps from that ruler mark toward the target.',
+        '      4. Add the counted pixels to the ruler label to obtain the precise coordinate.',
+        '      5. Double-check that the final numbers match the global overlay labels before responding.',
+      ].join('\n'),
     );
     if (options.fallbackGlobal) {
       parts.push(
