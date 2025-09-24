@@ -164,23 +164,20 @@ export function ChatInput({
     };
   }, [maxViewportRatio, maxHeightPx]);
 
-  // Auto-resize textarea based on content
+  // Configure textarea height constraints
   useEffect(() => {
     const textarea = textareaRef.current;
     if (!textarea) return;
 
-    // Reset height to auto to get the correct scrollHeight
-    textarea.style.height = "auto";
     // Calculate minimum height based on minLines
     const lineHeight = 24; // approximate line height in pixels
     const minHeight = lineHeight * minLines + 12;
     const effectiveMaxHeight = Math.max(responsiveMaxHeight, minHeight);
     textarea.style.maxHeight = `${effectiveMaxHeight}px`;
 
-    // Cap the textarea height while respecting the minimum height
-    const contentHeight = Math.min(textarea.scrollHeight, effectiveMaxHeight);
-    const newHeight = Math.max(contentHeight, minHeight);
-    textarea.style.height = `${newHeight}px`;
+    // Lock the height to the baseline and rely on overflow for long prompts
+    textarea.style.height = `${minHeight}px`;
+    textarea.style.minHeight = `${minHeight}px`;
   }, [input, minLines, responsiveMaxHeight]);
 
   // Determine button position based on minLines
