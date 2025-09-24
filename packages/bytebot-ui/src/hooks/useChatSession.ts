@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   Message,
   Role,
@@ -16,11 +16,26 @@ import {
   resumeTask,
   cancelTask,
 } from "@/utils/taskUtils";
-import { MessageContentType } from "@bytebot/shared";
+import {
+  MessageContentType,
+  isTextContentBlock,
+  TextContentBlock,
+} from "@bytebot/shared";
 import { useWebSocket } from "./useWebSocket";
 
 interface UseChatSessionProps {
   initialTaskId?: string;
+}
+
+export interface ChatInitialPrompt {
+  message: Message;
+  textBlocks: TextContentBlock[];
+}
+
+function extractTextBlocks(message: Message): TextContentBlock[] {
+  return message.content.filter((block): block is TextContentBlock =>
+    isTextContentBlock(block),
+  );
 }
 
 export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
@@ -326,9 +341,31 @@ export function useChatSession({ initialTaskId }: UseChatSessionProps = {}) {
     }
   };
 
+  const initialPrompt = useMemo<ChatInitialPrompt | null>(() => {
+    const firstUserGroup = groupedMessages.find(
+      (group) => group.role === Role.USER && group.messages.length > 0,
+    );
+
+    if (!firstUserGroup) {
+      return null;
+    }
+
+    const [firstMessage] = firstUserGroup.messages;
+
+    if (!firstMessage) {
+      return null;
+    }
+
+    return {
+      message: firstMessage,
+      textBlocks: extractTextBlocks(firstMessage),
+    };
+  }, [groupedMessages]);
+
   return {
     messages,
     groupedMessages,
+    initialPrompt,
     taskStatus,
     control,
     input,

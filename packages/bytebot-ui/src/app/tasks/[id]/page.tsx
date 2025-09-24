@@ -22,6 +22,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { VirtualDesktopStatus } from "@/components/VirtualDesktopStatusHeader";
 import { TelemetryStatus } from "@/components/telemetry/TelemetryStatus";
+import { TaskPromptSummary } from "@/components/tasks/TaskPromptSummary";
 
 export default function TaskPage() {
   const params = useParams();
@@ -47,6 +48,7 @@ export default function TaskPage() {
     handleCancelTask,
     currentTaskId,
     taskModel,
+    initialPrompt,
   } = useChatSession({ initialTaskId: taskId });
 
   // Determine if task is inactive (show screenshot) or active (show VNC)
@@ -219,7 +221,12 @@ export default function TaskPage() {
           </div>
 
           {/* Chat Area */}
-          <div className="flex h-full min-h-0 flex-col">
+          <div className="flex h-full min-h-0 flex-col gap-3">
+            {initialPrompt?.textBlocks.length ? (
+              <div className="px-4">
+                <TaskPromptSummary textBlocks={initialPrompt.textBlocks} />
+              </div>
+            ) : null}
             {/* Messages scrollable area */}
             <div
               ref={chatContainerRef}
