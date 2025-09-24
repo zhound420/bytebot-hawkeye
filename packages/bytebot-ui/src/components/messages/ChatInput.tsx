@@ -36,6 +36,9 @@ export function ChatInput({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFiles, setSelectedFiles] = useState<FileWithBase64[]>([]);
   const [errorMessage, setErrorMessage] = useState<string>("");
+  const [responsiveMaxHeight, setResponsiveMaxHeight] = useState(
+    CHAT_INPUT_MAX_PROMPT_HEIGHT
+  );
   
   const MAX_FILES = 5;
   const MAX_FILE_SIZE = 30 * 1024 * 1024; // 30MB per file in bytes
@@ -130,6 +133,26 @@ export function ChatInput({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  useEffect(() => {
+    const updateResponsiveHeight = () => {
+      if (typeof window === "undefined") {
+        return;
+      }
+
+      const viewportCap = window.innerHeight * 0.4;
+      setResponsiveMaxHeight(
+        Math.min(CHAT_INPUT_MAX_PROMPT_HEIGHT, Math.max(viewportCap, 0))
+      );
+    };
+
+    updateResponsiveHeight();
+    window.addEventListener("resize", updateResponsiveHeight);
+
+    return () => {
+      window.removeEventListener("resize", updateResponsiveHeight);
+    };
+  }, []);
+
   // Auto-resize textarea based on content
   useEffect(() => {
     const textarea = textareaRef.current;
@@ -137,17 +160,17 @@ export function ChatInput({
 
     // Reset height to auto to get the correct scrollHeight
     textarea.style.height = "auto";
-    textarea.style.maxHeight = `${CHAT_INPUT_MAX_PROMPT_HEIGHT}px`;
-
     // Calculate minimum height based on minLines
     const lineHeight = 24; // approximate line height in pixels
     const minHeight = lineHeight * minLines + 12;
+    const effectiveMaxHeight = Math.max(responsiveMaxHeight, minHeight);
+    textarea.style.maxHeight = `${effectiveMaxHeight}px`;
 
     // Cap the textarea height while respecting the minimum height
-    const contentHeight = Math.min(textarea.scrollHeight, CHAT_INPUT_MAX_PROMPT_HEIGHT);
+    const contentHeight = Math.min(textarea.scrollHeight, effectiveMaxHeight);
     const newHeight = Math.max(contentHeight, minHeight);
     textarea.style.height = `${newHeight}px`;
-  }, [input, minLines]);
+  }, [input, minLines, responsiveMaxHeight]);
 
   // Determine button position based on minLines
   const buttonPositionClass =
