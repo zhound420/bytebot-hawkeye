@@ -22,6 +22,7 @@ interface ChatInputProps {
   minLines?: number;
   placeholder?: string;
   maxViewportRatio?: number;
+  maxHeightPx?: number;
 }
 
 export function ChatInput({
@@ -33,6 +34,7 @@ export function ChatInput({
   minLines = 1,
   placeholder = "Give Bytebot a task to work on...",
   maxViewportRatio = 0.4,
+  maxHeightPx,
 }: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -142,9 +144,16 @@ export function ChatInput({
       }
 
       const viewportCap = window.innerHeight * maxViewportRatio;
-      setResponsiveMaxHeight(
-        Math.min(CHAT_INPUT_MAX_PROMPT_HEIGHT, Math.max(viewportCap, 0))
+      const explicitCap =
+        typeof maxHeightPx === "number" ? Math.max(maxHeightPx, 0) : undefined;
+
+      const resolvedCap = Math.min(
+        CHAT_INPUT_MAX_PROMPT_HEIGHT,
+        Math.max(viewportCap, 0),
+        explicitCap ?? CHAT_INPUT_MAX_PROMPT_HEIGHT
       );
+
+      setResponsiveMaxHeight(Math.max(resolvedCap, 0));
     };
 
     updateResponsiveHeight();
@@ -153,7 +162,7 @@ export function ChatInput({
     return () => {
       window.removeEventListener("resize", updateResponsiveHeight);
     };
-  }, [maxViewportRatio]);
+  }, [maxViewportRatio, maxHeightPx]);
 
   // Auto-resize textarea based on content
   useEffect(() => {
