@@ -75,4 +75,8 @@ export class ClickContextDto {
   @IsOptional()
   @IsIn(Object.values(ClickSourceType))
   source?: ClickSourceType;
+
+  @IsOptional()
+  @IsString()
+  clickTaskId?: string;
 }

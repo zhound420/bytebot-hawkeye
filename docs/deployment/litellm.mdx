@@ -45,7 +45,13 @@ Bytebot includes a pre-configured LiteLLM proxy service that makes it easy to us
     GEMINI_API_KEY=your-key-here
     EOF
     
-    # Start Bytebot with LiteLLM proxy
+    # Start Bytebot with LiteLLM proxy (build images locally by default)
+    docker-compose -f docker/docker-compose.proxy.yml up -d --build
+
+    # Use registry images after logging in (optional)
+    export BYTEBOT_DESKTOP_IMAGE=ghcr.io/bytebot-ai/bytebot-desktop:edge
+    export BYTEBOT_AGENT_IMAGE=ghcr.io/bytebot-ai/bytebot-agent:edge
+    export BYTEBOT_UI_IMAGE=ghcr.io/bytebot-ai/bytebot-ui:edge
     docker-compose -f docker/docker-compose.proxy.yml up -d
     ```
     

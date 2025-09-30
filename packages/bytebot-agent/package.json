@@ -7,13 +7,16 @@
   "license": "UNLICENSED",
   "scripts": {
     "prisma:dev": "npx prisma migrate dev && npx prisma generate",
-    "prisma:prod": "npx prisma migrate deploy && npx prisma generate",
-    "build": "npm run build --prefix ../shared && npx prisma generate && nest build",
+    "prisma:prod": "npx prisma migrate deploy && npm run generate",
+    "generate": "npx prisma generate",
+    "build:dist": "npm run build --prefix ../shared && npx @nestjs/cli build",
+    "build": "npm run generate && npm run build:dist",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "start": "npm run build --prefix ../shared && nest start",
-    "start:dev": "npm run build --prefix ../shared && nest start --watch",
-    "start:debug": "npm run build --prefix ../shared && nest start --debug --watch",
-    "start:prod": "npm run prisma:prod && node dist/main.js",
+    "start": "npm run build --prefix ../shared && npx @nestjs/cli start",
+    "start:dev": "npm run build --prefix ../shared && npx @nestjs/cli start --watch",
+    "start:debug": "npm run build --prefix ../shared && npx @nestjs/cli start --debug --watch",
+    "prestart:prod": "npm run prisma:prod && npm run build:dist",
+    "start:prod": "node scripts/start-prod.js",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -23,6 +26,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
+    "@bytebot/cv": "../bytebot-cv",
     "@bytebot/shared": "../shared",
     "@google/genai": "^1.8.0",
     "@nestjs/common": "^11.0.1",
@@ -35,6 +39,7 @@
     "@nestjs/websockets": "^11.1.1",
     "@prisma/client": "^6.16.1",
     "@thallesp/nestjs-better-auth": "^1.0.0",
+    "tesseract.js": "^5.1.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
     "openai": "^5.8.2",
@@ -50,8 +55,6 @@
     "@nestjs/cli": "^11.0.0",
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.1",
-    "@swc/cli": "^0.6.0",
-    "@swc/core": "^1.10.7",
     "@types/express": "^5.0.0",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.10.7",
@@ -95,6 +98,7 @@
     }
   },
   "engines": {
-    "node": "20"
+    "node": ">=20.0.0",
+    "npm": ">=9.0.0"
   }
 }

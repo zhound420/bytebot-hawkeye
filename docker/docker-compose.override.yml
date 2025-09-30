@@ -1,12 +1,11 @@
-version: '3.8'
-
 services:
-   bytebotd:
+   bytebot-desktop:
      volumes:
        - ./progress-data:/app/progress
-     # ...existing env/volumes...
+     # Building locally with OpenCV 4.8.0 from Ubuntu 24.04
 
    bytebot-agent:
+     # Building locally with OpenCV 4.8.0 from Ubuntu 24.04
      volumes:
        - ./progress-data:/app/progress
-     # ...existing env/volumes...
+     # Enhanced OpenCV 4.8.0 capabilities with ML and morphology support

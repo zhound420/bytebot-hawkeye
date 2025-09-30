@@ -11,6 +11,7 @@ import { GoogleModule } from '../google/google.module';
 import { SummariesModule } from 'src/summaries/summaries.modue';
 import { AgentAnalyticsService } from './agent.analytics';
 import { ProxyModule } from 'src/proxy/proxy.module';
+import { BytebotCvModule, EnhancedCVModule } from '@bytebot/cv';
 
 @Module({
   imports: [
@@ -22,6 +23,8 @@ import { ProxyModule } from 'src/proxy/proxy.module';
     OpenAIModule,
     GoogleModule,
     ProxyModule,
+    BytebotCvModule,
+    EnhancedCVModule,
   ],
   providers: [
     AgentProcessor,

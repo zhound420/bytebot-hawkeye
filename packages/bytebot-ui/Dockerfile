@@ -1,5 +1,5 @@
 # Base image
-FROM node:20-alpine
+FROM public.ecr.aws/docker/library/node:20-alpine
 
 # Declare build arguments
 ARG BYTEBOT_AGENT_BASE_URL

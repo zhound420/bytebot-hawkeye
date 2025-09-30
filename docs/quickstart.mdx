@@ -83,7 +83,7 @@ Get your self-hosted AI desktop agent running with just three commands:
 
 <Step title="Start the Agent Stack">
   ```bash 
-  docker-compose -f docker/docker-compose.yml up -d 
+  docker compose -f docker/docker-compose.yml up -d
   ```
 
 This starts all four services:
@@ -110,6 +110,13 @@ Try asking:
 
 </Step>
 </Steps>
+
+<Note>
+  The Compose files default to the AWS public ECR mirror for Postgres
+  (`public.ecr.aws/docker/library/postgres:16-alpine`) so they work without a
+  Docker Hub login. Set `BYTEBOT_POSTGRES_IMAGE` if you prefer another
+  registry tag.
+</Note>
 
 <Note>
   **First time?** The initial startup may take 2-3 minutes as Docker downloads
@@ -368,9 +375,15 @@ curl -X POST http://localhost:9990/computer-use \
   </Accordion>
   <Accordion title="Using LiteLLM Proxy">
     ```bash
-    # To use multiple LLM providers, use the proxy setup:
+    # To use multiple LLM providers, use the proxy setup (build locally by default):
+    docker-compose -f docker/docker-compose.proxy.yml up -d --build
+
+    # Optional: use registry images after authenticating
+    export BYTEBOT_DESKTOP_IMAGE=ghcr.io/bytebot-ai/bytebot-desktop:edge
+    export BYTEBOT_AGENT_IMAGE=ghcr.io/bytebot-ai/bytebot-agent:edge
+    export BYTEBOT_UI_IMAGE=ghcr.io/bytebot-ai/bytebot-ui:edge
     docker-compose -f docker/docker-compose.proxy.yml up -d
-    
+
     # This includes a pre-configured LiteLLM proxy
     ```
   </Accordion>

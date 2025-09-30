@@ -7,6 +7,8 @@ import {
   isPressKeysToolUseBlock,
   isWaitToolUseBlock,
   isScrollToolUseBlock,
+  isComputerDetectElementsToolUseBlock,
+  isComputerClickElementToolUseBlock,
 } from "@bytebot/shared";
 import { getIcon, getLabel } from "./ComputerToolUtils";
 import { MessageTimestampMeta } from "@/lib/datetime";
@@ -74,6 +76,33 @@ function ToolDetailsTakeOver({ block }: { block: ComputerToolUseContentBlock }) 
         <p className={baseClasses}>
           {String(block.input.direction)} {Number(block.input.scrollCount)}
         </p>
+      )}
+
+      {isComputerDetectElementsToolUseBlock(block) && (
+        <>
+          <p className={baseClasses}>{block.input.description}</p>
+          {block.input.includeAll && (
+            <p className={baseClasses}>includeAll</p>
+          )}
+          {block.input.region && (
+            <p className={baseClasses}>
+              Region: x={block.input.region.x}, y={block.input.region.y}, w=
+              {block.input.region.width}, h={block.input.region.height}
+            </p>
+          )}
+        </>
+      )}
+
+      {isComputerClickElementToolUseBlock(block) && (
+        <>
+          <p className={baseClasses}>ID: {block.input.element_id}</p>
+          {block.input.fallback_coordinates && (
+            <p className={baseClasses}>
+              Fallback: {block.input.fallback_coordinates.x},{" "}
+              {block.input.fallback_coordinates.y}
+            </p>
+          )}
+        </>
       )}
     </>
   );

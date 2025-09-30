@@ -1,0 +1,55 @@
+{
+  "name": "@bytebot/cv",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "description": "ByteBot Computer Vision package with OpenCV bindings",
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=9.0.0"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.0.1",
+    "@u4/opencv4nodejs": "^7.1.2",
+    "canvas": "^2.11.2",
+    "fuzzysearch": "^1.0.3",
+    "lodash": "^4.17.21",
+    "sharp": "^0.33.5",
+    "tesseract.js": "^5.1.1"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.17.7",
+    "@types/node": "^20.17.27",
+    "typescript": "^5.7.3"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "postinstall": "node scripts/patch-opencv-binding.js && node scripts/strip-opencv-tracking.js . && node scripts/verify-opencv-capabilities.js",
+    "verify": "node scripts/verify-opencv-capabilities.js",
+    "patch": "node scripts/patch-opencv-binding.js"
+  },
+  "bytebot": {
+    "compatibilityMatrix": {
+      "opencv": "4.6.x - 4.8.x",
+      "@u4/opencv4nodejs": "7.1.x",
+      "node": "20.x - 22.x",
+      "ubuntu": "22.04",
+      "architecture": ["x64", "arm64"]
+    },
+    "buildRequirements": {
+      "systemPackages": [
+        "libopencv-dev",
+        "libopencv-contrib-dev",
+        "build-essential",
+        "cmake",
+        "pkg-config"
+      ],
+      "environmentVariables": {
+        "OPENCV4NODEJS_DISABLE_AUTOBUILD": "1",
+        "OPENCV4NODEJS_SKIP_TRACKING": "1",
+        "CXXFLAGS": "-DOPENCV_ENABLE_NONFREE",
+        "NODE_PATH": "/usr/lib/node_modules"
+      }
+    }
+  }
+}

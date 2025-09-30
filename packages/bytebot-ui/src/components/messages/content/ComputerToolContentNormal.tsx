@@ -11,6 +11,8 @@ import {
   Application,
   isPasteTextToolUseBlock,
   isReadFileToolUseBlock,
+  isComputerDetectElementsToolUseBlock,
+  isComputerClickElementToolUseBlock,
 } from "@bytebot/shared";
 import { getIcon, getLabel } from "./ComputerToolUtils";
 import { MessageTimestampMeta } from "@/lib/datetime";
@@ -37,6 +39,33 @@ function ToolDetailsNormal({ block }: { block: ComputerToolUseContentBlock }) {
 
   return (
     <>
+      {isComputerDetectElementsToolUseBlock(block) && (
+        <>
+          <p className={baseClasses}>{block.input.description}</p>
+          {block.input.includeAll && (
+            <p className={baseClasses}>includeAll</p>
+          )}
+          {block.input.region && (
+            <p className={baseClasses}>
+              Region: x={block.input.region.x}, y={block.input.region.y}, w=
+              {block.input.region.width}, h={block.input.region.height}
+            </p>
+          )}
+        </>
+      )}
+
+      {isComputerClickElementToolUseBlock(block) && (
+        <>
+          <p className={baseClasses}>ID: {block.input.element_id}</p>
+          {block.input.fallback_coordinates && (
+            <p className={baseClasses}>
+              Fallback: {block.input.fallback_coordinates.x},{" "}
+              {block.input.fallback_coordinates.y}
+            </p>
+          )}
+        </>
+      )}
+
       {isApplicationToolUseBlock(block) && (
         <p className={baseClasses}>
           {applicationMap[block.input.application as Application]}

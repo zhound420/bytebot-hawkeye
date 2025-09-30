@@ -14,6 +14,8 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { SummariesModule } from './summaries/summaries.modue';
 import { ProxyModule } from './proxy/proxy.module';
 import { SettingsModule } from './settings/settings.module';
+import { EnhancedCVModule } from '@bytebot/cv/enhanced-cv.module';
+import { CVActivityController } from './computer-vision/cv-activity.controller';
 
 @Module({
   imports: [
@@ -32,8 +34,9 @@ import { SettingsModule } from './settings/settings.module';
     ProxyModule,
     SettingsModule,
     PrismaModule,
+    EnhancedCVModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, CVActivityController],
   providers: [AppService],
 })
 export class AppModule {}

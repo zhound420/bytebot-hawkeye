@@ -120,6 +120,8 @@ const NutKeyMapLowercase: Record<string, Key> = Object.entries(Key)
 export class NutService {
   private readonly logger = new Logger(NutService.name);
   private screenshotDir: string;
+  private availableKeysCache: string[] | null = null;
+  private availableKeySet: Set<string> | null = null;
 
   constructor() {
     // Initialize nut-js settings
@@ -140,23 +142,37 @@ export class NutService {
   }
 
   /**
-   * Sends key events to the computer.
+   * Sends key shortcut sequences to the computer.
    *
-   * @param keys An array of key strings.
-   * @param delay Delay between pressing and releasing keys in ms.
+   * @param keys An array of key strings (supports compound forms such as "ctrl+shift+p").
    */
-  async sendKeys(keys: string[], delay: number = 100): Promise<any> {
-    this.logger.log(`Sending keys: ${keys}`);
-
+  async sendKeys(keys: string[]): Promise<void> {
     try {
-      const nutKeys = keys.map((key) => this.validateKey(key));
-      await keyboard.pressKey(...nutKeys);
-      await this.delay(delay);
-      await keyboard.releaseKey(...nutKeys);
-      return { success: true };
+      const parsedKeys: string[] = [];
+
+      for (const keyInput of keys) {
+        const individualKeys = this.parseKeyInput(keyInput);
+        parsedKeys.push(...individualKeys);
+      }
+
+      this.validateKeySequence(parsedKeys);
+
+      this.logger.log(`Sending keys: ${parsedKeys.join(',')}`);
+      await this.executeKeySequence(parsedKeys);
     } catch (error) {
+      this.logger.error(`Failed to send keys: ${error.message}`);
       throw new Error(`Failed to send keys: ${error.message}`);
     }
+  }
+
+  private async executeKeySequence(keys: string[]): Promise<void> {
+    if (keys.length === 0) {
+      return;
+    }
+    const nutKeys = keys.map((key) => this.validateKey(key));
+    await keyboard.pressKey(...nutKeys);
+    await this.delay(100);
+    await keyboard.releaseKey(...nutKeys);
   }
 
   /**
@@ -167,7 +183,13 @@ export class NutService {
    */
   async holdKeys(keys: string[], down: boolean): Promise<any> {
     try {
-      for (const key of keys) {
+      const normalizedKeys = keys
+        .flatMap((key) => this.parseKeyInput(key))
+        .filter((entry) => entry.length > 0);
+
+      this.validateKeySequence(normalizedKeys);
+
+      for (const key of normalizedKeys) {
         const nutKey = this.validateKey(key);
         if (down) {
           await keyboard.pressKey(nutKey);
@@ -207,6 +229,155 @@ export class NutService {
     }
 
     return nutKey;
+  }
+
+  private parseKeyInput(keyInput: string): string[] {
+    if (!keyInput) {
+      return [];
+    }
+
+    if (keyInput.includes('+')) {
+      return keyInput
+        .split('+')
+        .map((segment) => this.normalizeKeyName(segment.trim()))
+        .filter((segment) => segment.length > 0);
+    }
+
+    return [this.normalizeKeyName(keyInput.trim())];
+  }
+
+  private normalizeKeyName(key: string): string {
+    if (!key) {
+      return '';
+    }
+
+    const keyMappings: Record<string, string> = {
+      // Modifier keys
+      ctrl: 'Control',
+      control: 'Control',
+      shift: 'Shift',
+      alt: 'Alt',
+      option: 'Alt',
+      cmd: 'Meta',
+      meta: 'Meta',
+      win: 'Super',
+      windows: 'Super',
+
+      // Special keys
+      enter: 'Return',
+      ret: 'Return',
+      return: 'Return',
+      esc: 'Escape',
+      escape: 'Escape',
+      space: 'Space',
+      spacebar: 'Space',
+      tab: 'Tab',
+      backspace: 'BackSpace',
+      delete: 'Delete',
+      del: 'Delete',
+
+      // Arrow keys
+      up: 'Up',
+      down: 'Down',
+      left: 'Left',
+      right: 'Right',
+      arrowup: 'Up',
+      arrowdown: 'Down',
+      arrowleft: 'Left',
+      arrowright: 'Right',
+
+      // Function keys
+      f1: 'F1',
+      f2: 'F2',
+      f3: 'F3',
+      f4: 'F4',
+      f5: 'F5',
+      f6: 'F6',
+      f7: 'F7',
+      f8: 'F8',
+      f9: 'F9',
+      f10: 'F10',
+      f11: 'F11',
+      f12: 'F12',
+    };
+
+    const normalized = key.toLowerCase();
+    if (normalized === 'enter' && key.toUpperCase() === 'ENTER') {
+      return 'Return';
+    }
+    const mapped = keyMappings[normalized];
+    if (mapped) {
+      return mapped;
+    }
+
+    return key;
+  }
+
+  private validateKeySequence(keys: string[]): void {
+    if (!keys.length) {
+      return;
+    }
+
+    const invalidKeys = keys.filter((key) => !this.isValidKey(key));
+
+    if (invalidKeys.length > 0) {
+      const availableKeys = this.getAvailableKeys();
+      const preview = availableKeys.slice(0, 10).join(', ');
+      throw new Error(
+        `Invalid keys: ${invalidKeys.join(', ')}. Available keys: ${preview}...(${availableKeys.length} total keys available)`,
+      );
+    }
+  }
+
+  private isValidKey(key: string): boolean {
+    if (!key) {
+      return false;
+    }
+
+    this.ensureAvailableKeyCache();
+    if (this.availableKeySet?.has(key)) {
+      return true;
+    }
+    if (this.availableKeySet?.has(key.toLowerCase())) {
+      return true;
+    }
+
+    try {
+      this.validateKey(key);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private getAvailableKeys(): string[] {
+    this.ensureAvailableKeyCache();
+    return this.availableKeysCache ?? [];
+  }
+
+  private ensureAvailableKeyCache(): void {
+    if (this.availableKeysCache) {
+      return;
+    }
+
+    const keys = new Set<string>();
+    const addKey = (value: string) => {
+      if (!value) {
+        return;
+      }
+      keys.add(value);
+      keys.add(value.toLowerCase());
+    };
+
+    Object.keys(XKeySymToNutKeyMap).forEach(addKey);
+    Object.keys(NutKeyMap).forEach(addKey);
+    Object.keys(XKeySymToNutKeyMapLowercase).forEach(addKey);
+    Object.keys(NutKeyMapLowercase).forEach(addKey);
+
+    this.availableKeysCache = Array.from(keys).sort((a, b) =>
+      a.localeCompare(b),
+    );
+    this.availableKeySet = new Set(this.availableKeysCache);
   }
 
   /**

@@ -2,12 +2,11 @@ name: bytebot
 
 services:
   bytebot-desktop:
-    # Build from source
+    # Build from source by default; override BYTEBOT_DESKTOP_IMAGE to use a registry image
     build:
       context: ..
       dockerfile: packages/bytebotd/Dockerfile
-    # Use pre-built image
-    image: ghcr.io/bytebot-ai/bytebot-desktop:edge
+    image: ${BYTEBOT_DESKTOP_IMAGE:-bytebot-desktop:local}
     shm_size: "2g"
     container_name: bytebot-desktop
     restart: unless-stopped
@@ -41,7 +40,7 @@ services:
       - bytebot-network
 
   postgres:
-    image: postgres:16-alpine
+    image: ${BYTEBOT_POSTGRES_IMAGE:-public.ecr.aws/docker/library/postgres:16-alpine}
     container_name: bytebot-postgres
     restart: unless-stopped
     ports:
@@ -59,8 +58,7 @@ services:
     build:
       context: ..
       dockerfile: packages/bytebot-agent/Dockerfile
-    # Use pre-built image
-    image: ghcr.io/bytebot-ai/bytebot-agent:edge
+    image: ${BYTEBOT_AGENT_IMAGE:-bytebot-agent:local}
     container_name: bytebot-agent
     restart: unless-stopped
     ports:
@@ -105,8 +103,7 @@ services:
       args:
         - BYTEBOT_AGENT_BASE_URL=${BYTEBOT_AGENT_BASE_URL:-http://bytebot-agent:9991}
         - BYTEBOT_DESKTOP_VNC_URL=${BYTEBOT_DESKTOP_VNC_URL:-http://bytebot-desktop:9990/websockify}
-    # Use pre-built image
-    image: ghcr.io/bytebot-ai/bytebot-ui:edge
+    image: ${BYTEBOT_UI_IMAGE:-bytebot-ui:local}
     container_name: bytebot-ui
     restart: unless-stopped
     ports:

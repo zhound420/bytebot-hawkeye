@@ -29,6 +29,10 @@ import {
   isPasteTextToolUseBlock,
   isReadFileToolUseBlock,
   isWriteFileToolUseBlock,
+  isComputerDetectElementsToolUseBlock,
+  isComputerClickElementToolUseBlock,
+  isSetTaskStatusToolUseBlock,
+  isCreateTaskToolUseBlock,
 } from "@bytebot/shared";
 import { isScreenInfoToolUseBlock } from "@bytebot/shared";
 
@@ -72,6 +76,14 @@ export function getIcon(block: ComputerToolUseContentBlock): IconType {
     return FilePasteIcon;
   }
 
+  if (isComputerDetectElementsToolUseBlock(block)) {
+    return BrowserIcon;
+  }
+
+  if (isComputerClickElementToolUseBlock(block)) {
+    return Cursor02Icon;
+  }
+
   if (
     isMoveMouseToolUseBlock(block) ||
     isScrollToolUseBlock(block) ||
@@ -90,6 +102,10 @@ export function getIcon(block: ComputerToolUseContentBlock): IconType {
 
   if (isApplicationToolUseBlock(block)) {
     return BrowserIcon;
+  }
+
+  if (isSetTaskStatusToolUseBlock(block) || isCreateTaskToolUseBlock(block)) {
+    return FileIcon;
   }
 
   if (isReadFileToolUseBlock(block)) {
@@ -179,8 +195,24 @@ export function getLabel(block: ComputerToolUseContentBlock) {
     return "Trace Mouse";
   }
 
+  if (isComputerDetectElementsToolUseBlock(block)) {
+    return "Detect Elements";
+  }
+
+  if (isComputerClickElementToolUseBlock(block)) {
+    return "Click Element";
+  }
+
   if (isApplicationToolUseBlock(block)) {
     return "Open Application";
+  }
+
+  if (isSetTaskStatusToolUseBlock(block)) {
+    return "Set Task Status";
+  }
+
+  if (isCreateTaskToolUseBlock(block)) {
+    return "Create Task";
   }
 
   if (isReadFileToolUseBlock(block)) {

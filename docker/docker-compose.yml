@@ -2,12 +2,10 @@ name: bytebot
 
 services:
   bytebot-desktop:
-    # Build from source
+    # Build from source with OpenCV 4.8.0
     build:
       context: ..
       dockerfile: packages/bytebotd/Dockerfile
-    # Use pre-built image
-    image: ghcr.io/bytebot-ai/bytebot-desktop:edge
     shm_size: "2g"
     container_name: bytebot-desktop
     restart: unless-stopped
@@ -41,7 +39,7 @@ services:
       - bytebot-network
 
   postgres:
-    image: postgres:16-alpine
+    image: ${BYTEBOT_POSTGRES_IMAGE:-public.ecr.aws/docker/library/postgres:16-alpine}
     container_name: bytebot-postgres
     restart: unless-stopped
     ports:
@@ -59,8 +57,6 @@ services:
     build:
       context: ..
       dockerfile: packages/bytebot-agent/Dockerfile
-    # Use pre-built image
-    image: ghcr.io/bytebot-ai/bytebot-agent:edge
     container_name: bytebot-agent
     restart: unless-stopped
     ports:
@@ -68,6 +64,7 @@ services:
     environment:
       - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/bytebotdb}
       - BYTEBOT_DESKTOP_BASE_URL=${BYTEBOT_DESKTOP_BASE_URL:-http://bytebot-desktop:9990}
+      - BYTEBOT_LLM_PROXY_URL=${BYTEBOT_LLM_PROXY_URL:-http://bytebot-llm-proxy:4000}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - GEMINI_API_KEY=${GEMINI_API_KEY}

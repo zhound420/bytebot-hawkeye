@@ -79,6 +79,12 @@ model_list:
       api_key: os.environ/GEMINI_API_KEY
     model_info:
       supports_vision: true
+  - model_name: qwen3-vl-235b-a22b-instruct
+    litellm_params:
+      model: openrouter/qwen/qwen3-vl-235b-a22b-instruct
+      api_key: os.environ/OPENROUTER_API_KEY
+    model_info:
+      supports_vision: true
   - model_name: openrouter-claude-3.5-sonnet
     litellm_params:
       model: openrouter/anthropic/claude-3.5-sonnet

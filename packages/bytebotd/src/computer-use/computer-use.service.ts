@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { exec, spawn } from 'child_process';
 import { promisify } from 'util';
 import * as fs from 'fs/promises';
+import * as os from 'os';
 import * as path from 'path';
 import * as sharp from 'sharp';
 import { NutService } from '../nut/nut.service';
@@ -32,6 +33,12 @@ import {
   ScreenshotRegionAction,
   ScreenshotCustomRegionAction,
 } from '@bytebot/shared';
+
+type ElementDetectionParams = {
+  description?: string;
+  region?: { x: number; y: number; width: number; height: number };
+  includeAll?: boolean;
+};
 
 @Injectable()
 export class ComputerUseService {
@@ -102,6 +109,25 @@ export class ComputerUseService {
     );
     return Number.isFinite(raw) ? raw : 12;
   })();
+
+  async detectElements(
+    params: ElementDetectionParams,
+  ): Promise<{
+    action: 'element_detection';
+    screenshot_path: string;
+    params: ElementDetectionParams;
+  }> {
+    this.logger.log('Preparing element detection request');
+
+    const buffer = await this.nutService.screendump();
+    const screenshotPath = await this.saveDetectionScreenshot(buffer);
+
+    return {
+      action: 'element_detection',
+      screenshot_path: screenshotPath,
+      params,
+    };
+  }
 
   async action(params: ComputerAction): Promise<any> {
     this.logger.log(`Executing computer action: ${params.action}`);
@@ -735,7 +761,10 @@ export class ComputerUseService {
 
   private async typeKeys(action: TypeKeysAction): Promise<void> {
     const { keys, delay } = action;
-    await this.nutService.sendKeys(keys, delay);
+    await this.nutService.sendKeys(keys);
+    if (delay && delay > 0) {
+      await this.delay(delay);
+    }
     await this.recordActionEvent('type_keys');
   }
 
@@ -1070,6 +1099,21 @@ export class ComputerUseService {
       x: Math.round((cursor.x - offset.x) * zoomLevel),
       y: Math.round((cursor.y - offset.y) * zoomLevel),
     };
+  }
+
+  private async saveDetectionScreenshot(buffer: Buffer): Promise<string> {
+    const directory =
+      process.env.BYTEBOT_SCREENSHOT_PATH ??
+      path.join(os.tmpdir(), 'bytebot-screenshots');
+    const filename = `element-detection-${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2, 8)}.png`;
+    const filePath = path.join(directory, filename);
+
+    await fs.mkdir(directory, { recursive: true });
+    await fs.writeFile(filePath, buffer);
+
+    return filePath;
   }
 
   private async screen_info(): Promise<{ width: number; height: number }> {

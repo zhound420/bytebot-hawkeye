@@ -93,6 +93,28 @@ export type ClickMouseToolUseBlock = ToolUseContentBlock & {
   };
 };
 
+export type ComputerDetectElementsToolUseBlock = ToolUseContentBlock & {
+  name: "computer_detect_elements";
+  input: {
+    description: string;
+    region?: {
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    };
+    includeAll?: boolean;
+  };
+};
+
+export type ComputerClickElementToolUseBlock = ToolUseContentBlock & {
+  name: "computer_click_element";
+  input: {
+    element_id: string;
+    fallback_coordinates?: Coordinates;
+  };
+};
+
 export type PressMouseToolUseBlock = ToolUseContentBlock & {
   name: "computer_press_mouse";
   input: {
@@ -248,6 +270,8 @@ export type ComputerToolUseContentBlock =
   | MoveMouseToolUseBlock
   | TraceMouseToolUseBlock
   | ClickMouseToolUseBlock
+  | ComputerDetectElementsToolUseBlock
+  | ComputerClickElementToolUseBlock
   | PressMouseToolUseBlock
   | TypeKeysToolUseBlock
   | PressKeysToolUseBlock

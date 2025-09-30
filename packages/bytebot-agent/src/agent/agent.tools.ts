@@ -1,3 +1,8 @@
+import {
+  computerClickElementTool,
+  computerDetectElementsTool,
+} from '../tools/computer-vision-tools';
+
 /**
  * Common schema definitions for reuse
  */
@@ -119,7 +124,12 @@ export const _clickMouseTool = {
           },
           source: {
             type: 'string' as const,
-            enum: ['manual', 'smart_focus', 'progressive_zoom', 'binary_search'],
+            enum: [
+              'manual',
+              'smart_focus',
+              'progressive_zoom',
+              'binary_search',
+            ],
             description: 'Origin of the click request for telemetry analysis',
             nullable: true,
           },
@@ -534,6 +544,8 @@ export const agentTools = [
   _moveMouseTool,
   _traceMouseTool,
   _clickMouseTool,
+  computerDetectElementsTool,
+  computerClickElementTool,
   _pressMouseTool,
   _dragMouseTool,
   _scrollTool,

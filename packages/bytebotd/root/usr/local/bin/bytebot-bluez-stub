@@ -1,0 +1,56 @@
+#!/usr/bin/env python3
+"""Minimal D-Bus stub to satisfy org.bluez activation requests.
+
+The desktop container does not ship a functional Bluetooth stack, but some
+applications (e.g. VS Code) attempt to talk to BlueZ on the system bus. When
+no provider is available, dbus-daemon repeatedly logs activation failures.
+
+This stub claims the org.bluez bus name and exposes a trivial Introspectable
+interface so callers receive a well-defined (but no-op) service instead of
+triggering noisy launch errors.
+"""
+import signal
+import sys
+
+import dbus
+import dbus.mainloop.glib
+import dbus.service
+from gi.repository import GLib
+
+
+class BlueZStub(dbus.service.Object):
+    """Expose the minimal hooks required to keep clients satisfied."""
+
+    def __init__(self, bus_name: dbus.service.BusName):
+        super().__init__(bus_name, '/')
+
+    @dbus.service.method('org.freedesktop.DBus.Introspectable', in_signature='', out_signature='s')
+    def Introspect(self) -> str:
+        # Return an empty node description so introspection succeeds.
+        return '<node name="/" />'
+
+
+def main() -> int:
+    dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+    bus = dbus.SystemBus()
+    bus_name = dbus.service.BusName('org.bluez', bus)
+    BlueZStub(bus_name)
+
+    loop = GLib.MainLoop()
+
+    def _shutdown(*_args):
+        loop.quit()
+
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        signal.signal(sig, _shutdown)
+
+    try:
+        loop.run()
+    finally:
+        bus_name.release()
+
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

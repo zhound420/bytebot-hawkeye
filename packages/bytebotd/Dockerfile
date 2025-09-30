@@ -3,7 +3,9 @@
 # -----------------------------------------------------------------------------
 
 # Base image
-FROM ubuntu:22.04
+# Use urielch/opencv-nodejs as base - has @u4/opencv4nodejs precompiled
+FROM urielch/opencv-nodejs:latest AS base
+
 
 # -----------------------------------------------------------------------------
 # 1. Environment setup
@@ -12,26 +14,39 @@ FROM ubuntu:22.04
 ARG DEBIAN_FRONTEND=noninteractive
 # Configure display for X11 applications
 ENV DISPLAY=:0
+# Set environment to use globally installed @u4/opencv4nodejs and ignore Node.js engine checks
+ENV NODE_PATH=/usr/lib/node_modules \
+    OPENCV4NODEJS_DISABLE_AUTOBUILD=1 \
+    OPENCV4NODEJS_SKIP_TRACKING=1 \
+    NPM_CONFIG_IGNORE_ENGINES=true
 
 # -----------------------------------------------------------------------------
 # 2. System dependencies installation
 # -----------------------------------------------------------------------------
 RUN apt-get update && apt-get install -y \
+    # Essential build tools (needed for dpkg-architecture)
+    dpkg-dev \
     # X11 / VNC
     xvfb x11vnc xauth x11-xserver-utils \
     x11-apps sudo software-properties-common \
     # Desktop environment 
-    xfce4 xfce4-goodies dbus wmctrl \
+    xfce4 xfce4-goodies dbus dbus-x11 wmctrl \
+    bluez bluetooth \
     # Display manager with autologin capability
     lightdm \
     # Development tools
-    python3 python3-pip curl wget git vim \
+    python3 python3-pip python3-dbus python3-gi gir1.2-glib-2.0 \
+    curl wget git vim \
     # Utilities
     supervisor netcat-openbsd \
     # Applications
     xpdf gedit xpaint \
     # Libraries
     libxtst-dev \
+    libgif-dev \
+    libcairo2-dev \
+    # Sharp dependencies for ARM64 native compilation
+    libvips-dev \
     # Remove unneeded dependencies
     && apt-get remove -y light-locker xfce4-screensaver xfce4-power-manager || true \
     # Clean up to reduce image size
@@ -42,16 +57,61 @@ RUN mkdir -p /run/dbus && \
     dbus-uuidgen --ensure=/etc/machine-id
 
 # -----------------------------------------------------------------------------
+# 2.5. Install Node.js EARLY (before compiling any native modules)
+# -----------------------------------------------------------------------------
+# Install Node.js 20.x using direct binary installation to bypass package conflicts
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.4/install.sh | bash
+
+# Use NVM to install and use Node.js 20.x
+ENV NVM_DIR=/root/.nvm
+RUN . "$NVM_DIR/nvm.sh" && nvm install 20.19.5 && nvm use 20.19.5 && nvm alias default 20.19.5
+
+# Set PATH to prioritize NVM Node.js installation
+ENV PATH="$NVM_DIR/versions/node/v20.19.5/bin:$PATH"
+
+# Verify Node.js installation and version
+RUN echo "=== Node.js Installation Verification ===" \
+    && which node && which npm \
+    && node --version \
+    && npm --version \
+    && echo "Node.js location: $(which node)" \
+    && echo "npm location: $(which npm)" \
+    && echo "Node.js version: $(node --version)" \
+    && echo "npm version: $(npm --version)"
+
+# Verify Node.js version meets requirements (should be 20.x)
+RUN NODE_VERSION=$(node --version | sed 's/v//') \
+    && echo "Checking Node.js version: $NODE_VERSION" \
+    && if ! node -e "const ver=process.version.slice(1).split('.').map(Number); if(ver[0]<20){process.exit(1)}"; then \
+        echo "ERROR: Node.js version $NODE_VERSION is not 20.x or higher"; \
+        exit 1; \
+    fi \
+    && echo "✓ Node.js version $NODE_VERSION meets requirements"
+
+# Copy Node.js binaries to accessible location for supervisord compatibility
+# Cache buster: 2025-09-30-21:15
+RUN echo "Copying Node.js binaries to accessible location:" \
+    && cp "$NVM_DIR/versions/node/v20.19.5/bin/node" /usr/local/bin/node \
+    && cp "$NVM_DIR/versions/node/v20.19.5/bin/npm" /usr/local/bin/npm \
+    && chown root:root /usr/local/bin/node /usr/local/bin/npm \
+    && chmod +x /usr/local/bin/node /usr/local/bin/npm \
+    && ln -sf /usr/local/bin/node /usr/bin/node \
+    && ln -sf /usr/local/bin/npm /usr/bin/npm \
+    && echo "✓ Node.js binaries copied to /usr/local/bin and symlinked" \
+    && echo "✓ Accessible to all users: $(ls -la /usr/local/bin/node /usr/local/bin/npm)"
+
+# -----------------------------------------------------------------------------
 # 3. Additional software installation
 # -----------------------------------------------------------------------------
-# Install Firefox
+# Install Firefox and additional software
 RUN apt-get update && apt-get install -y \
-    # Install necessary for adding PPA
+    # Install necessary packages
     software-properties-common apt-transport-https wget gnupg \
-    # Install Additional Graphics Libraries
+    # Install Additional Graphics Libraries (Debian compatible)
     mesa-utils \
     libgl1-mesa-dri \
-    libgl1-mesa-glx \
+    libglx-mesa0 \
+    libgl1-mesa-dev \
     # Install Sandbox Capabilities
     libcap2-bin \
     # Install Fonts
@@ -59,14 +119,18 @@ RUN apt-get update && apt-get install -y \
     fonts-dejavu \
     fonts-liberation \
     fonts-freefont-ttf \
-    && add-apt-repository -y ppa:mozillateam/ppa \
-    && apt-get update \
-    && apt-get install -y firefox-esr thunderbird \
+    # Install Firefox and Thunderbird from Debian repositories
+    firefox-esr \
+    thunderbird \
     && apt-get clean && rm -rf /var/lib/apt/lists/* \
     # Set Firefox as default browser system-wide
     && update-alternatives --install /usr/bin/x-www-browser x-www-browser /usr/bin/firefox-esr 200 \
     && update-alternatives --set x-www-browser /usr/bin/firefox-esr \
     && fc-cache -f -v
+
+# Ensure fontconfig caches are writable at runtime (needed for sandboxed desktop user)
+RUN mkdir -p /var/cache/fontconfig /root/.cache/fontconfig /root/.fontconfig \
+    && chmod -R 777 /var/cache/fontconfig /root/.cache/fontconfig /root/.fontconfig
 
 
 # Install 1Password based on architecture
@@ -135,14 +199,7 @@ RUN ARCH=$(dpkg --print-architecture) && \
         echo "VSCode is not available for $ARCH architecture."; \
     fi
 
-# Install Node.js
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get update \
-    && apt-get install -y nodejs \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# Upgrade pip
-RUN pip3 install --upgrade pip
+# Debian comes with pip which is sufficient - no upgrade needed
 
 # -----------------------------------------------------------------------------
 # 4. VNC and remote access setup
@@ -151,7 +208,7 @@ RUN pip3 install --upgrade pip
 RUN git clone https://github.com/novnc/noVNC.git /opt/noVNC \
     && git clone https://github.com/novnc/websockify.git /opt/websockify \
     && cd /opt/websockify \
-    && pip3 install --break-system-packages .
+    && pip3 install .
 
 # -----------------------------------------------------------------------------
 # 5. Application setup (bytebotd)
@@ -175,15 +232,117 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 COPY packages/shared/ /bytebot/packages/shared/
+COPY packages/bytebot-cv/ /bytebot/packages/bytebot-cv/
 COPY packages/bytebotd/ /bytebot/packages/bytebotd/
 COPY config/universal-coordinates.yaml /bytebot/config/universal-coordinates.yaml
 WORKDIR /bytebot/packages/bytebotd
-RUN /usr/bin/npm install --build-from-source
-RUN /usr/bin/npm rebuild uiohook-napi --build-from-source
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    git \
+    curl \
+    wget \
+    python3 \
+    python3-pip \
+    pkg-config \
+    libgtk-3-dev \
+    tesseract-ocr \
+    tesseract-ocr-eng \
+    # Complete Canvas/Cairo dependencies
+    libcairo2-dev \
+    libpango1.0-dev \
+    libpangocairo-1.0-0 \
+    libglib2.0-dev \
+    libfontconfig1-dev \
+    libjpeg-dev \
+    libgif-dev \
+    librsvg2-dev \
+    libpixman-1-dev \
+    && rm -rf /var/lib/apt/lists/*
+# Set workspace dependencies
+RUN node -e "const fs=require('fs'); const path=require('path'); const file=path.join('package.json'); const pkg=JSON.parse(fs.readFileSync(file,'utf8')); pkg.dependencies['@bytebot/cv']='../bytebot-cv'; fs.writeFileSync(file, JSON.stringify(pkg, null, 2)+'\n');" \
+    && npm install --prefix ../shared
 
-RUN /usr/bin/npm run build
+# Clear npm cache to avoid stale builds
+RUN npm cache clean --force
+
+# Install bytebot-cv dependencies directly (avoiding workspace dependencies)
+RUN cd ../bytebot-cv \
+    && echo "Installing bytebot-cv dependencies..." \
+    && echo "Removing @u4/opencv4nodejs from package.json (using global install)..." \
+    && npm remove @u4/opencv4nodejs 2>/dev/null || true \
+    && echo "Installing only bytebot-cv direct dependencies..." \
+    && npm install --no-workspaces --include=dev --ignore-engines --ignore-scripts \
+    && echo "✓ bytebot-cv dependencies installed successfully" \
+    && echo "Note: @u4/opencv4nodejs will be resolved via NODE_PATH at runtime"
+
+# Rebuild Canvas for Node.js 20.x compatibility in bytebot-cv
+RUN cd ../bytebot-cv \
+    && echo "Rebuilding Canvas for Node.js 20.x compatibility in bytebot-cv..." \
+    && rm -rf node_modules/canvas/build 2>/dev/null || true \
+    && npm rebuild canvas --build-from-source \
+    && echo "✓ Canvas rebuilt successfully in bytebot-cv" \
+    && node -e "const canvas = require('canvas'); console.log('Canvas version in bytebot-cv:', canvas.version || 'available');"
+
+# Install bytebotd dependencies (no local @u4/opencv4nodejs needed due to NODE_PATH)  
+# Exclude Sharp initially to avoid ARM64 issues
+RUN npm install --build-from-source --ignore-optional
+
+# Remove Sharp from dependencies temporarily and install manually
+RUN npm uninstall sharp 2>/dev/null || true && \
+    rm -rf node_modules/sharp && \
+    npm cache clean --force
+
+# Install Sharp with modern auto-detection (no npm config needed)
+RUN npm install --no-save sharp@^0.33.5 && \
+    # Verify Sharp installation
+    node -e "const sharp = require('sharp'); console.log('Sharp version:', sharp.versions || 'available');"
+
+
+# Build packages with TypeScript
+WORKDIR /bytebot/packages/bytebot-cv
+RUN rm -rf dist && npm run build
+
+WORKDIR /bytebot/packages/bytebotd
+RUN npm rebuild uiohook-napi --build-from-source
+
+RUN node -e "const fs=require('fs'); const path=require('path'); const file=path.join('package.json'); const pkg=JSON.parse(fs.readFileSync(file,'utf8')); pkg.dependencies['@bytebot/cv']='workspace:*'; fs.writeFileSync(file, JSON.stringify(pkg, null, 2)+'\n');"
+
+RUN npm run build
+
+# Final verification step - ensure bytebot-cv can load canvas successfully
+RUN echo "=== Final Canvas Module Verification ===" \
+    && cd /bytebot/packages/bytebot-cv \
+    && echo "Testing canvas in bytebot-cv..." \
+    && node -e "try { const canvas = require('canvas'); console.log('✓ Canvas loaded successfully in bytebot-cv:', canvas.version || 'version unknown'); } catch(e) { console.error('✗ Canvas failed to load in bytebot-cv:', e.message); process.exit(1); }" \
+    && echo "✓ Canvas module verification passed!"
 
 WORKDIR /compile
+
+# Upgrade CMake to version 3.20+ required by libnut-core
+# Download and install CMake binary directly since Kitware APT repo doesn't support Debian bullseye
+RUN ARCH=$(dpkg --print-architecture) && \
+    CMAKE_VERSION="3.29.8" && \
+    if [ "$ARCH" = "amd64" ]; then \
+        CMAKE_ARCH="x86_64"; \
+    elif [ "$ARCH" = "arm64" ]; then \
+        CMAKE_ARCH="aarch64"; \
+    else \
+        echo "Unsupported architecture: $ARCH" && exit 1; \
+    fi && \
+    # Download CMake binary
+    wget https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-linux-${CMAKE_ARCH}.tar.gz -O /tmp/cmake.tar.gz && \
+    # Extract to /opt/cmake
+    mkdir -p /opt/cmake && \
+    tar -xzf /tmp/cmake.tar.gz -C /opt/cmake --strip-components=1 && \
+    # Create symlinks to system PATH
+    ln -sf /opt/cmake/bin/cmake /usr/local/bin/cmake && \
+    ln -sf /opt/cmake/bin/cpack /usr/local/bin/cpack && \
+    ln -sf /opt/cmake/bin/ctest /usr/local/bin/ctest && \
+    # Verify CMake version
+    cmake --version && \
+    # Clean up
+    rm -f /tmp/cmake.tar.gz
 
 RUN git clone https://github.com/ZachJW34/libnut-core.git && \
     cd libnut-core && \
@@ -224,6 +383,8 @@ RUN chown -R root:root /bytebot/packages/bytebotd/root && \
     find /bytebot/packages/bytebotd/root -type f -executable -exec chmod +x {} + && \
     cp -a /bytebot/packages/bytebotd/root/. /
 
+RUN chmod +x /usr/local/bin/bytebot-bluez-stub
+
 RUN chown -R user:user /home/user
 RUN chmod -R 755 /home/user
 
@@ -251,6 +412,7 @@ ENV BYTEBOT_GRID_OVERLAY=true \
 
 RUN mkdir -p /home/user/.config /home/user/.local/share /home/user/.cache \
     && chown -R user:user /home/user/.config /home/user/.local /home/user/.cache
+
 
 WORKDIR /home/user
 
