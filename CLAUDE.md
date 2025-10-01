@@ -142,14 +142,33 @@ BYTEBOT_UNIVERSAL_TEACHING=true
 BYTEBOT_ADAPTIVE_CALIBRATION=true
 ```
 
-## Computer Vision Pipeline
+## Enhanced Computer Vision Pipeline (OpenCV 4.6.0)
 
-The bytebot-cv package provides:
-- OpenCV 4.6.x - 4.8.x bindings via `@u4/opencv4nodejs` v7.1.2
-- CLAHE contrast enhancement with graceful fallbacks
-- Morphological operations for UI element detection
-- OCR via Tesseract.js with preprocessing
-- Element detection services for buttons, inputs, and clickable controls
+The bytebot-cv package provides comprehensive computer vision capabilities:
+
+### Multi-Method Detection System
+- **Template Matching**: Pixel-perfect UI element matching with multi-scale detection
+- **Feature Detection**: ORB and AKAZE feature matching with homography-based localization, robust to UI variations
+- **Contour Analysis**: Shape-based detection for buttons, input fields, and icons using advanced morphological operations
+- **Enhanced OCR Pipeline**: Tesseract with morphological gradients, bilateral filtering, and CLAHE contrast enhancement
+- **Multi-Method Fusion**: Combines all detection methods intelligently for maximum reliability
+
+### Core Services
+- `EnhancedVisualDetectorService`: Orchestrates all CV methods with performance metrics
+- `TemplateMatcherService`: Multi-scale template matching with confidence scoring
+- `FeatureMatcherService`: ORB and AKAZE feature detection with homography validation
+- `ContourDetectorService`: Advanced shape analysis with morphological operations
+- `CVActivityIndicatorService`: Real-time monitoring of active CV methods
+- `ElementDetectorService`: Unified element detection with structured metadata output
+- `UniversalDetectorService`: High-level API for UI element detection
+
+### OpenCV 4.6.0 Capabilities
+- ✅ Template matching, Feature detection (ORB/AKAZE), Morphological operations
+- ✅ CLAHE contrast enhancement, Gaussian blur, Bilateral filtering
+- ✅ Canny edge detection, Contour analysis, Adaptive thresholding
+- ✅ Button detection, Input field identification, Icon recognition
+- ✅ Text extraction with preprocessing, Clickable element mapping
+- ✅ Real-time CV method tracking with performance metrics
 
 ## Testing
 
@@ -166,3 +185,77 @@ All NestJS packages use Jest:
 - OpenCV capabilities checked at startup with compatibility matrix
 - Universal coordinates stored in `config/universal-coordinates.yaml`
 - Desktop accuracy metrics available at `/desktop` UI route
+
+## Additional Development Notes
+
+### Running Single Tests
+```bash
+# bytebot-agent
+cd packages/bytebot-agent && npm run test -- --testNamePattern="YourTestName"
+cd packages/bytebot-agent && npm run test:e2e -- --testNamePattern="YourE2ETest"
+
+# bytebotd
+cd packages/bytebotd && npm run test -- --testNamePattern="YourTestName"
+
+# bytebot-ui (native Node.js test runner)
+cd packages/bytebot-ui && npm run test -- --test-name-pattern="YourTestName"
+```
+
+### Package Dependencies
+The monorepo has these internal dependencies:
+- `bytebot-agent` depends on `shared` and `bytebot-cv`
+- `bytebot-ui` depends on `shared`
+- `bytebotd` depends on `shared` and `bytebot-cv`
+- All packages must build `shared` first via npm scripts
+
+### Database Schema Management
+```bash
+cd packages/bytebot-agent
+npm run prisma:dev         # Reset DB + run migrations + generate client
+npx prisma migrate dev      # Create and apply new migration
+npx prisma generate         # Generate Prisma client only
+npx prisma studio          # Open database browser
+```
+
+## Computer Vision Development Workflow
+
+When working with the enhanced CV capabilities:
+
+### CV Tool Usage Pattern
+```bash
+# The AI agent should follow this pattern:
+# 1. Take screenshot
+# 2. Call computer_detect_elements with target description
+# 3. Analyze returned elements (confidence scores, bounding boxes)
+# 4. Click using computer_click_element with element_id
+# 5. Verify with confirmation screenshot
+```
+
+### CV Environment Variables
+```bash
+# Enhanced CV detection (enabled by default)
+BYTEBOT_CV_ENHANCED_DETECTION=true
+BYTEBOT_CV_ACTIVITY_TRACKING=true
+
+# CV Method Configuration
+BYTEBOT_CV_TEMPLATE_MATCHING=true
+BYTEBOT_CV_FEATURE_DETECTION=true
+BYTEBOT_CV_CONTOUR_ANALYSIS=true
+BYTEBOT_CV_OCR_ENABLED=false  # Expensive, opt-in
+
+# CV Performance Tuning
+BYTEBOT_CV_CONFIDENCE_THRESHOLD=0.6
+BYTEBOT_CV_MAX_RESULTS=20
+BYTEBOT_CV_TEMPLATE_THRESHOLD=0.8
+```
+
+### CV Debugging
+```bash
+# Verify OpenCV capabilities
+cd packages/bytebot-cv && npm run verify
+
+# Check CV activity in real-time via REST endpoints:
+# GET /cv-activity/status - Current active methods
+# GET /cv-activity/performance - Method performance stats
+# SSE /cv-activity/stream - Real-time updates
+```

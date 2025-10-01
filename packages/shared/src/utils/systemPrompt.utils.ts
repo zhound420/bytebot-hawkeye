@@ -53,20 +53,24 @@ export const buildAgentSystemPrompt = (
 
   const spatialReasoning = [
     '════════════════════════════════',
-    'SPATIAL REASONING & SMART FOCUS',
+    'COMPUTER VISION & ELEMENT DETECTION',
     '════════════════════════════════',
-    '• Follow the Look → Read → Count workflow: inspect the red corner label to confirm the origin, read the ruler numbers, count grid squares to your target, then report the coordinate with the method you used (e.g., “Click ≈ (620, 410) via grid count from top-left”).',
-    '• Use Smart Focus in two phases: (a) identify the 3×3 region (top-left … bottom-right) that contains the target, (b) request `computer_screenshot_region` for coarse zoom and `computer_screenshot_custom_region` with `zoomLevel` or `markTarget` when you need finer detail.',
-    '• Lean on progressive zoom: wide screenshot → region capture → custom zoom → coordinate calculation → action → verification. If uncertainty remains, gather another angle before committing.',
-    '• When textual affordances exist, combine `computer_detect_elements` with target descriptions to cross-check coordinates before clicking.',
+    '• **MANDATORY**: Use `computer_detect_elements` before ANY clicking operation. This computer vision system uses OpenCV 4.6.0 with template matching, feature detection (ORB/AKAZE), contour analysis, and enhanced OCR to identify UI elements with precise coordinates.',
+    '• **Element Detection Workflow**: (1) `computer_detect_elements` with target description → (2) `computer_click_element` with detected element_id → (3) verification screenshot.',
+    '• **Enhanced CV Capabilities**: Template matching for pixel-perfect UI matching, feature detection robust to UI variations, contour analysis for shape-based detection, OCR with morphological preprocessing and CLAHE contrast enhancement.',
+    '• **Fallback Spatial Reasoning**: If CV detection fails, use Smart Focus: (a) identify 3×3 region containing target, (b) `computer_screenshot_region` for coarse zoom, (c) `computer_screenshot_custom_region` with `zoomLevel` for finer detail, (d) Look → Read → Count workflow with grid coordinates.',
+    '• **Progressive Zoom Integration**: CV detection works at all zoom levels - use wide screenshot → region capture → custom zoom → CV detection → element clicking → verification.',
+    '• **Multi-Method Fusion**: The system combines multiple detection methods automatically for maximum reliability. Trust the detected elements over manual coordinate calculations.',
   ].join('\n');
 
   const tooling = [
     '════════════════════════════════',
     'TOOLING CHEATSHEET',
     '════════════════════════════════',
+    '• **Computer Vision (PRIMARY)** – `computer_detect_elements` (MANDATORY before clicks - uses OpenCV 4.6.0 multi-method detection), `computer_click_element` (precise element clicking with detected IDs).',
     '• **Screenshot & Focus** – `computer_screenshot`, `computer_screenshot_region`, `computer_screenshot_custom_region` (optionally adjust `gridSize`, `zoomLevel`, `progressStep`, `progressMessage`, `progressTaskId`).',
-    '• **Input & Cursor** – `computer_type_text`, `computer_paste_text`, `computer_type_keys`, `computer_press_keys`, `computer_wait`, `computer_cursor_position`, `computer_scroll`, `computer_move_mouse`, `computer_click_mouse`, `computer_drag_mouse`.',
+    '• **Input & Cursor** – `computer_type_text`, `computer_paste_text`, `computer_type_keys`, `computer_press_keys`, `computer_wait`, `computer_cursor_position`, `computer_scroll`, `computer_move_mouse`.',
+    '• **Legacy Click (DEPRECATED)** – `computer_click_mouse`, `computer_drag_mouse` only as fallbacks when CV detection explicitly fails.',
     '• **Files & Data** – `computer_read_file` and `computer_write_file` for verifying or editing documents; always confirm edits with a read-back when accuracy matters.',
     '• **Task Flow** – `create_task` for follow-ups or scheduled work, `set_task_status` to finish or flag blockers. Every completion status must cite the verified outcome.',
   ].join('\n');
