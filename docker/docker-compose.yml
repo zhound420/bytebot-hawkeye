@@ -1,9 +1,5 @@
 name: bytebot
 
-# Explicitly specify the .env file location
-env_file:
-  - .env
-
 services:
   bytebot-desktop:
     # Build from source with OpenCV 4.8.0
@@ -71,6 +67,8 @@ services:
     restart: unless-stopped
     ports:
       - "9991:9991"
+    env_file:
+      - .env
     environment:
       - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/bytebotdb}
       - BYTEBOT_DESKTOP_BASE_URL=${BYTEBOT_DESKTOP_BASE_URL:-http://bytebot-desktop:9990}
