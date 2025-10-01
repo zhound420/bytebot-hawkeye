@@ -11,31 +11,40 @@ The updated Docker Compose files now include PostgreSQL healthchecks. Make sure 
 # Pull the latest changes
 git pull
 
+# IMPORTANT: Run from the docker/ directory to pick up .env file
+cd docker
+
 # Rebuild with fresh containers
-docker compose -f docker/docker-compose.yml down
-docker compose -f docker/docker-compose.yml up --build
+docker compose -f docker-compose.yml down
+docker compose -f docker-compose.yml up --build
 ```
 
 ### 2. Manual Container Startup Order
 If healthchecks don't work, start containers manually in the correct order:
 
 ```bash
+# Change to docker directory first
+cd docker
+
 # Start PostgreSQL first
-docker compose -f docker/docker-compose.yml up postgres -d
+docker compose -f docker-compose.yml up postgres -d
 
 # Wait for PostgreSQL to be ready (check logs)
-docker compose -f docker/docker-compose.yml logs -f postgres
+docker compose -f docker-compose.yml logs -f postgres
 
 # Once you see "database system is ready to accept connections", start the rest
-docker compose -f docker/docker-compose.yml up
+docker compose -f docker-compose.yml up
 ```
 
 ## Diagnostic Commands
 
 ### Check Container Status
 ```bash
+# Change to docker directory first
+cd docker
+
 # View all containers
-docker compose -f docker/docker-compose.yml ps
+docker compose -f docker-compose.yml ps
 
 # Check specific container health
 docker inspect bytebot-postgres --format='{{.State.Health.Status}}'
@@ -43,25 +52,31 @@ docker inspect bytebot-postgres --format='{{.State.Health.Status}}'
 
 ### Check Database Connectivity
 ```bash
+# Change to docker directory first
+cd docker
+
 # Test from host
 docker run --rm --network bytebot_bytebot-network postgres:16-alpine \
   psql postgresql://postgres:postgres@postgres:5432/bytebotdb -c "SELECT 1;"
 
 # Test from agent container
-docker compose -f docker/docker-compose.yml exec bytebot-agent \
+docker compose -f docker-compose.yml exec bytebot-agent \
   node -e "const {PrismaClient} = require('@prisma/client'); const prisma = new PrismaClient(); prisma.\$queryRaw\`SELECT 1\`.then(() => {console.log('✓ Connected'); process.exit(0)}).catch(e => {console.error('✗ Failed:', e.message); process.exit(1)})"
 ```
 
 ### Check Logs
 ```bash
+# Change to docker directory first
+cd docker
+
 # PostgreSQL logs
-docker compose -f docker/docker-compose.yml logs postgres
+docker compose -f docker-compose.yml logs postgres
 
 # Agent logs
-docker compose -f docker/docker-compose.yml logs bytebot-agent
+docker compose -f docker-compose.yml logs bytebot-agent
 
 # Follow logs in real-time
-docker compose -f docker/docker-compose.yml logs -f
+docker compose -f docker-compose.yml logs -f
 ```
 
 ## Architecture-Specific Issues
@@ -88,17 +103,29 @@ docker compose -f docker/docker-compose.yml build --no-cache
 
 ## Environment Variables
 
-Ensure these variables are properly set in your environment or `.env` file:
+Ensure these variables are properly set in your `docker/.env` file:
 
 ```bash
 # Required for database
 DATABASE_URL=postgresql://postgres:postgres@postgres:5432/bytebotdb
 
-# Optional but recommended
+# AI Provider API Keys
+ANTHROPIC_API_KEY=your-anthropic-key
+OPENAI_API_KEY=your-openai-key
+GEMINI_API_KEY=your-gemini-key
+OPENROUTER_API_KEY=your-openrouter-key
+
+# Analytics Configuration
+BYTEBOT_ANALYTICS_ENDPOINT=http://localhost:9991/api/analytics
+BYTEBOT_ANALYTICS_ENABLED=true
+
+# Database Migration Settings
 BYTEBOT_DB_RESET_ALLOWED=true
 BYTEBOT_MIGRATION_STRATEGY=auto
 NODE_ENV=production
 ```
+
+**IMPORTANT**: Make sure to run `docker compose` commands from the `docker/` directory so the `.env` file is properly loaded. API key warnings will appear if docker-compose can't find the environment variables.
 
 ## Manual Database Reset
 

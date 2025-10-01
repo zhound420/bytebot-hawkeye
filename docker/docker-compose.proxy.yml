@@ -73,6 +73,19 @@ services:
       - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/bytebotdb}
       - BYTEBOT_DESKTOP_BASE_URL=${BYTEBOT_DESKTOP_BASE_URL:-http://bytebot-desktop:9990}
       - BYTEBOT_LLM_PROXY_URL=${BYTEBOT_LLM_PROXY_URL:-http://bytebot-llm-proxy:4000}
+      # AI Provider API Keys (for fallback when LLM proxy is unavailable)
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      # Analytics Configuration
+      - BYTEBOT_ANALYTICS_ENDPOINT=${BYTEBOT_ANALYTICS_ENDPOINT:-http://localhost:9991/api/analytics}
+      - BYTEBOT_ANALYTICS_ENABLED=${BYTEBOT_ANALYTICS_ENABLED:-true}
+      # Database Migration Configuration
+      - BYTEBOT_DB_RESET_ALLOWED=${BYTEBOT_DB_RESET_ALLOWED:-false}
+      - BYTEBOT_MIGRATION_STRATEGY=${BYTEBOT_MIGRATION_STRATEGY:-auto}
+      - NODE_ENV=${NODE_ENV:-production}
+      # Hawkeye Features
       - BYTEBOT_ZOOM_REFINEMENT=${BYTEBOT_ZOOM_REFINEMENT:-true}
       - BYTEBOT_GRID_OVERLAY=true
       - BYTEBOT_PROGRESSIVE_ZOOM_USE_AI=true

@@ -124,47 +124,74 @@ function detectEnvironmentStrategy() {
 }
 
 /**
- * Check database state and migration status
+ * Check database state and migration status using PrismaClient
  */
 async function checkDatabaseState() {
   console.log('[startup] Checking database state...');
-  
+
   try {
-    // Check if database has any tables
-    const sqlFile = path.join(__dirname, 'check-tables.sql');
-    const result = execSync(`npx prisma db execute --file "${sqlFile}"`, {
-      stdio: 'pipe',
-      timeout: 10000
+    const { PrismaClient } = require('@prisma/client');
+    const prisma = new PrismaClient({
+      log: ['error'],
+      datasources: {
+        db: {
+          url: process.env.DATABASE_URL,
+        },
+      },
     });
-    
-    const hasData = result.toString().includes('1') || result.toString().includes('2') || result.toString().includes('3');
-    
+
+    // Check if critical tables exist using direct query
+    let hasTaskTable = false;
+    try {
+      await prisma.$queryRaw`SELECT 1 FROM "Task" LIMIT 1`;
+      hasTaskTable = true;
+      console.log('[startup] ✓ Task table exists');
+    } catch (error) {
+      console.log('[startup] ⚠ Task table does not exist');
+    }
+
+    // Check overall table count
+    const tableCountResult = await prisma.$queryRaw`
+      SELECT COUNT(*) as table_count
+      FROM information_schema.tables
+      WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
+    `;
+    const tableCount = parseInt(tableCountResult[0].table_count);
+    const hasData = tableCount > 0;
+
+    await prisma.$disconnect();
+
     // Check migration status
     let migrationStatus = 'unknown';
     try {
-      execSync('npx prisma migrate status', {
+      const statusResult = execSync('npx prisma migrate status', {
         stdio: 'pipe',
         timeout: 15000
       });
       migrationStatus = 'up-to-date';
+      console.log('[startup] ✓ Migration status: up-to-date');
     } catch (statusError) {
-      if (statusError.message.includes('never been migrated')) {
+      const errorOutput = statusError.stderr ? statusError.stderr.toString() : statusError.message;
+      console.log(`[startup] Migration status check output: ${errorOutput}`);
+
+      if (errorOutput.includes('never been migrated') || errorOutput.includes('database is empty')) {
         migrationStatus = 'never-migrated';
-      } else if (statusError.message.includes('following migrations have not yet been applied')) {
+      } else if (errorOutput.includes('following migrations have not yet been applied')) {
         migrationStatus = 'pending-migrations';
-      } else if (statusError.message.includes('P3005')) {
+      } else if (errorOutput.includes('P3005') || errorOutput.includes('drift')) {
         migrationStatus = 'schema-drift';
       } else {
         migrationStatus = 'error';
       }
+      console.log(`[startup] ✓ Migration status: ${migrationStatus}`);
     }
-    
-    console.log(`[startup] ✓ Database state: ${hasData ? 'has data' : 'empty'}, migration status: ${migrationStatus}`);
-    return { hasData, migrationStatus };
-    
+
+    console.log(`[startup] ✓ Database state: ${tableCount} tables, Task table: ${hasTaskTable ? 'exists' : 'missing'}, migration status: ${migrationStatus}`);
+    return { hasData, hasTaskTable, migrationStatus };
+
   } catch (error) {
     console.log(`[startup] ⚠ Could not determine database state: ${error.message}`);
-    return { hasData: false, migrationStatus: 'unknown' };
+    return { hasData: false, hasTaskTable: false, migrationStatus: 'unknown' };
   }
 }
 
@@ -282,22 +309,72 @@ async function runPrismaOperations() {
     const { isDevelopment, isProduction, resetAllowed, migrationStrategy } = detectEnvironmentStrategy();
     
     // Check database state
-    const { hasData, migrationStatus } = await checkDatabaseState();
-    
+    const { hasData, hasTaskTable, migrationStatus } = await checkDatabaseState();
+
     console.log('[startup] 2. Handling database schema with smart detection...');
-    
+
+    // Critical check: If Task table is missing, force migration regardless of status
+    if (!hasTaskTable) {
+      console.log('[startup] ⚠ Critical: Task table is missing, forcing migration...');
+
+      // Try migration deploy first (most reliable)
+      try {
+        console.log('[startup] 2a. Running migration deploy to ensure all tables exist...');
+        execSync('npx prisma migrate deploy', {
+          stdio: 'inherit',
+          timeout: 60000
+        });
+        console.log('[startup] ✓ Migration deploy completed successfully');
+
+        // Verify Task table was created
+        const verifyResult = await checkDatabaseState();
+        if (verifyResult.hasTaskTable) {
+          console.log('[startup] ✓ Task table now exists after migration');
+          return;
+        } else {
+          console.log('[startup] ⚠ Task table still missing after migration, trying db push...');
+        }
+      } catch (error) {
+        console.log(`[startup] ⚠ Migration deploy failed: ${error.message}`);
+        console.log('[startup] Trying alternative migration approach...');
+      }
+
+      // Fallback: Use db push to sync schema
+      try {
+        console.log('[startup] 2b. Using db push to sync schema...');
+        execSync('npx prisma db push --accept-data-loss --skip-generate', {
+          stdio: 'inherit',
+          timeout: 60000
+        });
+        console.log('[startup] ✓ Database schema synchronized successfully');
+        return;
+      } catch (pushError) {
+        console.log(`[startup] ⚠ Schema push failed: ${pushError.message}`);
+      }
+
+      // Last resort: Reset and migrate (if allowed)
+      if (resetAllowed) {
+        console.log('[startup] 2c. Last resort: resetting database and applying migrations...');
+        if (await resetDatabase()) {
+          return;
+        }
+      }
+
+      throw new Error('Critical: Unable to create Task table using any migration strategy');
+    }
+
     // Strategy selection based on environment and database state
     if (migrationStrategy === 'auto') {
       // Auto strategy: intelligent selection based on environment and state
-      
+
       if (migrationStatus === 'up-to-date') {
         console.log('[startup] ✓ Database migrations are already up to date');
         return;
       }
-      
+
       if (migrationStatus === 'never-migrated' && !hasData) {
         // Fresh database, run normal migrations
-        console.log('[startup] 2a. Fresh database detected, running initial migrations...');
+        console.log('[startup] 2d. Fresh database detected, running initial migrations...');
         try {
           execSync('npx prisma migrate deploy', {
             stdio: 'inherit',
@@ -309,37 +386,10 @@ async function runPrismaOperations() {
           console.log(`[startup] ⚠ Initial migration failed: ${error.message}`);
         }
       }
-      
-      if (migrationStatus === 'schema-drift' || migrationStatus === 'error') {
-        // Handle P3005 and schema drift issues
-        console.log('[startup] 2b. Schema drift detected, applying smart resolution...');
-        
-        if (isDevelopment && resetAllowed) {
-          // Development: Try reset first
-          console.log('[startup] 2b.1. Development mode: attempting database reset...');
-          if (await resetDatabase()) {
-            return;
-          }
-        }
-        
-        if (isProduction || !resetAllowed) {
-          // Production: Try baseline approach
-          console.log('[startup] 2b.2. Production mode: attempting migration baseline...');
-          if (await baselineMigrations()) {
-            return;
-          }
-        }
-        
-        // Fallback: Try schema sync
-        console.log('[startup] 2b.3. Fallback: attempting schema synchronization...');
-        if (await syncSchema()) {
-          return;
-        }
-      }
-      
+
       if (migrationStatus === 'pending-migrations') {
         // Normal pending migrations
-        console.log('[startup] 2c. Pending migrations detected, applying...');
+        console.log('[startup] 2e. Pending migrations detected, applying...');
         try {
           execSync('npx prisma migrate deploy', {
             stdio: 'inherit',
@@ -349,12 +399,39 @@ async function runPrismaOperations() {
           return;
         } catch (error) {
           console.log(`[startup] ⚠ Migration deployment failed: ${error.message}`);
-          
+
           // Fallback to schema sync if migration fails
-          console.log('[startup] 2c.1. Migration failed, attempting schema sync...');
+          console.log('[startup] 2e.1. Migration failed, attempting schema sync...');
           if (await syncSchema()) {
             return;
           }
+        }
+      }
+
+      if (migrationStatus === 'schema-drift' || migrationStatus === 'error') {
+        // Handle P3005 and schema drift issues
+        console.log('[startup] 2f. Schema drift detected, applying smart resolution...');
+
+        if (isDevelopment && resetAllowed) {
+          // Development: Try reset first
+          console.log('[startup] 2f.1. Development mode: attempting database reset...');
+          if (await resetDatabase()) {
+            return;
+          }
+        }
+
+        if (isProduction || !resetAllowed) {
+          // Production: Try baseline approach
+          console.log('[startup] 2f.2. Production mode: attempting migration baseline...');
+          if (await baselineMigrations()) {
+            return;
+          }
+        }
+
+        // Fallback: Try schema sync
+        console.log('[startup] 2f.3. Fallback: attempting schema synchronization...');
+        if (await syncSchema()) {
+          return;
         }
       }
       
