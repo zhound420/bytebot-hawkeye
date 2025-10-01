@@ -19,8 +19,18 @@ COPY config/universal-coordinates.yaml ./config/universal-coordinates.yaml
 
 WORKDIR /app/packages/bytebot-ui
 
-# Install dependencies
-RUN npm install
+# Configure npm for better reliability
+RUN npm config set registry https://registry.npmjs.org/ && \
+    npm config set fetch-retries 5 && \
+    npm config set fetch-retry-factor 2 && \
+    npm config set fetch-retry-mintimeout 10000 && \
+    npm config set fetch-retry-maxtimeout 60000 && \
+    npm config set timeout 300000
+
+# Install dependencies with retry logic
+RUN npm install --no-optional --prefer-offline || \
+    (sleep 10 && npm install --no-optional --prefer-offline) || \
+    (sleep 30 && npm install --no-optional)
 
 RUN npm run build
 

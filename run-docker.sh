@@ -67,9 +67,9 @@ while [[ $# -gt 0 ]]; do
             print_status "Using proxy compose file (recommended)"
             shift
             ;;
-        --build-ui)
-            export BYTEBOT_UI_IMAGE="bytebot-ui:local"
-            print_status "Will build UI from source (slower but includes local changes)"
+        --fast)
+            export BYTEBOT_UI_IMAGE="ghcr.io/bytebot-ai/bytebot-ui:edge"
+            print_status "Using pre-built UI image (fast but excludes local changes)"
             shift
             ;;
         --help|-h)
@@ -92,12 +92,12 @@ if [[ "$SHOW_HELP" == "true" ]]; then
     echo "Options:"
     echo "  --proxy     Use proxy compose file (default, recommended for Hawkeye)"
     echo "  --standard  Use standard compose file (direct AI provider connection)"
-    echo "  --build-ui  Build UI from source (includes local changes, slower)"
+    echo "  --fast      Use pre-built UI image (faster but excludes your UI improvements)"
     echo "  --help, -h  Show this help message"
     echo ""
     echo "Examples:"
-    echo "  ./run-docker.sh up -d --build                    # Start with proxy + pre-built UI (fast)"
-    echo "  ./run-docker.sh --build-ui up -d --build         # Start with locally built UI (slow)"
+    echo "  ./run-docker.sh up -d --build                    # Start with proxy + your UI improvements (default)"
+    echo "  ./run-docker.sh --fast up -d --build             # Start with pre-built UI (faster, no local UI)"
     echo "  ./run-docker.sh --standard up -d --build         # Start with standard setup"
     echo "  ./run-docker.sh down                             # Stop services"
     echo "  ./run-docker.sh logs -f bytebot-agent            # Follow agent logs"

@@ -7,11 +7,11 @@ You can now start ByteBot Hawkeye from the project root using either method:
 ### Option 1: Helper Script (Recommended)
 
 ```bash
-# Start all services with proxy + pre-built UI (fast, recommended)
+# Start all services with proxy + your Hawkeye UI improvements (default)
 ./run-docker.sh up -d --build
 
-# Start with locally built UI (slower, includes your UI changes)
-./run-docker.sh --build-ui up -d --build
+# Start with pre-built UI (faster but missing your improvements)
+./run-docker.sh --fast up -d --build
 
 # View logs
 ./run-docker.sh logs -f
@@ -26,11 +26,11 @@ You can now start ByteBot Hawkeye from the project root using either method:
 ### Option 2: Manual Docker Compose
 
 ```bash
-# From project root - pre-built UI (fast)
+# From project root - build UI from source with your improvements (default)
 docker-compose -f docker/docker-compose.proxy.yml up -d --build
 
-# From project root - build UI from source (slow, includes local changes)
-BYTEBOT_UI_IMAGE=bytebot-ui:local docker-compose -f docker/docker-compose.proxy.yml up -d --build
+# From project root - use pre-built UI (faster, excludes your improvements)
+BYTEBOT_UI_IMAGE=ghcr.io/bytebot-ai/bytebot-ui:edge docker-compose -f docker/docker-compose.proxy.yml up -d --build
 
 # Or from docker directory
 cd docker
@@ -39,8 +39,8 @@ docker-compose -f docker-compose.proxy.yml up -d --build
 
 ## UI Build Options
 
-**Pre-built UI (Default)**: ⚡ Fast startup, stable, but won't include your local UI changes
-**Local UI Build**: 🔨 Slower build (~5-10 min), includes all your local modifications
+**Local UI Build (Default)**: 🔨 Includes all your Hawkeye UI improvements (~5-10 min build)
+**Pre-built UI**: ⚡ Fast startup, stable, but missing your custom UI features
 
 ## Why Use the Proxy Version?
 
