@@ -53,36 +53,56 @@ function validateDatabaseEnvironment() {
  */
 async function waitForDatabase(maxRetries = 30, retryDelay = 2000) {
   console.log('[startup] Waiting for database connection...');
-  
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      // Try to connect to the database using a simple query
-      execSync('npx prisma db execute --stdin < /dev/null 2>/dev/null || npx prisma db push --accept-data-loss --skip-generate 2>/dev/null || true', {
-        stdio: 'pipe',
-        timeout: 5000
+      // Use Prisma's PrismaClient for connection test
+      const { PrismaClient } = require('@prisma/client');
+      const prisma = new PrismaClient({
+        log: ['error'],
+        datasources: {
+          db: {
+            url: process.env.DATABASE_URL,
+          },
+        },
       });
-      
-      // If we got here without an exception, the database is likely available
+
+      // Test connection with a simple query
+      await prisma.$queryRaw`SELECT 1 as test`;
+      await prisma.$disconnect();
+
       console.log(`[startup] ✓ Database connection successful (attempt ${attempt}/${maxRetries})`);
       return true;
     } catch (error) {
       console.log(`[startup] ⚠ Database connection attempt ${attempt}/${maxRetries} failed`);
-      
+
+      // Log more specific error details for debugging
+      if (error.code === 'ECONNREFUSED') {
+        console.log('[startup]   → Connection refused (database service not ready)');
+      } else if (error.code === 'ENOTFOUND') {
+        console.log('[startup]   → Host not found (DNS/network issue)');
+      } else if (error.code === 'ETIMEDOUT') {
+        console.log('[startup]   → Connection timeout');
+      } else {
+        console.log(`[startup]   → ${error.message}`);
+      }
+
       if (attempt === maxRetries) {
         console.error('[startup] ✗ Database connection failed after maximum retries');
         console.error('[startup] This could indicate:');
-        console.error('[startup] 1. PostgreSQL service is not running');
+        console.error('[startup] 1. PostgreSQL service is not running or not ready');
         console.error('[startup] 2. DATABASE_URL is incorrect');
-        console.error('[startup] 3. Network connectivity issues');
-        console.error('[startup] 4. Database is still initializing');
-        throw new Error(`Database connection failed after ${maxRetries} attempts`);
+        console.error('[startup] 3. Network connectivity issues between containers');
+        console.error('[startup] 4. Database is still initializing (try increasing healthcheck start_period)');
+        console.error(`[startup] 5. Database host not resolvable (${error.code})`);
+        throw new Error(`Database connection failed after ${maxRetries} attempts: ${error.message}`);
       }
-      
+
       console.log(`[startup] Retrying in ${retryDelay/1000} seconds...`);
       await new Promise(resolve => setTimeout(resolve, retryDelay));
     }
   }
-  
+
   return false;
 }
 
