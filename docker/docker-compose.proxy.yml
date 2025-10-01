@@ -1,5 +1,9 @@
 name: bytebot
 
+# Explicitly specify the .env file location
+env_file:
+  - .env
+
 services:
   bytebot-desktop:
     # Build from source by default; override BYTEBOT_DESKTOP_IMAGE to use a registry image

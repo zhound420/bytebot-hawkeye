@@ -1,5 +1,9 @@
 name: bytebot
 
+# Explicitly specify the .env file location
+env_file:
+  - .env
+
 services:
   bytebot-desktop:
     # Build from source with OpenCV 4.8.0

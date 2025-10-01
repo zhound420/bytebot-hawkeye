@@ -7,6 +7,17 @@ If you're experiencing database connection issues with the Bytebot Hawkeye agent
 ### 1. Use Healthchecks (Recommended Solution)
 The updated Docker Compose files now include PostgreSQL healthchecks. Make sure you're using the latest version:
 
+#### Option A: Using the helper script (Recommended)
+```bash
+# Pull the latest changes
+git pull
+
+# From project root - the script handles environment loading
+./run-docker.sh down
+./run-docker.sh up --build -d
+```
+
+#### Option B: Manual docker-compose commands
 ```bash
 # Pull the latest changes
 git pull
@@ -15,8 +26,8 @@ git pull
 cd docker
 
 # Rebuild with fresh containers
-docker compose -f docker-compose.yml down
-docker compose -f docker-compose.yml up --build
+docker compose -f docker-compose.proxy.yml down
+docker compose -f docker-compose.proxy.yml up --build -d
 ```
 
 ### 2. Manual Container Startup Order
