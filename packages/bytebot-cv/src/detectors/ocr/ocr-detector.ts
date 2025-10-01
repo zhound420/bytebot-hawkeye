@@ -265,6 +265,13 @@ const scaleMat = (mat: any, scale: number) => {
   if (!hasCv || !mat) {
     return mat;
   }
+
+  // Check minimum dimensions before scaling
+  const minDimension = 3;
+  if (mat.cols < minDimension || mat.rows < minDimension) {
+    return null; // Signal that this mat is too small for OCR
+  }
+
   if (scale === 1) {
     return cloneMat(mat);
   }
@@ -273,6 +280,12 @@ const scaleMat = (mat: any, scale: number) => {
   }
   const width = Math.max(1, Math.round(mat.cols * scale));
   const height = Math.max(1, Math.round(mat.rows * scale));
+
+  // Ensure scaled dimensions meet minimum requirements
+  if (width < minDimension || height < minDimension) {
+    return null; // Scaled dimensions too small
+  }
+
   const size = createSize(width, height);
   if (!size) {
     return cloneMat(mat);
@@ -639,6 +652,7 @@ const attemptDefinitions = (whitelist: string): OCRAttemptConfig[] => {
       name: 'clahe_psm8_scale_1.5',
       preprocess: (input) => {
         const scaled = scaleMat(input, 1.5);
+        if (!scaled) return { image: null };
         const gray = safeCvtColor(
           scaled,
           COLOR_BGR2GRAY,
@@ -662,6 +676,7 @@ const attemptDefinitions = (whitelist: string): OCRAttemptConfig[] => {
       name: 'denoise_psm6_scale_1.2',
       preprocess: (input) => {
         const scaled = scaleMat(input, 1.2);
+        if (!scaled) return { image: null };
         const gray = safeCvtColor(
           scaled,
           COLOR_BGR2GRAY,
@@ -696,6 +711,7 @@ const attemptDefinitions = (whitelist: string): OCRAttemptConfig[] => {
       name: 'edge_psm7_scale_1.8',
       preprocess: (input) => {
         const scaled = scaleMat(input, 1.8);
+        if (!scaled) return { image: null };
         const gray = safeCvtColor(
           scaled,
           COLOR_BGR2GRAY,
@@ -727,6 +743,7 @@ const attemptDefinitions = (whitelist: string): OCRAttemptConfig[] => {
         const enhanced = enhanceUiColors(input);
         const scale = 1.4;
         const resized = scaleMat(enhanced, scale);
+        if (!resized) return { image: null };
         const lab = safeCvtColor(
           resized,
           COLOR_BGR2LAB,
@@ -762,6 +779,7 @@ const attemptDefinitions = (whitelist: string): OCRAttemptConfig[] => {
       name: 'ui_buttons_psm8',
       preprocess: (input) => {
         const scaled = scaleMat(input, 1.3);
+        if (!scaled) return { image: null };
         const gray = safeCvtColor(
           scaled,
           COLOR_BGR2GRAY,
@@ -794,6 +812,7 @@ const attemptDefinitions = (whitelist: string): OCRAttemptConfig[] => {
       name: 'morphology_gradient_psm6',
       preprocess: (input) => {
         const scaled = scaleMat(input, 1.4);
+        if (!scaled) return { image: null };
         const gray = safeCvtColor(
           scaled,
           COLOR_BGR2GRAY,
@@ -825,6 +844,7 @@ const attemptDefinitions = (whitelist: string): OCRAttemptConfig[] => {
       name: 'ui_buttons_enhanced_psm8',
       preprocess: (input) => {
         const scaled = scaleMat(input, 1.6);
+        if (!scaled) return { image: null };
         const gray = safeCvtColor(
           scaled,
           COLOR_BGR2GRAY,
@@ -1105,6 +1125,18 @@ export class OCRDetector {
     }
 
     const { image: cropped, offsetX, offsetY } = this.cropToRegion(baseImage, region);
+
+    // Check minimum dimensions for OCR
+    const minDimension = 3;
+    if (!cropped || cropped.cols < minDimension || cropped.rows < minDimension) {
+      if (this.debugEnabled) {
+        this.debug(
+          `Region too small for OCR: ${cropped?.cols ?? 0}x${cropped?.rows ?? 0} (min: ${minDimension}x${minDimension})`,
+        );
+      }
+      return [];
+    }
+
     const attempts = this.buildAttempts();
     const attemptResults: {
       config: OCRAttemptConfig;
@@ -1118,6 +1150,15 @@ export class OCRDetector {
       try {
         const startedAt = Date.now();
         const { image: processed, scale = 1 } = attempt.preprocess(cloneMat(cropped));
+
+        // Skip if preprocessing returned null (image too small)
+        if (!processed) {
+          if (this.debugEnabled) {
+            this.debug(`Attempt ${attempt.name} skipped: preprocessed image too small`);
+          }
+          continue;
+        }
+
         const encoded = cv.imencode('.png', processed);
 
         const workerAny = worker as unknown as {
