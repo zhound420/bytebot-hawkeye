@@ -127,7 +127,7 @@ services:
       args:
         - BYTEBOT_AGENT_BASE_URL=${BYTEBOT_AGENT_BASE_URL:-http://bytebot-agent:9991}
         - BYTEBOT_DESKTOP_VNC_URL=${BYTEBOT_DESKTOP_VNC_URL:-http://bytebot-desktop:9990/websockify}
-    # Use pre-built image to avoid network issues during build
+    # Use pre-built image by default (fast), override with BYTEBOT_UI_IMAGE=bytebot-ui:local to build from source
     image: ${BYTEBOT_UI_IMAGE:-ghcr.io/bytebot-ai/bytebot-ui:edge}
     container_name: bytebot-ui
     restart: unless-stopped

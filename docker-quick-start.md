@@ -7,8 +7,11 @@ You can now start ByteBot Hawkeye from the project root using either method:
 ### Option 1: Helper Script (Recommended)
 
 ```bash
-# Start all services with proxy (recommended for Hawkeye features)
+# Start all services with proxy + pre-built UI (fast, recommended)
 ./run-docker.sh up -d --build
+
+# Start with locally built UI (slower, includes your UI changes)
+./run-docker.sh --build-ui up -d --build
 
 # View logs
 ./run-docker.sh logs -f
@@ -23,13 +26,21 @@ You can now start ByteBot Hawkeye from the project root using either method:
 ### Option 2: Manual Docker Compose
 
 ```bash
-# From project root
+# From project root - pre-built UI (fast)
 docker-compose -f docker/docker-compose.proxy.yml up -d --build
+
+# From project root - build UI from source (slow, includes local changes)
+BYTEBOT_UI_IMAGE=bytebot-ui:local docker-compose -f docker/docker-compose.proxy.yml up -d --build
 
 # Or from docker directory
 cd docker
 docker-compose -f docker-compose.proxy.yml up -d --build
 ```
+
+## UI Build Options
+
+**Pre-built UI (Default)**: ⚡ Fast startup, stable, but won't include your local UI changes
+**Local UI Build**: 🔨 Slower build (~5-10 min), includes all your local modifications
 
 ## Why Use the Proxy Version?
 
