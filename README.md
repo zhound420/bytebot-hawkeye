@@ -6,6 +6,8 @@
 
 **An AI that has its own computer to complete tasks for you**
 
+> ℹ️ A Holo-based variant is also in progress: [Bytebot Hawkeye Holo](https://github.com/zhound420/bytebot-hawkeye-holo), powered by the Holo 1.5 7B model.
+
 [![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/bytebot?referralCode=L9lKXQ)
 </div>
 
